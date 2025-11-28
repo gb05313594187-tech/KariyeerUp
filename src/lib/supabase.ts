@@ -73,6 +73,7 @@ export interface Invoice {
   invoice_sent: boolean;
   invoice_sent_at?: string;
   created_at: string;
+  subscription_type?: string;
 }
 
 export interface SupportTicket {
@@ -367,6 +368,86 @@ export const invoiceService = {
       console.error('[InvoiceService] 💥 Exception in getByUserId:', err);
       console.error('[InvoiceService] Exception stack:', err instanceof Error ? err.stack : 'No stack trace');
       return [];
+    }
+  },
+
+  async generatePDF(invoiceId: string): Promise<{ success: boolean; html?: string; error?: string }> {
+    try {
+      console.log('[InvoiceService] 📄 Generating PDF for invoice:', invoiceId);
+      
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('[InvoiceService] ❌ No session token available');
+        return { success: false, error: 'No active session' };
+      }
+
+      console.log('[InvoiceService] 🔑 Session token found, calling PDF generation edge function...');
+      const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_generate_invoice_pdf`;
+      console.log('[InvoiceService] 🌐 Edge function URL:', edgeUrl);
+
+      const response = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ invoice_id: invoiceId })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[InvoiceService] ❌ PDF generation failed:', response.status, errorText);
+        return { success: false, error: 'Failed to generate PDF' };
+      }
+
+      const result = await response.json();
+      console.log('[InvoiceService] ✅ PDF generated successfully');
+      
+      return { success: true, html: result.html };
+    } catch (err) {
+      console.error('[InvoiceService] 💥 Exception in generatePDF:', err);
+      return { success: false, error: 'An error occurred while generating PDF' };
+    }
+  },
+
+  async sendEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('[InvoiceService] 📧 Sending invoice email for:', invoiceId);
+      
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('[InvoiceService] ❌ No session token available');
+        return { success: false, error: 'No active session' };
+      }
+
+      console.log('[InvoiceService] 🔑 Session token found, calling email edge function...');
+      const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_send_invoice_email`;
+      console.log('[InvoiceService] 🌐 Edge function URL:', edgeUrl);
+
+      const response = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ invoice_id: invoiceId })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[InvoiceService] ❌ Email sending failed:', response.status, errorText);
+        return { success: false, error: 'Failed to send email' };
+      }
+
+      const result = await response.json();
+      console.log('[InvoiceService] ✅ Email sent successfully:', result);
+      
+      return { success: true };
+    } catch (err) {
+      console.error('[InvoiceService] 💥 Exception in sendEmail:', err);
+      return { success: false, error: 'An error occurred while sending email' };
     }
   },
 

@@ -1,8 +1,10 @@
-import { Invoice } from '@/lib/supabase';
+import { Invoice, invoiceService } from '@/lib/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader2, Mail } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface InvoiceGeneratorProps {
   invoice: Invoice;
@@ -12,6 +14,8 @@ interface InvoiceGeneratorProps {
 
 export default function InvoiceGenerator({ invoice, userName, userEmail }: InvoiceGeneratorProps) {
   const { language } = useLanguage();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const getNavText = (tr: string, en: string, fr: string) => {
     switch (language) {
@@ -22,94 +26,88 @@ export default function InvoiceGenerator({ invoice, userName, userEmail }: Invoi
     }
   };
 
-  const downloadInvoice = () => {
-    // Create invoice HTML
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Fatura ${invoice.invoice_number}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-          .company { font-size: 24px; font-weight: bold; color: #2563eb; }
-          .invoice-info { display: flex; justify-content: space-between; margin-bottom: 30px; }
-          .invoice-details, .customer-details { flex: 1; }
-          .invoice-details h3, .customer-details h3 { margin-bottom: 10px; color: #333; }
-          table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-          th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-          th { background-color: #f8f9fa; font-weight: bold; }
-          .total-row { font-weight: bold; font-size: 18px; background-color: #f8f9fa; }
-          .footer { margin-top: 50px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="company">Kariyeer</div>
-          <p>Profesyonel Kariyer Gelişim Platformu</p>
-        </div>
+  const downloadInvoice = async () => {
+    setIsGenerating(true);
+    try {
+      console.log('[InvoiceGenerator] 📄 Starting PDF generation for invoice:', invoice.id);
+      
+      // Call the edge function to generate PDF
+      const result = await invoiceService.generatePDF(invoice.id);
+      
+      if (!result.success || !result.html) {
+        console.error('[InvoiceGenerator] ❌ PDF generation failed:', result.error);
+        toast.error(getNavText(
+          'Fatura oluşturulamadı. Lütfen tekrar deneyin.',
+          'Failed to generate invoice. Please try again.',
+          'Échec de la génération de la facture. Veuillez réessayer.'
+        ));
+        return;
+      }
 
-        <div class="invoice-info">
-          <div class="invoice-details">
-            <h3>Fatura Bilgileri</h3>
-            <p><strong>Fatura No:</strong> ${invoice.invoice_number}</p>
-            <p><strong>Tarih:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('tr-TR')}</p>
-            <p><strong>Durum:</strong> ${invoice.status === 'paid' ? 'Ödendi' : 'Beklemede'}</p>
-          </div>
+      console.log('[InvoiceGenerator] ✅ PDF HTML received, creating download...');
 
-          <div class="customer-details">
-            <h3>Müşteri Bilgileri</h3>
-            <p><strong>Ad Soyad:</strong> ${userName}</p>
-            <p><strong>E-posta:</strong> ${userEmail}</p>
-          </div>
-        </div>
+      // Create blob and download
+      const blob = new Blob([result.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Fatura-${invoice.invoice_number}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-        <table>
-          <thead>
-            <tr>
-              <th>Açıklama</th>
-              <th>Miktar</th>
-              <th>Para Birimi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Doğrulama Rozeti Aboneliği</td>
-              <td>${(invoice.amount || 0).toFixed(2)}</td>
-              <td>${invoice.currency || 'TRY'}</td>
-            </tr>
-            <tr>
-              <td>KDV (%18)</td>
-              <td>${(invoice.tax_amount || 0).toFixed(2)}</td>
-              <td>${invoice.currency || 'TRY'}</td>
-            </tr>
-            <tr class="total-row">
-              <td>TOPLAM</td>
-              <td>${(invoice.total_amount || 0).toFixed(2)}</td>
-              <td>${invoice.currency || 'TRY'}</td>
-            </tr>
-          </tbody>
-        </table>
+      console.log('[InvoiceGenerator] ✅ Download initiated successfully');
+      toast.success(getNavText(
+        'Fatura başarıyla indirildi!',
+        'Invoice downloaded successfully!',
+        'Facture téléchargée avec succès!'
+      ));
+    } catch (error) {
+      console.error('[InvoiceGenerator] 💥 Exception during PDF generation:', error);
+      toast.error(getNavText(
+        'Bir hata oluştu. Lütfen tekrar deneyin.',
+        'An error occurred. Please try again.',
+        'Une erreur s\'est produite. Veuillez réessayer.'
+      ));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-        <div class="footer">
-          <p>Bu fatura elektronik olarak oluşturulmuştur.</p>
-          <p>Kariyeer © ${new Date().getFullYear()} - Tüm hakları saklıdır.</p>
-        </div>
-      </body>
-      </html>
-    `;
+  const sendInvoiceEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      console.log('[InvoiceGenerator] 📧 Sending invoice email for:', invoice.id);
+      
+      const result = await invoiceService.sendEmail(invoice.id);
+      
+      if (!result.success) {
+        console.error('[InvoiceGenerator] ❌ Email sending failed:', result.error);
+        toast.error(getNavText(
+          'Email gönderilemedi. Lütfen tekrar deneyin.',
+          'Failed to send email. Please try again.',
+          'Échec de l\'envoi de l\'email. Veuillez réessayer.'
+        ));
+        return;
+      }
 
-    // Create blob and download
-    const blob = new Blob([invoiceHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Fatura-${invoice.invoice_number}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      console.log('[InvoiceGenerator] ✅ Email sent successfully');
+      toast.success(getNavText(
+        `Fatura ${userEmail} adresine gönderildi!`,
+        `Invoice sent to ${userEmail}!`,
+        `Facture envoyée à ${userEmail}!`
+      ));
+    } catch (error) {
+      console.error('[InvoiceGenerator] 💥 Exception during email sending:', error);
+      toast.error(getNavText(
+        'Bir hata oluştu. Lütfen tekrar deneyin.',
+        'An error occurred. Please try again.',
+        'Une erreur s\'est produite. Veuillez réessayer.'
+      ));
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   return (
@@ -163,10 +161,55 @@ export default function InvoiceGenerator({ invoice, userName, userEmail }: Invoi
           </div>
         </div>
 
-        <Button onClick={downloadInvoice} className="w-full" variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          {getNavText('Faturayı İndir', 'Download Invoice', 'Télécharger la facture')}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={downloadInvoice} 
+            className="flex-1" 
+            variant="outline"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {getNavText('Oluşturuluyor...', 'Generating...', 'Génération...')}
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                {getNavText('İndir', 'Download', 'Télécharger')}
+              </>
+            )}
+          </Button>
+
+          <Button 
+            onClick={sendInvoiceEmail} 
+            className="flex-1" 
+            variant="default"
+            disabled={isSendingEmail}
+          >
+            {isSendingEmail ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {getNavText('Gönderiliyor...', 'Sending...', 'Envoi...')}
+              </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4 mr-2" />
+                {getNavText('Email Gönder', 'Send Email', 'Envoyer Email')}
+              </>
+            )}
+          </Button>
+        </div>
+
+        {invoice.invoice_sent && invoice.invoice_sent_at && (
+          <p className="text-xs text-gray-500 text-center">
+            {getNavText(
+              `Email gönderildi: ${new Date(invoice.invoice_sent_at).toLocaleString('tr-TR')}`,
+              `Email sent: ${new Date(invoice.invoice_sent_at).toLocaleString('en-US')}`,
+              `Email envoyé: ${new Date(invoice.invoice_sent_at).toLocaleString('fr-FR')}`
+            )}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

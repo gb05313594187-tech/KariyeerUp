@@ -111,4 +111,28 @@ export default function Webinars() {
                     <Card key={webinar.id} className="overflow-hidden hover:shadow-lg transition-shadow opacity-90">
                         <div className="relative">
                             <img src={webinar.image} alt={webinar.title} className="w-full h-48 object-cover grayscale"/>
-                            <div
+                        </div> {/* <-- HATA VEREN DIV BURADAYDI, KAPATTIM. */}
+                        <CardHeader>
+                            <CardTitle className="text-xl">{webinar.title}</CardTitle>
+                            <CardDescription>{webinar.speaker}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-between text-sm text-gray-500">
+                                <span>{webinar.date}</span>
+                                <span>{webinar.views}</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button variant="outline" className="w-full">
+                                Kaydı İzle
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))
+            )}
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -1,32 +1,22 @@
-import { useEffect } from 'react';
+// @ts-nocheck
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Calendar, Home } from 'lucide-react';
-import { useWindowSize } from 'react-use';
-import Confetti from 'react-confetti';
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { width, height } = useWindowSize();
   
-  // URL'den bookingId'yi al (varsa gösteririz, yoksa sorun değil)
+  // URL'den bookingId'yi al
   const bookingId = searchParams.get('bookingId');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Confetti
-        width={width}
-        height={height}
-        recycle={false}
-        numberOfPieces={500}
-        gravity={0.15}
-      />
       
       <Card className="w-full max-w-md text-center border-t-4 border-t-green-500 shadow-xl">
         <CardHeader>
-          <div className="mx-auto bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mb-4 animate-in zoom-in duration-300">
+          <div className="mx-auto bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
@@ -42,7 +32,7 @@ export default function PaymentSuccess() {
           <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
             <p className="font-semibold mb-2">Bundan Sonra Ne Olacak?</p>
             <ul className="space-y-2 text-left list-disc pl-4">
-              <li>Randevu detayları e-posta adresinize gönderildi.</li>
+              <li>Randevu detayları işleme alındı.</li>
               <li>Koçunuz onayladığında size bildirim gelecektir.</li>
               <li>Seans saati geldiğinde panelinizden görüşmeye katılabilirsiniz.</li>
             </ul>

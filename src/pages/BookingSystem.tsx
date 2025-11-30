@@ -12,8 +12,6 @@ import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'luc
 import { getCoaches } from '@/data/mockData';
 import { toast } from 'sonner';
 
-// VERİTABANI İMPORTLARINI KALDIRDIK (HATA VERMEMESİ İÇİN)
-
 export default function BookingSystem() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -21,7 +19,7 @@ export default function BookingSystem() {
   
   const isTrial = searchParams.get('type') === 'trial';
 
-  // YEDEK KOÇ (SİTE ASLA BOŞ GELMESİN DİYE)
+  // YEDEK KOÇ
   const fallbackCoach = {
       id: id || '1',
       name: 'Kariyer Koçu', 
@@ -35,7 +33,6 @@ export default function BookingSystem() {
   const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    // SADECE MOCK DATA (GARANTİ AÇILIŞ)
     try {
       const mockCoaches = getCoaches();
       if (mockCoaches) {
@@ -52,6 +49,7 @@ export default function BookingSystem() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ... (Takvim fonksiyonları aynı) ...
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -85,24 +83,21 @@ export default function BookingSystem() {
     
     setIsSubmitting(true);
     
-    // --- BURASI KRİTİK: VERCEL LOGLARINA YAZDIRMA ---
-    // Veritabanı yerine sistem loglarına kaydediyoruz.
-    // Vercel Dashboard -> Logs kısmında bu bilgileri görebileceksin.
-    console.log("🚨 [YENİ RANDEVU GELDİ] 🚨");
-    console.log("Müşteri:", formData.name);
-    console.log("Telefon:", formData.phone);
-    console.log("E-posta:", formData.email);
-    console.log("Tarih:", selectedDate?.toISOString());
-    console.log("Saat:", selectedTime);
-    console.log("Koç ID:", coach.id);
-    console.log("Tür:", isTrial ? "Deneme" : "Normal");
-    // ------------------------------------------------
-
     setTimeout(() => {
-        toast.success(isTrial ? 'Deneme Seansı Onaylandı!' : 'Randevu Oluşturuldu!');
-        navigate(`/payment-success`);
+        const bookingId = `${coach.id}-${Date.now()}`;
+
+        if (isTrial) {
+            // EĞER ÜCRETSİZ İSE -> DİREKT BAŞARI SAYFASINA GİT
+            toast.success('Deneme Seansı Onaylandı!');
+            navigate(`/payment-success?bookingId=${bookingId}`);
+        } else {
+            // EĞER ÜCRETLİ İSE -> KREDİ KARTI FORMUNA GİT (Düzeltilen Kısım)
+            toast.success('Ödeme sayfasına yönlendiriliyorsunuz...');
+            navigate(`/payment/${coach.id}`, { state: { bookingId, bookingData: formData } });
+        }
+        
         setIsSubmitting(false);
-    }, 500);
+    }, 800);
   };
 
   return (

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react'; // Globe kaldırıldı
+import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getCoaches } from '@/data/mockData';
 import { toast } from 'sonner';
 
@@ -32,21 +32,26 @@ export default function BookingSystem() {
   const [coach, setCoach] = useState<any>(fallbackCoach); 
   const [loading, setLoading] = useState(false); 
   
-  // ÜLKE KODU (Varsayılan TR)
+  // ÜLKE KODU VE DİNAMİK ÖRNEK NUMARA SİSTEMİ
   const [countryCode, setCountryCode] = useState('+90');
 
+  // Her ülke için kod ve o ülkeye ait örnek numara formatı
   const countries = [
-    { code: '+90', label: 'TR (+90)' },
-    { code: '+1', label: 'US (+1)' },
-    { code: '+44', label: 'UK (+44)' },
-    { code: '+49', label: 'DE (+49)' },
-    { code: '+33', label: 'FR (+33)' },
-    { code: '+31', label: 'NL (+31)' },
-    { code: '+994', label: 'AZ (+994)' },
-    { code: '+971', label: 'AE (+971)' },
-    { code: '+966', label: 'SA (+966)' },
-    { code: '+7', label: 'RU (+7)' },
+    { code: '+90', label: 'TR (+90)', placeholder: '555 123 45 67' },
+    { code: '+1', label: 'US (+1)', placeholder: '202 555 0123' },
+    { code: '+44', label: 'UK (+44)', placeholder: '7911 123456' },
+    { code: '+49', label: 'DE (+49)', placeholder: '151 12345678' },
+    { code: '+33', label: 'FR (+33)', placeholder: '6 12 34 56 78' },
+    { code: '+31', label: 'NL (+31)', placeholder: '6 12345678' },
+    { code: '+994', label: 'AZ (+994)', placeholder: '50 123 45 67' },
+    { code: '+971', label: 'AE (+971)', placeholder: '50 123 4567' },
+    { code: '+966', label: 'SA (+966)', placeholder: '50 123 4567' },
+    { code: '+7', label: 'RU (+7)', placeholder: '999 123-45-67' },
   ];
+
+  // Seçili ülkenin placeholder'ını bul
+  const selectedCountry = countries.find(c => c.code === countryCode);
+  const activePlaceholder = selectedCountry ? selectedCountry.placeholder : '555 123 45 67';
 
   useEffect(() => {
     try {
@@ -98,7 +103,6 @@ export default function BookingSystem() {
     
     setIsSubmitting(true);
     
-    // Numarayı birleştir
     const fullPhoneNumber = `${countryCode} ${formData.phone}`;
     console.log("Telefon:", fullPhoneNumber);
 
@@ -110,7 +114,6 @@ export default function BookingSystem() {
             navigate(`/payment-success?bookingId=${bookingId}`);
         } else {
             toast.success('Ödeme sayfasına yönlendiriliyorsunuz...');
-            // Telefon numarasını da gönderiyoruz
             navigate(`/payment/${coach.id}`, { state: { bookingId, bookingData: { ...formData, phone: fullPhoneNumber } } });
         }
         
@@ -165,7 +168,7 @@ export default function BookingSystem() {
                   <div className="grid gap-2"><Label>Ad Soyad</Label><Input value={formData.name} onChange={(e: any) => setFormData({...formData, name: e.target.value})} required /></div>
                   <div className="grid gap-2"><Label>E-posta</Label><Input type="email" value={formData.email} onChange={(e: any) => setFormData({...formData, email: e.target.value})} required /></div>
                   
-                  {/* --- TELEFON VE ÜLKE KODU --- */}
+                  {/* --- AKILLI TELEFON GİRİŞ ALANI --- */}
                   <div className="grid gap-2">
                     <Label>Telefon</Label>
                     <div className="flex gap-2">
@@ -181,14 +184,15 @@ export default function BookingSystem() {
                         <Input 
                             className="flex-1"
                             type="tel" 
-                            placeholder="555 123 45 67" 
+                            // DİNAMİK PLACEHOLDER BURADA
+                            placeholder={activePlaceholder} 
                             value={formData.phone} 
                             onChange={(e: any) => setFormData({...formData, phone: e.target.value})} 
                             required 
                         />
                     </div>
                   </div>
-                  {/* --------------------------- */}
+                  {/* ---------------------------------- */}
 
                   <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800 h-12 text-lg font-bold" disabled={isSubmitting}>
                     {isSubmitting ? 'İşleniyor...' : (isTrial ? 'Ücretsiz Randevuyu Onayla' : 'Ödemeye Geç')}

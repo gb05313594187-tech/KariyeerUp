@@ -120,7 +120,7 @@ export default function BookingSystem() {
         const bookingId = `${coach.id}-${Date.now()}`;
         const meetingUrl = generateJitsiRoomUrl(bookingId, coach.name, formData.name);
         
-        // --- VERİTABANI KAYDI (AÇIK) ---
+        // --- VERİTABANI KAYDI (AÇIK VE ÇALIŞIYOR) ---
         if (user) {
             await bookingService.create({
                 user_id: user.id,

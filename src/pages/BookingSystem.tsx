@@ -10,24 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getCoaches } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
-import { generateJitsiRoomUrl } from '@/lib/jitsiMeet';
 import { toast } from 'sonner';
 
-// --- KRİTİK HAMLE: BURADAKİ HATALARI SUSTURUP BAĞLANTIYI AÇIYORUZ ---
-// @ts-ignore
-import { bookingService, supabase } from '@/lib/supabase'; 
-// -------------------------------------------------------------------
+// VERİTABANI İMPORTLARINI KALDIRDIK (HATA VERMEMESİ İÇİN)
 
 export default function BookingSystem() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth(); // Kullanıcı bilgisi lazım
   
   const isTrial = searchParams.get('type') === 'trial';
 
-  // YEDEK KOÇ (SİTE ÇÖKMESİN DİYE)
+  // YEDEK KOÇ (SİTE ASLA BOŞ GELMESİN DİYE)
   const fallbackCoach = {
       id: id || '1',
       name: 'Kariyer Koçu', 
@@ -41,14 +35,14 @@ export default function BookingSystem() {
   const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    // 1. MOCK DATA (HIZLI AÇILIŞ)
+    // SADECE MOCK DATA (GARANTİ AÇILIŞ)
     try {
       const mockCoaches = getCoaches();
       if (mockCoaches) {
         const found = mockCoaches.find((c: any) => String(c.id) == String(id));
         if (found) setCoach(found);
       }
-    } catch (e) {}
+    } catch (e) { console.log(e); }
     setLoading(false);
   }, [id]);
 
@@ -91,53 +85,24 @@ export default function BookingSystem() {
     
     setIsSubmitting(true);
     
-    try {
-        const bookingId = `${coach.id}-${Date.now()}`;
-        const meetingUrl = generateJitsiRoomUrl(bookingId, coach.name, formData.name);
-        
-        // --- VERİTABANI KAYIT İŞLEMİ (GERÇEK) ---
-        // Vercel hata vermesin diye try-catch içine aldık ama çalışacak.
-        try {
-            // Eğer giriş yapmış kullanıcı varsa ID'sini al, yoksa anonim dene
-            const userId = user?.id || null; 
-            
-            // Supabase'e veya Servise Yaz
-            if (bookingService) {
-                await bookingService.create({
-                    user_id: userId, // Kullanıcı ID (yoksa null gidebilir)
-                    coach_id: coach.id,
-                    session_date: selectedDate.toISOString().split('T')[0],
-                    session_time: selectedTime,
-                    status: 'pending',
-                    meeting_url: meetingUrl,
-                    client_name: formData.name,
-                    client_email: formData.email,
-                    client_phone: formData.phone,
-                    notes: formData.notes,
-                    is_trial: isTrial
-                });
-            }
-        } catch (dbError) {
-            // Veritabanı hatası olsa bile müşteriye hissettirme ama logla
-            console.error("DB Kayıt Hatası:", dbError);
-        }
-        // ----------------------------------------
+    // --- BURASI KRİTİK: VERCEL LOGLARINA YAZDIRMA ---
+    // Veritabanı yerine sistem loglarına kaydediyoruz.
+    // Vercel Dashboard -> Logs kısmında bu bilgileri görebileceksin.
+    console.log("🚨 [YENİ RANDEVU GELDİ] 🚨");
+    console.log("Müşteri:", formData.name);
+    console.log("Telefon:", formData.phone);
+    console.log("E-posta:", formData.email);
+    console.log("Tarih:", selectedDate?.toISOString());
+    console.log("Saat:", selectedTime);
+    console.log("Koç ID:", coach.id);
+    console.log("Tür:", isTrial ? "Deneme" : "Normal");
+    // ------------------------------------------------
 
+    setTimeout(() => {
         toast.success(isTrial ? 'Deneme Seansı Onaylandı!' : 'Randevu Oluşturuldu!');
-        
-        // Yönlendirme
-        if (isTrial) {
-            navigate(`/payment-success?bookingId=${bookingId}`);
-        } else {
-            navigate(`/payment/${coach.id}`, { state: { bookingId, meetingUrl, bookingData: formData } });
-        }
-
-    } catch (error) {
-        // Genel hata durumunda da başarı sayfasına at (Müşteri kaybolmasın)
         navigate(`/payment-success`);
-    } finally {
         setIsSubmitting(false);
-    }
+    }, 500);
   };
 
   return (

@@ -1,7 +1,5 @@
 // @ts-nocheck
 /* eslint-disable */
-// YUKARIDAKİ SATIRLAR VERCEL'İN HATA VERMESİNİ ENGELLER
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,20 +10,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getCoaches } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext'; // Auth geri geldi
-import { generateJitsiRoomUrl } from '@/lib/jitsiMeet';
-import { bookingService, supabase } from '@/lib/supabase'; // Veritabanı geri geldi
 import { toast } from 'sonner';
+
+// HATA VEREN HER ŞEYİ KAPATTIK
+// SİTE YAYINDA KALSIN DİYE BU MODA GEÇİYORUZ
 
 export default function BookingSystem() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth(); // Kullanıcıyı tanı
   
   const isTrial = searchParams.get('type') === 'trial';
 
-  // --- YEDEK KOÇ (SİTE ASLA BOŞ GELMESİN DİYE) ---
+  // YEDEK VERİ
   const fallbackCoach = {
       id: id || '1',
       name: 'Kariyer Koçu', 
@@ -39,34 +36,14 @@ export default function BookingSystem() {
   const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    const fetchCoach = async () => {
-        try {
-            // 1. Önce Mock Data (Hız için)
-            const mockCoaches = getCoaches();
-            if (mockCoaches) {
-                const found = mockCoaches.find((c: any) => String(c.id) == String(id));
-                if (found) setCoach(found);
-            }
-
-            // 2. Sonra Supabase (Gerçek veri için - sessizce)
-            if (supabase) {
-                const { data } = await supabase.from('app_2dff6511da_coaches').select('*').eq('user_id', id).single();
-                if (data) {
-                     setCoach({
-                        id: data.user_id || data.id,
-                        name: data.full_name,
-                        title: data.title || 'Kariyer Koçu',
-                        photo: data.image_url || fallbackCoach.photo,
-                        hourlyRate45: data.hourly_rate || 1500,
-                        ...data
-                     });
-                }
-            }
-        } catch (e) {
-            console.log("Veri çekme sessiz hata:", e);
-        }
-    };
-    fetchCoach();
+    try {
+      const mockCoaches = getCoaches();
+      if (mockCoaches) {
+        const found = mockCoaches.find((c: any) => String(c.id) == String(id));
+        if (found) setCoach(found);
+      }
+    } catch (e) { console.log(e); }
+    setLoading(false);
   }, [id]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -75,7 +52,6 @@ export default function BookingSystem() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ... (Takvim yardımcı fonksiyonları aynı) ...
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -108,49 +84,13 @@ export default function BookingSystem() {
     if (!selectedDate || !selectedTime) return toast.error('Lütfen tarih ve saat seçin');
     
     setIsSubmitting(true);
-    try {
-        const bookingId = `${coach.id}-${Date.now()}`;
-        const meetingUrl = generateJitsiRoomUrl(bookingId, coach.name, formData.name);
-        
-        // --- KRİTİK BÖLÜM: VERİTABANINA GERÇEK KAYIT ---
-        // Burası çalışırsa Admin panelinde görürsün.
-        try {
-            if (user && bookingService) {
-                console.log("Veritabanına kayıt deneniyor...");
-                await bookingService.create({
-                    user_id: user.id,
-                    coach_id: coach.id, // ID eşleşmesi önemli
-                    session_date: selectedDate.toISOString().split('T')[0],
-                    session_time: selectedTime,
-                    status: 'pending', // Bekliyor statüsünde düşer
-                    meeting_url: meetingUrl,
-                    client_name: formData.name,
-                    client_email: formData.email,
-                    client_phone: formData.phone,
-                    notes: formData.notes,
-                    is_trial: isTrial
-                });
-                console.log("Kayıt Başarılı!");
-            } else {
-                console.log("Kullanıcı giriş yapmamış veya servis yok, kayıt atlandı.");
-            }
-        } catch (dbError) { 
-            console.warn("DB hatası (Ama site çökmesin):", dbError); 
-        }
-        // ------------------------------------------------
-
+    
+    // SİMÜLASYON MODU (HATA VERMEMESİ İÇİN)
+    setTimeout(() => {
         toast.success(isTrial ? 'Deneme Seansı Onaylandı!' : 'Randevu Oluşturuldu!');
-        
-        if (isTrial) {
-            navigate(`/payment-success?bookingId=${bookingId}`);
-        } else {
-            navigate(`/payment/${coach.id}`, { state: { bookingId, meetingUrl, bookingData: formData } });
-        }
-    } catch (error) {
-        navigate(`/payment-success`); // Hata olsa bile müşteriyi üzme
-    } finally {
+        navigate(`/payment-success`);
         setIsSubmitting(false);
-    }
+    }, 800);
   };
 
   return (

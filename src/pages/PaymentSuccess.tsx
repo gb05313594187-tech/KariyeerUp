@@ -1,178 +1,72 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle2, Calendar, Home } from 'lucide-react';
+import { useWindowSize } from 'react-use';
+import Confetti from 'react-confetti';
 
 export default function PaymentSuccess() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { supabaseUser } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Ödemeniz işleniyor...');
-
-  useEffect(() => {
-    const verifyPayment = async () => {
-      console.log('🔄 VERSION 54: PaymentSuccess - FIXED URL path with direct fetch');
-      console.log('Search params:', Object.fromEntries(searchParams.entries()));
-      console.log('Supabase user:', supabaseUser?.id);
-
-      try {
-        const token = searchParams.get('token');
-        
-        if (!token) {
-          console.error('❌ No token found in URL');
-          setStatus('error');
-          setMessage('Ödeme doğrulama bilgisi bulunamadı.');
-          return;
-        }
-
-        console.log('✅ Token found:', token);
-
-        if (!supabaseUser) {
-          console.error('❌ No supabase user found');
-          setStatus('error');
-          setMessage('Kullanıcı oturumu bulunamadı. Lütfen giriş yapın.');
-          return;
-        }
-
-        console.log('✅ Supabase user found:', supabaseUser.id);
-        console.log('🔄 Calling iyzico_callback edge function with direct fetch...');
-
-        // Get session for authorization
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.error('❌ No session found');
-          setStatus('error');
-          setMessage('Oturum bulunamadı. Lütfen giriş yapın.');
-          return;
-        }
-
-        // FIXED: Use direct fetch instead of supabase.functions.invoke
-        const edgeUrl = 'https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/app_2dff6511da_iyzico_callback';
-        console.log('🔗 Edge Function URL:', edgeUrl);
-
-        const response = await fetch(edgeUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            token,
-            userId: supabaseUser.id
-          }),
-        });
-
-        console.log('📊 Response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Response error:', errorText);
-          throw new Error(`Edge Function Error: ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 Edge function response:', data);
-
-        if (data?.success) {
-          console.log('✅ Payment verification successful!');
-          setStatus('success');
-          setMessage('Ödemeniz başarıyla tamamlandı! Rozetiniz aktif edildi.');
-          
-          // Redirect to dashboard after 3 seconds
-          setTimeout(() => {
-            console.log('🔄 Redirecting to dashboard...');
-            navigate('/dashboard');
-          }, 3000);
-        } else {
-          console.error('❌ Payment verification failed:', data);
-          setStatus('error');
-          setMessage(data?.error || 'Ödeme doğrulaması başarısız oldu.');
-        }
-      } catch (error) {
-        console.error('❌ Payment verification error:', error);
-        setStatus('error');
-        setMessage('Beklenmeyen bir hata oluştu. Lütfen destek ekibiyle iletişime geçin.');
-      }
-    };
-
-    verifyPayment();
-  }, [searchParams, supabaseUser, navigate]);
+  const [searchParams] = useSearchParams();
+  const { width, height } = useWindowSize();
+  
+  // URL'den bookingId'yi al (varsa gösteririz, yoksa sorun değil)
+  const bookingId = searchParams.get('bookingId');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            {status === 'loading' && (
-              <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
-            )}
-            {status === 'success' && (
-              <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
-            )}
-            {status === 'error' && (
-              <XCircle className="h-16 w-16 text-red-500" />
-            )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Confetti
+        width={width}
+        height={height}
+        recycle={false}
+        numberOfPieces={500}
+        gravity={0.15}
+      />
+      
+      <Card className="w-full max-w-md text-center border-t-4 border-t-green-500 shadow-xl">
+        <CardHeader>
+          <div className="mx-auto bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mb-4 animate-in zoom-in duration-300">
+            <CheckCircle2 className="h-10 w-10 text-green-600" />
           </div>
-          <CardTitle className="text-2xl">
-            {status === 'loading' && 'Ödeme İşleniyor'}
-            {status === 'success' && '🎉 Tebrikler!'}
-            {status === 'error' && 'Ödeme Başarısız'}
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Randevunuz Başarıyla Alındı!
           </CardTitle>
-          <CardDescription className="text-base mt-2">
-            {message}
-          </CardDescription>
         </CardHeader>
+        
         <CardContent className="space-y-4">
-          {status === 'success' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <p className="text-green-800 font-medium mb-2">
-                ✨ Rozetiniz Aktif!
-              </p>
-              <p className="text-green-700 text-sm">
-                Artık profilinizde premium rozetiniz görünüyor ve arama sonuçlarında öne çıkıyorsunuz.
-              </p>
-              <p className="text-green-600 text-xs mt-2">
-                3 saniye içinde dashboard'a yönlendirileceksiniz...
-              </p>
-            </div>
-          )}
+          <p className="text-gray-600">
+            Tebrikler! Kariyer yolculuğunuzda harika bir adım attınız.
+          </p>
           
-          {status === 'error' && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800 text-sm">
-                Bir sorun oluştu. Lütfen aşağıdaki adımları deneyin:
-              </p>
-              <ul className="text-red-700 text-sm mt-2 space-y-1 list-disc list-inside">
-                <li>Sayfayı yenileyin</li>
-                <li>Dashboard'unuzu kontrol edin</li>
-                <li>Destek ekibiyle iletişime geçin</li>
-              </ul>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={() => navigate('/dashboard')}
-              className="flex-1"
-              variant={status === 'success' ? 'default' : 'outline'}
-            >
-              Dashboard'a Git
-            </Button>
-            {status === 'error' && (
-              <Button
-                onClick={() => window.location.reload()}
-                variant="outline"
-                className="flex-1"
-              >
-                Tekrar Dene
-              </Button>
-            )}
+          <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+            <p className="font-semibold mb-2">Bundan Sonra Ne Olacak?</p>
+            <ul className="space-y-2 text-left list-disc pl-4">
+              <li>Randevu detayları e-posta adresinize gönderildi.</li>
+              <li>Koçunuz onayladığında size bildirim gelecektir.</li>
+              <li>Seans saati geldiğinde panelinizden görüşmeye katılabilirsiniz.</li>
+            </ul>
           </div>
         </CardContent>
+        
+        <CardFooter className="flex flex-col gap-3">
+          <Button 
+            className="w-full bg-blue-900 hover:bg-blue-800" 
+            onClick={() => navigate('/dashboard')}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Randevularıma Git
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => navigate('/')}
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Ana Sayfaya Dön
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

@@ -15,11 +15,12 @@ import Dashboard from "./pages/Dashboard";
 import CoachList from "./pages/CoachList";
 import CoachProfile from "./pages/CoachProfile";
 import BookingSystem from "./pages/BookingSystem";
-import NotFound from "./pages/NotFound";
-
-// ÖDEME SAYFALARI (Eğer dosya adın Payment.tsx ise bu çalışır)
-import PaymentPage from "./pages/Payment"; 
+import PaymentPage from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import MentorCircle from "./pages/MentorCircle";
+import ForCompanies from "./pages/ForCompanies";
+import Webinars from "./pages/Webinars";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -32,17 +33,28 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                
+                {/* Auth & Panel */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                
+                {/* Koçlar */}
                 <Route path="/coaches" element={<CoachList />} />
                 <Route path="/coach/:id" element={<CoachProfile />} />
                 
-                {/* YENİ EKLENEN ROTALAR */}
+                {/* İşlemler */}
                 <Route path="/booking/:id" element={<BookingSystem />} />
                 <Route path="/payment/:id" element={<PaymentPage />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
+
+                {/* --- İŞTE EKSİK OLAN SAYFALAR BURADA --- */}
+                <Route path="/mentor-circle" element={<MentorCircle />} />
+                <Route path="/corporate" element={<ForCompanies />} />
+                <Route path="/webinars" element={<Webinars />} />
+                {/* -------------------------------------- */}
                 
+                {/* 404 (En Sonda Olmalı) */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

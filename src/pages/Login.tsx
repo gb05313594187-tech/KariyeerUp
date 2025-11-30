@@ -7,9 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-// ESKİ BAĞLANTILARI KAPATTIK
-// import { useAuth } from '@/contexts/AuthContext';
-
 export default function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,13 +19,20 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // SİMÜLASYON GİRİŞİ (HERKESİ İÇERİ AL)
+    // SİMÜLASYON GİRİŞİ + HAFIZAYA KAYIT
     setTimeout(() => {
-        // Loglara yaz (Kim girmeye çalıştı?)
-        console.log("Giriş Denemesi:", formData.email);
+        // BU SATIR ÇOK ÖNEMLİ: Tarayıcıya "Ben girdim" diye not bırakıyoruz.
+        localStorage.setItem('kariyeer_user', JSON.stringify({ 
+            email: formData.email, 
+            name: 'Kullanıcı', 
+            isLoggedIn: true 
+        }));
         
+        // Navbar'ı tetikle (sayfa yenilenmeden algılasın diye)
+        window.dispatchEvent(new Event("storage"));
+
         toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
-        navigate('/dashboard'); // Panele gönder
+        navigate('/dashboard'); 
         setIsLoading(false);
     }, 1000);
   };
@@ -55,7 +59,7 @@ export default function Login() {
                 placeholder="ornek@email.com"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e: any) => setFormData({...formData, email: e.target.value})}
               />
             </div>
             <div className="space-y-2">
@@ -70,7 +74,7 @@ export default function Login() {
                 type="password" 
                 required
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e: any) => setFormData({...formData, password: e.target.value})}
               />
             </div>
 
@@ -92,6 +96,9 @@ export default function Login() {
               variant="outline" 
               className="w-full"
               onClick={() => {
+                  // DEMO GİRİŞİ İÇİN DE KAYIT
+                  localStorage.setItem('kariyeer_user', JSON.stringify({ email: 'demo@kariyeer.com', name: 'Demo Kullanıcı', isLoggedIn: true }));
+                  window.dispatchEvent(new Event("storage"));
                   toast.success("Demo hesabıyla giriş yapıldı");
                   navigate('/dashboard');
               }}

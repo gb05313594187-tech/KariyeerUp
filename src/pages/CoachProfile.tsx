@@ -1,40 +1,28 @@
 // @ts-nocheck
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Star, Award, Calendar, Heart, Share2, 
-  Video, Globe, Briefcase, GraduationCap, Trophy, Users, TrendingUp,
-  Clock, DollarSign, Languages, UserPlus, UserMinus
+  Globe, Briefcase, Trophy, DollarSign, UserPlus, UserMinus,
+  Users, TrendingUp // EKSİK İKONLAR EKLENDİ
 } from 'lucide-react';
 import { getCoaches, getReviews } from '@/data/mockData';
 import { useFollow } from '@/contexts/FollowContext';
-import { useToast } from "@/components/ui/use-toast";
 import { PremiumPromotionToast } from '@/components/PremiumPromotionToast';
 import CoachBadges from '@/components/CoachBadges';
-
-interface UserReview {
-  id: string;
-  coachId: string;
-  clientName: string;
-  rating: number;
-  review: string;
-  createdAt: string;
-  verified: boolean;
-}
 
 export default function CoachProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { isFollowing, followCoach, unfollowCoach, getFollowCount } = useFollow();
   const [isFavorite, setIsFavorite] = useState(false);
   
   const coaches = getCoaches();
-  // ID eşleşmesini gevşek yapıyoruz (string/number hatası olmasın diye)
+  // ID kontrolü (String çevirip karşılaştırıyoruz)
   const coach = coaches.find(c => String(c.id) === String(id));
   
   // Yorumları güvenli çek
@@ -51,12 +39,22 @@ export default function CoachProfile() {
 
   if (!coach) return <div className="min-h-screen flex items-center justify-center">Koç bulunamadı</div>;
 
-  // BUTON YÖNLENDİRMELERİ (DÜZELTİLDİ)
+  // --- BUTON YÖNLENDİRMELERİ (Garanti Çalışır) ---
   const handleBooking = () => navigate(`/booking/${coach.id}`);
   const handleTrial = () => navigate(`/booking/${coach.id}?type=trial`);
 
   const following = isFollowing(coach.id);
   const allReviews = [...reviews, ...coachReviews];
+
+  // --- İSTATİSTİKLER (Senin istediğin veriler) ---
+  const stats = {
+      followers: 1250,
+      following: 750,
+      rating: 4.9,
+      reviewCount: 3,
+      totalSessions: "500+",
+      communityScore: "95/100"
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -66,47 +64,69 @@ export default function CoachProfile() {
         <Card className="mb-6 overflow-hidden border-2 border-blue-100">
           <CardContent className="pt-6">
             <div className="grid md:grid-cols-3 gap-8">
-              {/* FOTOĞRAF VE BUTONLAR */}
+              {/* SOL KOLON: FOTOĞRAF VE İSTATİSTİKLER */}
               <div className="md:col-span-1">
                 <div className="relative">
                   <img src={coach.photo} alt={coach.name} className="w-full h-80 object-cover rounded-xl shadow-lg mb-6" />
                 </div>
 
+                {/* EKSİK OLAN İSTATİSTİK KUTULARI GERİ GELDİ */}
+                <div className="bg-blue-50 p-4 rounded-lg mb-6 flex justify-between text-center">
+                    <div>
+                        <div className="text-2xl font-bold text-blue-900">{stats.followers}</div>
+                        <div className="text-sm text-gray-600">Takipçi</div>
+                    </div>
+                    <div className="w-px bg-gray-300"></div>
+                    <div>
+                        <div className="text-2xl font-bold text-blue-900">{stats.following}</div>
+                        <div className="text-sm text-gray-600">Takip</div>
+                    </div>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                    <div className="flex justify-between items-center bg-gray-50 p-3 rounded">
+                        <div className="flex items-center gap-2"><Star className="text-yellow-400 w-5 h-5 fill-current"/> <span className="font-bold">{stats.rating}</span></div>
+                        <span className="text-sm text-gray-500">({stats.reviewCount} değerlendirme)</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-gray-50 p-3 rounded">
+                        <div className="flex items-center gap-2"><Users className="text-green-600 w-5 h-5"/> <span className="font-bold">{stats.totalSessions}</span></div>
+                        <span className="text-sm text-gray-500">Tamamlanan Seans</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-gray-50 p-3 rounded">
+                        <div className="flex items-center gap-2"><TrendingUp className="text-purple-600 w-5 h-5"/> <span className="font-bold">{stats.communityScore}</span></div>
+                        <span className="text-sm text-gray-500">Topluluk Puanı</span>
+                    </div>
+                </div>
+
+                {/* BUTONLAR */}
                 <div className="space-y-3">
-                  {/* DÜZELTİLMİŞ BUTONLAR */}
-                  <Button 
-                    className="w-full bg-blue-900 hover:bg-blue-800 text-white"
-                    onClick={handleBooking}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Hemen Rezervasyon Yap
+                  <Button className={`w-full ${following ? 'bg-gray-600' : 'bg-blue-600'} text-white`} onClick={() => following ? unfollowCoach(coach.id) : followCoach(coach.id)}>
+                    {following ? <><UserMinus className="mr-2 h-4 w-4"/> Takibi Bırak</> : <><UserPlus className="mr-2 h-4 w-4"/> Takip Et</>}
                   </Button>
 
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-blue-900 text-blue-900 hover:bg-blue-50 h-12 text-lg font-bold"
-                    onClick={handleTrial}
-                  >
-                    {/* BURASI DÜZELTİLDİ */}
+                  <Button className="w-full bg-blue-900 hover:bg-blue-800 text-white h-12 text-lg" onClick={handleBooking}>
+                    <Calendar className="mr-2 h-4 w-4" /> Hemen Rezervasyon Yap
+                  </Button>
+
+                  <Button variant="outline" className="w-full border-blue-900 text-blue-900 hover:bg-blue-50 h-12 text-lg font-bold" onClick={handleTrial}>
                     Deneme Seansı (Ücretsiz)
                   </Button>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={() => setIsFavorite(!isFavorite)}>
-                      <Heart className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                    </Button>
-                    <Button variant="outline" className="flex-1"><Share2 className="h-4 w-4" /></Button>
+                    <Button variant="outline" className="flex-1"><Heart className="h-4 w-4"/></Button>
+                    <Button variant="outline" className="flex-1"><Share2 className="h-4 w-4"/></Button>
                   </div>
                 </div>
               </div>
 
-              {/* BİLGİLER */}
+              {/* SAĞ KOLON: BİLGİLER */}
               <div className="md:col-span-2">
                 <div className="mb-6">
                   <h1 className="text-4xl font-bold text-blue-900 mb-2">{coach.name}</h1>
                   <p className="text-xl text-gray-600 mb-4">{coach.title}</p>
                   <div className="flex gap-2">
                     <Badge className="bg-yellow-400 text-blue-900">ICF {coach.icfLevel}</Badge>
+                    {coach.isPremium && <Badge variant="secondary">Premium</Badge>}
                   </div>
                 </div>
 
@@ -143,7 +163,6 @@ export default function CoachProfile() {
           </CardContent>
         </Card>
 
-        {/* ALT KISIMLAR */}
         <Tabs defaultValue="about">
           <TabsList><TabsTrigger value="about">Hakkımda</TabsTrigger><TabsTrigger value="reviews">Yorumlar</TabsTrigger></TabsList>
           <TabsContent value="about">

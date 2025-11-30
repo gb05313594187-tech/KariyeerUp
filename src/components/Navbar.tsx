@@ -53,7 +53,7 @@ export default function Navbar() {
 
           {/* DOĞRU LİNKLER BURADA */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/coaches" className="text-gray-600 hover:text-[#D32F2F] font-medium">Koçlar</Link>
+            <Link to="/coaches" className="text-gray-600 hover:text-[#D32F2F] font-medium">Koçlar İçin</Link>
             <Link to="/corporate" className="text-gray-600 hover:text-[#D32F2F] font-medium">Şirketler İçin</Link>
             <Link to="/mentor-circle" className="text-gray-600 hover:text-[#D32F2F] font-medium">MentorCircle</Link>
             <Link to="/webinars" className="text-gray-600 hover:text-[#D32F2F] font-medium">Webinar</Link>

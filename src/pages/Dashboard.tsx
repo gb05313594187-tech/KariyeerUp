@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // --- ÖRNEK RANDEVU VERİSİ (Sanki veritabanından gelmiş gibi) ---
+  // --- ÖRNEK RANDEVU (Mock Data) ---
   const appointments = [
     {
       id: 1,
@@ -23,6 +23,13 @@ export default function Dashboard() {
     }
   ];
 
+  // BUTONA BASINCA ÇALIŞACAK FONKSİYON
+  const handleJoinMeeting = () => {
+    // Gerçek bir video görüşme ekranı aç (Jitsi Meet - Ücretsiz)
+    // Yeni sekmede açar
+    window.open('https://meet.jit.si/kariyeer-deneme-seansi-demo', '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -34,14 +41,14 @@ export default function Dashboard() {
             <p className="text-gray-500">Hoş geldiniz, Kariyer yolculuğunuz burada şekilleniyor.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/coaches')}>Yeni Randevu Al</Button>
+            <Button variant="outline" onClick={() => navigate('/')}>Yeni Randevu Al</Button>
             <Button className="bg-blue-900 hover:bg-blue-800">Profil Ayarları</Button>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           
-          {/* SOL KOLON: RANDEVULAR (YENİ EKLENDİ) */}
+          {/* SOL KOLON: RANDEVULAR */}
           <div className="md:col-span-2 space-y-6">
             <Card className="border-t-4 border-t-blue-900 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -71,7 +78,11 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800">
+                        {/* ÇALIŞAN BUTON */}
+                        <Button 
+                            className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800"
+                            onClick={handleJoinMeeting}
+                        >
                           Görüşmeye Git <ArrowRight className="ml-2 w-4 h-4"/>
                         </Button>
                       </div>
@@ -85,16 +96,14 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Geçmiş Randevular Başlığı */}
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-700">Geçmiş Aktiviteler</h3>
                 <Button variant="link" className="text-blue-900">Tümünü Gör</Button>
             </div>
           </div>
 
-          {/* SAĞ KOLON: İSTATİSTİK VE ROZETLER */}
+          {/* SAĞ KOLON */}
           <div className="space-y-6">
-            {/* Hızlı İstatistikler */}
             <Card>
                 <CardHeader><CardTitle className="text-lg">İstatistikler</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -109,7 +118,6 @@ export default function Dashboard() {
                 </CardContent>
             </Card>
 
-            {/* Rozet Durumu (Eski Kutu) */}
             <Card>
               <CardHeader><CardTitle className="text-lg">Rozet Durumu</CardTitle></CardHeader>
               <CardContent className="text-center py-6">

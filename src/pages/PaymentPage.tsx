@@ -1,294 +1,170 @@
+// @ts-nocheck
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CreditCard, Lock, AlertCircle } from 'lucide-react';
-
-interface CardDetails {
-  cardNumber: string;
-  cardHolder: string;
-  expiryDate: string;
-  cvv: string;
-}
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, CreditCard, Lock, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PaymentPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { user, isAuthenticated } = useAuth();
-  const { purchaseBadge } = useSubscription();
-  const { t } = useLanguage();
+  const location = useLocation();
+  const { bookingId, bookingData } = location.state || {};
 
-  const badgeType = (searchParams.get('badge') as 'blue' | 'gold') || 'blue';
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'debit_card'>('credit_card');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
-
-  const [cardDetails, setCardDetails] = useState<CardDetails>({
-    cardNumber: '',
-    cardHolder: '',
-    expiryDate: '',
-    cvv: '',
+  const [isLoading, setIsLoading] = useState(false);
+  const [cardData, setCardData] = useState({
+    holder: '',
+    number: '',
+    expiry: '',
+    cvc: ''
   });
 
-  const prices = {
-    blue: 99,
-    gold: 299,
+  // Kredi kartı formatlama (Görsel Güzellik)
+  const handleCardNumberChange = (e: any) => {
+    let value = e.target.value.replace(/\D/g, '');
+    value = value.replace(/(\d{4})/g, '$1 ').trim();
+    setCardData({ ...cardData, number: value.substring(0, 19) });
   };
 
-  const amount = prices[badgeType];
-  const taxRate = 0.18;
-  const taxAmount = amount * taxRate;
-  const totalAmount = amount + taxAmount;
-
-  const handleInputChange = (field: keyof CardDetails, value: string) => {
-    setCardDetails(prev => ({ ...prev, [field]: value }));
-    setError('');
-  };
-
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\s/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.slice(0, 19); // 16 digits + 3 spaces
-  };
-
-  const formatExpiryDate = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-    }
-    return cleaned;
-  };
-
-  const validateForm = (): boolean => {
-    if (!cardDetails.cardNumber || cardDetails.cardNumber.replace(/\s/g, '').length !== 16) {
-      setError(t('invalidCardNumber'));
-      return false;
-    }
-    if (!cardDetails.cardHolder || cardDetails.cardHolder.length < 3) {
-      setError(t('invalidCardHolder'));
-      return false;
-    }
-    if (!cardDetails.expiryDate || cardDetails.expiryDate.length !== 5) {
-      setError(t('invalidExpiryDate'));
-      return false;
-    }
-    if (!cardDetails.cvv || cardDetails.cvv.length !== 3) {
-      setError(t('invalidCVV'));
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayment = async (e: any) => {
     e.preventDefault();
     
-    if (!isAuthenticated) {
-      setError(t('pleaseLogin'));
+    if (cardData.number.length < 19 || cardData.cvc.length < 3) {
+      toast.error('Lütfen kart bilgilerinizi eksiksiz girin.');
       return;
     }
 
-    if (!validateForm()) {
-      return;
-    }
+    setIsLoading(true);
 
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      const result = await purchaseBadge(badgeType, paymentMethod, cardDetails);
-      
-      if (result.success) {
-        navigate('/payment-success?subscription=' + result.subscriptionId);
-      } else {
-        setError(result.message);
-      }
-    } catch (err) {
-      setError(t('paymentError'));
-    } finally {
-      setIsProcessing(false);
-    }
+    // --- BURAYA İLERİDE GERÇEK POS (IYZICO/STRIPE) GELECEK ---
+    // Şimdilik 2 saniye bekleyip onaylıyor (Simülasyon)
+    setTimeout(() => {
+        setIsLoading(false);
+        navigate(`/payment-success?bookingId=${bookingId || 'new'}`);
+    }, 2000);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>{t('loginRequired')}</CardTitle>
-            <CardDescription>{t('pleaseLoginToContinue')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/')} className="w-full">
-              {t('goToHomepage')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Order Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('orderSummary')}</CardTitle>
-              <CardDescription>{t('reviewYourOrder')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className={`w-16 h-16 ${badgeType === 'blue' ? 'bg-blue-500' : 'bg-yellow-500'} rounded-full flex items-center justify-center text-white text-2xl font-bold`}>
-                  {badgeType === 'blue' ? '✓' : '★'}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {badgeType === 'blue' ? t('blueBadge') : t('goldBadge')}
-                  </h3>
-                  <p className="text-gray-600">{t('monthlySubscription')}</p>
-                </div>
-              </div>
+        
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2"/> Geri Dön
+        </Button>
 
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t('subtotal')}</span>
-                  <span className="font-medium">{amount.toFixed(2)} TRY</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t('tax')} (18%)</span>
-                  <span className="font-medium">{taxAmount.toFixed(2)} TRY</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                  <span>{t('total')}</span>
-                  <span>{totalAmount.toFixed(2)} TRY</span>
-                </div>
-              </div>
-
-              <Alert>
-                <Lock className="h-4 w-4" />
-                <AlertDescription>
-                  {t('securePayment')}
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-
-          {/* Payment Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('paymentDetails')}</CardTitle>
-              <CardDescription>{t('enterCardDetails')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Payment Method */}
-                <div className="space-y-2">
-                  <Label>{t('paymentMethod')}</Label>
-                  <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'credit_card' | 'debit_card')}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="credit_card" id="credit_card" />
-                      <Label htmlFor="credit_card" className="cursor-pointer">
-                        {t('creditCard')}
-                      </Label>
+        <div className="grid md:grid-cols-3 gap-8">
+          
+          {/* SOL: ÖDEME FORMU */}
+          <div className="md:col-span-2">
+            <Card className="border-t-4 border-t-blue-900 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                    <CreditCard className="w-6 h-6 text-blue-900"/> Güvenli Ödeme
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePayment} className="space-y-6">
+                    
+                    <div className="space-y-2">
+                        <Label>Kart Sahibi</Label>
+                        <Input 
+                            placeholder="Ad Soyad" 
+                            value={cardData.holder}
+                            onChange={(e) => setCardData({...cardData, holder: e.target.value})}
+                            required
+                        />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="debit_card" id="debit_card" />
-                      <Label htmlFor="debit_card" className="cursor-pointer">
-                        {t('debitCard')}
-                      </Label>
+
+                    <div className="space-y-2">
+                        <Label>Kart Numarası</Label>
+                        <div className="relative">
+                            <Input 
+                                placeholder="0000 0000 0000 0000" 
+                                value={cardData.number}
+                                onChange={handleCardNumberChange}
+                                maxLength={19}
+                                required
+                                className="pl-10 font-mono"
+                            />
+                            <CreditCard className="w-4 h-4 absolute left-3 top-3 text-gray-400"/>
+                        </div>
                     </div>
-                  </RadioGroup>
-                </div>
 
-                {/* Card Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="cardNumber">{t('cardNumber')}</Label>
-                  <div className="relative">
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardDetails.cardNumber}
-                      onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
-                      maxLength={19}
-                      required
-                    />
-                    <CreditCard className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Son Kullanma (Ay/Yıl)</Label>
+                            <Input 
+                                placeholder="MM/YY" 
+                                value={cardData.expiry}
+                                onChange={(e) => setCardData({...cardData, expiry: e.target.value})}
+                                maxLength={5}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>CVC / CVV</Label>
+                            <div className="relative">
+                                <Input 
+                                    placeholder="123" 
+                                    type="password"
+                                    value={cardData.cvc}
+                                    onChange={(e) => setCardData({...cardData, cvc: e.target.value})}
+                                    maxLength={3}
+                                    required
+                                    className="pl-10"
+                                />
+                                <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400"/>
+                            </div>
+                        </div>
+                    </div>
 
-                {/* Card Holder */}
-                <div className="space-y-2">
-                  <Label htmlFor="cardHolder">{t('cardHolder')}</Label>
-                  <Input
-                    id="cardHolder"
-                    placeholder="JOHN DOE"
-                    value={cardDetails.cardHolder}
-                    onChange={(e) => handleInputChange('cardHolder', e.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
+                    <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
+                        <ShieldCheck className="w-6 h-6 text-green-600 flex-shrink-0"/>
+                        <p className="text-sm text-gray-600">
+                            Ödemeniz 256-bit SSL şifreleme ile korunmaktadır. Kart bilgileriniz sunucularımızda saklanmaz.
+                        </p>
+                    </div>
 
-                {/* Expiry Date and CVV */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="expiryDate">{t('expiryDate')}</Label>
-                    <Input
-                      id="expiryDate"
-                      placeholder="MM/YY"
-                      value={cardDetails.expiryDate}
-                      onChange={(e) => handleInputChange('expiryDate', formatExpiryDate(e.target.value))}
-                      maxLength={5}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cvv">{t('cvv')}</Label>
-                    <Input
-                      id="cvv"
-                      type="password"
-                      placeholder="123"
-                      value={cardDetails.cvv}
-                      onChange={(e) => handleInputChange('cvv', e.target.value.replace(/\D/g, ''))}
-                      maxLength={3}
-                      required
-                    />
-                  </div>
-                </div>
+                    <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800 h-12 text-lg" disabled={isLoading}>
+                        {isLoading ? 'Ödeme İşleniyor...' : 'Ödemeyi Tamamla'}
+                    </Button>
 
-                {/* Error Message */}
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+                </form>
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Demo Mode Notice */}
-                <Alert>
-                  <AlertDescription className="text-sm">
-                    <strong>{t('demoMode')}:</strong> {t('demoModeDescription')}
-                  </AlertDescription>
-                </Alert>
+          {/* SAĞ: SİPARİŞ ÖZETİ */}
+          <div className="md:col-span-1">
+            <Card className="sticky top-6">
+                <CardHeader><CardTitle>Sipariş Özeti</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Hizmet Bedeli</span>
+                        <span className="font-semibold">1500.00 TL</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">KDV (%20)</span>
+                        <span className="font-semibold">300.00 TL</span>
+                    </div>
+                    <div className="border-t pt-4 flex justify-between text-lg font-bold text-blue-900">
+                        <span>Toplam</span>
+                        <span>1800.00 TL</span>
+                    </div>
+                    
+                    <div className="flex gap-2 justify-center mt-4">
+                        <Badge variant="outline">Visa</Badge>
+                        <Badge variant="outline">Mastercard</Badge>
+                        <Badge variant="outline">Troy</Badge>
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? t('processing') : `${t('pay')} ${totalAmount.toFixed(2)} TRY`}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

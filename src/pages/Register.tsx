@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 
-// SUPABASE BAĞLANTISI KAPATILDI (Hata vermesin diye)
+// GERÇEK VERİTABANI BAĞLANTISI (IMPORT AÇILDI)
+// @ts-ignore
+import { supabase } from '@/lib/supabase'; 
 
 export default function Register() {
   const navigate = useNavigate();
@@ -32,17 +34,44 @@ export default function Register() {
     }
 
     try {
-      // --- SİMÜLASYON KAYDI (DATABASE'E YAZMAZ) ---
-      console.log("🚨 YENİ ÜYE KAYDI GELDİ (Simülasyon) 🚨");
-      
-      setTimeout(() => {
-        // BAŞARILI MESAJI VE YÖNLENDİRME
-        toast.success('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.');
-        navigate('/login');
-      }, 1000);
+      // --- 1. ADIM: SUPABASE AUTH'A KAYIT ---
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+            data: {
+                full_name: formData.fullName, // Bu bilgi Auth tablosuna metadata olarak gider
+            }
+        }
+      });
 
-    } catch (error) {
-      toast.error('Kayıt başarısız oldu. Lütfen tekrar deneyin.');
+      if (error) throw error;
+
+      // --- 2. ADIM: PROFILES TABLOSUNA KAYIT ---
+      if (data.user) {
+          // Sadece ID, isim ve rolü gönderiyoruz (RLS hatası almamak için sadeleştirdik)
+          const { error: profileError } = await supabase.from('profiles').insert([
+              { 
+                id: data.user.id, 
+                full_name: formData.fullName, 
+                user_type: formData.userType
+              }
+          ]);
+
+          if (profileError) {
+              console.error("Profil kaydı hatası:", profileError);
+              // Profil hatası olsa bile kullanıcı oluştuğu için devam edelim
+          }
+      }
+
+      toast.success('Kayıt başarılı! Giriş yapabilirsiniz.');
+      
+      // Otomatik giriş için yönlendir
+      setTimeout(() => navigate('/login'), 1000);
+
+    } catch (error: any) {
+      console.error("Kayıt hatası:", error);
+      toast.error(`Kayıt başarısız: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

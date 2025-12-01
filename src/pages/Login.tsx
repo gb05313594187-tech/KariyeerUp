@@ -7,34 +7,58 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
 
+// SUPABASE BAĞLANTISINI AÇIYORUZ
+// @ts-ignore
+import { supabase } from '@/lib/supabase';
+// @ts-ignore
+import { useAuth } from '@/contexts/AuthContext'; // AuthContext'i de kullanıyoruz
+
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // AuthContext'ten login fonksiyonunu al
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // SİMÜLASYON GİRİŞİ + HAFIZAYA KAYIT
-    setTimeout(() => {
-        // BU SATIR ÇOK ÖNEMLİ: Tarayıcıya "Ben girdim" diye not bırakıyoruz.
-        localStorage.setItem('kariyeer_user', JSON.stringify({ 
-            email: formData.email, 
-            name: 'Kullanıcı', 
-            isLoggedIn: true 
-        }));
-        
-        // Navbar'ı tetikle (sayfa yenilenmeden algılasın diye)
-        window.dispatchEvent(new Event("storage"));
+    try {
+      // --- GERÇEK GİRİŞ İŞLEMİ (Supabase Auth) ---
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      // ------------------------------------------
 
-        toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
-        navigate('/dashboard'); 
-        setIsLoading(false);
-    }, 1000);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.user) {
+        // AuthContext'e kullanıcı bilgisini kaydet
+        login(data.user); 
+        toast.success('Giriş başarılı!');
+        navigate('/dashboard'); // Başarılı girişte dashboard'a yönlendir
+      } else {
+         // Bu kısım normalde çalışmamalı, ama güvenlik için
+        toast.error('Giriş başarısız oldu. Kullanıcı bulunamadı.');
+      }
+
+    } catch (error: any) {
+      console.error("Giriş Hatası:", error);
+      // Hata mesajlarını kullanıcıya daha anlaşılır göster
+      if (error.message.includes('Invalid login credentials')) {
+         toast.error('E-posta veya şifre hatalı. Lütfen kontrol edin.');
+      } else {
+         toast.error(`Giriş başarısız oldu: ${error.message}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,7 +70,7 @@ export default function Login() {
           </div>
           <CardTitle className="text-2xl font-bold text-[#D32F2F]">Giriş Yap</CardTitle>
           <CardDescription>
-            Kariyeer hesabınıza giriş yapın
+            Devam etmek için hesabınıza giriş yapın
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -63,12 +87,7 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Şifre</Label>
-                <Link to="/forgot-password" class="text-sm text-[#D32F2F] hover:underline">
-                  Şifremi Unuttum?
-                </Link>
-              </div>
+              <Label htmlFor="password">Şifre</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -77,33 +96,8 @@ export default function Login() {
                 onChange={(e: any) => setFormData({...formData, password: e.target.value})}
               />
             </div>
-
             <Button type="submit" className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold" disabled={isLoading}>
               {isLoading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#FFF5F2] px-2 text-gray-500">veya</span>
-              </div>
-            </div>
-
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                  // DEMO GİRİŞİ İÇİN DE KAYIT
-                  localStorage.setItem('kariyeer_user', JSON.stringify({ email: 'demo@kariyeer.com', name: 'Demo Kullanıcı', isLoggedIn: true }));
-                  window.dispatchEvent(new Event("storage"));
-                  toast.success("Demo hesabıyla giriş yapıldı");
-                  navigate('/dashboard');
-              }}
-            >
-              Demo Hesabıyla Giriş Yap
             </Button>
           </form>
         </CardContent>

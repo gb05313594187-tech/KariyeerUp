@@ -1,458 +1,208 @@
+// @ts-nocheck
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, Clock, Users, CheckCircle, Share2 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import Navbar from '@/components/Navbar';
+import { Calendar, Clock, User, Video, PlayCircle, ArrowRight, CheckCircle2, Users, Radio } from 'lucide-react';
+import { toast } from 'sonner';
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export default function Webinars() {
-  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState('upcoming');
+  const [registeredEvents, setRegisteredEvents] = useState<number[]>([]);
 
-  const [selectedWebinar, setSelectedWebinar] = useState<string | null>(null);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    purpose: '',
-    source: '',
-    kvkkConsent: false,
-    confirmConsent: false,
-  });
-
+  // --- WEBINAR VERİLERİ (SAYFA İÇİNDE) ---
   const upcomingWebinars = [
     {
-      id: 'webinar-1',
-      title: 'Kariyer Geçişinde İlk Adımlar',
-      description: 'Farklı bir sektöre geçiş yapmak isteyenler için pratik stratejiler ve ipuçları.',
-      banner: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=300&fit=crop',
-      date: '2024-12-15',
-      time: '19:00',
-      duration: '90 dakika',
-      speakers: [
-        {
-          name: 'Ayşe Demir',
-          title: 'ICF PCC Sertifikalı Koç',
-          photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
-          bio: '15 yıllık İK deneyimi ve 500+ başarılı kariyer geçişi koçluğu.',
-          profileLink: '/coach/1',
-        },
-      ],
-      registeredCount: 87,
-      maxCapacity: 100,
+      id: 1,
+      title: "Kariyer Geçişinde Stratejik Planlama",
+      speaker: "Dr. Ayşe Yılmaz",
+      role: "Kariyer Koçu",
+      date: "15 Aralık 2024",
+      time: "20:00",
+      image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=600&h=400",
+      tags: ["Kariyer", "Planlama"],
+      attendees: 154
     },
     {
-      id: 'webinar-2',
-      title: 'Startup Dünyasında Liderlik',
-      description: 'Hızlı büyüyen startup ekiplerinde etkili liderlik ve takım yönetimi.',
-      banner: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=300&fit=crop',
-      date: '2024-12-20',
-      time: '20:00',
-      duration: '60 dakika',
-      speakers: [
-        {
-          name: 'Mehmet Kaya',
-          title: 'Executive Coach & Startup Mentor',
-          photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop',
-          bio: '3 başarılı startup kurucusu, 200+ girişimci mentorluğu.',
-          profileLink: '/coach/2',
-        },
-      ],
-      registeredCount: 45,
-      maxCapacity: 80,
+      id: 2,
+      title: "Liderlik ve Etkili İletişim",
+      speaker: "Mehmet Demir",
+      role: "Yazılım Müdürü",
+      date: "18 Aralık 2024",
+      time: "19:00",
+      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600&h=400",
+      tags: ["Liderlik", "Soft Skills"],
+      attendees: 89
     },
     {
-      id: 'webinar-3',
-      title: 'Mülakat Hazırlığında STAR Tekniği',
-      description: 'Davranışsal mülakatlarda başarılı olmanın sırları ve pratik örnekler.',
-      banner: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&h=300&fit=crop',
-      date: '2024-12-25',
-      time: '18:00',
-      duration: '75 dakika',
-      speakers: [
-        {
-          name: 'Zeynep Arslan',
-          title: 'Öğrenci Koçluğu Uzmanı',
-          photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
-          bio: 'Üniversite öğrencilerine kariyer başlangıcında rehberlik.',
-          profileLink: '/coach/3',
-        },
-      ],
-      registeredCount: 62,
-      maxCapacity: 100,
-    },
+      id: 3,
+      title: "Global Şirketlerde Mülakat Teknikleri",
+      speaker: "Sarah Jenkins",
+      role: "İK Direktörü",
+      date: "22 Aralık 2024",
+      time: "21:00",
+      image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=600&h=400",
+      tags: ["Mülakat", "Global"],
+      attendees: 230
+    }
   ];
 
-  const handleWebinarRegistration = (webinarId: string) => {
-    setSelectedWebinar(webinarId);
-    setRegistrationSuccess(false);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      purpose: '',
-      source: '',
-      kvkkConsent: false,
-      confirmConsent: false,
-    });
-  };
-
-  const handleSubmitRegistration = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.kvkkConsent || !formData.confirmConsent) {
-      alert('Lütfen tüm onayları işaretleyin');
-      return;
+  const pastWebinars = [
+    {
+      id: 101,
+      title: "CV Hazırlama Teknikleri",
+      speaker: "Zeynep Kaya",
+      date: "10 Kasım 2024",
+      views: "1.2k İzlenme",
+      image: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=600&h=400",
+      tags: ["İş Arama"]
+    },
+    {
+      id: 102,
+      title: "LinkedIn Profil Optimizasyonu",
+      speaker: "Ali Vural",
+      date: "5 Kasım 2024",
+      views: "850 İzlenme",
+      image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&q=80&w=600&h=400",
+      tags: ["LinkedIn", "Personal Branding"]
     }
+  ];
 
-    setRegistrationSuccess(true);
-
-    setTimeout(() => {
-      setSelectedWebinar(null);
-      setRegistrationSuccess(false);
-    }, 5000);
-  };
-
-  const getTimeUntilWebinar = (date: string, time: string) => {
-    const webinarDate = new Date(`${date}T${time}`);
-    const now = new Date();
-    const diff = webinarDate.getTime() - now.getTime();
-
-    if (diff < 0) return 'Başladı';
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `${days} gün ${hours} saat`;
-    if (hours > 0) return `${hours} saat ${minutes} dakika`;
-    return `${minutes} dakika`;
-  };
-
-  const shareWebinar = (webinar: typeof upcomingWebinars[0], platform: 'twitter' | 'linkedin' | 'facebook' | 'whatsapp') => {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`${webinar.title} - ${webinar.description}`);
-
-    const shareUrls = {
-      twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      whatsapp: `https://wa.me/?text=${text}%20${url}`,
-    };
-
-    window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+  const handleRegister = (id: number, title: string) => {
+      if (registeredEvents.includes(id)) return;
+      
+      toast.success(`${title} için kaydınız alındı! Link e-posta adresinize gönderilecek.`);
+      setRegisteredEvents([...registeredEvents, id]);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-blue-900 mb-4">
-            {language === 'tr' ? 'Yaklaşan Webinarlar' : 'Upcoming Webinars'}
+      {/* HERO SECTION (Şirketler Sayfasıyla Aynı Stil) */}
+      <div className="relative bg-[url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center bg-no-repeat text-white py-24 px-4 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 to-orange-800/90 z-0"></div>
+        
+        <div className="max-w-4xl mx-auto relative z-10">
+          <Badge className="mb-6 bg-white/20 text-white hover:bg-white/30 border-none backdrop-blur-sm px-4 py-1">
+            <Radio className="w-4 h-4 mr-2 animate-pulse text-red-400" /> Canlı Yayınlar
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
+            Kariyer Sohbetleri & <br/> Webinarlar
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {language === 'tr'
-              ? 'Uzman koçlarımızdan öğrenin, kariyerinizi geliştirin ve profesyonel ağınızı genişletin'
-              : 'Learn from expert coaches, develop your career, and expand your professional network'}
+          <p className="text-xl text-red-50 max-w-2xl mx-auto mb-10 font-light drop-shadow">
+            Sektör liderlerinden ilham alın, yeni beceriler öğrenin ve kariyerinize yön verin. Tamamen ücretsiz.
           </p>
-        </div>
-
-        {/* Webinars Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {upcomingWebinars.map((webinar) => (
-            <Card key={webinar.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Banner Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img src={webinar.banner} alt={webinar.title} className="w-full h-full object-cover" />
-                <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  CANLI
-                </div>
-              </div>
-
-              <CardHeader>
-                <CardTitle className="text-xl text-blue-900">{webinar.title}</CardTitle>
-                <CardDescription className="text-base">{webinar.description}</CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                {/* Date & Time */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-medium">
-                      {new Date(webinar.date).toLocaleDateString('tr-TR', {
-                        day: 'numeric',
-                        month: 'long',
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-medium">{webinar.time}</span>
-                  </div>
-                </div>
-
-                {/* Countdown */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-                  <p className="text-xs text-gray-600 mb-1">Etkinliğe Kalan Süre</p>
-                  <p className="text-xl font-bold text-yellow-700">{getTimeUntilWebinar(webinar.date, webinar.time)}</p>
-                </div>
-
-                {/* Speakers */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 text-sm">Konuşmacı</h4>
-                  {webinar.speakers.map((speaker, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <img src={speaker.photo} alt={speaker.name} className="w-10 h-10 rounded-full object-cover" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm text-blue-900">{speaker.name}</p>
-                        <p className="text-xs text-gray-600">{speaker.title}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Registration Stats */}
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span className="text-xs">
-                      {webinar.registeredCount}/{webinar.maxCapacity}
-                    </span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {webinar.maxCapacity - webinar.registeredCount} kontenjan
-                  </Badge>
-                </div>
-
-                <Separator />
-
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => handleWebinarRegistration(webinar.id)}
-                    className="w-full bg-blue-900 hover:bg-blue-800"
-                    disabled={webinar.registeredCount >= webinar.maxCapacity}
-                  >
-                    {webinar.registeredCount >= webinar.maxCapacity ? 'Kontenjan Doldu' : 'Kayıt Ol'}
-                  </Button>
-
-                  {/* Share Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => shareWebinar(webinar, 'linkedin')}
-                    >
-                      <Share2 className="h-4 w-4 mr-1" />
-                      LinkedIn
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => shareWebinar(webinar, 'twitter')}
-                    >
-                      <Share2 className="h-4 w-4 mr-1" />
-                      X
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          
+          {/* SEKME BUTONLARI */}
+          <div className="flex justify-center gap-4">
+            <Button 
+                size="lg"
+                onClick={() => setActiveTab('upcoming')}
+                className={`${activeTab === 'upcoming' ? 'bg-white text-red-600' : 'bg-red-800/50 text-white border border-white/20'} font-bold h-14 px-8 text-lg hover:bg-white hover:text-red-600 transition-all`}
+            >
+                Gelecek Etkinlikler
+            </Button>
+            <Button 
+                size="lg"
+                onClick={() => setActiveTab('past')}
+                className={`${activeTab === 'past' ? 'bg-white text-red-600' : 'bg-red-800/50 text-white border border-white/20'} font-bold h-14 px-8 text-lg hover:bg-white hover:text-red-600 transition-all`}
+            >
+                Geçmiş Kayıtlar
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Registration Modal */}
-      {selectedWebinar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle className="text-2xl text-blue-900">
-                {registrationSuccess ? 'Kayıt Başarılı!' : 'Webinar Kayıt Formu'}
-              </CardTitle>
-              <CardDescription>
-                {registrationSuccess
-                  ? 'Katılım bilgileriniz e-posta adresinize gönderildi.'
-                  : upcomingWebinars.find((w) => w.id === selectedWebinar)?.title}
-              </CardDescription>
-            </CardHeader>
+      {/* İÇERİK ALANI */}
+      <div className="max-w-7xl mx-auto px-4 py-16 w-full">
+        
+        {/* GELECEK ETKİNLİKLER */}
+        {activeTab === 'upcoming' && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {upcomingWebinars.map((webinar) => (
+                    <Card key={webinar.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-t-4 border-t-red-500 group">
+                        <div className="relative h-48 overflow-hidden">
+                            <img src={webinar.image} alt={webinar.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                            <Badge className="absolute top-4 right-4 bg-white/90 text-red-600 font-bold shadow-sm">Canlı</Badge>
+                        </div>
+                        <CardHeader>
+                            <div className="flex gap-2 mb-3">
+                                {webinar.tags.map(tag => <Badge key={tag} variant="secondary" className="bg-red-50 text-red-700 hover:bg-red-100">#{tag}</Badge>)}
+                            </div>
+                            <CardTitle className="text-xl line-clamp-2 h-14">{webinar.title}</CardTitle>
+                            <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                                <User className="w-4 h-4 text-red-500"/> 
+                                <span className="font-medium">{webinar.speaker}</span>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-500">{webinar.role}</span>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-red-500"/> {webinar.date}</div>
+                                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-red-500"/> {webinar.time}</div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+                                <Users className="w-3 h-3"/> {webinar.attendees} kişi kayıt oldu
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button 
+                                className={`w-full h-11 font-bold ${registeredEvents.includes(webinar.id) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                                onClick={() => handleRegister(webinar.id, webinar.title)}
+                                disabled={registeredEvents.includes(webinar.id)}
+                            >
+                                {registeredEvents.includes(webinar.id) ? (
+                                    <><CheckCircle2 className="w-4 h-4 mr-2"/> Kayıtlı</>
+                                ) : (
+                                    <><Video className="w-4 h-4 mr-2"/> Ücretsiz Kayıt Ol</>
+                                )}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        )}
 
-            <CardContent>
-              {registrationSuccess ? (
-                <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="h-12 w-12 text-green-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-green-600 mb-4">Kaydınız Alındı!</h3>
-                  <div className="bg-blue-50 rounded-lg p-6 mb-6 text-left">
-                    <h4 className="font-semibold text-blue-900 mb-3">Sonraki Adımlar:</h4>
-                    <ul className="space-y-2 text-gray-700">
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span>E-postanızı kontrol edin (Zoom linki gönderildi)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span>Takvim dosyasını indirin ve hatırlatıcı kurun</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span>Webinar başlamadan 10 dakika önce bağlantıya tıklayın</span>
-                      </li>
-                    </ul>
-                  </div>
-                  <Button onClick={() => setSelectedWebinar(null)} className="bg-blue-900 hover:bg-blue-800">
-                    Kapat
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitRegistration} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Ad Soyad *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
+        {/* GEÇMİŞ KAYITLAR */}
+        {activeTab === 'past' && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {pastWebinars.map((webinar) => (
+                    <Card key={webinar.id} className="overflow-hidden hover:shadow-lg transition-shadow opacity-90 group">
+                        <div className="relative h-48">
+                            <img src={webinar.image} alt={webinar.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"/>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                <PlayCircle className="w-16 h-16 text-white opacity-90 group-hover:scale-110 transition-transform"/>
+                            </div>
+                        </div>
+                        <CardHeader>
+                            <CardTitle className="text-lg">{webinar.title}</CardTitle>
+                            <CardDescription className="flex items-center gap-2">
+                                <User className="w-4 h-4"/> {webinar.speaker}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-between text-sm text-gray-500 border-t pt-3">
+                                <span>{webinar.date}</span>
+                                <span className="flex items-center gap-1"><Users className="w-3 h-3"/> {webinar.views}</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button variant="outline" className="w-full group-hover:border-red-500 group-hover:text-red-600">
+                                Kaydı İzle
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        )}
 
-                  <div>
-                    <Label htmlFor="email">E-posta *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                  </div>
+      </div>
 
-                  <div>
-                    <Label htmlFor="phone">Telefon (İsteğe bağlı)</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="purpose">Katılım Amacınız / İlgi Alanınız *</Label>
-                    <Select
-                      value={formData.purpose}
-                      onValueChange={(value) => setFormData({ ...formData, purpose: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seçiniz" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Öğrenci</SelectItem>
-                        <SelectItem value="graduate">Yeni Mezun</SelectItem>
-                        <SelectItem value="coach-candidate">Koç Adayı</SelectItem>
-                        <SelectItem value="hr">İK Uzmanı</SelectItem>
-                        <SelectItem value="career-change">Kariyer Değişimi</SelectItem>
-                        <SelectItem value="other">Diğer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="source">Webinara Nereden Ulaştınız? *</Label>
-                    <Select
-                      value={formData.source}
-                      onValueChange={(value) => setFormData({ ...formData, source: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seçiniz" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="instagram">Instagram</SelectItem>
-                        <SelectItem value="email">E-posta</SelectItem>
-                        <SelectItem value="friend">Arkadaş Önerisi</SelectItem>
-                        <SelectItem value="linkedin">LinkedIn</SelectItem>
-                        <SelectItem value="google">Google Arama</SelectItem>
-                        <SelectItem value="other">Diğer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        id="kvkk"
-                        checked={formData.kvkkConsent}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, kvkkConsent: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="kvkk" className="text-sm leading-relaxed cursor-pointer">
-                        KVKK kapsamında kişisel verilerimin işlenmesine ve tarafıma bilgilendirme yapılmasına açık
-                        rıza veriyorum.
-                      </Label>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        id="confirm"
-                        checked={formData.confirmConsent}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, confirmConsent: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="confirm" className="text-sm leading-relaxed cursor-pointer">
-                        Kayıt bilgilerimi onaylıyorum ve webinar katılım koşullarını kabul ediyorum.
-                      </Label>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setSelectedWebinar(null)}
-                      className="flex-1"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-blue-900 hover:bg-blue-800"
-                      disabled={
-                        !formData.name ||
-                        !formData.email ||
-                        !formData.purpose ||
-                        !formData.source ||
-                        !formData.kvkkConsent ||
-                        !formData.confirmConsent
-                      }
-                    >
-                      Kaydı Tamamla
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <Footer />
     </div>
   );
 }

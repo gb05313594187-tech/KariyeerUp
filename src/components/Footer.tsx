@@ -7,50 +7,50 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white pt-16 pb-8 mt-auto border-t-4 border-orange-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* ÜST KISIM: LİNKLER VE KOLONLAR */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           
-          {/* 1. KOLON: MARKA VE İLETİŞİM */}
+          {/* 1. KOLON */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">K</div>
                 <span className="font-bold text-2xl">Kariyeer</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Türkiye'nin en kapsamlı kariyer koçluğu platformu. Hedeflerinize ulaşmanız için yanınızdayız.
+              Türkiye'nin en kapsamlı kariyer koçluğu platformu.
             </p>
             <div className="space-y-3 text-sm text-gray-300">
                 <div className="flex items-center gap-3"><MapPin className="w-4 h-4 text-orange-500"/> <span>Levent, İstanbul</span></div>
-                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-orange-500"/> <span>+90 (531) 359 41 87</span></div>
+                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-orange-500"/> <span>0850 123 45 67</span></div>
                 <div className="flex items-center gap-3"><Mail className="w-4 h-4 text-orange-500"/> <span>destek@kariyeer.com</span></div>
             </div>
           </div>
 
-          {/* 2. KOLON: HIZLI ERİŞİM */}
+          {/* 2. KOLON */}
           <div className="space-y-4">
             <h3 className="font-bold text-lg text-white border-b-2 border-orange-500 inline-block pb-1">Hızlı Erişim</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/coaches" className="hover:text-orange-400 transition-colors">Koçları İncele</Link></li>
               <li><Link to="/corporate" className="hover:text-orange-400 transition-colors">Kurumsal Çözümler</Link></li>
-              <li><Link to="/mentor-circle" className="hover:text-orange-400 transition-colors">MentorCircle Topluluğu</Link></li>
-              <li><Link to="/webinars" className="hover:text-orange-400 transition-colors">Canlı Webinarlar</Link></li>
-              <li><Link to="/register" className="hover:text-orange-400 transition-colors">Koç Olarak Başvur</Link></li>
+              <li><Link to="/mentor-circle" className="hover:text-orange-400 transition-colors">MentorCircle</Link></li>
+              <li><Link to="/webinars" className="hover:text-orange-400 transition-colors">Webinarlar</Link></li>
+              <li><Link to="/register" className="hover:text-orange-400 transition-colors">Koç Başvurusu</Link></li>
             </ul>
           </div>
 
-          {/* 3. KOLON: YASAL & YARDIM */}
+          {/* 3. KOLON (GÜNCELLENDİ) */}
           <div className="space-y-4">
             <h3 className="font-bold text-lg text-white border-b-2 border-orange-500 inline-block pb-1">Kurumsal</h3>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="#" className="hover:text-orange-400 transition-colors">Hakkımızda</Link></li>
-              <li><Link to="#" className="hover:text-orange-400 transition-colors">KVKK Aydınlatma Metni</Link></li>
+              {/* HAKKIMIZDA LİNKİ */}
+              <li><Link to="/about" className="hover:text-orange-400 transition-colors">Hakkımızda & Vizyon</Link></li>
+              
+              <li><Link to="/contact" className="hover:text-orange-400 transition-colors">İletişim & Destek</Link></li>
               <li><Link to="#" className="hover:text-orange-400 transition-colors">Gizlilik Politikası</Link></li>
               <li><Link to="#" className="hover:text-orange-400 transition-colors">Mesafeli Satış Sözleşmesi</Link></li>
-              <li><Link to="#" className="hover:text-orange-400 transition-colors">Yardım Merkezi</Link></li>
             </ul>
           </div>
 
-          {/* 4. KOLON: MOBİL & GÜVENLİK */}
+          {/* 4. KOLON */}
           <div className="space-y-6">
             <div>
                 <h3 className="font-bold text-lg text-white mb-4">Mobil Uygulamamız</h3>
@@ -59,7 +59,6 @@ export default function Footer() {
                     <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" className="h-10 w-32 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"/>
                 </div>
             </div>
-            
             <div className="pt-4 border-t border-gray-800">
                 <div className="flex items-center gap-2 text-green-400 text-sm font-bold">
                     <ShieldCheck className="w-5 h-5"/>
@@ -71,23 +70,9 @@ export default function Footer() {
         </div>
 
         <hr className="border-gray-800 my-8" />
-
-        {/* ALT KISIM: SOSYAL MEDYA VE COPYRIGHT */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            
-            {/* Copyright */}
-            <div className="text-sm text-gray-500 text-center md:text-left">
-                <p>&copy; 2025 Kariyeer.com - Tüm hakları saklıdır.</p>
-            </div>
-
-            {/* Sosyal Medya */}
-            <div className="flex gap-4">
-                <a href="#" className="bg-gray-800 p-2 rounded-full hover:bg-orange-600 hover:text-white transition text-gray-400"><Instagram className="w-5 h-5"/></a>
-                <a href="#" className="bg-gray-800 p-2 rounded-full hover:bg-blue-600 hover:text-white transition text-gray-400"><Linkedin className="w-5 h-5"/></a>
-                <a href="#" className="bg-gray-800 p-2 rounded-full hover:bg-black hover:text-white transition text-gray-400"><Twitter className="w-5 h-5"/></a>
-                <a href="#" className="bg-gray-800 p-2 rounded-full hover:bg-red-600 hover:text-white transition text-gray-400"><Youtube className="w-5 h-5"/></a>
-            </div>
-
+        
+        <div className="text-sm text-gray-500 text-center">
+            <p>&copy; 2025 Kariyeer.com - Tüm hakları saklıdır.</p>
         </div>
       </div>
     </footer>

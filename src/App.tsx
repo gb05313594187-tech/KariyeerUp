@@ -7,24 +7,23 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FollowProvider } from "@/contexts/FollowContext";
 
-// SAYFALAR
+// --- TÜM SAYFALARI İÇERİ ALIYORUZ ---
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import CoachList from "./pages/CoachList";
-import CoachProfile from "./pages/CoachProfile";
+import CoachList from "./pages/CoachList";      // Koç Listesi
+import CoachProfile from "./pages/CoachProfile"; // Koç Profili
+import ForCoaches from "./pages/ForCoaches";    // Koçlar İçin (Başvuru Sayfası)
 import BookingSystem from "./pages/BookingSystem";
-import NotFound from "./pages/NotFound";
+import PaymentPage from "./pages/Payment";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
-// YAN SAYFALAR
+// YAN SAYFALAR (BUNLAR EKSİKTİ, GERİ GELDİ)
 import MentorCircle from "./pages/MentorCircle";
 import ForCompanies from "./pages/ForCompanies";
 import Webinars from "./pages/Webinars";
-
-// ÖDEME SAYFALARI (GERİ EKLENDİ)
-import PaymentPage from "./pages/Payment"; 
-import PaymentSuccess from "./pages/PaymentSuccess";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -43,22 +42,21 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 
-                {/* Koçlar */}
+                {/* Koçluk Sayfaları */}
                 <Route path="/coaches" element={<CoachList />} />
                 <Route path="/coach/:id" element={<CoachProfile />} />
+                <Route path="/for-coaches" element={<ForCoaches />} /> {/* Koçlar İçin */}
                 
-                {/* Randevu */}
+                {/* Randevu ve Ödeme */}
                 <Route path="/booking/:id" element={<BookingSystem />} />
-
-                {/* --- İŞTE EKSİK OLAN PARÇA BURASIYDI --- */}
                 <Route path="/payment/:id" element={<PaymentPage />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
-                {/* --------------------------------------- */}
 
-                {/* Yan Sayfalar */}
+                {/* --- GERİ GELEN SAYFALAR --- */}
                 <Route path="/mentor-circle" element={<MentorCircle />} />
-                <Route path="/corporate" element={<ForCompanies />} />
+                <Route path="/corporate" element={<ForCompanies />} /> {/* Şirketler İçin */}
                 <Route path="/webinars" element={<Webinars />} />
+                {/* --------------------------- */}
                 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />

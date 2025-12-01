@@ -1,12 +1,25 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-// Yeni ikonlar eklendi (Shield, Zap, HeartHandshake, vb.)
-import { Shield, Zap, HeartHandshake, Briefcase, Users, TrendingUp, ArrowRight } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Shield, Zap, HeartHandshake, Briefcase,
+  TrendingUp, Users, Building2, Mail, ArrowRight
+} from "lucide-react";
+import { toast } from 'sonner';
 
 export default function ForCompanies() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<any>(null);
   const [formData, setFormData] = useState({
     companyName: '',
     contactPerson: '',
@@ -15,42 +28,85 @@ export default function ForCompanies() {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const features = [
+    {
+      id: 1,
+      icon: Shield,
+      title: "Yetenek Tutundurma",
+      shortDesc: "Çalışanlarınıza yatırım yaparak aidiyet duygusunu güçlendirin.",
+      fullDesc: "Yetenekli çalışanları elde tutmak, yenilerini bulmaktan çok daha ekonomiktir. Koçluk programlarımızla çalışanlarınızın kariyer yollarını şirketiniz içinde çizmelerine yardımcı oluyor, aidiyet duygusunu artırıyoruz.",
+      image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=600",
+      color: "text-red-600",
+      bg: "bg-red-100"
+    },
+    {
+      id: 2,
+      icon: Zap,
+      title: "Çevik Liderlik",
+      shortDesc: "Yöneticilerinizin kriz anlarında hızlı karar alma becerilerini geliştirin.",
+      fullDesc: "Liderlik koçluğu ile yöneticilerinize çeviklik, duygusal zeka ve kriz yönetimi yetkinlikleri kazandırıyor, ekiplerine ilham veren liderlere dönüşmelerini sağlıyoruz.",
+      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=600",
+      color: "text-orange-600",
+      bg: "bg-orange-100"
+    },
+    {
+      id: 3,
+      icon: HeartHandshake,
+      title: "İletişim Kültürü",
+      shortDesc: "Departmanlar arası siloları yıkarak şeffaf bir kültür inşa edin.",
+      fullDesc: "Takım koçluğu çalışmalarımızla departmanlar arası duvarları yıkıyor, geri bildirim kültürünü yerleştiriyor ve ortak hedefe koşan ekipler yaratıyoruz.",
+      image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
+      color: "text-blue-600",
+      bg: "bg-blue-100"
+    },
+    {
+      id: 4,
+      icon: Briefcase,
+      title: "İş-Yaşam Dengesi",
+      shortDesc: "Tükenmişliği önleyerek çalışanlarınızın mutluluğunu sağlayın.",
+      fullDesc: "Wellbeing odaklı koçluklarımızla çalışanlarınızın stres yönetimi becerilerini artırıyor, tükenmişlik sendromunu önlüyor ve dengeyi kurmalarını sağlıyoruz.",
+      image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=600",
+      color: "text-purple-600",
+      bg: "bg-purple-100"
+    }
+  ];
+
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simülasyon
+    console.log("KURUMSAL TALEP:", formData);
     setTimeout(() => {
-        alert("Talebiniz alındı! Kurumsal ekibimiz size ulaşacak.");
+        toast.success("Talebiniz alındı! Kurumsal ekibimiz size ulaşacak.");
         setFormData({ companyName: '', contactPerson: '', email: '', phone: '', message: '' });
         setIsSubmitting(false);
-    }, 1000);
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      
-      {/* HERO SECTION */}
-      <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-24 px-4 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      <Navbar />
+
+      {/* HERO SECTION - GÜNCELLENDİ */}
+      <div className="relative bg-[url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center bg-no-repeat text-white py-24 px-4 text-center overflow-hidden">
+        {/* Kırmızı/Turuncu Filtre Katmanı */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 to-orange-800/90 z-0"></div>
+
         <div className="max-w-4xl mx-auto relative z-10">
-          <span className="inline-block py-1 px-4 rounded-full bg-white/20 text-white text-sm font-bold mb-6 backdrop-blur-sm border border-white/30">
-            KURUMSAL ÇÖZÜMLER
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+          <Badge className="mb-6 bg-white/20 text-white hover:bg-white/30 border-none backdrop-blur-sm">Kurumsal Çözümler</Badge>
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
             Şirketinizin Potansiyelini <br/> Zirveye Taşıyın
           </h1>
-          <p className="text-xl text-red-50 max-w-2xl mx-auto mb-10 font-light">
+          <p className="text-xl text-red-50 max-w-2xl mx-auto mb-10 font-light drop-shadow">
             Çalışanlarınızın yetkinliklerini geliştirin, liderlik becerilerini artırın ve sürdürülebilir bir başarı kültürü oluşturun.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button 
-                onClick={() => document.getElementById('contact-form').scrollIntoView({ behavior: 'smooth' })}
+            <button
+                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
                 className="bg-white text-red-600 hover:bg-red-50 font-bold py-4 px-10 rounded-xl shadow-lg transition-all transform hover:-translate-y-1"
             >
               Teklif Alın
             </button>
-            <button 
+            <button
                 onClick={() => navigate('/coaches')}
                 className="border-2 border-white text-white hover:bg-white/10 font-bold py-4 px-10 rounded-xl transition-all"
             >
@@ -88,67 +144,67 @@ export default function ForCompanies() {
         </div>
       </div>
 
-      {/* --- YENİ EKLENEN BÖLÜM: İŞBİRLİĞİ ETKİLERİ --- */}
+      {/* --- İNTERAKTİF KAZANIMLAR BÖLÜMÜ --- */}
       <div className="bg-gray-50 py-24 px-4">
         <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-                <span className="text-red-600 font-bold tracking-wider text-sm uppercase">Kazanımlar</span>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">İşbirliğimizin Kurumunuza Katacağı Değerler</h2>
-                <p className="text-gray-500 mt-4 max-w-2xl mx-auto">
-                    Sadece bir eğitim değil, sürdürülebilir bir dönüşüm süreci sunuyoruz. İşte koçluk programlarımızın şirket kültürüne pozitif yansımaları.
-                </p>
+                <span className="text-red-600 font-bold tracking-wider text-sm uppercase">Değer Önerimiz</span>
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">İşbirliğimizin Katacağı Değerler</h2>
+                <p className="text-gray-500 mt-4">Detayları görmek için kutulara tıklayın.</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                {/* KUTU 1 */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 mb-4">
-                        <Shield className="w-6 h-6"/>
+                {features.map((feature) => (
+                    <div
+                        key={feature.id}
+                        onClick={() => setSelectedFeature(feature)}
+                        className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer group"
+                    >
+                        <div className={`w-14 h-14 ${feature.bg} rounded-xl flex items-center justify-center ${feature.color} mb-6 group-hover:scale-110 transition-transform`}>
+                            <feature.icon className="w-7 h-7"/>
+                        </div>
+                        <h3 className="font-bold text-xl text-gray-900 mb-3 group-hover:text-red-600 transition-colors">{feature.title}</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                            {feature.shortDesc}
+                        </p>
+                        <div className="mt-4 text-red-600 text-sm font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Detayları Gör <ArrowRight className="w-4 h-4"/>
+                        </div>
                     </div>
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">Yetenek Tutundurma</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                        Çalışanlarınıza yatırım yaparak aidiyet duygusunu güçlendirin ve turn-over (işten ayrılma) oranlarını düşürün.
-                    </p>
-                </div>
-
-                {/* KUTU 2 */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 mb-4">
-                        <Zap className="w-6 h-6"/>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">Çevik Liderlik</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                        Yöneticilerinizin kriz anlarında hızlı karar alma ve ekiplerini motive etme becerilerini geliştirin.
-                    </p>
-                </div>
-
-                {/* KUTU 3 */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4">
-                        <HeartHandshake className="w-6 h-6"/>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">İletişim Kültürü</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                        Departmanlar arası siloları yıkarak, açık iletişime dayalı şeffaf bir kurum kültürü inşa edin.
-                    </p>
-                </div>
-
-                {/* KUTU 4 */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 mb-4">
-                        <Briefcase className="w-6 h-6"/>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">İş-Yaşam Dengesi</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                        Tükenmişliği önleyerek çalışanlarınızın hem işte hem de özel hayatlarında mutlu olmalarını sağlayın.
-                    </p>
-                </div>
-
+                ))}
             </div>
         </div>
       </div>
-      {/* --- YENİ BÖLÜM SONU --- */}
+
+      {/* --- DETAY POPUP (MODAL) --- */}
+      <Dialog open={!!selectedFeature} onOpenChange={() => setSelectedFeature(null)}>
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0 border-0 shadow-2xl">
+            {selectedFeature && (
+                <>
+                    <div className="h-48 w-full relative">
+                        <img src={selectedFeature.image} alt={selectedFeature.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                            <h2 className="text-white text-2xl font-bold">{selectedFeature.title}</h2>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium mb-4 ${selectedFeature.bg} ${selectedFeature.color}`}>
+                            <selectedFeature.icon className="w-4 h-4" />
+                            <span>Kariyeer.com Çözümü</span>
+                        </div>
+                        <p className="text-gray-600 leading-relaxed text-lg">
+                            {selectedFeature.fullDesc}
+                        </p>
+                        <div className="mt-8 flex justify-end">
+                            <Button onClick={() => setSelectedFeature(null)} className="bg-gray-900 text-white">
+                                Kapat
+                            </Button>
+                        </div>
+                    </div>
+                </>
+            )}
+        </DialogContent>
+      </Dialog>
 
       {/* İLETİŞİM FORMU */}
       <div id="contact-form" className="bg-white py-20 px-4">
@@ -161,70 +217,37 @@ export default function ForCompanies() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Şirket Adı</label>
-                            <input 
-                                required 
-                                value={formData.companyName}
-                                onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
-                                placeholder="Şirketiniz"
-                            />
+                            <Label>Şirket Adı</Label>
+                            <Input required value={formData.companyName} onChange={(e) => setFormData({...formData, companyName: e.target.value})} className="mt-1"/>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Yetkili Kişi</label>
-                            <input 
-                                required 
-                                value={formData.contactPerson}
-                                onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
-                                placeholder="Adınız Soyadınız"
-                            />
+                            <Label>Yetkili Kişi</Label>
+                            <Input required value={formData.contactPerson} onChange={(e) => setFormData({...formData, contactPerson: e.target.value})} className="mt-1"/>
                         </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">E-posta</label>
-                            <input 
-                                type="email" 
-                                required 
-                                value={formData.email}
-                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
-                                placeholder="ornek@sirket.com"
-                            />
+                            <Label>E-posta</Label>
+                            <Input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="mt-1"/>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Telefon</label>
-                            <input 
-                                type="tel" 
-                                required 
-                                value={formData.phone}
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all" 
-                                placeholder="0555 000 00 00"
-                            />
+                            <Label>Telefon</Label>
+                            <Input type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="mt-1"/>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Mesajınız</label>
-                        <textarea 
-                            value={formData.message}
-                            onChange={(e) => setFormData({...formData, message: e.target.value})}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all h-32 resize-none" 
-                            placeholder="İhtiyaçlarınızı kısaca anlatın..."
-                        ></textarea>
+                        <Label>Mesajınız</Label>
+                        <Textarea value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} className="mt-1 h-32 resize-none"/>
                     </div>
-                    <button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-4 rounded-lg hover:from-red-700 hover:to-orange-600 transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95"
-                    >
+                    <Button type="submit" className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-6 text-lg hover:from-red-700 hover:to-orange-600" disabled={isSubmitting}>
                         {isSubmitting ? 'Gönderiliyor...' : 'Talebi Gönder →'}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>
       </div>
+
+      <Footer />
 
     </div>
   );

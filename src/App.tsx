@@ -15,14 +15,16 @@ import Dashboard from "./pages/Dashboard";
 import CoachList from "./pages/CoachList";
 import CoachProfile from "./pages/CoachProfile";
 import BookingSystem from "./pages/BookingSystem";
-import PaymentPage from "./pages/Payment";
-import PaymentSuccess from "./pages/PaymentSuccess";
+import NotFound from "./pages/NotFound";
+
+// YAN SAYFALAR
 import MentorCircle from "./pages/MentorCircle";
 import ForCompanies from "./pages/ForCompanies";
 import Webinars from "./pages/Webinars";
-import Contact from "./pages/Contact";
-import About from "./pages/About"; // YENİ EKLENDİ
-import NotFound from "./pages/NotFound";
+
+// ÖDEME SAYFALARI (GERİ EKLENDİ)
+import PaymentPage from "./pages/Payment"; 
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -35,25 +37,30 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                
+                {/* Auth & Panel */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 
+                {/* Koçlar */}
                 <Route path="/coaches" element={<CoachList />} />
                 <Route path="/coach/:id" element={<CoachProfile />} />
+                
+                {/* Randevu */}
                 <Route path="/booking/:id" element={<BookingSystem />} />
+
+                {/* --- İŞTE EKSİK OLAN PARÇA BURASIYDI --- */}
                 <Route path="/payment/:id" element={<PaymentPage />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
+                {/* --------------------------------------- */}
 
+                {/* Yan Sayfalar */}
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/corporate" element={<ForCompanies />} />
                 <Route path="/webinars" element={<Webinars />} />
                 
-                <Route path="/contact" element={<Contact />} />
-                
-                {/* HAKKIMIZDA SAYFASI */}
-                <Route path="/about" element={<About />} />
-                
+                {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

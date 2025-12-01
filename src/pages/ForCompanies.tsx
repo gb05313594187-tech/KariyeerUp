@@ -3,303 +3,305 @@ import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { 
-  Shield, Zap, HeartHandshake, Briefcase, 
-  TrendingUp, Users, Building2, Mail, ArrowRight, X 
-} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  TrendingDown, TrendingUp, Users, Heart, Zap, Building2, Target, CheckCircle2,
+  ArrowRight, AlertTriangle, BedDouble, Frown, Brain, Mail, Phone
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ForCompanies() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState<any>(null);
   const [formData, setFormData] = useState({
     companyName: '',
     contactPerson: '',
     email: '',
     phone: '',
-    message: ''
+    employeeCount: '',
+    message: '',
   });
-
-  const features = [
-    {
-      id: 1,
-      icon: Shield,
-      title: "Yetenek Tutundurma",
-      shortDesc: "Çalışanlarınıza yatırım yaparak aidiyet duygusunu güçlendirin.",
-      fullDesc: "Yetenekli çalışanları elde tutmak, yenilerini bulmaktan çok daha ekonomiktir. Koçluk programlarımızla çalışanlarınızın kariyer yollarını şirketiniz içinde çizmelerine yardımcı oluyor, aidiyet duygusunu artırıyoruz.",
-      image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=600",
-      color: "text-red-600",
-      bg: "bg-red-100"
-    },
-    {
-      id: 2,
-      icon: Zap,
-      title: "Çevik Liderlik",
-      shortDesc: "Yöneticilerinizin kriz anlarında hızlı karar alma becerilerini geliştirin.",
-      fullDesc: "Liderlik koçluğu ile yöneticilerinize çeviklik, duygusal zeka ve kriz yönetimi yetkinlikleri kazandırıyor, ekiplerine ilham veren liderlere dönüşmelerini sağlıyoruz.",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=600",
-      color: "text-orange-600",
-      bg: "bg-orange-100"
-    },
-    {
-      id: 3,
-      icon: HeartHandshake,
-      title: "İletişim Kültürü",
-      shortDesc: "Departmanlar arası siloları yıkarak şeffaf bir kültür inşa edin.",
-      fullDesc: "Takım koçluğu çalışmalarımızla departmanlar arası duvarları yıkıyor, geri bildirim kültürünü yerleştiriyor ve ortak hedefe koşan ekipler yaratıyoruz.",
-      image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
-      color: "text-blue-600",
-      bg: "bg-blue-100"
-    },
-    {
-      id: 4,
-      icon: Briefcase,
-      title: "İş-Yaşam Dengesi",
-      shortDesc: "Tükenmişliği önleyerek çalışanlarınızın mutluluğunu sağlayın.",
-      fullDesc: "Wellbeing odaklı koçluklarımızla çalışanlarınızın stres yönetimi becerilerini artırıyor, tükenmişlik sendromunu önlüyor ve dengeyi kurmalarını sağlıyoruz.",
-      image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=600",
-      color: "text-purple-600",
-      bg: "bg-purple-100"
-    }
-  ];
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
     setIsSubmitting(true);
-    console.log("KURUMSAL TALEP:", formData);
+    
+    // Vercel Loglarına Kayıt
+    console.log('KURUMSAL TALEP:', formData);
+    
     setTimeout(() => {
-        toast.success("Talebiniz alındı! Kurumsal ekibimiz size ulaşacak.");
-        setFormData({ companyName: '', contactPerson: '', email: '', phone: '', message: '' });
-        setIsSubmitting(false);
+      toast.success(
+        language === 'tr' 
+        ? 'Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek.'
+        : 'Request received!'
+      );
+      setFormData({
+        companyName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        employeeCount: '',
+        message: '',
+      });
+      setIsSubmitting(false);
     }, 1500);
   };
+
+  const handleContactClick = () => {
+    document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // --- İSTATİSTİKLER (2025) ---
+  const statistics2025 = [
+    { icon: <AlertTriangle className="h-10 w-10" />, value: '81%', label: 'Stres Kaynaklı Verim Kaybı', color: 'text-orange-600', bgColor: 'bg-orange-50' },
+    { icon: <Frown className="h-10 w-10" />, value: '63%', label: 'Tükenmişlik Hissi', color: 'text-red-600', bgColor: 'bg-red-50' },
+    { icon: <TrendingDown className="h-10 w-10" />, value: '70%', label: 'Düşen Bağlılık Oranı', color: 'text-amber-600', bgColor: 'bg-amber-50' },
+  ];
+
+  // --- FAYDALAR ---
+  const benefits = [
+    { icon: <TrendingUp className="h-6 w-6" />, title: 'Performans Artışı', description: 'Koçluk alan ekiplerde %21 verimlilik artışı.' },
+    { icon: <Users className="h-6 w-6" />, title: 'Yetenek Tutundurma', description: 'Çalışan bağlılığında 3 kata varan artış.' },
+    { icon: <Building2 className="h-6 w-6" />, title: 'Yatırım Getirisi (ROI)', description: 'Kurumsal koçlukta %86 oranında ROI.' },
+  ];
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
       <Navbar />
-
-      {/* HERO SECTION */}
-      <div className="relative bg-gray-900 text-white py-24 px-4 text-center overflow-hidden">
-        {/* Arka Plan Resmi (Saf HTML Style) */}
-        <div 
-            className="absolute inset-0 z-0 opacity-40"
-            style={{
-                backgroundImage: "url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-            }}
-        />
-        {/* Kırmızı/Turuncu Filtre */}
-        <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-orange-800/80 z-0"></div>
-
+      
+      {/* --- HERO SECTION (FOTOĞRAFLI & TURUNCU FİLTRELİ) --- */}
+      <div className="relative bg-[url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center bg-no-repeat text-white py-24 px-4 text-center overflow-hidden">
+        
+        {/* Kırmızı/Turuncu Filtre Katmanı */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 to-orange-800/85 z-0"></div>
+        
         <div className="max-w-4xl mx-auto relative z-10">
-          <span className="inline-block px-4 py-1 mb-6 bg-white/20 text-white rounded-full text-sm font-bold backdrop-blur-sm border border-white/30">
+          <Badge className="mb-6 bg-white/20 text-white hover:bg-white/30 border-none backdrop-blur-sm px-4 py-1 text-sm uppercase tracking-widest">
             Kurumsal Çözümler
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
-            Şirketinizin Potansiyelini <br/> Zirveye Taşıyın
+          </Badge>
+          <h1 className="text-4xl md:text-7xl font-extrabold mb-6 leading-tight drop-shadow-lg">
+            Şirketinizin Potansiyelini <br/> <span className="text-yellow-300">Zirveye Taşıyın</span>
           </h1>
-          <p className="text-xl text-red-50 max-w-2xl mx-auto mb-10 font-light drop-shadow">
+          <p className="text-xl md:text-2xl mb-10 text-red-50 max-w-2xl mx-auto font-light drop-shadow">
             Çalışanlarınızın yetkinliklerini geliştirin, liderlik becerilerini artırın ve sürdürülebilir bir başarı kültürü oluşturun.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-white text-red-600 hover:bg-red-50 font-bold py-4 px-10 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+                size="lg" 
+                className="bg-white text-red-600 hover:bg-red-50 font-bold py-6 px-10 text-lg shadow-xl transition-transform transform hover:-translate-y-1"
+                onClick={handleContactClick}
             >
-              <Mail className="w-5 h-5" /> Teklif Alın
-            </button>
-            <button
+              Teklif Alın <Mail className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white text-white hover:bg-white/10 font-bold py-6 px-10 text-lg"
                 onClick={() => navigate('/coaches')}
-                className="border-2 border-white text-white hover:bg-white/10 font-bold py-4 px-10 rounded-xl transition-all"
             >
-              Koçları İncele
-            </button>
+               Koçları İncele <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* İSTATİSTİKLER */}
-      <div className="max-w-7xl mx-auto py-20 px-4">
-        <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">Neden Kurumsal Koçluk?</h2>
-            <p className="text-gray-500 mt-2">Verilerle kanıtlanmış başarı.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* KART 1 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📈</div>
-            <div className="text-5xl font-black text-gray-900 mb-2">%21</div>
-            <div className="font-bold text-xl text-red-600 mb-3">Performans Artışı</div>
-            <p className="text-gray-600 leading-relaxed">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
-          </div>
-          {/* KART 2 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-orange-200 transition-colors group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🤝</div>
-            <div className="text-5xl font-black text-gray-900 mb-2">3x</div>
-            <div className="font-bold text-xl text-orange-600 mb-3">Çalışan Bağlılığı</div>
-            <p className="text-gray-600 leading-relaxed">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
-          </div>
-          {/* KART 3 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">💰</div>
-            <div className="text-5xl font-black text-gray-900 mb-2">%86</div>
-            <div className="font-bold text-xl text-red-600 mb-3">Yatırım Getirisi</div>
-            <p className="text-gray-600 leading-relaxed">Kurumsal koçluk programlarının sağladığı ortalama geri dönüş (ROI).</p>
-          </div>
-        </div>
-      </div>
-
-      {/* --- İNTERAKTİF KAZANIMLAR --- */}
-      <div className="bg-gray-50 py-24 px-4">
+      {/* --- İSTATİSTİKLER --- */}
+      <section className="py-20 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-                <span className="text-red-600 font-bold tracking-wider text-sm uppercase">Değer Önerimiz</span>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">İşbirliğimizin Katacağı Değerler</h2>
-                <p className="text-gray-500 mt-4">Detayları görmek için kutulara tıklayın.</p>
-            </div>
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-orange-100 text-orange-700">ARAŞTIRMALARA GÖRE</Badge>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Neden Kurumsal Destek Şart?</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              2025 verilerine göre çalışan refahı, şirket başarısının en büyük anahtarıdır.
+            </p>
+          </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {features.map((feature) => (
-                    <div 
-                        key={feature.id}
-                        onClick={() => setSelectedFeature(feature)}
-                        className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer group"
-                    >
-                        <div className={`w-14 h-14 ${feature.bg} rounded-xl flex items-center justify-center ${feature.color} mb-6 group-hover:scale-110 transition-transform`}>
-                            <feature.icon className="w-7 h-7"/>
-                        </div>
-                        <h3 className="font-bold text-xl text-gray-900 mb-3 group-hover:text-red-600 transition-colors">{feature.title}</h3>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                            {feature.shortDesc}
-                        </p>
-                        <div className="mt-4 text-red-600 text-sm font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            Detayları Gör <ArrowRight className="w-4 h-4"/>
-                        </div>
-                    </div>
-                ))}
-            </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {statistics2025.map((stat, index) => (
+              <Card key={index} className="text-center hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-200 group">
+                <CardContent className="pt-8 pb-8">
+                  <div className={`w-20 h-20 ${stat.bgColor} rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
+                    <div className={stat.color}>{stat.icon}</div>
+                  </div>
+                  <h3 className={`text-4xl font-black mb-2 ${stat.color}`}>{stat.value}</h3>
+                  <p className="text-gray-700 font-bold text-lg">{stat.label}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* --- MODAL (SAF HTML/CSS) --- */}
-      {selectedFeature && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-in zoom-in-95 duration-200">
-                <button 
-                    onClick={() => setSelectedFeature(null)}
-                    className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-10 transition-colors"
+      {/* --- KAZANIMLAR (BENEFITS) --- */}
+      <section className="py-20 px-4 bg-orange-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-red-600 mb-4">KARİYEER NE KAZANDIRIR?</h2>
+            <p className="text-xl text-gray-600">Kanıtlanmış sonuçlarla çalışan refahı ve şirket performansı.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow border-none shadow-md">
+                <CardHeader>
+                  <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4 text-white shadow-lg">
+                    {benefit.icon}
+                  </div>
+                  <CardTitle className="text-xl font-bold text-gray-900">{benefit.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- PROGRAMLAR --- */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Kurumsal Programlarımız</h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+                { title: "Bireysel Koçluk", desc: "Çalışanlarınız için kişiselleştirilmiş gelişim.", feat: ["1-1 Seanslar", "Gizlilik", "Raporlama"] },
+                { title: "Liderlik Gelişimi", desc: "Yöneticileriniz için özel yetkinlik programı.", feat: ["Yönetici Koçluğu", "360 Analiz", "Strateji"] },
+                { title: "Ekip Koçluğu", desc: "Takım performansını artıran grup çalışmaları.", feat: ["Takım Dinamiği", "İletişim", "Ortak Hedef"] }
+            ].map((program, index) => (
+              <Card key={index} className="hover:shadow-2xl transition-all duration-300 border-t-4 border-t-red-600 group hover:-translate-y-2">
+                <CardHeader className="text-center">
+                  <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 mx-auto group-hover:bg-red-100 transition-colors">
+                    <Zap className="h-8 w-8 text-red-600" />
+                  </div>
+                  <CardTitle className="text-2xl text-gray-900">{program.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 text-center">
+                  <p className="text-gray-600">{program.desc}</p>
+                  <div className="space-y-3 pt-4 border-t">
+                    {program.feat.map((f, i) => (
+                      <div key={i} className="flex items-center justify-center gap-2 text-sm text-gray-700 font-medium">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" /> {f}
+                      </div>
+                    ))}
+                  </div>
+                  <Button className="w-full bg-gray-900 hover:bg-black text-white">Detaylı Bilgi</Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- DEMO TALEP FORMU (KIRMIZI TEMA) --- */}
+      <section id="contact-form" className="py-20 px-4 bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="max-w-3xl mx-auto">
+          <Card className="border-none shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-red-700 to-red-600 p-8 text-center text-white">
+              <Target className="h-12 w-12 mx-auto mb-4 text-yellow-300" />
+              <h2 className="text-3xl font-bold mb-2">DEMO TALEP EDİN</h2>
+              <p className="text-red-100">Kurumunuza özel çözümler için formu doldurun, sizi arayalım.</p>
+            </div>
+            
+            <CardContent className="p-8 md:p-10 bg-white">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">Şirket Adı</Label>
+                    <Input 
+                        required 
+                        className="h-12"
+                        value={formData.companyName} 
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} 
+                        placeholder="Şirketiniz A.Ş."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">Yetkili Kişi</Label>
+                    <Input 
+                        required 
+                        className="h-12"
+                        value={formData.contactPerson} 
+                        onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })} 
+                        placeholder="Adınız Soyadınız"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">E-posta</Label>
+                    <Input 
+                        type="email" 
+                        required 
+                        className="h-12"
+                        value={formData.email} 
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                        placeholder="ornek@sirket.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">Telefon</Label>
+                    <Input 
+                        type="tel" 
+                        required 
+                        className="h-12"
+                        value={formData.phone} 
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })} 
+                        placeholder="0555 000 00 00"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">Çalışan Sayısı</Label>
+                    <Input 
+                        className="h-12"
+                        value={formData.employeeCount} 
+                        onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })} 
+                        placeholder="Örn: 50-100"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-bold text-gray-700">Mesajınız</Label>
+                  <Textarea 
+                    value={formData.message} 
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })} 
+                    rows={4}
+                    placeholder="İhtiyaçlarınızı kısaca anlatın..."
+                    className="resize-none"
+                  />
+                </div>
+
+                <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold py-6 text-lg h-auto shadow-lg transform transition-all hover:-translate-y-1" 
+                    disabled={isSubmitting}
                 >
-                    <X className="w-5 h-5"/>
-                </button>
-
-                <div className="h-48 w-full relative">
-                    <img src={selectedFeature.image} alt={selectedFeature.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
-                        <h2 className="text-white text-2xl font-bold">{selectedFeature.title}</h2>
-                    </div>
-                </div>
+                  {isSubmitting ? 'Gönderiliyor...' : 'Talebi Gönder →'}
+                </Button>
                 
-                <div className="p-8">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium mb-4 ${selectedFeature.bg} ${selectedFeature.color}`}>
-                        <selectedFeature.icon className="w-4 h-4" />
-                        <span>Kariyeer.com Çözümü</span>
-                    </div>
-                    <p className="text-gray-600 leading-relaxed text-lg">
-                        {selectedFeature.fullDesc}
-                    </p>
-                    <div className="mt-8 flex justify-end">
-                        <button 
-                            onClick={() => setSelectedFeature(null)}
-                            className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-black transition-colors font-medium"
-                        >
-                            Tamam
-                        </button>
-                    </div>
-                </div>
-            </div>
+                <p className="text-xs text-center text-gray-400 mt-4">
+                    Bu formu doldurarak KVKK Aydınlatma Metni'ni okuduğunuzu kabul edersiniz.
+                </p>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      )}
-
-      {/* İLETİŞİM FORMU */}
-      <div id="contact-form" className="bg-white py-20 px-4">
-        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-600">
-            <div className="bg-gray-50 p-8 text-center border-b border-gray-100">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Demo Talep Edin</h2>
-                <p className="text-gray-500">Kurumunuza özel çözümler için formu doldurun.</p>
-            </div>
-            <div className="p-8 md:p-12">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Şirket Adı</label>
-                            <input 
-                                required 
-                                value={formData.companyName}
-                                onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                                placeholder="Şirketiniz"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Yetkili Kişi</label>
-                            <input 
-                                required 
-                                value={formData.contactPerson}
-                                onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                                placeholder="Adınız Soyadınız"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">E-posta</label>
-                            <input 
-                                type="email" 
-                                required 
-                                value={formData.email}
-                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                                placeholder="ornek@sirket.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Telefon</label>
-                            <input 
-                                type="tel" 
-                                required 
-                                value={formData.phone}
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                                placeholder="0555 000 00 00"
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Mesajınız</label>
-                        <textarea 
-                            value={formData.message}
-                            onChange={(e) => setFormData({...formData, message: e.target.value})}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all h-32 resize-none"
-                            placeholder="İhtiyaçlarınızı kısaca anlatın..."
-                        ></textarea>
-                    </div>
-                    <button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-6 text-lg hover:from-red-700 hover:to-orange-600 transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95 rounded-lg"
-                    >
-                        {isSubmitting ? 'Gönderiliyor...' : 'Talebi Gönder →'}
-                    </button>
-                </form>
-            </div>
-        </div>
-      </div>
-
+      </section>
+      
       <Footer />
-
     </div>
   );
 }

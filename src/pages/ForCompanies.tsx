@@ -44,3 +44,20 @@ export default function ForCompanies() {
           </div>
           {/* KART 2 */}
           <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
+            <div className="text-4xl mb-4">🤝</div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">3x</div>
+            <div className="font-semibold text-lg mb-3">Çalışan Bağlılığı</div>
+            <p className="text-gray-600">Çalışanların şirkete bağlılık oranı artar.</p>
+          </div>
+          {/* KART 3 */}
+          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
+            <div className="text-4xl mb-4">💰</div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">%86</div>
+            <div className="font-semibold text-lg mb-3">Yatırım Getirisi</div>
+            <p className="text-gray-600">Kurumsal koçluk programlarının geri dönüş oranı.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

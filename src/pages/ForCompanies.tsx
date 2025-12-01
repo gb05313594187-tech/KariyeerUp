@@ -28,9 +28,16 @@ export default function ForCompanies() {
   return (
     <div className="min-h-screen bg-white font-sans">
       
-      {/* HERO SECTION (KIRMIZI/TURUNCU GRADIENT) */}
-      <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-24 px-4 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
+      {/* --- HERO SECTION DEĞİŞTİ --- */}
+      {/* 1. Ana div'in arka planına Unsplash'tan profesyonel bir iş fotoğrafı koyduk. */}
+      {/* 'bg-cover bg-center' ile resmin düzgün durmasını sağladık. */}
+      <div className="bg-[url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center bg-no-repeat text-white py-24 px-4 text-center relative overflow-hidden">
+        
+        {/* 2. OVERLAY (RENK KATMANI) DEĞİŞTİ */}
+        {/* Eskiden siyah olan katmanı, Kırmızı'dan Turuncu'ya giden bir gradient yaptık. */}
+        {/* 'opacity-85' (veya 90) yaparak hem rengin baskın olmasını hem de alttaki fotoğrafın görünmesini sağladık. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-800 to-orange-700 opacity-85 z-0"></div>
+        
         <div className="max-w-4xl mx-auto relative z-10">
           <span className="inline-block py-1 px-4 rounded-full bg-white/20 text-white text-sm font-bold mb-6 backdrop-blur-sm border border-white/30">
             KURUMSAL ÇÖZÜMLER
@@ -57,6 +64,7 @@ export default function ForCompanies() {
           </div>
         </div>
       </div>
+      {/* --- HERO SECTION SONU --- */}
 
       {/* İSTATİSTİKLER */}
       <div className="max-w-7xl mx-auto py-20 px-4">

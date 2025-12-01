@@ -7,12 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-// SUPABASE BAĞLANTISI DEVRE DIŞI
-// import { useAuth } from '@/contexts/AuthContext';
-// import { supabase } from '@/lib/supabase'; 
+// @ts-ignore
+import { supabase } from '@/lib/supabase';
+// @ts-ignore
+import { useAuth } from '@/contexts/AuthContext'; 
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -23,20 +25,39 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // --- SİMÜLASYON GİRİŞİ (HERKESİ İÇERİ AL) ---
-    setTimeout(() => {
-        // LOCAL STORAGE KAYDI (ÖNEMLİ: Navbar'ın seni tanıması için)
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.user) {
+        login(data.user); // Context'i güncelle
+        
+        // --- BU BÖLÜM YENİ: TARAYICIYA ZORLA KAYDETME ---
         localStorage.setItem('kariyeer_user', JSON.stringify({ 
-            email: formData.email, 
-            name: 'Test Kullanıcı', 
+            email: data.user.email, 
+            id: data.user.id,
             isLoggedIn: true 
         }));
-        window.dispatchEvent(new Event("storage")); // Navbar'ı tetikle
-        
+        // -----------------------------------------------
+
         toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
-        navigate('/dashboard'); // Panele gönder
-        setIsLoading(false);
-    }, 800);
+        
+        // Sayfayı yenileyerek Dashboard'a git (Garanti çözüm)
+        window.location.href = '/dashboard'; 
+      }
+
+    } catch (error: any) {
+      console.error("Giriş Hatası:", error);
+      toast.error('E-posta veya şifre hatalı.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -48,7 +69,7 @@ export default function Login() {
           </div>
           <CardTitle className="text-2xl font-bold text-[#D32F2F]">Giriş Yap</CardTitle>
           <CardDescription>
-            Kariyeer hesabınıza giriş yapın
+            Devam etmek için hesabınıza giriş yapın
           </CardDescription>
         </CardHeader>
         <CardContent>

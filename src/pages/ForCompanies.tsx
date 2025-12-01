@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 export default function ForCompanies() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [selectedFeature, setSelectedFeature] = useState<any>(null);
   const [formData, setFormData] = useState({
     companyName: '',
     contactPerson: '',
@@ -64,7 +64,7 @@ export default function ForCompanies() {
     }
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     setIsSubmitting(true);
     console.log("KURUMSAL TALEP:", formData);
@@ -79,18 +79,18 @@ export default function ForCompanies() {
     <div className="min-h-screen bg-white font-sans flex flex-col">
       <Navbar />
 
-      {/* HERO SECTION (GÖRSELLİ & TURUNCU/KIRMIZI FİLTRELİ) */}
+      {/* HERO SECTION */}
       <div className="relative bg-gray-900 text-white py-24 px-4 text-center overflow-hidden">
-        {/* Arka Plan Resmi */}
+        {/* Arka Plan Resmi (Saf HTML Style) */}
         <div 
             className="absolute inset-0 z-0 opacity-40"
             style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80')`,
+                backgroundImage: "url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
             }}
         />
-        {/* Kırmızı/Turuncu Filtre Katmanı */}
+        {/* Kırmızı/Turuncu Filtre */}
         <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-orange-800/80 z-0"></div>
 
         <div className="max-w-4xl mx-auto relative z-10">
@@ -105,7 +105,7 @@ export default function ForCompanies() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button
-                onClick={() => document.getElementById('contact-form').scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
                 className="bg-white text-red-600 hover:bg-red-50 font-bold py-4 px-10 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               <Mail className="w-5 h-5" /> Teklif Alın
@@ -127,18 +127,21 @@ export default function ForCompanies() {
             <p className="text-gray-500 mt-2">Verilerle kanıtlanmış başarı.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
+          {/* KART 1 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📈</div>
             <div className="text-5xl font-black text-gray-900 mb-2">%21</div>
             <div className="font-bold text-xl text-red-600 mb-3">Performans Artışı</div>
             <p className="text-gray-600 leading-relaxed">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
           </div>
+          {/* KART 2 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-orange-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🤝</div>
             <div className="text-5xl font-black text-gray-900 mb-2">3x</div>
             <div className="font-bold text-xl text-orange-600 mb-3">Çalışan Bağlılığı</div>
             <p className="text-gray-600 leading-relaxed">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
           </div>
+          {/* KART 3 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">💰</div>
             <div className="text-5xl font-black text-gray-900 mb-2">%86</div>
@@ -148,7 +151,7 @@ export default function ForCompanies() {
         </div>
       </div>
 
-      {/* --- İNTERAKTİF KAZANIMLAR BÖLÜMÜ --- */}
+      {/* --- İNTERAKTİF KAZANIMLAR --- */}
       <div className="bg-gray-50 py-24 px-4">
         <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -180,7 +183,7 @@ export default function ForCompanies() {
         </div>
       </div>
 
-      {/* --- DETAY POPUP (MODAL - SAF HTML İLE) --- */}
+      {/* --- MODAL (SAF HTML/CSS) --- */}
       {selectedFeature && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-in zoom-in-95 duration-200">
@@ -286,7 +289,7 @@ export default function ForCompanies() {
                     <button 
                         type="submit" 
                         disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-4 rounded-lg hover:from-red-700 hover:to-orange-600 transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95"
+                        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-6 text-lg hover:from-red-700 hover:to-orange-600 transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95 rounded-lg"
                     >
                         {isSubmitting ? 'Gönderiliyor...' : 'Talebi Gönder →'}
                     </button>
@@ -296,6 +299,7 @@ export default function ForCompanies() {
       </div>
 
       <Footer />
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/Navbar"; // NAVBAR EKLENDİ
 
 export default function ForCompanies() {
   const navigate = useNavigate();
@@ -27,17 +28,11 @@ export default function ForCompanies() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <Navbar /> {/* NAVBAR BURAYA GELDİ */}
       
-      {/* --- HERO SECTION DEĞİŞTİ --- */}
-      {/* 1. Ana div'in arka planına Unsplash'tan profesyonel bir iş fotoğrafı koyduk. */}
-      {/* 'bg-cover bg-center' ile resmin düzgün durmasını sağladık. */}
-      <div className="bg-[url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center bg-no-repeat text-white py-24 px-4 text-center relative overflow-hidden">
-        
-        {/* 2. OVERLAY (RENK KATMANI) DEĞİŞTİ */}
-        {/* Eskiden siyah olan katmanı, Kırmızı'dan Turuncu'ya giden bir gradient yaptık. */}
-        {/* 'opacity-85' (veya 90) yaparak hem rengin baskın olmasını hem de alttaki fotoğrafın görünmesini sağladık. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-red-800 to-orange-700 opacity-85 z-0"></div>
-        
+      {/* HERO SECTION */}
+      <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-24 px-4 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="max-w-4xl mx-auto relative z-10">
           <span className="inline-block py-1 px-4 rounded-full bg-white/20 text-white text-sm font-bold mb-6 backdrop-blur-sm border border-white/30">
             KURUMSAL ÇÖZÜMLER
@@ -64,7 +59,6 @@ export default function ForCompanies() {
           </div>
         </div>
       </div>
-      {/* --- HERO SECTION SONU --- */}
 
       {/* İSTATİSTİKLER */}
       <div className="max-w-7xl mx-auto py-20 px-4">
@@ -97,7 +91,7 @@ export default function ForCompanies() {
         </div>
       </div>
 
-      {/* İLETİŞİM FORMU (KIRMIZI TEMA) */}
+      {/* İLETİŞİM FORMU */}
       <div id="contact-form" className="bg-gray-50 py-20 px-4">
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-600">
             <div className="bg-white p-8 text-center border-b border-gray-100">

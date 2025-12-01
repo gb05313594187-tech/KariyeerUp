@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar"; // NAVBAR EKLENDİ
+// Yeni ikonlar eklendi (Shield, Zap, HeartHandshake, vb.)
+import { Shield, Zap, HeartHandshake, Briefcase, Users, TrendingUp, ArrowRight } from "lucide-react";
 
 export default function ForCompanies() {
   const navigate = useNavigate();
@@ -28,7 +29,6 @@ export default function ForCompanies() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <Navbar /> {/* NAVBAR BURAYA GELDİ */}
       
       {/* HERO SECTION */}
       <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-24 px-4 text-center relative overflow-hidden">
@@ -67,21 +67,18 @@ export default function ForCompanies() {
             <p className="text-gray-500 mt-2">Verilerle kanıtlanmış başarı.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          {/* KART 1 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📈</div>
             <div className="text-5xl font-black text-gray-900 mb-2">%21</div>
             <div className="font-bold text-xl text-red-600 mb-3">Performans Artışı</div>
             <p className="text-gray-600 leading-relaxed">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
           </div>
-          {/* KART 2 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-orange-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🤝</div>
             <div className="text-5xl font-black text-gray-900 mb-2">3x</div>
             <div className="font-bold text-xl text-orange-600 mb-3">Çalışan Bağlılığı</div>
             <p className="text-gray-600 leading-relaxed">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
           </div>
-          {/* KART 3 */}
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:border-red-200 transition-colors group">
             <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">💰</div>
             <div className="text-5xl font-black text-gray-900 mb-2">%86</div>
@@ -91,10 +88,72 @@ export default function ForCompanies() {
         </div>
       </div>
 
+      {/* --- YENİ EKLENEN BÖLÜM: İŞBİRLİĞİ ETKİLERİ --- */}
+      <div className="bg-gray-50 py-24 px-4">
+        <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+                <span className="text-red-600 font-bold tracking-wider text-sm uppercase">Kazanımlar</span>
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">İşbirliğimizin Kurumunuza Katacağı Değerler</h2>
+                <p className="text-gray-500 mt-4 max-w-2xl mx-auto">
+                    Sadece bir eğitim değil, sürdürülebilir bir dönüşüm süreci sunuyoruz. İşte koçluk programlarımızın şirket kültürüne pozitif yansımaları.
+                </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                {/* KUTU 1 */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 mb-4">
+                        <Shield className="w-6 h-6"/>
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">Yetenek Tutundurma</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        Çalışanlarınıza yatırım yaparak aidiyet duygusunu güçlendirin ve turn-over (işten ayrılma) oranlarını düşürün.
+                    </p>
+                </div>
+
+                {/* KUTU 2 */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 mb-4">
+                        <Zap className="w-6 h-6"/>
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">Çevik Liderlik</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        Yöneticilerinizin kriz anlarında hızlı karar alma ve ekiplerini motive etme becerilerini geliştirin.
+                    </p>
+                </div>
+
+                {/* KUTU 3 */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4">
+                        <HeartHandshake className="w-6 h-6"/>
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">İletişim Kültürü</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        Departmanlar arası siloları yıkarak, açık iletişime dayalı şeffaf bir kurum kültürü inşa edin.
+                    </p>
+                </div>
+
+                {/* KUTU 4 */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 mb-4">
+                        <Briefcase className="w-6 h-6"/>
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">İş-Yaşam Dengesi</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        Tükenmişliği önleyerek çalışanlarınızın hem işte hem de özel hayatlarında mutlu olmalarını sağlayın.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+      </div>
+      {/* --- YENİ BÖLÜM SONU --- */}
+
       {/* İLETİŞİM FORMU */}
-      <div id="contact-form" className="bg-gray-50 py-20 px-4">
+      <div id="contact-form" className="bg-white py-20 px-4">
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-600">
-            <div className="bg-white p-8 text-center border-b border-gray-100">
+            <div className="bg-gray-50 p-8 text-center border-b border-gray-100">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Demo Talep Edin</h2>
                 <p className="text-gray-500">Kurumunuza özel çözümler için formu doldurun.</p>
             </div>

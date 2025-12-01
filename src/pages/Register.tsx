@@ -5,32 +5,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 
-// SUPABASE BAĞLANTISINI AÇIYORUZ
 // @ts-ignore
-import { supabase } from '@/lib/supabase';
-// @ts-ignore
-import { useAuth } from '@/contexts/AuthContext'; // AuthContext'i de kullanıyoruz
+import { supabase } from '@/lib/supabase'; 
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // AuthContext'ten login fonksiyonunu al
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
+    userType: 'individual'
   });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Şifreler eşleşmiyor!');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // --- GERÇEK GİRİŞ İŞLEMİ (Supabase Auth) ---
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // --- AŞAMA 1: KULLANICIYI AUTH TABLOSUNA KAYDET (Minimum Bilgi) ---
+      // Sadece email ve password gönderiyoruz. Options bloğu kaldırıldı.
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.password,
+        password: formData.password
       });
       // ------------------------------------------
 
@@ -38,78 +45,34 @@ export default function Login() {
         throw new Error(error.message);
       }
 
+      // --- AŞAMA 2: PROFILES TABLOSUNA KAYIT (SADECE GEREKLİ ALANLAR) ---
       if (data.user) {
-        // AuthContext'e kullanıcı bilgisini kaydet
-        login(data.user); 
-        toast.success('Giriş başarılı!');
-        navigate('/dashboard'); // Başarılı girişte dashboard'a yönlendir
-      } else {
-         // Bu kısım normalde çalışmamalı, ama güvenlik için
-        toast.error('Giriş başarısız oldu. Kullanıcı bulunamadı.');
+          const { error: profileError } = await supabase.from('profiles').insert([
+              { 
+                // Zorunlu alanları gönderiyoruz
+                id: data.user.id, 
+                full_name: formData.fullName,
+                user_type: formData.userType,
+                // Ekstra email/metadata alanlarını sildik
+              }
+          ]);
+          
+          if (profileError) {
+              console.error("Profiles Insert Hatası:", profileError);
+              throw new Error("Profil kaydı başarısız oldu.");
+          }
       }
 
+
+      toast.success('Kayıt başarılı! Lütfen e-postanıza gelen linki onaylayın.');
+      navigate('/login');
+
     } catch (error: any) {
-      console.error("Giriş Hatası:", error);
-      // Hata mesajlarını kullanıcıya daha anlaşılır göster
-      if (error.message.includes('Invalid login credentials')) {
-         toast.error('E-posta veya şifre hatalı. Lütfen kontrol edin.');
-      } else {
-         toast.error(`Giriş başarısız oldu: ${error.message}`);
-      }
+      console.error("Nihai Kayıt Hatası:", error);
+      toast.error(`Kayıt başarısız oldu: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF5F2] p-4">
-      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-[#D32F2F]">
-        <CardHeader className="space-y-1 text-center">
-          <div className="w-12 h-12 bg-[#D32F2F] rounded-lg mx-auto flex items-center justify-center mb-2">
-            <span className="text-white font-bold text-xl">K</span>
-          </div>
-          <CardTitle className="text-2xl font-bold text-[#D32F2F]">Giriş Yap</CardTitle>
-          <CardDescription>
-            Devam etmek için hesabınıza giriş yapın
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-posta</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="ornek@email.com"
-                required
-                value={formData.email}
-                onChange={(e: any) => setFormData({...formData, email: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required
-                value={formData.password}
-                onChange={(e: any) => setFormData({...formData, password: e.target.value})}
-              />
-            </div>
-            <Button type="submit" className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold" disabled={isLoading}>
-              {isLoading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <div className="text-sm text-gray-500">
-            Hesabınız yok mu?{' '}
-            <Link to="/register" className="text-[#D32F2F] hover:underline font-semibold">
-              Kayıt Ol
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-}
+  // ... (Geri kalan JSX aynı) ...

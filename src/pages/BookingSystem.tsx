@@ -1,43 +1,30 @@
 // @ts-nocheck
 /* eslint-disable */
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Clock, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getCoaches } from '@/data/mockData';
-import { toast } from 'sonner';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function BookingSystem() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isTrial = searchParams.get('type') === 'trial';
-
+  
+  // YEDEK KOÇ VERİSİ
   const fallbackCoach = {
       id: id || '1',
       name: 'Kariyer Koçu', 
       title: 'Uzman Koç',
       photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200&h=200',
-      hourlyRate45: 1500
+      hourlyRate45: 1500,
+      languages: ['Türkçe']
   };
 
   const [coach, setCoach] = useState<any>(fallbackCoach); 
   const [loading, setLoading] = useState(false); 
   const [countryCode, setCountryCode] = useState('+90');
-  
-  const countries = [
-    { code: '+90', label: 'TR (+90)' }, { code: '+1', label: 'US (+1)' },
-    { code: '+44', label: 'UK (+44)' }, { code: '+49', label: 'DE (+49)' }
-  ];
+  const [step, setStep] = useState(1); // 1: Tarih, 2: Form, 3: Başarılı
+
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
     try {
@@ -50,95 +37,126 @@ export default function BookingSystem() {
     setLoading(false);
   }, [id]);
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', notes: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
-    if (!selectedDate || !selectedTime) return toast.error('Lütfen tarih ve saat seçin');
-    
-    setIsSubmitting(true);
-    const fullPhoneNumber = `${countryCode} ${formData.phone}`;
-    
-    try {
-        const bookingId = `${coach.id}-${Date.now()}`;
-        
-        // --- GÜVENLİ VERİTABANI KAYDI ---
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                 await supabase.from('bookings').insert([{
-                    user_id: user.id,
-                    coach_id: coach.id,
-                    session_date: selectedDate.toISOString(),
-                    session_time: selectedTime,
-                    status: 'pending',
-                    client_name: formData.name,
-                    client_email: formData.email,
-                    client_phone: fullPhoneNumber,
-                    is_trial: isTrial
-                }]);
-            }
-        } catch (dbError) {
-            console.log("DB Yazma Hatası (Görmezden geliniyor):", dbError);
-        }
-        // -------------------------------
-
-        toast.success(isTrial ? 'Deneme Seansı Onaylandı!' : 'Randevu Oluşturuldu!');
-        
-        if (isTrial) {
-            navigate(`/payment-success?bookingId=${bookingId}`);
-        } else {
-            navigate(`/payment/${coach.id}`, { state: { bookingId, bookingData: { ...formData, phone: fullPhoneNumber } } });
-        }
-    } catch (error) {
-        navigate(`/payment-success`);
-    } finally {
-        setIsSubmitting(false);
-    }
+    // Simülasyon Başarısı
+    setTimeout(() => {
+        navigate('/payment-success');
+    }, 500);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-                <Card>
-                    <CardContent className="p-6">
-                        <p className="mb-4 text-center font-bold">Lütfen Tarih ve Saat Seçiniz</p>
-                        <div className="grid grid-cols-4 gap-2">
-                            {['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].map(t => (
-                                <Button key={t} variant={selectedTime === t ? 'default' : 'outline'} onClick={() => { setSelectedDate(new Date()); setSelectedTime(t); }}>
-                                    {t}
-                                </Button>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {selectedTime && (
-                    <Card>
-                        <CardContent className="p-6">
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <Input placeholder="Ad Soyad" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                                <Input placeholder="E-posta" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-                                <div className="flex gap-2">
-                                    <select className="border rounded px-2" value={countryCode} onChange={e => setCountryCode(e.target.value)}>
-                                        {countries.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                                    </select>
-                                    <Input className="flex-1" placeholder="555 123 45 67" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required />
-                                </div>
-                                <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800" disabled={isSubmitting}>
-                                    {isSubmitting ? 'İşleniyor...' : (isTrial ? 'Ücretsiz Onayla' : 'Ödemeye Geç')}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                )}
+    <div className="min-h-screen bg-gray-50 py-12 px-4 font-sans">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* BAŞLIK KARTI */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border mb-6 flex items-center gap-4">
+            <img src={coach.photo} className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"/>
+            <div>
+                <h1 className="text-2xl font-bold text-gray-900">{coach.name}</h1>
+                <p className="text-gray-500">{coach.title}</p>
+            </div>
+            <div className="ml-auto text-right">
+                <div className="text-sm text-gray-500">Seans Ücreti</div>
+                <div className="text-xl font-bold text-blue-600">{coach.hourlyRate45} TL</div>
             </div>
         </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+            
+            {/* SOL: İŞLEM ALANI */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+                <h2 className="text-lg font-bold mb-4">📅 Randevu Oluştur</h2>
+                
+                {/* SAAT SEÇİMİ */}
+                <div className="grid grid-cols-3 gap-2 mb-6">
+                    {['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].map(time => (
+                        <button 
+                            key={time}
+                            onClick={() => setSelectedTime(time)}
+                            className={`py-2 px-4 rounded border text-sm font-medium transition-colors
+                                ${selectedTime === time ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                            {time}
+                        </button>
+                    ))}
+                </div>
+
+                {/* FORM ALANI */}
+                {selectedTime && (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
+                            <input 
+                                type="text" 
+                                required
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={formData.name}
+                                onChange={e => setFormData({...formData, name: e.target.value})}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+                            <input 
+                                type="email" 
+                                required
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={formData.email}
+                                onChange={e => setFormData({...formData, email: e.target.value})}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                            <div className="flex gap-2">
+                                <select 
+                                    className="p-3 border rounded-lg bg-white"
+                                    value={countryCode}
+                                    onChange={e => setCountryCode(e.target.value)}
+                                >
+                                    <option value="+90">🇹🇷 TR (+90)</option>
+                                    <option value="+1">🇺🇸 US (+1)</option>
+                                    <option value="+49">🇩🇪 DE (+49)</option>
+                                </select>
+                                <input 
+                                    type="tel" 
+                                    required
+                                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="555 123 45 67"
+                                    value={formData.phone}
+                                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <button 
+                            type="submit"
+                            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Ödemeye Geç ({coach.hourlyRate45} TL)
+                        </button>
+                    </form>
+                )}
+            </div>
+
+            {/* SAĞ: BİLGİ */}
+            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 h-fit">
+                <h3 className="font-bold text-blue-900 mb-2">ℹ️ Nasıl Çalışır?</h3>
+                <ul className="space-y-2 text-sm text-blue-800">
+                    <li>1. Uygun saati seçin.</li>
+                    <li>2. Bilgilerinizi girin.</li>
+                    <li>3. Ödemeyi güvenle tamamlayın.</li>
+                    <li>4. Görüşme linki e-postanıza gelsin.</li>
+                </ul>
+                <div className="mt-6 pt-6 border-t border-blue-200">
+                    <div className="flex justify-between text-sm font-bold text-blue-900">
+                        <span>Seçilen Saat:</span>
+                        <span>{selectedTime || '-'}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+      </div>
     </div>
   );
 }

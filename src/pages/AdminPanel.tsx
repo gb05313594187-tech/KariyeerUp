@@ -7,15 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Activity, Brain, Lightbulb, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom'; // Yönlendirme için
+import { useNavigate } from 'react-router-dom';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// --- GÜVENLİ BAĞLANTI (ÇÖKMEYİ ÖNLER) ---
+// Eğer anahtarlar yoksa boş metin kullan, böylece site beyaz ekrana düşmez.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
+// -----------------------------------------
 
-// --- YETKİLİ EMAİLLER (Sadece bunlar girebilir) ---
 const ADMIN_EMAILS = ['demo@kariyeer.com', 'gokalp_byc@hotmail.com', 'admin@kariyeer.com'];
-// -------------------------------------------------
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -36,14 +37,14 @@ export default function AdminPanel() {
         
         // 2. Yetki Kontrolü
         if (!user || !ADMIN_EMAILS.includes(user.email)) {
-            toast.error("Bu sayfaya erişim yetkiniz yok!");
-            navigate('/'); // Yetkisiz kişiyi ana sayfaya at
+            // Yetkisiz ama siteyi çökertme, sadece yönlendir
+            navigate('/'); 
             return;
         }
 
         setIsAuthorized(true);
 
-        // 3. Yetkiliyse Verileri Çek
+        // 3. Verileri Çek
         const { data: bookingsData } = await supabase
             .from('bookings')
             .select('*')
@@ -64,30 +65,39 @@ export default function AdminPanel() {
             const insights = [];
             if (revenue > 0) insights.push("📈 Ciro artışı pozitif trend gösteriyor.");
             else insights.push("⚠️ Henüz ciro girişi yok.");
-            if (bookingsData.length > 0) insights.push(`🔥 Son işlem: ${new Date(bookingsData[0].created_at).toLocaleDateString('tr-TR')}`);
             
             setAiInsights(insights);
         }
     } catch (error) {
-        console.log("Hata:", error);
+        console.log("Panel hatası:", error);
     } finally {
         setLoading(false);
     }
   };
 
-  // ... (HandleApprove ve HandleReject fonksiyonları aynı kalacak) ...
-  const handleApprove = async (id: string) => { /* ... Aynı ... */ };
-  const handleReject = async (id: string) => { /* ... Aynı ... */ };
+  // İşlem Fonksiyonları
+  const handleApprove = async (id: string) => {
+      try {
+        await supabase.from('bookings').update({ status: 'approved' }).eq('id', id);
+        toast.success("Onaylandı");
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'approved' } : b));
+      } catch(e) {}
+  };
 
+  const handleReject = async (id: string) => {
+      try {
+        await supabase.from('bookings').update({ status: 'rejected' }).eq('id', id);
+        toast.error("Reddedildi");
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
+      } catch(e) {}
+  };
 
-  if (loading) return <div className="flex h-screen items-center justify-center">Güvenlik Kontrolü...</div>;
-  if (!isAuthorized) return null; // Yetkisiz kişiye boş ekran (zaten yönleniyor)
+  if (loading) return <div className="flex h-screen items-center justify-center">Yükleniyor...</div>;
+  if (!isAuthorized) return null; 
 
   return (
     <div className="min-h-screen bg-slate-100 p-8 font-sans">
-        {/* ... (Geri kalan tüm tasarım kodu aynı) ... */}
-        {/* Lütfen önceki kodun RETURN kısmını buraya yapıştırın veya olduğu gibi bırakın */}
-         <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* BAŞLIK */}
         <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
@@ -102,24 +112,6 @@ export default function AdminPanel() {
                 <Button onClick={checkAuthAndFetch} variant="default" className="bg-slate-900 text-white hover:bg-slate-800">Yenile</Button>
             </div>
         </div>
-
-        {/* AI ANALİZ KUTUSU */}
-        <Card className="bg-indigo-50 border-indigo-200">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-indigo-900">
-                    <Brain className="w-5 h-5"/> Kariyeer AI Asistanı
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-2">
-                    {aiInsights.length > 0 ? aiInsights.map((insight, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-indigo-800 bg-white/50 p-2 rounded">
-                            <Lightbulb className="w-4 h-4 text-yellow-500"/> {insight}
-                        </div>
-                    )) : <span className="text-gray-400">Veri toplanıyor...</span>}
-                </div>
-            </CardContent>
-        </Card>
 
         {/* KPI KARTLARI */}
         <div className="grid md:grid-cols-4 gap-6">

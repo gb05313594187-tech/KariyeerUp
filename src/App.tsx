@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FollowProvider } from "@/contexts/FollowContext";
+import Navbar from "@/components/Navbar"; // MENÜYÜ MERKEZE ALDIK
 
 // SAYFALAR
 import Index from "./pages/Index";
@@ -17,12 +18,10 @@ import CoachProfile from "./pages/CoachProfile";
 import BookingSystem from "./pages/BookingSystem";
 import PaymentPage from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import NotFound from "./pages/NotFound";
-
-// YAN SAYFALAR (Bunlar artık hatasız saf HTML olduğu için güvenle eklenebilir)
 import MentorCircle from "./pages/MentorCircle";
 import ForCompanies from "./pages/ForCompanies";
 import Webinars from "./pages/Webinars";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -33,23 +32,36 @@ const App = () => (
         <FollowProvider>
             <Toaster />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/coaches" element={<CoachList />} />
-                <Route path="/coach/:id" element={<CoachProfile />} />
-                <Route path="/booking/:id" element={<BookingSystem />} />
-                <Route path="/payment/:id" element={<PaymentPage />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                
-                <Route path="/mentor-circle" element={<MentorCircle />} />
-                <Route path="/corporate" element={<ForCompanies />} />
-                <Route path="/webinars" element={<Webinars />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              {/* NAVBAR'I BURAYA KOYDUK, ARTIK HER SAYFADA GÖRÜNÜR */}
+              <Navbar />
+              
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  
+                  {/* Auth & Panel */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  
+                  {/* Ana Sayfalar */}
+                  <Route path="/coaches" element={<CoachList />} />
+                  <Route path="/coach/:id" element={<CoachProfile />} />
+                  
+                  {/* İşlemler */}
+                  <Route path="/booking/:id" element={<BookingSystem />} />
+                  <Route path="/payment/:id" element={<PaymentPage />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+
+                  {/* Yan Sayfalar (Sorunlu Olanlar) */}
+                  <Route path="/mentor-circle" element={<MentorCircle />} />
+                  <Route path="/corporate" element={<ForCompanies />} />
+                  <Route path="/webinars" element={<Webinars />} />
+                  
+                  {/* 404 */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
             </BrowserRouter>
         </FollowProvider>
       </AuthProvider>

@@ -1,88 +1,76 @@
 // @ts-nocheck
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
-export default function MentorCircle() {
+export default function ForCompanies() {
   const navigate = useNavigate();
-  
-  // Saf Veri (Dışarıdan dosya çağırmıyoruz, hata olmasın)
-  const posts = [
-    {
-      id: 1,
-      name: "Dr. Ayşe Yılmaz",
-      title: "Kariyer Koçu",
-      content: "Kariyer değişikliği yaparken en sık karşılaşılan hata: Acele etmek. Planlama yapmadan atılan adımlar genellikle hayal kırıklığı ile sonuçlanır.",
-      time: "2 saat önce",
-      tag: "Kariyer"
-    },
-    {
-      id: 2,
-      name: "Mehmet Demir",
-      title: "Yazılım Müdürü",
-      content: "Remote çalışırken ekip içi iletişimi nasıl güçlü tutuyorsunuz? Kullandığınız araçlar neler?",
-      time: "5 saat önce",
-      tag: "Remote"
-    }
-  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-6 pb-12 px-4 font-sans">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* SOL: PROFİL */}
-        <div className="hidden lg:block lg:col-span-3">
-          <div className="bg-white rounded-xl shadow overflow-hidden text-center pb-6">
-            <div className="h-20 bg-gradient-to-r from-purple-600 to-pink-600"></div>
-            <div className="font-bold text-xl mt-4">Misafir Kullanıcı</div>
-            <div className="text-gray-500">Premium Üye</div>
-            <button onClick={() => navigate('/dashboard')} className="mt-4 text-blue-600 hover:underline text-sm">Panele Git →</button>
+    <div className="min-h-screen bg-white font-sans">
+      
+      {/* HERO (Zengin Görünüm) */}
+      <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-24 px-4 text-center">
+        <div className="max-w-4xl mx-auto">
+          <span className="inline-block py-1 px-3 rounded-full bg-blue-700/50 border border-blue-500 text-blue-100 text-sm font-semibold mb-6">
+            KURUMSAL ÇÖZÜMLER
+          </span>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Şirketinizin Potansiyelini <br/><span className="text-blue-200">Zirveye Taşıyın</span>
+          </h1>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Çalışanlarınızın yetkinliklerini geliştirin, liderlik becerilerini artırın ve güçlü bir kurum kültürü oluşturun.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button 
+                className="bg-white text-blue-900 hover:bg-blue-50 font-bold py-4 px-8 rounded-lg shadow-lg transition-transform hover:scale-105"
+                onClick={() => window.location.href = 'mailto:kurumsal@kariyeer.com'}
+            >
+              Teklif Alın
+            </button>
+            <button 
+                className="border-2 border-white text-white hover:bg-white/10 font-bold py-4 px-8 rounded-lg transition-transform hover:scale-105"
+                onClick={() => navigate('/coaches')}
+            >
+                Koçları İncele
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* ORTA: AKIŞ */}
-        <div className="col-span-1 lg:col-span-6 space-y-6">
-            {/* Yazı Kutusu */}
-            <div className="bg-white p-4 rounded-xl shadow">
-                <textarea placeholder="Bir şeyler paylaş..." className="w-full bg-gray-50 rounded-lg p-3 border border-gray-200 focus:border-purple-500 outline-none resize-none" rows={3}></textarea>
-                <div className="flex justify-end mt-2">
-                    <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700">
-                        Paylaş 🚀
-                    </button>
-                </div>
+      {/* İSTATİSTİKLER */}
+      <div className="max-w-7xl mx-auto py-20 px-4">
+        <div className="grid md:grid-cols-3 gap-8">
+          
+          {/* KART 1 */}
+          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+              📈
             </div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">%21</div>
+            <div className="font-semibold text-lg mb-3 text-gray-800">Performans Artışı</div>
+            <p className="text-gray-600 text-sm">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
+          </div>
 
-            {/* Gönderiler */}
-            {posts.map((post) => (
-                <div key={post.id} className="bg-white rounded-xl shadow overflow-hidden p-4">
-                    <div className="flex justify-between items-start mb-2">
-                        <div>
-                            <h4 className="font-bold text-gray-900">{post.name}</h4>
-                            <p className="text-xs text-gray-500">{post.title} • {post.time}</p>
-                        </div>
-                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">#{post.tag}</span>
-                    </div>
-                    <p className="text-gray-800 mb-4">{post.content}</p>
-                    <div className="border-t pt-3 flex gap-4 text-sm text-gray-500 font-medium">
-                        <button className="hover:text-purple-600">❤️ Beğen</button>
-                        <button className="hover:text-purple-600">💬 Yorum Yap</button>
-                        <button className="hover:text-purple-600">🔗 Paylaş</button>
-                    </div>
-                </div>
-            ))}
-        </div>
-
-        {/* SAĞ: GÜNDEM */}
-        <div className="hidden lg:block lg:col-span-3">
-            <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="font-bold text-gray-900 mb-4">🔥 Gündem</h3>
-                <div className="space-y-3">
-                    <div className="text-sm">#YapayZeka <span className="text-gray-400 text-xs block">2.5k gönderi</span></div>
-                    <div className="text-sm">#Liderlik <span className="text-gray-400 text-xs block">1.2k gönderi</span></div>
-                    <div className="text-sm">#Mülakat <span className="text-gray-400 text-xs block">850 gönderi</span></div>
-                </div>
+          {/* KART 2 */}
+          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+              🤝
             </div>
-        </div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">3x</div>
+            <div className="font-semibold text-lg mb-3 text-gray-800">Çalışan Bağlılığı</div>
+            <p className="text-gray-600 text-sm">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
+          </div>
 
+          {/* KART 3 */}
+          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
+            <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+              💎
+            </div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">%86</div>
+            <div className="font-semibold text-lg mb-3 text-gray-800">Yatırım Getirisi</div>
+            <p className="text-gray-600 text-sm">Kurumsal koçluk programlarının sağladığı ortalama geri dönüş (ROI) oranı.</p>
+          </div>
+
+        </div>
       </div>
     </div>
   );

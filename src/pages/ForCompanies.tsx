@@ -7,30 +7,30 @@ export default function ForCompanies() {
   return (
     <div className="min-h-screen bg-white font-sans">
       
-      {/* HERO (Zengin Görünüm) */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-24 px-4 text-center">
+      {/* HERO */}
+      <div className="bg-blue-900 text-white py-24 px-4 text-center">
         <div className="max-w-4xl mx-auto">
-          <span className="inline-block py-1 px-3 rounded-full bg-blue-700/50 border border-blue-500 text-blue-100 text-sm font-semibold mb-6">
-            KURUMSAL ÇÖZÜMLER
+          <span className="inline-block py-1 px-3 rounded-full bg-blue-800 text-blue-200 text-sm font-semibold mb-6">
+            🏢 Kurumsal Çözümler
           </span>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Şirketinizin Potansiyelini <br/><span className="text-blue-200">Zirveye Taşıyın</span>
+            Şirketinizin Potansiyelini Ortaya Çıkarın
           </h1>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Çalışanlarınızın yetkinliklerini geliştirin, liderlik becerilerini artırın ve güçlü bir kurum kültürü oluşturun.
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10">
+            Çalışanlarınızın yetkinliklerini geliştirin, liderlik becerilerini artırın ve kurum kültürünüzü güçlendirin.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 
-                className="bg-white text-blue-900 hover:bg-blue-50 font-bold py-4 px-8 rounded-lg shadow-lg transition-transform hover:scale-105"
+                className="bg-white text-blue-900 hover:bg-gray-100 font-bold py-4 px-8 rounded-lg transition-colors"
                 onClick={() => window.location.href = 'mailto:kurumsal@kariyeer.com'}
             >
-              Teklif Alın
+              ✉️ Teklif Alın
             </button>
             <button 
-                className="border-2 border-white text-white hover:bg-white/10 font-bold py-4 px-8 rounded-lg transition-transform hover:scale-105"
+                className="border border-white text-white hover:bg-white/10 font-bold py-4 px-8 rounded-lg transition-colors"
                 onClick={() => navigate('/coaches')}
             >
-                Koçları İncele
+                🔍 Koçları İncele
             </button>
           </div>
         </div>
@@ -41,33 +41,27 @@ export default function ForCompanies() {
         <div className="grid md:grid-cols-3 gap-8">
           
           {/* KART 1 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-              📈
-            </div>
+          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+            <div className="text-4xl mb-4">📈</div>
             <div className="text-4xl font-bold text-gray-900 mb-2">%21</div>
-            <div className="font-semibold text-lg mb-3 text-gray-800">Performans Artışı</div>
-            <p className="text-gray-600 text-sm">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
+            <div className="font-semibold text-lg mb-3">Performans Artışı</div>
+            <p className="text-gray-600">Profesyonel koçluk alan ekiplerde gözlemlenen ortalama verimlilik artışı.</p>
           </div>
 
           {/* KART 2 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-              🤝
-            </div>
+          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+            <div className="text-4xl mb-4">🤝</div>
             <div className="text-4xl font-bold text-gray-900 mb-2">3x</div>
-            <div className="font-semibold text-lg mb-3 text-gray-800">Çalışan Bağlılığı</div>
-            <p className="text-gray-600 text-sm">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
+            <div className="font-semibold text-lg mb-3">Çalışan Bağlılığı</div>
+            <p className="text-gray-600">Gelişimine yatırım yapılan çalışanların şirkete bağlılık oranı üç kat artar.</p>
           </div>
 
           {/* KART 3 */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center hover:-translate-y-2 transition-transform duration-300">
-            <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-              💎
-            </div>
+          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center hover:-translate-y-1 transition-transform">
+            <div className="text-4xl mb-4">💰</div>
             <div className="text-4xl font-bold text-gray-900 mb-2">%86</div>
-            <div className="font-semibold text-lg mb-3 text-gray-800">Yatırım Getirisi</div>
-            <p className="text-gray-600 text-sm">Kurumsal koçluk programlarının sağladığı ortalama geri dönüş (ROI) oranı.</p>
+            <div className="font-semibold text-lg mb-3">Yatırım Getirisi</div>
+            <p className="text-gray-600">Kurumsal koçluk programlarının sağladığı ortalama geri dönüş (ROI) oranı.</p>
           </div>
 
         </div>

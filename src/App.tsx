@@ -6,22 +6,24 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FollowProvider } from "@/contexts/FollowContext";
-import Navbar from "@/components/Navbar"; // MENÜYÜ MERKEZE ALDIK
+import Navbar from "@/components/Navbar";
 
-// SAYFALAR
+// SADECE BU TEMEL SAYFALAR AÇIK KALSIN (Hata riski yok)
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import CoachList from "./pages/CoachList";
-import CoachProfile from "./pages/CoachProfile";
-import BookingSystem from "./pages/BookingSystem";
-import PaymentPage from "./pages/Payment";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import MentorCircle from "./pages/MentorCircle";
-import ForCompanies from "./pages/ForCompanies";
-import Webinars from "./pages/Webinars";
 import NotFound from "./pages/NotFound";
+
+// DİĞER SAYFALARI GEÇİCİ OLARAK KAPATIYORUZ (Hata kaynağını izole etmek için)
+// import CoachList from "./pages/CoachList";
+// import CoachProfile from "./pages/CoachProfile";
+// import BookingSystem from "./pages/BookingSystem";
+// import PaymentPage from "./pages/Payment";
+// import PaymentSuccess from "./pages/PaymentSuccess";
+// import MentorCircle from "./pages/MentorCircle";
+// import ForCompanies from "./pages/ForCompanies";
+// import Webinars from "./pages/Webinars";
 
 const queryClient = new QueryClient();
 
@@ -32,33 +34,24 @@ const App = () => (
         <FollowProvider>
             <Toaster />
             <BrowserRouter>
-              {/* NAVBAR'I BURAYA KOYDUK, ARTIK HER SAYFADA GÖRÜNÜR */}
               <Navbar />
-              
               <main className="flex-grow">
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  
-                  {/* Auth & Panel */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   
-                  {/* Ana Sayfalar */}
-                  <Route path="/coaches" element={<CoachList />} />
+                  {/* <Route path="/coaches" element={<CoachList />} />
                   <Route path="/coach/:id" element={<CoachProfile />} />
-                  
-                  {/* İşlemler */}
                   <Route path="/booking/:id" element={<BookingSystem />} />
                   <Route path="/payment/:id" element={<PaymentPage />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
-
-                  {/* Yan Sayfalar (Sorunlu Olanlar) */}
                   <Route path="/mentor-circle" element={<MentorCircle />} />
                   <Route path="/corporate" element={<ForCompanies />} />
-                  <Route path="/webinars" element={<Webinars />} />
+                  <Route path="/webinars" element={<Webinars />} /> 
+                  */}
                   
-                  {/* 404 */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

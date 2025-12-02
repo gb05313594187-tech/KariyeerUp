@@ -1,209 +1,208 @@
 // @ts-nocheck
 /* eslint-disable */
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-    Activity, TrendingUp, Users, DollarSign, Star, 
-    Brain, Target, ArrowUpRight, ArrowDownRight, 
-    Filter, Download, AlertTriangle, CheckCircle 
-} from 'lucide-react';
+import { Calendar, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Activity, Brain, Lightbulb } from 'lucide-react';
+import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
 
-// SUPABASE BAĞLANTISI
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function AdminPanel() {
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [aiInsights, setAiInsights] = useState<any[]>([]);
-  
-  // TÜM KPI VERİLERİ (Gerçek + Simülasyon)
-  const [kpi, setKpi] = useState({
-    overview: { sessions: 0, activeUsers: 0, activeCoaches: 0, gmv: 0, revenue: 0, nps: 72 },
-    growth: { visitors: 12500, conversion: "4.2%", newCoaches: 12 },
-    finance: { cac: 450, ltv: 3200, arpu: 850 },
-    quality: { rating: 4.8, disputeRate: "1.2%" }
+  const [stats, setStats] = useState({
+    totalBookings: 0,
+    totalRevenue: 0,
+    activeCoaches: 12, 
+    totalUsers: 0
   });
+  
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchRealData();
+    fetchData();
   }, []);
 
-  const fetchRealData = async () => {
+  const fetchData = async () => {
     try {
-        // 1. GERÇEK VERİLERİ ÇEK (Bookings Tablosundan)
-        const { data: bookings } = await supabase
+        // 1. Randevuları Çek
+        const { data: bookingsData } = await supabase
             .from('bookings')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (bookings) {
-            // Hesaplamalar
-            const totalSessions = bookings.length;
-            const completedSessions = bookings.filter(b => b.status === 'approved').length;
-            const uniqueClients = new Set(bookings.map(b => b.client_email)).size;
+        if (bookingsData) {
+            setBookings(bookingsData);
             
-            // Finansal Hesaplama (Ortalama 1500 TL seans ücreti varsayımıyla)
-            const totalGMV = totalSessions * 1500; 
-            const totalRevenue = totalGMV * 0.20; // %20 Komisyon (Take Rate)
+            // İstatistikler
+            const revenue = bookingsData.length * 1500; 
+            const userCount = new Set(bookingsData.map(b => b.client_email)).size;
 
-            // State'i Güncelle
-            setKpi(prev => ({
-                ...prev,
-                overview: {
-                    ...prev.overview,
-                    sessions: completedSessions || totalSessions, // Eğer onaylı yoksa toplamı göster
-                    activeUsers: uniqueClients,
-                    activeCoaches: 15, // Şimdilik sabit
-                    gmv: totalGMV,
-                    revenue: totalRevenue
-                }
-            }));
+            setStats({
+                totalBookings: bookingsData.length,
+                totalRevenue: revenue,
+                activeCoaches: 15,
+                totalUsers: userCount
+            });
 
-            // 2. AI ANALİZ MOTORU ÇALIŞTIR
-            generateAiInsights(totalSessions, totalRevenue, uniqueClients);
+            // AI Yorumları
+            const insights = [];
+            if (revenue > 0) insights.push("📈 Ciro artışı pozitif.");
+            if (bookingsData.length < 5) insights.push("💡 Öneri: Reklam bütçesini artırın.");
+            else insights.push("🔥 Talep yüksek, yeni koç ekleyin.");
+            setAiInsights(insights);
         }
-    } catch (e) { console.log("Veri hatası:", e); }
-    setLoading(false);
+    } catch (error) {
+        console.log("Veri çekme hatası:", error);
+    } finally {
+        setLoading(false);
+    }
   };
 
-  // --- YAPAY ZEKA ANALİZ MOTORU ---
-  const generateAiInsights = (sessions, revenue, users) => {
-    const insights = [];
-
-    // Kural 1: Gelir Analizi
-    if (revenue > 5000) {
-        insights.push({ type: "success", title: "Güçlü Gelir Artışı", desc: "Bu ayki ciro hedefinin %15 üzerindeyiz. Büyüme stratejisi çalışıyor." });
-    } else {
-        insights.push({ type: "warning", title: "Gelir Uyarısı", desc: "Ciro beklentinin altında. 'İlk Seans %50 İndirim' kampanyası başlatılabilir." });
-    }
-
-    // Kural 2: Kullanıcı Tutundurma (Retention)
-    if (users > 0 && sessions / users < 1.5) {
-        insights.push({ type: "alert", title: "Retention Riski", desc: "Kullanıcı başına seans sayısı 1.5'in altında. Tekrar eden randevuları artırmak için paket satışları öne çıkarın." });
-    }
-
-    // Kural 3: Pazar Yeri Sağlığı
-    insights.push({ type: "info", title: "Talep Fazlalığı", desc: "Kariyer koçluğu kategorisinde talep arzdan %40 fazla. Yeni koç alımı yapılmalı." });
-
-    setAiInsights(insights);
+  // Onaylama İşlemi
+  const handleApprove = async (id: string) => {
+      await supabase.from('bookings').update({ status: 'approved' }).eq('id', id);
+      toast.success("Onaylandı");
+      // Listeyi güncelle (Local)
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'approved' } : b));
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-900">CEO Paneli Hazırlanıyor...</div>;
+  const handleReject = async (id: string) => {
+      await supabase.from('bookings').update({ status: 'rejected' }).eq('id', id);
+      toast.error("Reddedildi");
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
+  };
+
+  if (loading) return <div className="flex h-screen items-center justify-center">Admin Paneli Yükleniyor...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
-
-        {/* ÜST HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        
+        {/* BAŞLIK */}
+        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
             <div>
-                <Badge className="mb-2 bg-blue-100 text-blue-800 hover:bg-blue-100">CEO DASHBOARD v2.0</Badge>
-                <h1 className="text-3xl font-bold text-gray-900">Genel Bakış</h1>
-                <p className="text-gray-500">Gerçek zamanlı platform metrikleri ve AI önerileri.</p>
+                <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="text-blue-600"/> Yönetici Paneli
+                </h1>
+                <p className="text-slate-500">CEO Dashboard & KPI Takibi</p>
             </div>
-            <div className="flex gap-2">
-                <Button variant="outline"><Filter className="w-4 h-4 mr-2"/> Filtrele</Button>
-                <Button variant="outline"><Download className="w-4 h-4 mr-2"/> Rapor İndir</Button>
-            </div>
+            <Button onClick={fetchData} variant="default" className="bg-slate-900">Verileri Yenile</Button>
         </div>
 
-        {/* NORTH STAR METRIC (KUZEY YILDIZI) */}
-        <Card className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white border-none shadow-xl">
-            <CardContent className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div>
-                    <p className="text-blue-200 font-medium mb-1 flex items-center gap-2"><Star className="w-4 h-4 text-yellow-400 fill-current"/> NORTH STAR METRIC</p>
-                    <h2 className="text-5xl font-bold">{kpi.overview.sessions}</h2>
-                    <p className="text-lg text-blue-100 mt-2">Aylık Tamamlanan Seans</p>
-                </div>
-                <div className="flex gap-8 text-center md:text-right">
-                    <div>
-                        <p className="text-sm text-blue-300">Hedef</p>
-                        <p className="text-2xl font-bold">120</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-blue-300">Tamamlanma</p>
-                        <p className="text-2xl font-bold text-green-400">
-                            {kpi.overview.sessions > 0 ? Math.min(100, Math.round((kpi.overview.sessions / 120) * 100)) : 0}%
-                        </p>
-                    </div>
+        {/* AI ANALİZ KUTUSU */}
+        <Card className="bg-indigo-50 border-indigo-200">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-indigo-900">
+                    <Brain className="w-5 h-5"/> Kariyeer AI Asistanı
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    {aiInsights.length > 0 ? aiInsights.map((insight, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-indigo-800 bg-white/50 p-2 rounded">
+                            <Lightbulb className="w-4 h-4 text-yellow-500"/> {insight}
+                        </div>
+                    )) : <span className="text-gray-400">Analiz yapılıyor...</span>}
                 </div>
             </CardContent>
         </Card>
 
-        {/* AI ANALİZ KUTUSU (YENİ) */}
-        <div className="grid md:grid-cols-3 gap-6">
-            <Card className="md:col-span-2 border-2 border-indigo-100 bg-indigo-50/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-indigo-900">
-                        <Brain className="w-6 h-6 text-indigo-600"/> Kariyeer AI Analizi
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    {aiInsights.map((insight, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border shadow-sm">
-                            {insight.type === 'success' && <TrendingUp className="w-5 h-5 text-green-600 mt-1"/>}
-                            {insight.type === 'warning' && <AlertTriangle className="w-5 h-5 text-orange-600 mt-1"/>}
-                            {insight.type === 'alert' && <AlertTriangle className="w-5 h-5 text-red-600 mt-1"/>}
-                            {insight.type === 'info' && <Activity className="w-5 h-5 text-blue-600 mt-1"/>}
-                            <div>
-                                <h4 className="font-bold text-gray-900 text-sm">{insight.title}</h4>
-                                <p className="text-gray-600 text-sm">{insight.desc}</p>
-                            </div>
-                        </div>
-                    ))}
+        {/* KPI KARTLARI */}
+        <div className="grid md:grid-cols-4 gap-6">
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Toplam Ciro</div>
+                    <div className="text-3xl font-bold text-green-600">{stats.totalRevenue.toLocaleString()} ₺</div>
                 </CardContent>
             </Card>
-
-            {/* HIZLI FİNANS ÖZETİ */}
             <Card>
-                <CardHeader><CardTitle>Finansal Özet</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-gray-500">GMV (Hacim)</span>
-                        <span className="text-xl font-bold text-gray-900">₺{kpi.overview.gmv.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-gray-500">Net Gelir</span>
-                        <span className="text-xl font-bold text-green-600">₺{kpi.overview.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{width: '20%'}}></div>
-                    </div>
-                    <p className="text-xs text-gray-400 text-center">Take Rate: %20</p>
+                <CardContent className="pt-6">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Randevular</div>
+                    <div className="text-3xl font-bold text-blue-900">{stats.totalBookings}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Müşteriler</div>
+                    <div className="text-3xl font-bold text-purple-900">{stats.totalUsers}</div>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardContent className="pt-6">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Aktif Koçlar</div>
+                    <div className="text-3xl font-bold text-orange-600">{stats.activeCoaches}</div>
                 </CardContent>
             </Card>
         </div>
 
-        {/* DETAYLI SEKMELER */}
-        <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white p-1 border rounded-lg">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="growth">Growth</TabsTrigger>
-                <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-                <TabsTrigger value="finance">Finance</TabsTrigger>
-                <TabsTrigger value="quality">Quality</TabsTrigger>
-            </TabsList>
-
-            {/* TAB 1: OVERVIEW */}
-            <TabsContent value="overview" className="space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                    <MetricCard title="Aktif Danışan" value={kpi.overview.activeUsers} sub="+12% geçen haftaya göre" icon={Users} color="blue" />
-                    <MetricCard title="Aktif Koç" value={kpi.overview.activeCoaches} sub="3 yeni başvuru" icon={Target} color="purple" />
-                    <MetricCard title="NPS Skoru" value={kpi.overview.nps} sub="Sektör ortalaması üstünde" icon={Star} color="yellow" />
+        {/* RANDEVU LİSTESİ */}
+        <Card>
+            <CardHeader><CardTitle>Son İşlemler</CardTitle></CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
+                            <tr>
+                                <th className="p-3">Müşteri</th>
+                                <th className="p-3">Tarih</th>
+                                <th className="p-3">Durum</th>
+                                <th className="p-3">Tutar</th>
+                                <th className="p-3 text-right">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {bookings.map((booking) => (
+                                <tr key={booking.id} className="hover:bg-slate-50">
+                                    <td className="p-3">
+                                        <div className="font-bold">{booking.client_name}</div>
+                                        <div className="text-xs text-gray-400">{booking.client_email}</div>
+                                    </td>
+                                    <td className="p-3">
+                                        {new Date(booking.created_at).toLocaleDateString('tr-TR')}
+                                    </td>
+                                    <td className="p-3">
+                                        <Badge className={
+                                            booking.status === 'approved' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
+                                            booking.status === 'rejected' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 
+                                            'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                        }>
+                                            {booking.status === 'approved' ? 'Onaylandı' : 
+                                             booking.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+                                        </Badge>
+                                    </td>
+                                    <td className="p-3 font-bold text-slate-700">
+                                        {booking.is_trial ? 'Ücretsiz' : '1500 ₺'}
+                                    </td>
+                                    <td className="p-3 text-right flex justify-end gap-2">
+                                        {booking.status === 'pending' && (
+                                            <>
+                                                <Button size="icon" className="h-8 w-8 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(booking.id)}>
+                                                    <CheckCircle className="w-4 h-4"/>
+                                                </Button>
+                                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleReject(booking.id)}>
+                                                    <XCircle className="w-4 h-4"/>
+                                                </Button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                             {bookings.length === 0 && (
+                                <tr><td colSpan={5} className="p-8 text-center text-gray-400">Kayıt bulunamadı.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </TabsContent>
+            </CardContent>
+        </Card>
 
-            {/* TAB 2: GROWTH (BÜYÜME) */}
-            <TabsContent value="growth">
-                <Card><CardContent className="p-6 text-center">
-                    <h3 className="text-lg font-bold mb-4">Dönüşüm Hunisi (Funnel)</h3>
-                    <div className="space-y-2 max-w-lg mx-auto">
-                        <FunnelBar label="Ziyaretçi" value="12,500" percent="100%" color="bg-blue-100" width="100%" />
-                        <FunnelBar label="Üyelik" value="525" percent="4.2%" color="bg-blue-300" width="60%" />
-                        <FunnelBar label="İlk Seans" value
+      </div>
+    </div>
+  );
+}

@@ -7,44 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, DollarSign, TrendingUp, CheckCircle, XCircle, Activity, Brain, Lightbulb, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
 
-// --- GÜVENLİ BAĞLANTI (ÇÖKMEYİ ÖNLER) ---
-// Eğer anahtarlar yoksa boş metin kullan, böylece site beyaz ekrana düşmez.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
-// -----------------------------------------
-
-const ADMIN_EMAILS = ['demo@kariyeer.com', 'gokalp_byc@hotmail.com', 'admin@kariyeer.com'];
 
 export default function AdminPanel() {
-  const navigate = useNavigate();
   const [stats, setStats] = useState({ totalBookings: 0, totalRevenue: 0, activeCoaches: 12, totalUsers: 0 });
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [aiInsights, setAiInsights] = useState<string[]>([]);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    checkAuthAndFetch();
+    fetchData();
   }, []);
 
-  const checkAuthAndFetch = async () => {
+  const fetchData = async () => {
     try {
-        // 1. Kim Girdi?
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // 2. Yetki Kontrolü
-        if (!user || !ADMIN_EMAILS.includes(user.email)) {
-            // Yetkisiz ama siteyi çökertme, sadece yönlendir
-            navigate('/'); 
-            return;
-        }
-
-        setIsAuthorized(true);
-
-        // 3. Verileri Çek
         const { data: bookingsData } = await supabase
             .from('bookings')
             .select('*')
@@ -61,143 +39,132 @@ export default function AdminPanel() {
                 activeCoaches: 15,
                 totalUsers: userCount
             });
-
-            const insights = [];
-            if (revenue > 0) insights.push("📈 Ciro artışı pozitif trend gösteriyor.");
-            else insights.push("⚠️ Henüz ciro girişi yok.");
-            
-            setAiInsights(insights);
         }
     } catch (error) {
-        console.log("Panel hatası:", error);
+        console.log("Hata:", error);
     } finally {
         setLoading(false);
     }
   };
 
-  // İşlem Fonksiyonları
+  // Onaylama
   const handleApprove = async (id: string) => {
-      try {
-        await supabase.from('bookings').update({ status: 'approved' }).eq('id', id);
-        toast.success("Onaylandı");
-        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'approved' } : b));
-      } catch(e) {}
+      await supabase.from('bookings').update({ status: 'approved' }).eq('id', id);
+      toast.success("Onaylandı");
+      fetchData();
   };
 
+  // Reddetme
   const handleReject = async (id: string) => {
-      try {
-        await supabase.from('bookings').update({ status: 'rejected' }).eq('id', id);
-        toast.error("Reddedildi");
-        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
-      } catch(e) {}
+      await supabase.from('bookings').update({ status: 'rejected' }).eq('id', id);
+      toast.error("Reddedildi");
+      fetchData();
   };
 
   if (loading) return <div className="flex h-screen items-center justify-center">Yükleniyor...</div>;
-  if (!isAuthorized) return null; 
 
   return (
-    <div className="min-h-screen bg-slate-100 p-8 font-sans">
+    <div className="min-h-screen bg-slate-800 p-8 font-sans"> {/* AYIRT EDİLMESİ İÇİN KOYU TEMA YAPTIM */}
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* BAŞLIK */}
-        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
+        {/* BAŞLIK - CEO PANELİ OLDUĞU BELLİ OLSUN */}
+        <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-                    <Activity className="text-blue-600"/> Yönetici Paneli
+                <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                    <Activity className="text-red-600 w-8 h-8"/> CEO / YÖNETİCİ PANELİ
                 </h1>
-                <p className="text-slate-500">CEO Dashboard & KPI Takibi</p>
+                <p className="text-slate-500 mt-1">Şirket finansalları ve randevu yönetimi.</p>
             </div>
-            <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><Lock className="w-3 h-3 mr-1"/> Güvenli Mod</Badge>
-                <Button onClick={checkAuthAndFetch} variant="default" className="bg-slate-900 text-white hover:bg-slate-800">Yenile</Button>
-            </div>
+            <Button onClick={fetchData} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+                Verileri Yenile
+            </Button>
         </div>
 
         {/* KPI KARTLARI */}
         <div className="grid md:grid-cols-4 gap-6">
-            <Card>
+            <Card className="bg-white shadow-xl border-none">
                 <CardContent className="pt-6">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Toplam Ciro</div>
-                    <div className="text-3xl font-bold text-green-600">{stats.totalRevenue.toLocaleString()} ₺</div>
+                    <div className="text-sm font-bold text-gray-400 mb-1 uppercase">Toplam Ciro</div>
+                    <div className="text-4xl font-extrabold text-green-600">{stats.totalRevenue.toLocaleString()} ₺</div>
+                    <DollarSign className="w-8 h-8 text-green-100 absolute top-6 right-6"/>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white shadow-xl border-none">
                 <CardContent className="pt-6">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Toplam Randevu</div>
-                    <div className="text-3xl font-bold text-blue-900">{stats.totalBookings}</div>
+                    <div className="text-sm font-bold text-gray-400 mb-1 uppercase">Toplam Randevu</div>
+                    <div className="text-4xl font-extrabold text-blue-900">{stats.totalBookings}</div>
+                    <Calendar className="w-8 h-8 text-blue-100 absolute top-6 right-6"/>
                 </CardContent>
             </Card>
-            <Card>
+             <Card className="bg-white shadow-xl border-none">
                 <CardContent className="pt-6">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Müşteriler</div>
-                    <div className="text-3xl font-bold text-purple-900">{stats.totalUsers}</div>
+                    <div className="text-sm font-bold text-gray-400 mb-1 uppercase">Müşteriler</div>
+                    <div className="text-4xl font-extrabold text-purple-900">{stats.totalUsers}</div>
+                    <Users className="w-8 h-8 text-purple-100 absolute top-6 right-6"/>
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="bg-white shadow-xl border-none">
                 <CardContent className="pt-6">
-                    <div className="text-sm font-medium text-gray-500 mb-1">Aktif Koçlar</div>
-                    <div className="text-3xl font-bold text-orange-600">{stats.activeCoaches}</div>
+                    <div className="text-sm font-bold text-gray-400 mb-1 uppercase">Aktif Koçlar</div>
+                    <div className="text-4xl font-extrabold text-orange-600">{stats.activeCoaches}</div>
+                    <TrendingUp className="w-8 h-8 text-orange-100 absolute top-6 right-6"/>
                 </CardContent>
             </Card>
         </div>
 
         {/* RANDEVU LİSTESİ */}
-        <Card>
-            <CardHeader><CardTitle>Gelen Tüm Randevular</CardTitle></CardHeader>
-            <CardContent>
+        <Card className="shadow-xl border-none">
+            <CardHeader className="border-b bg-gray-50 rounded-t-xl"><CardTitle>Gelen Tüm Randevular</CardTitle></CardHeader>
+            <CardContent className="p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
+                        <thead className="bg-white text-gray-500 border-b">
                             <tr>
-                                <th className="p-3">Müşteri</th>
-                                <th className="p-3">Tarih</th>
-                                <th className="p-3">Durum</th>
-                                <th className="p-3">Tutar</th>
-                                <th className="p-3 text-right">İşlem</th>
+                                <th className="p-4">Müşteri</th>
+                                <th className="p-4">Tarih</th>
+                                <th className="p-4">Durum</th>
+                                <th className="p-4">Tutar</th>
+                                <th className="p-4 text-right">İşlem</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y bg-white">
                             {bookings.map((booking) => (
-                                <tr key={booking.id} className="hover:bg-slate-50">
-                                    <td className="p-3">
-                                        <div className="font-bold text-slate-900">{booking.client_name}</div>
-                                        <div className="text-xs text-gray-500">{booking.client_email}</div>
-                                        <div className="text-xs text-gray-400">{booking.client_phone}</div>
+                                <tr key={booking.id} className="hover:bg-gray-50">
+                                    <td className="p-4">
+                                        <div className="font-bold text-lg">{booking.client_name}</div>
+                                        <div className="text-gray-500">{booking.client_email}</div>
                                     </td>
-                                    <td className="p-3">
-                                        {new Date(booking.created_at).toLocaleDateString('tr-TR')}
-                                        <div className="text-xs text-gray-400">{booking.session_time}</div>
+                                    <td className="p-4 font-medium">
+                                        {new Date(booking.created_at).toLocaleDateString('tr-TR')} <br/>
+                                        <span className="text-gray-400 text-xs">{booking.session_time}</span>
                                     </td>
-                                    <td className="p-3">
+                                    <td className="p-4">
                                         <Badge className={
-                                            booking.status === 'approved' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
-                                            booking.status === 'rejected' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 
-                                            'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                            booking.status === 'approved' ? 'bg-green-500' : 
+                                            booking.status === 'rejected' ? 'bg-red-500' : 
+                                            'bg-yellow-500'
                                         }>
-                                            {booking.status === 'approved' ? 'Onaylandı' : 
-                                             booking.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+                                            {booking.status === 'approved' ? 'ONAYLANDI' : 
+                                             booking.status === 'rejected' ? 'REDDEDİLDİ' : 'BEKLİYOR'}
                                         </Badge>
                                     </td>
-                                    <td className="p-3 font-bold text-slate-700">
-                                        {booking.is_trial ? 'Ücretsiz' : '1500 ₺'}
+                                    <td className="p-4 font-bold text-lg text-slate-700">
+                                        {booking.is_trial ? '0 ₺' : '1500 ₺'}
                                     </td>
-                                    <td className="p-3 text-right flex justify-end gap-2">
+                                    <td className="p-4 text-right flex justify-end gap-2">
                                         {booking.status === 'pending' && (
                                             <>
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 w-16 text-xs" onClick={() => handleApprove(booking.id)}>
-                                                    Onayla
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApprove(booking.id)}>
+                                                    <CheckCircle className="w-4 h-4 mr-1"/> Onayla
                                                 </Button>
-                                                <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-16 text-xs" onClick={() => handleReject(booking.id)}>
-                                                    Reddet
+                                                <Button size="sm" variant="destructive" onClick={() => handleReject(booking.id)}>
+                                                    <XCircle className="w-4 h-4 mr-1"/> Reddet
                                                 </Button>
                                             </>
                                         )}
                                     </td>
                                 </tr>
                             ))}
-                             {bookings.length === 0 && (
-                                <tr><td colSpan={5} className="p-8 text-center text-gray-400">Henüz hiç randevu kaydı yok.</td></tr>
-                            )}
                         </tbody>
                     </table>
                 </div>

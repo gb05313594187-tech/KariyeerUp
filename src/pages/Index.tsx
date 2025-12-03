@@ -250,4 +250,5 @@ export default function Index() {
     </div>
   );
 }
+
 // Vercel cache reset denemesi

@@ -7,14 +7,12 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { FollowProvider } from "@/contexts/FollowContext";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer"; // Footer'ı da ekledik
 
-// SAYFALAR
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import AdminPanel from "./pages/AdminPanel";
+import AdminPanel from "./pages/AdminPanel"; // ADMIN IMPORT
 import CoachList from "./pages/CoachList";
 import CoachProfile from "./pages/CoachProfile";
 import BookingSystem from "./pages/BookingSystem";
@@ -27,7 +25,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// --- İŞTE SADECE BURADA TEK BİR TANE APP VAR ---
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -42,8 +39,13 @@ const App = () => (
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    
+                    {/* KULLANICI PANELİ */}
                     <Route path="/dashboard" element={<Dashboard />} />
+                    
+                    {/* YÖNETİCİ PANELİ (BURASI ÖNEMLİ) */}
                     <Route path="/admin" element={<AdminPanel />} />
+                    
                     <Route path="/coaches" element={<CoachList />} />
                     <Route path="/coach/:id" element={<CoachProfile />} />
                     <Route path="/booking/:id" element={<BookingSystem />} />
@@ -55,7 +57,6 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
-                <Footer />
               </div>
             </BrowserRouter>
         </FollowProvider>

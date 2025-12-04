@@ -4,10 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { Button } from "./components/ui/button";
 
 // CONTEXT PROVIDER'LAR
-// Buradaki yolları proje yapına göre düzenle:
-// Örn: ./contexts/LanguageContext veya ./contexts/language-context
-import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 // SAYFALAR
 import Index from "./pages/Index";
@@ -20,6 +18,14 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
+
+// Footer'da ve menüde kullandıkların
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
+import Partnership from "./pages/Partnership";
+import KullanimSozlesmesi from "./pages/KullanimSozlesmesi";
+import KVKKAydinlatma from "./pages/KVKKAydinlatma";
 
 export default function App() {
   return (
@@ -76,14 +82,30 @@ export default function App() {
             <main className="flex-1">
               <Routes>
                 <Route path="/" element={<Index />} />
+
+                {/* Ana menü sayfaları */}
                 <Route path="/coaches" element={<ForCoaches />} />
                 <Route path="/companies" element={<ForCompanies />} />
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/webinars" element={<Webinars />} />
+
+                {/* Auth */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+
+                {/* Dashboard / Admin */}
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/admin" element={<AdminPanel />} />
+
+                {/* Footer linkleri */}
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/partnership" element={<Partnership />} />
+                <Route path="/kullanim-sozlesmesi" element={<KullanimSozlesmesi />} />
+                <Route path="/kvkk-aydinlatma" element={<KVKKAydinlatma />} />
+
+                {/* Diğer her şey */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
@@ -102,7 +124,7 @@ export default function App() {
                   </div>
                   <p className="text-gray-400">
                     Türkiye&apos;nin en kapsamlı kariyer koçluğu platformu.
-                    Geleceğin için potansiyalini Keşfet! Bugünden Başla.
+                    Hedeflerinize ulaşmanız için yanınızdayız.
                   </p>
                 </div>
 
@@ -171,14 +193,13 @@ export default function App() {
                     <br />
                     destek@kariyeer.com
                     <br />
-                    +90 (531) 359 41 87
+                    +90 (850) XXX XX XX
                   </p>
                 </div>
               </div>
 
               <div className="border-t border-white/10 py-4 text-center text-xs text-gray-500">
-                © {new Date().getFullYear()} Kariyeer.com – Tüm hakları
-                saklıdır.
+                © {new Date().getFullYear()} Kariyeer.com – Tüm hakları saklıdır.
               </div>
             </footer>
           </div>

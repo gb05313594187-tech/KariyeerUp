@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "@/pages/Index";
-import CoachesPage from "@/pages/Coaches";
-import CompaniesPage from "@/pages/Companies";
+import forCoachesPage from "@/pages/forCoaches";
+import forCompaniesPage from "@/pages/forCompanies";
 
 export default function App() {
   return (

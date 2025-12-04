@@ -1,7 +1,8 @@
 {
-  "name": "shadcnui",
+  "name": "kariyeer-up",
+  "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "packageManager": "pnpm@8.10.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

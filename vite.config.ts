@@ -9,8 +9,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: "/", // Vercel'de kökten yayınlanacağı için
+  base: "/",               // VERCEL'DE GEREKLİ
   build: {
-    outDir: "dist", // Vercel Build Output Directory ile aynı olmalı
+    outDir: "dist",        // VERCEL BUILD OUTPUT
   },
 });

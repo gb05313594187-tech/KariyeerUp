@@ -95,3 +95,4 @@
     "vite": "^5.4.1"
   }
 }
+Fix package.json for npm/Vercel

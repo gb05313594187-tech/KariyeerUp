@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import Navbar from '@/components/Navbar';
 
 export default function ForCoaches() {
   const { language } = useLanguage();
@@ -26,7 +25,12 @@ export default function ForCoaches() {
   const benefits = [
     {
       icon: <DollarSign className="h-8 w-8" />,
-      title: language === 'tr' ? 'Pasif Gelir Fırsatları' : language === 'en' ? 'Passive Income Opportunities' : 'Opportunités de revenus passifs',
+      title:
+        language === 'tr'
+          ? 'Pasif Gelir Fırsatları'
+          : language === 'en'
+          ? 'Passive Income Opportunities'
+          : 'Opportunités de revenus passifs',
       description:
         language === 'tr'
           ? 'Platform üzerinden düzenli danışan akışı ile sürdürülebilir gelir elde edin. Komisyon oranları %15-25 arasında değişir.'
@@ -36,7 +40,12 @@ export default function ForCoaches() {
     },
     {
       icon: <Users className="h-8 w-8" />,
-      title: language === 'tr' ? 'Geniş Danışan Ağı' : language === 'en' ? 'Wide Client Network' : 'Large réseau de clients',
+      title:
+        language === 'tr'
+          ? 'Geniş Danışan Ağı'
+          : language === 'en'
+          ? 'Wide Client Network'
+          : 'Large réseau de clients',
       description:
         language === 'tr'
           ? 'Bireysel danışanlardan kurumsal müşterilere kadar geniş bir yelpazede profesyonellerle çalışma fırsatı.'
@@ -46,7 +55,12 @@ export default function ForCoaches() {
     },
     {
       icon: <BookOpen className="h-8 w-8" />,
-      title: language === 'tr' ? 'Profesyonel Gelişim' : language === 'en' ? 'Professional Development' : 'Développement professionnel',
+      title:
+        language === 'tr'
+          ? 'Profesyonel Gelişim'
+          : language === 'en'
+          ? 'Professional Development'
+          : 'Développement professionnel',
       description:
         language === 'tr'
           ? 'Webinarlar, vaka tartışmaları ve süpervizyon seansları ile sürekli gelişim imkanı.'
@@ -56,7 +70,12 @@ export default function ForCoaches() {
     },
     {
       icon: <Video className="h-8 w-8" />,
-      title: language === 'tr' ? 'Webinar ve Etkinlikler' : language === 'en' ? 'Webinars and Events' : 'Webinaires et événements',
+      title:
+        language === 'tr'
+          ? 'Webinar ve Etkinlikler'
+          : language === 'en'
+          ? 'Webinars and Events'
+          : 'Webinaires et événements',
       description:
         language === 'tr'
           ? 'Düzenli webinarlar düzenleyerek görünürlüğünüzü artırın ve sektörde öne çıkın.'
@@ -66,7 +85,12 @@ export default function ForCoaches() {
     },
     {
       icon: <MessageCircle className="h-8 w-8" />,
-      title: language === 'tr' ? 'MentorCircle Topluluğu' : language === 'en' ? 'MentorCircle Community' : 'Communauté MentorCircle',
+      title:
+        language === 'tr'
+          ? 'MentorCircle Topluluğu'
+          : language === 'en'
+          ? 'MentorCircle Community'
+          : 'Communauté MentorCircle',
       description:
         language === 'tr'
           ? 'Diğer koçlarla etkileşim, vaka paylaşımı ve profesyonel networking imkanı.'
@@ -76,7 +100,12 @@ export default function ForCoaches() {
     },
     {
       icon: <Award className="h-8 w-8" />,
-      title: language === 'tr' ? 'Tanınırlık ve Prestij' : language === 'en' ? 'Recognition and Prestige' : 'Reconnaissance et prestige',
+      title:
+        language === 'tr'
+          ? 'Tanınırlık ve Prestij'
+          : language === 'en'
+          ? 'Recognition and Prestige'
+          : 'Reconnaissance et prestige',
       description:
         language === 'tr'
           ? 'Ayın Koçu, Haftanın Koçu gibi ödüllerle sektörde tanınırlığınızı artırın.'
@@ -88,7 +117,12 @@ export default function ForCoaches() {
 
   const ecosystem = [
     {
-      title: language === 'tr' ? 'İçerik Üretimi' : language === 'en' ? 'Content Creation' : 'Création de contenu',
+      title:
+        language === 'tr'
+          ? 'İçerik Üretimi'
+          : language === 'en'
+          ? 'Content Creation'
+          : 'Création de contenu',
       description:
         language === 'tr'
           ? 'MentorCircle üzerinden makaleler, vaka çalışmaları ve tartışmalar paylaşarak uzmanlığınızı sergileyin.'
@@ -98,7 +132,12 @@ export default function ForCoaches() {
       icon: <BookOpen className="h-6 w-6" />,
     },
     {
-      title: language === 'tr' ? 'Webinar Düzenleme' : language === 'en' ? 'Hosting Webinars' : 'Organisation de webinaires',
+      title:
+        language === 'tr'
+          ? 'Webinar Düzenleme'
+          : language === 'en'
+          ? 'Hosting Webinars'
+          : 'Organisation de webinaires',
       description:
         language === 'tr'
           ? 'Düzenli webinarlar ile hem danışanlarla hem diğer koçlarla etkileşim kurun.'
@@ -108,7 +147,12 @@ export default function ForCoaches() {
       icon: <Video className="h-6 w-6" />,
     },
     {
-      title: language === 'tr' ? 'Vaka Tartışmaları' : language === 'en' ? 'Case Discussions' : 'Discussions de cas',
+      title:
+        language === 'tr'
+          ? 'Vaka Tartışmaları'
+          : language === 'en'
+          ? 'Case Discussions'
+          : 'Discussions de cas',
       description:
         language === 'tr'
           ? 'Diğer koçlarla vaka tartışmaları yaparak profesyonel gelişiminizi sürdürün.'
@@ -118,7 +162,12 @@ export default function ForCoaches() {
       icon: <MessageCircle className="h-6 w-6" />,
     },
     {
-      title: language === 'tr' ? 'Etkileşim ve Görünürlük' : language === 'en' ? 'Engagement and Visibility' : 'Engagement et visibilité',
+      title:
+        language === 'tr'
+          ? 'Etkileşim ve Görünürlük'
+          : language === 'en'
+          ? 'Engagement and Visibility'
+          : 'Engagement et visibilité',
       description:
         language === 'tr'
           ? 'Aktif katılım ve kaliteli içeriklerle Ayın Koçu veya Haftanın Koçu seçilebilirsiniz.'
@@ -131,7 +180,12 @@ export default function ForCoaches() {
 
   const revenueModel = [
     {
-      title: language === 'tr' ? 'Kurucu Koç Avantajı' : language === 'en' ? 'Founding Coach Advantage' : 'Avantage coach fondateur',
+      title:
+        language === 'tr'
+          ? 'Kurucu Koç Avantajı'
+          : language === 'en'
+          ? 'Founding Coach Advantage'
+          : 'Avantage coach fondateur',
       description:
         language === 'tr'
           ? 'İlk 50 koç için %15 komisyon oranı (standart %20 yerine)'
@@ -140,7 +194,12 @@ export default function ForCoaches() {
           : 'Taux de commission de 15% pour les 50 premiers coachs (au lieu de 20% standard)',
     },
     {
-      title: language === 'tr' ? 'Esnek Ücretlendirme' : language === 'en' ? 'Flexible Pricing' : 'Tarification flexible',
+      title:
+        language === 'tr'
+          ? 'Esnek Ücretlendirme'
+          : language === 'en'
+          ? 'Flexible Pricing'
+          : 'Tarification flexible',
       description:
         language === 'tr'
           ? 'Kendi seans ücretinizi belirleyin (önerilen: 750-2000 ₺)'
@@ -149,7 +208,12 @@ export default function ForCoaches() {
           : 'Fixez vos propres tarifs de séance (recommandé: 750-2000 ₺)',
     },
     {
-      title: language === 'tr' ? 'Kurumsal Anlaşmalar' : language === 'en' ? 'Corporate Agreements' : 'Accords d\'entreprise',
+      title:
+        language === 'tr'
+          ? 'Kurumsal Anlaşmalar'
+          : language === 'en'
+          ? 'Corporate Agreements'
+          : 'Accords d\'entreprise',
       description:
         language === 'tr'
           ? 'Şirket anlaşmalarından düzenli gelir fırsatı'
@@ -158,7 +222,12 @@ export default function ForCoaches() {
           : 'Opportunité de revenus réguliers grâce aux accords d\'entreprise',
     },
     {
-      title: language === 'tr' ? 'Ödeme Güvencesi' : language === 'en' ? 'Payment Guarantee' : 'Garantie de paiement',
+      title:
+        language === 'tr'
+          ? 'Ödeme Güvencesi'
+          : language === 'en'
+          ? 'Payment Guarantee'
+          : 'Garantie de paiement',
       description:
         language === 'tr'
           ? 'Seanslarınızın ödemesi platform tarafından garanti edilir'
@@ -170,7 +239,12 @@ export default function ForCoaches() {
 
   const qualityCriteria = [
     {
-      title: language === 'tr' ? 'ICF veya MYK Sertifikası' : language === 'en' ? 'ICF or MYK Certification' : 'Certification ICF ou MYK',
+      title:
+        language === 'tr'
+          ? 'ICF veya MYK Sertifikası'
+          : language === 'en'
+          ? 'ICF or MYK Certification'
+          : 'Certification ICF ou MYK',
       description:
         language === 'tr'
           ? 'Uluslararası veya ulusal geçerliliğe sahip koçluk sertifikası zorunludur.'
@@ -179,7 +253,12 @@ export default function ForCoaches() {
           : 'Une certification de coaching reconnue internationalement ou nationalement est requise.',
     },
     {
-      title: language === 'tr' ? 'Minimum Deneyim' : language === 'en' ? 'Minimum Experience' : 'Expérience minimale',
+      title:
+        language === 'tr'
+          ? 'Minimum Deneyim'
+          : language === 'en'
+          ? 'Minimum Experience'
+          : 'Expérience minimale',
       description:
         language === 'tr'
           ? 'En az 2 yıl koçluk deneyimi veya 100 saat koçluk pratiği.'
@@ -188,7 +267,12 @@ export default function ForCoaches() {
           : 'Au moins 2 ans d\'expérience en coaching ou 100 heures de pratique de coaching.',
     },
     {
-      title: language === 'tr' ? 'Sürekli Gelişim' : language === 'en' ? 'Continuous Development' : 'Développement continu',
+      title:
+        language === 'tr'
+          ? 'Sürekli Gelişim'
+          : language === 'en'
+          ? 'Continuous Development'
+          : 'Développement continu',
       description:
         language === 'tr'
           ? 'Yıllık süpervizyon ve eğitim gereksinimlerini karşılama taahhüdü.'
@@ -197,7 +281,12 @@ export default function ForCoaches() {
           : 'Engagement à respecter les exigences annuelles de supervision et de formation.',
     },
     {
-      title: language === 'tr' ? 'Kalite Standartları' : language === 'en' ? 'Quality Standards' : 'Normes de qualité',
+      title:
+        language === 'tr'
+          ? 'Kalite Standartları'
+          : language === 'en'
+          ? 'Quality Standards'
+          : 'Normes de qualité',
       description:
         language === 'tr'
           ? 'Minimum 4.0/5.0 puan ortalaması korunmalıdır. 3.5 altı destek programı.'
@@ -217,15 +306,16 @@ export default function ForCoaches() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <Navbar />
-
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-3xl">
             <Badge className="mb-4 bg-white text-red-600 hover:bg-white">
-              {language === 'tr' ? 'Koçlar İçin Özel' : language === 'en' ? 'Exclusive for Coaches' : 'Exclusif pour les coachs'}
+              {language === 'tr'
+                ? 'Koçlar İçin Özel'
+                : language === 'en'
+                ? 'Exclusive for Coaches'
+                : 'Exclusif pour les coachs'}
             </Badge>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               {language === 'tr'
@@ -242,8 +332,16 @@ export default function ForCoaches() {
                 : 'La plateforme idéale pour les revenus passifs, le développement professionnel et la reconnaissance dans l\'industrie'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-white text-red-600 hover:bg-red-50 text-lg px-8" onClick={handleApplyClick}>
-                {language === 'tr' ? 'Hemen Başvur' : language === 'en' ? 'Apply Now' : 'Postuler maintenant'}
+              <Button
+                size="lg"
+                className="bg-white text-red-600 hover:bg-red-50 text-lg px-8"
+                onClick={handleApplyClick}
+              >
+                {language === 'tr'
+                  ? 'Hemen Başvur'
+                  : language === 'en'
+                  ? 'Apply Now'
+                  : 'Postuler maintenant'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
@@ -252,7 +350,11 @@ export default function ForCoaches() {
                 className="border-2 border-white text-white hover:bg-white hover:text-red-600 text-lg px-8"
                 onClick={handleSelectionClick}
               >
-                {language === 'tr' ? 'Seçim Süreci' : language === 'en' ? 'Selection Process' : 'Processus de sélection'}
+                {language === 'tr'
+                  ? 'Seçim Süreci'
+                  : language === 'en'
+                  ? 'Selection Process'
+                  : 'Processus de sélection'}
               </Button>
             </div>
           </div>
@@ -264,7 +366,11 @@ export default function ForCoaches() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-red-600 mb-4">
-              {language === 'tr' ? 'Kariyeer Ekosistemi Size Neler Kazandırır?' : language === 'en' ? 'What Does the Kariyeer Ecosystem Offer You?' : 'Que vous offre l\'écosystème Kariyeer?'}
+              {language === 'tr'
+                ? 'Kariyeer Ekosistemi Size Neler Kazandırır?'
+                : language === 'en'
+                ? 'What Does the Kariyeer Ecosystem Offer You?'
+                : 'Que vous offre l\'écosystème Kariyeer?'}
             </h2>
             <p className="text-xl text-gray-600">
               {language === 'tr'
@@ -277,12 +383,17 @@ export default function ForCoaches() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {benefits.map((benefit, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow border-red-100">
+              <Card
+                key={index}
+                className="hover:shadow-lg transition-shadow border-red-100"
+              >
                 <CardHeader>
                   <div className="w-14 h-14 bg-red-100 rounded-lg flex items-center justify-center mb-4 text-red-600">
                     {benefit.icon}
                   </div>
-                  <CardTitle className="text-xl text-red-600">{benefit.title}</CardTitle>
+                  <CardTitle className="text-xl text-red-600">
+                    {benefit.title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600">{benefit.description}</p>
@@ -298,7 +409,11 @@ export default function ForCoaches() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-red-600 mb-4">
-              {language === 'tr' ? 'Ekosistemde Nasıl Aktif Olursunuz?' : language === 'en' ? 'How to Be Active in the Ecosystem?' : 'Comment être actif dans l\'écosystème?'}
+              {language === 'tr'
+                ? 'Ekosistemde Nasıl Aktif Olursunuz?'
+                : language === 'en'
+                ? 'How to Be Active in the Ecosystem?'
+                : 'Comment être actif dans l\'écosystème?'}
             </h2>
             <p className="text-xl text-gray-600">
               {language === 'tr'
@@ -317,7 +432,9 @@ export default function ForCoaches() {
                     <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
                       {item.icon}
                     </div>
-                    <CardTitle className="text-xl text-red-600">{item.title}</CardTitle>
+                    <CardTitle className="text-xl text-red-600">
+                      {item.title}
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -332,7 +449,11 @@ export default function ForCoaches() {
               <CardContent className="pt-6">
                 <Target className="h-12 w-12 text-red-600 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-red-600 mb-4">
-                  {language === 'tr' ? 'Ayın Koçu veya Haftanın Koçu Olun!' : language === 'en' ? 'Become Coach of the Month or Coach of the Week!' : 'Devenez Coach du Mois ou Coach de la Semaine!'}
+                  {language === 'tr'
+                    ? 'Ayın Koçu veya Haftanın Koçu Olun!'
+                    : language === 'en'
+                    ? 'Become Coach of the Month or Coach of the Week!'
+                    : 'Devenez Coach du Mois ou Coach de la Semaine!'}
                 </h3>
                 <p className="text-gray-700 mb-6 max-w-2xl mx-auto">
                   {language === 'tr'
@@ -343,7 +464,11 @@ export default function ForCoaches() {
                 </p>
                 <Link to="/mentor-circle">
                   <Button className="bg-red-600 hover:bg-red-700">
-                    {language === 'tr' ? 'MentorCircle\'a Katıl' : language === 'en' ? 'Join MentorCircle' : 'Rejoindre MentorCircle'}
+                    {language === 'tr'
+                      ? 'MentorCircle\'a Katıl'
+                      : language === 'en'
+                      ? 'Join MentorCircle'
+                      : 'Rejoindre MentorCircle'}
                   </Button>
                 </Link>
               </CardContent>
@@ -357,7 +482,11 @@ export default function ForCoaches() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-red-600 mb-4">
-              {language === 'tr' ? 'Gelir Modeli' : language === 'en' ? 'Revenue Model' : 'Modèle de revenus'}
+              {language === 'tr'
+                ? 'Gelir Modeli'
+                : language === 'en'
+                ? 'Revenue Model'
+                : 'Modèle de revenus'}
             </h2>
             <p className="text-xl text-gray-600">
               {language === 'tr'
@@ -370,12 +499,17 @@ export default function ForCoaches() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {revenueModel.map((item, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-red-100">
+              <Card
+                key={index}
+                className="text-center hover:shadow-lg transition-shadow border-red-100"
+              >
                 <CardHeader>
                   <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="h-6 w-6 text-red-600" />
                   </div>
-                  <CardTitle className="text-lg text-red-600">{item.title}</CardTitle>
+                  <CardTitle className="text-lg text-red-600">
+                    {item.title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 text-sm">{item.description}</p>
@@ -391,21 +525,33 @@ export default function ForCoaches() {
                   <DollarSign className="h-12 w-12 mx-auto mb-4" />
                   <h3 className="text-3xl font-bold mb-2">%15-25</h3>
                   <p className="text-red-50">
-                    {language === 'tr' ? 'Platform Komisyonu' : language === 'en' ? 'Platform Commission' : 'Commission de plateforme'}
+                    {language === 'tr'
+                      ? 'Platform Komisyonu'
+                      : language === 'en'
+                      ? 'Platform Commission'
+                      : 'Commission de plateforme'}
                   </p>
                 </div>
                 <div>
                   <Briefcase className="h-12 w-12 mx-auto mb-4" />
                   <h3 className="text-3xl font-bold mb-2">750-2000₺</h3>
                   <p className="text-red-50">
-                    {language === 'tr' ? 'Önerilen Seans Ücreti' : language === 'en' ? 'Recommended Session Fee' : 'Tarif de séance recommandé'}
+                    {language === 'tr'
+                      ? 'Önerilen Seans Ücreti'
+                      : language === 'en'
+                      ? 'Recommended Session Fee'
+                      : 'Tarif de séance recommandé'}
                   </p>
                 </div>
                 <div>
                   <TrendingUp className="h-12 w-12 mx-auto mb-4" />
                   <h3 className="text-3xl font-bold mb-2">∞</h3>
                   <p className="text-red-50">
-                    {language === 'tr' ? 'Sınırsız Gelir Potansiyeli' : language === 'en' ? 'Unlimited Income Potential' : 'Potentiel de revenus illimité'}
+                    {language === 'tr'
+                      ? 'Sınırsız Gelir Potansiyeli'
+                      : language === 'en'
+                      ? 'Unlimited Income Potential'
+                      : 'Potentiel de revenus illimité'}
                   </p>
                 </div>
               </div>
@@ -419,7 +565,11 @@ export default function ForCoaches() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-red-600 mb-4">
-              {language === 'tr' ? 'Koç Seçim Kriterleri' : language === 'en' ? 'Coach Selection Criteria' : 'Critères de sélection des coachs'}
+              {language === 'tr'
+                ? 'Koç Seçim Kriterleri'
+                : language === 'en'
+                ? 'Coach Selection Criteria'
+                : 'Critères de sélection des coachs'}
             </h2>
             <p className="text-xl text-gray-600">
               {language === 'tr'
@@ -438,7 +588,9 @@ export default function ForCoaches() {
                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">
                       <CheckCircle2 className="h-6 w-6" />
                     </div>
-                    <CardTitle className="text-lg text-red-600">{criterion.title}</CardTitle>
+                    <CardTitle className="text-lg text-red-600">
+                      {criterion.title}
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -449,8 +601,16 @@ export default function ForCoaches() {
           </div>
 
           <div className="text-center">
-            <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" onClick={handleSelectionClick}>
-              {language === 'tr' ? 'Tam Seçim Süreci' : language === 'en' ? 'Full Selection Process' : 'Processus de sélection complet'}
+            <Button
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-50"
+              onClick={handleSelectionClick}
+            >
+              {language === 'tr'
+                ? 'Tam Seçim Süreci'
+                : language === 'en'
+                ? 'Full Selection Process'
+                : 'Processus de sélection complet'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -475,8 +635,16 @@ export default function ForCoaches() {
               : 'Soumettez votre candidature, rejoignez l\'écosystème et ouvrez un nouveau chapitre dans le coaching de carrière.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-red-600 hover:bg-red-50 text-lg px-8" onClick={handleApplyClick}>
-              {language === 'tr' ? 'Koç Başvurusu Yap' : language === 'en' ? 'Apply as Coach' : 'Postuler en tant que coach'}
+            <Button
+              size="lg"
+              className="bg-white text-red-600 hover:bg-red-50 text-lg px-8"
+              onClick={handleApplyClick}
+            >
+              {language === 'tr'
+                ? 'Koç Başvurusu Yap'
+                : language === 'en'
+                ? 'Apply as Coach'
+                : 'Postuler en tant que coach'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Link to="/mentor-circle">
@@ -485,7 +653,11 @@ export default function ForCoaches() {
                 variant="outline"
                 className="border-2 border-white text-white hover:bg-white hover:text-red-600 text-lg px-8"
               >
-                {language === 'tr' ? 'MentorCircle\'ı Keşfet' : language === 'en' ? 'Explore MentorCircle' : 'Découvrir MentorCircle'}
+                {language === 'tr'
+                  ? 'MentorCircle\'ı Keşfet'
+                  : language === 'en'
+                  ? 'Explore MentorCircle'
+                  : 'Découvrir MentorCircle'}
               </Button>
             </Link>
           </div>

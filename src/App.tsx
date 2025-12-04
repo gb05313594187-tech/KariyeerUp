@@ -15,9 +15,12 @@ import Dashboard from "@/pages/Dashboard";
 import CoachApplication from "@/pages/CoachApplication";
 import CoachSelectionProcess from "@/pages/CoachSelectionProcess";
 
-// YENİ:
+// YENİ SAYFALAR
 import Profile from "@/pages/Profile";
 import Pricing from "@/pages/Pricing";
+
+// 🔴 KOÇ LİSTESİ SAYFASI (src/pages/coaches.tsx)
+import Coaches from "@/pages/coaches";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -42,6 +45,9 @@ export default function App() {
                 <Route path="/for-companies" element={<ForCompanies />} />
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/webinars" element={<Webinars />} />
+
+                {/* Koçlarını Bul (dış URL: /coaches) */}
+                <Route path="/coaches" element={<Coaches />} />
 
                 {/* Pricing */}
                 <Route path="/pricing" element={<Pricing />} />

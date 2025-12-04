@@ -1,8 +1,17 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, Video, User, LogOut, Settings, Home } from "lucide-react";
+import {
+  Menu,
+  X,
+  Globe,
+  Video,
+  User,
+  LogOut,
+  Settings,
+  Home,
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -20,7 +29,32 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
-  const { user, supabaseUser, isAuthenticated, logout } = useAuth();
+
+  // ---- LOGIN DURUMUNU LOCALSTORAGE'DAN OKU ----
+  const authCtx = useAuth?.();
+  const [storageLoggedIn, setStorageLoggedIn] = useState(false);
+  const [storageEmail, setStorageEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("kariyeer_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.isLoggedIn) {
+          setStorageLoggedIn(true);
+          setStorageEmail(parsed.email || null);
+        }
+      }
+    } catch (e) {
+      console.error("localStorage parse error", e);
+    }
+  }, []);
+
+  const contextLoggedIn = Boolean(
+    authCtx?.isAuthenticated || authCtx?.supabaseUser || authCtx?.user
+  );
+
+  const isLoggedIn = storageLoggedIn || contextLoggedIn;
 
   const getNavText = (tr: string, en: string, fr: string) => {
     switch (language) {
@@ -41,7 +75,11 @@ export default function Navbar() {
       path: "/for-coaches",
     },
     {
-      name: getNavText("Şirketler İçin", "For Companies", "Pour les entreprises"),
+      name: getNavText(
+        "Şirketler İçin",
+        "For Companies",
+        "Pour les entreprises"
+      ),
       path: "/for-companies",
     },
     {
@@ -93,23 +131,24 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await logout?.();
+      // context varsa onu da logout et
+      await authCtx?.logout?.();
     } catch (e) {
       console.error("Logout error:", e);
     }
-    navigate("/");
+    // localStorage kaydını temizle
+    localStorage.removeItem("kariyeer_user");
+    // tamamen sıfırdan yükle
+    window.location.href = "/";
   };
 
   const getUserDisplayName = () => {
-    if (user?.fullName) return user.fullName;
-    if (supabaseUser?.email) return supabaseUser.email.split("@")[0];
+    if (authCtx?.user?.fullName) return authCtx.user.fullName;
+    if (authCtx?.supabaseUser?.email)
+      return authCtx.supabaseUser.email.split("@")[0];
+    if (storageEmail) return storageEmail.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
-
-  // Dashboard'ta isek butonları zorla logged-in gibi göster
-  const isDashboard = location.pathname.startsWith("/dashboard");
-  const isLoggedIn = Boolean(isAuthenticated || supabaseUser || user);
-  const showLoggedInUI = isLoggedIn || isDashboard;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -143,7 +182,7 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop Right Side */}
+          {/* Desktop Right */}
           <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
             {/* Dil */}
             <Button
@@ -156,11 +195,11 @@ export default function Navbar() {
               {getLanguageDisplay()}
             </Button>
 
-            {showLoggedInUI && <NotificationBell />}
+            {isLoggedIn && <NotificationBell />}
 
-            {showLoggedInUI ? (
+            {isLoggedIn ? (
               <>
-                {/* Ana Sayfa */}
+                {/* Ana Sayfa butonu */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -171,7 +210,7 @@ export default function Navbar() {
                   {getNavText("Ana Sayfa", "Home", "Accueil")}
                 </Button>
 
-                {/* Kullanıcı / Çıkış */}
+                {/* Kullanıcı menüsü + Çıkış */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -209,7 +248,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/* Giriş / Kayıt – sadece login değilken */}
+                {/* Giriş / Kayıt sadece login DEĞİLKEN */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -272,7 +311,7 @@ export default function Navbar() {
                   {getLanguageFullName()}
                 </Button>
 
-                {showLoggedInUI ? (
+                {isLoggedIn ? (
                   <>
                     <Button
                       variant="outline"

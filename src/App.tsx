@@ -10,8 +10,8 @@ export default function App() {
       <div className="min-h-screen bg-white">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/coaches" element={<CoachesPage />} />
-          <Route path="/companies" element={<CompaniesPage />} />
+          <Route path="/forcoaches" element={<CoachesPage />} />
+          <Route path="/forcompanies" element={<CompaniesPage />} />
         </Routes>
       </div>
     </Router>

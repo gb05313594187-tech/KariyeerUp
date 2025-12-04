@@ -48,21 +48,18 @@ export default function App() {
               </Link>
             </nav>
 
-            {/* Sağ taraf (Giriş / Kayıt) */}
+            {/* Sağ taraf */}
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="text-sm"
-                onClick={() => (window.location.href = "/login")}
-              >
-                Giriş Yap
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-sm"
-                onClick={() => (window.location.href = "/register")}
-              >
-                Kayıt Ol
-              </Button>
+              <Link to="/login">
+                <Button variant="ghost" className="text-sm">
+                  Giriş Yap
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button className="bg-red-600 hover:bg-red-700 text-sm">
+                  Kayıt Ol
+                </Button>
+              </Link>
             </div>
           </div>
         </header>

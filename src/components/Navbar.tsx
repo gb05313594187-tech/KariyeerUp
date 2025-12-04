@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Globe, Video, User, LogOut, Settings, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 import NotificationBell from "@/components/NotificationBell";
 import {
@@ -23,9 +24,10 @@ export default function Navbar() {
   const { language, setLanguage } = useLanguage();
   const { user, supabaseUser, isAuthenticated, logout } = useAuth();
 
-  // localStorage'daki user bilgisini de dikkate alalım
   const [localUser, setLocalUser] = useState(null);
+  const [sessionUser, setSessionUser] = useState(null);
 
+  // localStorage'taki user (login.tsx'te yazılan) 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("kariyeer_user");
@@ -35,6 +37,20 @@ export default function Navbar() {
     } catch (e) {
       console.error("localStorage okunamadı:", e);
     }
+  }, []);
+
+  // Supabase üzerinde aktif user var mı?
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          setSessionUser(data.user);
+        }
+      } catch (e) {
+        console.error("supabase.auth.getUser hatası:", e);
+      }
+    })();
   }, []);
 
   const getNavText = (tr: string, en: string, fr: string) => {
@@ -103,13 +119,8 @@ export default function Navbar() {
     }
   };
 
-  const handleLoginClick = () => {
-    navigate("/login");
-  };
-
-  const handleRegisterClick = () => {
-    navigate("/register");
-  };
+  const handleLoginClick = () => navigate("/login");
+  const handleRegisterClick = () => navigate("/register");
 
   const handleLogout = async () => {
     try {
@@ -117,7 +128,6 @@ export default function Navbar() {
     } catch (e) {
       console.error("Logout error:", e);
     }
-    // localStorage temizle
     localStorage.removeItem("kariyeer_user");
     navigate("/");
   };
@@ -125,13 +135,18 @@ export default function Navbar() {
   const getUserDisplayName = () => {
     if (user?.fullName) return user.fullName;
     if (supabaseUser?.email) return supabaseUser.email.split("@")[0];
+    if (sessionUser?.email) return sessionUser.email.split("@")[0];
     if (localUser?.email) return localUser.email.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
 
-  // Kullanıcının giriş yapmış sayılması için: AuthContext veya localStorage'da bilgi olması yeterli
+  // 🔑 Kullanıcının gerçekten login sayılması için
   const isLoggedIn =
-    Boolean(isAuthenticated) || Boolean(supabaseUser) || Boolean(localUser);
+    Boolean(isAuthenticated) ||
+    Boolean(user) ||
+    Boolean(supabaseUser) ||
+    Boolean(sessionUser) ||
+    Boolean(localUser);
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -167,7 +182,7 @@ export default function Navbar() {
 
           {/* Desktop Right Side */}
           <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
-            {/* Dil butonu */}
+            {/* Dil */}
             <Button
               variant="ghost"
               size="sm"
@@ -181,8 +196,8 @@ export default function Navbar() {
             {isLoggedIn && <NotificationBell />}
 
             {isLoggedIn ? (
-              // ✅ GİRİŞ YAPILMIŞ HAL: Ana Sayfa + Çıkış Yap
               <>
+                {/* Ana Sayfa */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -193,6 +208,7 @@ export default function Navbar() {
                   {getNavText("Ana Sayfa", "Home", "Accueil")}
                 </Button>
 
+                {/* Kullanıcı menüsü + Çıkış */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -229,8 +245,8 @@ export default function Navbar() {
                 </DropdownMenu>
               </>
             ) : (
-              // ❌ GİRİŞ YAPILMAMIŞ HAL: Giriş Yap + Kayıt Ol
               <>
+                {/* Giriş / Kayıt – sadece login değilken */}
                 <Button
                   variant="outline"
                   size="sm"

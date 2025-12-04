@@ -20,7 +20,7 @@ export default function Footer() {
             </p>
             <div className="space-y-3 text-sm text-gray-300">
                 <div className="flex items-center gap-3"><MapPin className="w-4 h-4 text-orange-500"/> <span>Levent, İstanbul</span></div>
-                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-orange-500"/> <span>0850 123 45 67</span></div>
+                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-orange-500"/> <span>0531 359 41 87</span></div>
                 <div className="flex items-center gap-3"><Mail className="w-4 h-4 text-orange-500"/> <span>destek@kariyeer.com</span></div>
             </div>
           </div>

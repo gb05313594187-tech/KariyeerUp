@@ -14,7 +14,10 @@ import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import CoachApplication from "@/pages/CoachApplication";
 import CoachSelectionProcess from "@/pages/CoachSelectionProcess";
-// ihtiyaca göre diğer sayfaları da ekle
+
+// YENİ:
+import Profile from "@/pages/Profile";
+import Pricing from "@/pages/Pricing";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -40,6 +43,12 @@ export default function App() {
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/webinars" element={<Webinars />} />
 
+                {/* Pricing */}
+                <Route path="/pricing" element={<Pricing />} />
+
+                {/* Profil */}
+                <Route path="/profile" element={<Profile />} />
+
                 {/* Auth sayfaları */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -55,7 +64,9 @@ export default function App() {
                   element={<CoachSelectionProcess />}
                 />
 
-                {/* 404 vs varsa buraya */}
+                {/* 404 için istersen:
+                <Route path="*" element={<NotFound />} />
+                */}
               </Routes>
 
               <Footer />

@@ -1,12 +1,10 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Globe, Video, User, LogOut, Settings, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-
 import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
@@ -23,35 +21,6 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { user, supabaseUser, isAuthenticated, logout } = useAuth();
-
-  const [localUser, setLocalUser] = useState(null);
-  const [sessionUser, setSessionUser] = useState(null);
-
-  // localStorage'taki user (login.tsx'te yazılan) 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("kariyeer_user");
-      if (stored) {
-        setLocalUser(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error("localStorage okunamadı:", e);
-    }
-  }, []);
-
-  // Supabase üzerinde aktif user var mı?
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        if (data?.user) {
-          setSessionUser(data.user);
-        }
-      } catch (e) {
-        console.error("supabase.auth.getUser hatası:", e);
-      }
-    })();
-  }, []);
 
   const getNavText = (tr: string, en: string, fr: string) => {
     switch (language) {
@@ -128,25 +97,19 @@ export default function Navbar() {
     } catch (e) {
       console.error("Logout error:", e);
     }
-    localStorage.removeItem("kariyeer_user");
     navigate("/");
   };
 
   const getUserDisplayName = () => {
     if (user?.fullName) return user.fullName;
     if (supabaseUser?.email) return supabaseUser.email.split("@")[0];
-    if (sessionUser?.email) return sessionUser.email.split("@")[0];
-    if (localUser?.email) return localUser.email.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
 
-  // 🔑 Kullanıcının gerçekten login sayılması için
-  const isLoggedIn =
-    Boolean(isAuthenticated) ||
-    Boolean(user) ||
-    Boolean(supabaseUser) ||
-    Boolean(sessionUser) ||
-    Boolean(localUser);
+  // Dashboard'ta isek butonları zorla logged-in gibi göster
+  const isDashboard = location.pathname.startsWith("/dashboard");
+  const isLoggedIn = Boolean(isAuthenticated || supabaseUser || user);
+  const showLoggedInUI = isLoggedIn || isDashboard;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -193,9 +156,9 @@ export default function Navbar() {
               {getLanguageDisplay()}
             </Button>
 
-            {isLoggedIn && <NotificationBell />}
+            {showLoggedInUI && <NotificationBell />}
 
-            {isLoggedIn ? (
+            {showLoggedInUI ? (
               <>
                 {/* Ana Sayfa */}
                 <Button
@@ -208,7 +171,7 @@ export default function Navbar() {
                   {getNavText("Ana Sayfa", "Home", "Accueil")}
                 </Button>
 
-                {/* Kullanıcı menüsü + Çıkış */}
+                {/* Kullanıcı / Çıkış */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -309,11 +272,8 @@ export default function Navbar() {
                   {getLanguageFullName()}
                 </Button>
 
-                {isLoggedIn ? (
+                {showLoggedInUI ? (
                   <>
-                    <div className="px-3 py-2 text-sm font-medium text-gray-900">
-                      {getUserDisplayName()}
-                    </div>
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"

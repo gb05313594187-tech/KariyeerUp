@@ -31,7 +31,6 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { mockPosts, type Post } from '@/data/mentorCircleData';
 import VerificationBadgeModal from '@/components/VerificationBadgeModal';
-import Navbar from '@/components/Navbar';
 
 export default function MentorCircle() {
   const { language } = useLanguage();
@@ -56,21 +55,45 @@ export default function MentorCircle() {
   };
 
   const handleFollow = (authorId: string) => {
-    alert(language === 'tr' ? 'Takip özelliği yakında aktif olacak!' : language === 'en' ? 'Follow feature coming soon!' : 'Fonction de suivi bientôt disponible!');
+    alert(
+      language === 'tr'
+        ? 'Takip özelliği yakında aktif olacak!'
+        : language === 'en'
+        ? 'Follow feature coming soon!'
+        : 'Fonction de suivi bientôt disponible!'
+    );
   };
 
   const handleMessage = (authorId: string) => {
-    alert(language === 'tr' ? 'Mesajlaşma özelliği yakında aktif olacak!' : language === 'en' ? 'Messaging feature coming soon!' : 'Fonction de messagerie bientôt disponible!');
+    alert(
+      language === 'tr'
+        ? 'Mesajlaşma özelliği yakında aktif olacak!'
+        : language === 'en'
+        ? 'Messaging feature coming soon!'
+        : 'Fonction de messagerie bientôt disponible!'
+    );
   };
 
   const handleConnect = (authorId: string) => {
-    alert(language === 'tr' ? 'Bağlantı kurma özelliği yakında aktif olacak!' : language === 'en' ? 'Connect feature coming soon!' : 'Fonction de connexion bientôt disponible!');
+    alert(
+      language === 'tr'
+        ? 'Bağlantı kurma özelliği yakında aktif olacak!'
+        : language === 'en'
+        ? 'Connect feature coming soon!'
+        : 'Fonction de connexion bientôt disponible!'
+    );
   };
 
   const handleCreatePost = () => {
     if (!newPostContent.trim()) return;
     
-    alert(language === 'tr' ? 'Post oluşturma özelliği yakında aktif olacak!' : language === 'en' ? 'Post creation feature coming soon!' : 'Fonction de création de post bientôt disponible!');
+    alert(
+      language === 'tr'
+        ? 'Post oluşturma özelliği yakında aktif olacak!'
+        : language === 'en'
+        ? 'Post creation feature coming soon!'
+        : 'Fonction de création de post bientôt disponible!'
+    );
     setShowCreatePost(false);
     setNewPostContent('');
   };
@@ -123,7 +146,8 @@ export default function MentorCircle() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {post.author.followers.toLocaleString()} {language === 'tr' ? 'takipçi' : language === 'en' ? 'followers' : 'abonnés'} • {post.author.connections.toLocaleString()} {language === 'tr' ? 'bağlantı' : language === 'en' ? 'connections' : 'connexions'}
+                  {post.author.followers.toLocaleString()} {language === 'tr' ? 'takipçi' : language === 'en' ? 'followers' : 'abonnés'} •{' '}
+                  {post.author.connections.toLocaleString()} {language === 'tr' ? 'bağlantı' : language === 'en' ? 'connections' : 'connexions'}
                 </p>
               </div>
             </div>
@@ -148,7 +172,7 @@ export default function MentorCircle() {
             </div>
           </div>
 
-          {/* Post Type Badge */}
+          {/* Post Type Badge / Date */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-gray-500">{post.date}</span>
           </div>
@@ -163,7 +187,7 @@ export default function MentorCircle() {
           {/* Post Content */}
           <p className="text-gray-700 mb-4 whitespace-pre-line">{post.content}</p>
 
-          {/* Post Media/Special Content */}
+          {/* Media */}
           {post.image && (
             <img
               src={post.image}
@@ -172,6 +196,7 @@ export default function MentorCircle() {
             />
           )}
 
+          {/* Link Preview */}
           {post.linkPreview && (
             <a
               href={post.link}
@@ -223,7 +248,7 @@ export default function MentorCircle() {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -232,7 +257,7 @@ export default function MentorCircle() {
               className={`flex-1 ${post.isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-600 hover:text-red-500'}`}
             >
               <Heart className={`h-4 w-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
-              {language === 'tr' ? 'Beğen' : language === 'en' ? 'Like' : 'J\'aime'}
+              {language === 'tr' ? 'Beğen' : language === 'en' ? 'Like' : "J'aime"}
             </Button>
             <Button
               variant="ghost"
@@ -268,8 +293,6 @@ export default function MentorCircle() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -289,17 +312,29 @@ export default function MentorCircle() {
             <Award className="h-8 w-8 text-blue-600" />
             <div className="text-left">
               <p className="font-semibold text-gray-900">
-                {language === 'tr' ? 'Profilinizi Öne Çıkarın!' : language === 'en' ? 'Highlight Your Profile!' : 'Mettez en valeur votre profil!'}
+                {language === 'tr'
+                  ? 'Profilinizi Öne Çıkarın!'
+                  : language === 'en'
+                  ? 'Highlight Your Profile!'
+                  : 'Mettez en valeur votre profil!'}
               </p>
               <p className="text-sm text-gray-600">
-                {language === 'tr' ? 'Mavi Tik ₺99/ay • Altın Tik ₺299/ay' : language === 'en' ? 'Blue Badge ₺99/mo • Gold Badge ₺299/mo' : 'Badge Bleu ₺99/mois • Badge Or ₺299/mois'}
+                {language === 'tr'
+                  ? 'Mavi Tik ₺99/ay • Altın Tik ₺299/ay'
+                  : language === 'en'
+                  ? 'Blue Badge ₺99/mo • Gold Badge ₺299/mo'
+                  : 'Badge Bleu ₺99/mois • Badge Or ₺299/mois'}
               </p>
             </div>
             <Button
               onClick={() => setShowBadgeModal(true)}
               className="bg-gradient-to-r from-blue-600 to-amber-600 hover:from-blue-700 hover:to-amber-700 text-white"
             >
-              {language === 'tr' ? 'Detayları Gör' : language === 'en' ? 'View Details' : 'Voir les détails'}
+              {language === 'tr'
+                ? 'Detayları Gör'
+                : language === 'en'
+                ? 'View Details'
+                : 'Voir les détails'}
             </Button>
           </div>
         </div>
@@ -312,7 +347,11 @@ export default function MentorCircle() {
               variant="ghost"
               className="w-full justify-start text-gray-500 hover:text-gray-700 h-12 text-left"
             >
-              {language === 'tr' ? 'Bir gönderi başlat...' : language === 'en' ? 'Start a post...' : 'Commencer une publication...'}
+              {language === 'tr'
+                ? 'Bir gönderi başlat...'
+                : language === 'en'
+                ? 'Start a post...'
+                : 'Commencer une publication...'}
             </Button>
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
               {postTypeOptions.map((option) => (
@@ -334,7 +373,7 @@ export default function MentorCircle() {
           </CardContent>
         </Card>
 
-        {/* Filters */}
+        {/* Filters & Feed */}
         <div className="mb-6">
           <Tabs defaultValue="popular" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -348,11 +387,14 @@ export default function MentorCircle() {
               </TabsTrigger>
               <TabsTrigger value="following" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                {language === 'tr' ? 'Takip Ettiklerim' : language === 'en' ? 'Following' : 'Abonnements'}
+                {language === 'tr'
+                  ? 'Takip Ettiklerim'
+                  : language === 'en'
+                  ? 'Following'
+                  : 'Abonnements'}
               </TabsTrigger>
             </TabsList>
 
-            {/* Posts Feed */}
             <TabsContent value="popular" className="space-y-6">
               {posts
                 .sort((a, b) => b.likes + b.comments + b.shares - (a.likes + a.comments + a.shares))
@@ -367,10 +409,18 @@ export default function MentorCircle() {
               <div className="text-center py-12">
                 <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                  {language === 'tr' ? 'Henüz kimseyi takip etmiyorsunuz' : language === 'en' ? 'You\'re not following anyone yet' : 'Vous ne suivez personne pour le moment'}
+                  {language === 'tr'
+                    ? 'Henüz kimseyi takip etmiyorsunuz'
+                    : language === 'en'
+                    ? "You're not following anyone yet"
+                    : 'Vous ne suivez personne pour le moment'}
                 </h3>
                 <p className="text-gray-500">
-                  {language === 'tr' ? 'Koçları takip ederek içeriklerini görmeye başlayın' : language === 'en' ? 'Start following coaches to see their content' : 'Commencez à suivre des coachs pour voir leur contenu'}
+                  {language === 'tr'
+                    ? 'Koçları takip ederek içeriklerini görmeye başlayın'
+                    : language === 'en'
+                    ? 'Start following coaches to see their content'
+                    : 'Commencez à suivre des coachs pour voir leur contenu'}
                 </p>
               </div>
             </TabsContent>
@@ -384,7 +434,11 @@ export default function MentorCircle() {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>
-                {language === 'tr' ? 'Gönderi Oluştur' : language === 'en' ? 'Create Post' : 'Créer une publication'}
+                {language === 'tr'
+                  ? 'Gönderi Oluştur'
+                  : language === 'en'
+                  ? 'Create Post'
+                  : 'Créer une publication'}
               </DialogTitle>
               <Button
                 variant="ghost"
@@ -397,7 +451,13 @@ export default function MentorCircle() {
           </DialogHeader>
           <div className="space-y-4">
             <Textarea
-              placeholder={language === 'tr' ? 'Ne hakkında konuşmak istiyorsunuz?' : language === 'en' ? 'What do you want to talk about?' : 'De quoi voulez-vous parler?'}
+              placeholder={
+                language === 'tr'
+                  ? 'Ne hakkında konuşmak istiyorsunuz?'
+                  : language === 'en'
+                  ? 'What do you want to talk about?'
+                  : 'De quoi voulez-vous parler?'
+              }
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
               className="min-h-[200px] resize-none"

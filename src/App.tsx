@@ -102,7 +102,7 @@ export default function App() {
                   </div>
                   <p className="text-gray-400">
                     Türkiye&apos;nin en kapsamlı kariyer koçluğu platformu.
-                    Hedeflerinize ulaşmanız için yanınızdayız.
+                    Geleceğin için potansiyalini Keşfet! Bugünden Başla.
                   </p>
                 </div>
 
@@ -171,7 +171,7 @@ export default function App() {
                     <br />
                     destek@kariyeer.com
                     <br />
-                    +90 (850) XXX XX XX
+                    +90 (531) 359 41 87
                   </p>
                 </div>
               </div>

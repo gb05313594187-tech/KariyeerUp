@@ -19,7 +19,7 @@ import CoachSelectionProcess from "@/pages/CoachSelectionProcess";
 import Profile from "@/pages/Profile";
 import Pricing from "@/pages/Pricing";
 
-// 🔴 KOÇ LİSTESİ SAYFASI (src/pages/coaches.tsx)
+// KOÇ LİSTESİ SAYFASI (/coaches – Supabase’den gelen koçlar)
 import Coaches from "@/pages/coaches";
 
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -34,7 +34,7 @@ export default function App() {
         <SubscriptionProvider>
           <NotificationProvider>
             <BrowserRouter>
-              {/* NAVBAR HER ZAMAN AUTH + LANGUAGE İÇİNDE */}
+              {/* Üstte tek bir Navbar */}
               <Navbar />
 
               <Routes>
@@ -46,7 +46,7 @@ export default function App() {
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/webinars" element={<Webinars />} />
 
-                {/* Koçlarını Bul (dış URL: /coaches) */}
+                {/* Koçlarını Bul */}
                 <Route path="/coaches" element={<Coaches />} />
 
                 {/* Pricing */}
@@ -65,16 +65,19 @@ export default function App() {
                   path="/coach-application"
                   element={<CoachApplication />}
                 />
+
+                {/* 🔴 SEÇİM SÜRECİ SAYFASI – BUTON BURAYA GİDİYOR */}
                 <Route
-                  path="/coach-selection-process"
+                  path="/selection-process"     // ⬅️ ÖNCEKİ /coach-selection-process buraya çevrildi
                   element={<CoachSelectionProcess />}
                 />
 
-                {/* 404 için istersen:
+                {/* 404 istersen:
                 <Route path="*" element={<NotFound />} />
                 */}
               </Routes>
 
+              {/* Altta tek bir global footer */}
               <Footer />
             </BrowserRouter>
           </NotificationProvider>

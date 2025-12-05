@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Video,
@@ -12,150 +12,146 @@ import {
   TrendingUp,
   ArrowRight,
   AlertCircle,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import Navbar from '@/components/Navbar';
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function CoachSelectionProcess() {
-  const { language } = useLanguage();
   const navigate = useNavigate();
 
   const selectionSteps = [
     {
       step: 1,
-      title: 'Başvuru Formu',
-      duration: '10-15 dakika',
+      title: "Başvuru Formu",
+      duration: "10-15 dakika",
       icon: FileText,
-      description: 'Online başvuru formunu doldurun ve gerekli belgeleri yükleyin.',
+      description:
+        "Online başvuru formunu doldurun ve gerekli belgeleri yükleyin.",
       requirements: [
-        'Kişisel ve iletişim bilgileri',
-        'Koçluk sertifikası (ICF, MYK vb.)',
-        'CV / Özgeçmiş',
-        'Referanslar (opsiyonel)',
+        "Kişisel ve iletişim bilgileri",
+        "Koçluk sertifikası (ICF, MYK vb.)",
+        "CV / Özgeçmiş",
+        "Referanslar (opsiyonel)",
       ],
     },
     {
       step: 2,
-      title: 'Ön Değerlendirme',
-      duration: '3-5 iş günü',
+      title: "Ön Değerlendirme",
+      duration: "3-5 iş günü",
       icon: Target,
-      description: 'Başvurunuz ekibimiz tarafından değerlendirilir.',
+      description: "Başvurunuz ekibimiz tarafından değerlendirilir.",
       requirements: [
-        'Sertifika geçerliliği kontrolü',
-        'Deneyim ve uzmanlık alanları incelemesi',
-        'Referans kontrolü',
-        'Platform uygunluk değerlendirmesi',
+        "Sertifika geçerliliği kontrolü",
+        "Deneyim ve uzmanlık alanları incelemesi",
+        "Referans kontrolü",
+        "Platform uygunluk değerlendirmesi",
       ],
     },
     {
       step: 3,
-      title: 'Video Mülakat',
-      duration: '45-60 dakika',
+      title: "Video Mülakat",
+      duration: "45-60 dakika",
       icon: Video,
-      description: 'Ekibimizle online görüşme yapın.',
+      description: "Ekibimizle online görüşme yapın.",
       requirements: [
-        'Koçluk yaklaşımınız ve felsefeniz',
-        'Deneyim ve başarı hikayeleri',
-        'Platform beklentileri',
-        'Örnek koçluk senaryoları',
+        "Koçluk yaklaşımınız ve felsefeniz",
+        "Deneyim ve başarı hikayeleri",
+        "Platform beklentileri",
+        "Örnek koçluk senaryoları",
       ],
     },
     {
       step: 4,
-      title: 'Demo Seans',
-      duration: '30 dakika',
+      title: "Demo Seans",
+      duration: "30 dakika",
       icon: Users,
-      description: 'Koçluk becerilerinizi gösterin.',
+      description: "Koçluk becerilerinizi gösterin.",
       requirements: [
-        'Gerçek bir koçluk seansı simülasyonu',
-        'ICF yetkinliklerinin değerlendirilmesi',
-        'İletişim ve empati becerileri',
-        'Soru sorma ve dinleme teknikleri',
+        "Gerçek bir koçluk seansı simülasyonu",
+        "ICF yetkinliklerinin değerlendirilmesi",
+        "İletişim ve empati becerileri",
+        "Soru sorma ve dinleme teknikleri",
       ],
     },
     {
       step: 5,
-      title: 'Eğitim ve Onboarding',
-      duration: '1-2 hafta',
+      title: "Eğitim ve Onboarding",
+      duration: "1-2 hafta",
       icon: Award,
-      description: 'Platform eğitimi ve profil oluşturma.',
+      description: "Platform eğitimi ve profil oluşturma.",
       requirements: [
-        'Platform kullanım eğitimi',
-        'Koç profili oluşturma',
-        'Sözleşme imzalama',
-        'İlk danışan atama',
+        "Platform kullanım eğitimi",
+        "Koç profili oluşturma",
+        "Sözleşme imzalama",
+        "İlk danışan atama",
       ],
     },
     {
       step: 6,
-      title: 'Aktif Koçluk',
-      duration: 'Sürekli',
+      title: "Aktif Koçluk",
+      duration: "Sürekli",
       icon: TrendingUp,
-      description: 'Ekosistemde aktif olarak koçluk yapın.',
+      description: "Ekosistemde aktif olarak koçluk yapın.",
       requirements: [
-        'Düzenli seans gerçekleştirme',
-        'Kalite standartlarını koruma',
-        'MentorCircle\'da aktif katılım',
-        'Sürekli gelişim ve süpervizyon',
+        "Düzenli seans gerçekleştirme",
+        "Kalite standartlarını koruma",
+        "MentorCircle'da aktif katılım",
+        "Sürekli gelişim ve süpervizyon",
       ],
     },
   ];
 
   const qualityCriteria = [
     {
-      title: 'Sertifikasyon',
-      description: 'ICF (ACC, PCC, MCC) veya MYK sertifikası zorunludur.',
+      title: "Sertifikasyon",
+      description: "ICF (ACC, PCC, MCC) veya MYK sertifikası zorunludur.",
       icon: Award,
     },
     {
-      title: 'Deneyim',
-      description: 'Minimum 2 yıl koçluk deneyimi veya 100 saat koçluk pratiği.',
+      title: "Deneyim",
+      description:
+        "Minimum 2 yıl koçluk deneyimi veya 100 saat koçluk pratiği.",
       icon: Clock,
     },
     {
-      title: 'Uzmanlık',
-      description: 'En az 2 uzmanlık alanında yetkinlik.',
+      title: "Uzmanlık",
+      description: "En az 2 uzmanlık alanında yetkinlik.",
       icon: Target,
     },
     {
-      title: 'Etik Standartlar',
-      description: 'ICF Etik Kuralları\'na tam uyum.',
+      title: "Etik Standartlar",
+      description: "ICF Etik Kuralları'na tam uyum.",
       icon: CheckCircle2,
     },
   ];
 
   const timeline = [
-    { phase: 'Başvuru', duration: '1 gün' },
-    { phase: 'Ön Değerlendirme', duration: '3-5 gün' },
-    { phase: 'Mülakat', duration: '1 hafta' },
-    { phase: 'Demo Seans', duration: '3-5 gün' },
-    { phase: 'Onboarding', duration: '1-2 hafta' },
+    { phase: "Başvuru", duration: "1 gün" },
+    { phase: "Ön Değerlendirme", duration: "3-5 gün" },
+    { phase: "Mülakat", duration: "1 hafta" },
+    { phase: "Demo Seans", duration: "3-5 gün" },
+    { phase: "Onboarding", duration: "1-2 hafta" },
   ];
 
-  const totalDuration = '3-4 hafta';
+  const totalDuration = "3-4 hafta";
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <Badge className="mb-4 bg-white text-red-600 hover:bg-white">
             Koç Seçim Süreci
           </Badge>
-          <h1 className="text-5xl font-bold mb-6">
-            Kariyeer Koçu Olma Yolculuğu
-          </h1>
+          <h1 className="text-5xl font-bold mb-6">Kariyeer Koçu Olma Yolculuğu</h1>
           <p className="text-xl text-red-50 mb-8 max-w-2xl">
-            Şeffaf, adil ve profesyonel bir seçim süreci ile ekosistemimize katılın
+            Şeffaf, adil ve profesyonel bir seçim süreci ile ekosistemimize
+            katılın
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-white text-red-600 hover:bg-red-50"
-              onClick={() => navigate('/coach-application')}
+              onClick={() => navigate("/coach-application")}
             >
               Hemen Başvur
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -209,7 +205,10 @@ export default function CoachSelectionProcess() {
             {selectionSteps.map((item) => {
               const Icon = item.icon;
               return (
-                <Card key={item.step} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={item.step}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardHeader>
                     <div className="flex items-start gap-4">
                       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -217,7 +216,9 @@ export default function CoachSelectionProcess() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Badge className="bg-red-600">Adım {item.step}</Badge>
+                          <Badge className="bg-red-600">
+                            Adım {item.step}
+                          </Badge>
                           <Badge variant="outline" className="text-gray-600">
                             <Clock className="h-3 w-3 mr-1" />
                             {item.duration}
@@ -231,7 +232,9 @@ export default function CoachSelectionProcess() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <h4 className="font-semibold text-gray-900 mb-3">Gereksinimler:</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">
+                      Gereksinimler:
+                    </h4>
                     <ul className="space-y-2">
                       {item.requirements.map((req, idx) => (
                         <li key={idx} className="flex items-start gap-2">
@@ -264,7 +267,10 @@ export default function CoachSelectionProcess() {
             {qualityCriteria.map((criterion, index) => {
               const Icon = criterion.icon;
               return (
-                <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+                <Card
+                  key={index}
+                  className="text-center hover:shadow-lg transition-shadow"
+                >
                   <CardHeader>
                     <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Icon className="h-8 w-8 text-red-600" />
@@ -274,7 +280,9 @@ export default function CoachSelectionProcess() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm">{criterion.description}</p>
+                    <p className="text-gray-600 text-sm">
+                      {criterion.description}
+                    </p>
                   </CardContent>
                 </Card>
               );
@@ -297,19 +305,30 @@ export default function CoachSelectionProcess() {
                   <ul className="space-y-3 text-yellow-800">
                     <li className="flex items-start gap-2">
                       <span className="font-bold">•</span>
-                      <span>Başvuru ücretsizdir ve herhangi bir ön ödeme gerektirmez.</span>
+                      <span>
+                        Başvuru ücretsizdir ve herhangi bir ön ödeme
+                        gerektirmez.
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-bold">•</span>
-                      <span>Tüm başvurular gizlilik içinde değerlendirilir.</span>
+                      <span>
+                        Tüm başvurular gizlilik içinde değerlendirilir.
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-bold">•</span>
-                      <span>Olumsuz değerlendirme durumunda detaylı geri bildirim sağlanır.</span>
+                      <span>
+                        Olumsuz değerlendirme durumunda detaylı geri bildirim
+                        sağlanır.
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-bold">•</span>
-                      <span>İlk 50 koç için %15 komisyon oranı geçerlidir (standart %20 yerine).</span>
+                      <span>
+                        İlk 50 koç için %15 komisyon oranı geçerlidir (standart
+                        %20 yerine).
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="font-bold">•</span>
@@ -326,17 +345,15 @@ export default function CoachSelectionProcess() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-gradient-to-r from-red-600 to-orange-500 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">
-            Başlamaya Hazır mısınız?
-          </h2>
+          <h2 className="text-4xl font-bold mb-6">Başlamaya Hazır mısınız?</h2>
           <p className="text-xl mb-8 text-red-50">
             Başvuru formunu doldurun ve Kariyeer ekosisteminin bir parçası olun
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-white text-red-600 hover:bg-red-50 text-lg px-8"
-              onClick={() => navigate('/coach-application')}
+              onClick={() => navigate("/coach-application")}
             >
               Koç Başvurusu Yap
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -345,7 +362,7 @@ export default function CoachSelectionProcess() {
               size="lg"
               variant="outline"
               className="border-2 border-white text-white hover:bg-white hover:text-red-600 text-lg px-8"
-              onClick={() => navigate('/for-coaches')}
+              onClick={() => navigate("/for-coaches")}
             >
               Koçlar İçin Sayfası
             </Button>

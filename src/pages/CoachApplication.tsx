@@ -480,7 +480,7 @@ export default function CoachApplication() {
           <p className="text-gray-600">
             Sorularınız mı var?{' '}
             <a
-              href="mailto:info@kariyeer.com"
+              href="mailto:destek@kariyeer.com"
               className="text-red-600 hover:underline"
             >
               info@kariyeer.com

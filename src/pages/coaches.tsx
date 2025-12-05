@@ -42,7 +42,6 @@ export default function Coaches() {
     const fetchCoaches = async () => {
       setLoading(true);
 
-      // ⬇️ Tablo adını kendi projene göre ayarla (solda gördüğümüz isim buydu)
       const { data, error } = await supabase
         .from("app_2dff6511da_coaches")
         .select("*")
@@ -58,7 +57,6 @@ export default function Coaches() {
       const mapped: Coach[] =
         data?.map((row: any) => ({
           id: row.id,
-          // ⬇️ Bu alanları tablo kolonlarına göre düzenleyebilirsin
           name: row.full_name || row.name || "İsimsiz Koç",
           title: row.title || row.headline || "Kariyer & Yönetici Koçu",
           image:
@@ -157,23 +155,28 @@ export default function Coaches() {
                   Uzmanlık Alanı
                 </h4>
                 <div className="space-y-3">
-                  {["Tümü", "Liderlik", "Kariyer", "Girişimcilik", "İletişim", "Finans"].map(
-                    (cat) => (
-                      <label
-                        key={cat}
-                        className="flex items-center gap-3 cursor-pointer group"
-                      >
-                        <div className="w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center group-hover:border-red-500 transition-colors">
-                          {cat === "Tümü" && (
-                            <div className="w-3 h-3 bg-red-500 rounded-sm" />
-                          )}
-                        </div>
-                        <span className="text-gray-700 font-medium group-hover:text-red-600 transition-colors">
-                          {cat}
-                        </span>
-                      </label>
-                    )
-                  )}
+                  {[
+                    "Tümü",
+                    "Liderlik",
+                    "Kariyer",
+                    "Girişimcilik",
+                    "İletişim",
+                    "Finans",
+                  ].map((cat) => (
+                    <label
+                      key={cat}
+                      className="flex items-center gap-3 cursor-pointer group"
+                    >
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded flex items-center justify-center group-hover:border-red-500 transition-colors">
+                        {cat === "Tümü" && (
+                          <div className="w-3 h-3 bg-red-500 rounded-sm" />
+                        )}
+                      </div>
+                      <span className="text-gray-700 font-medium group-hover:text-red-600 transition-colors">
+                        {cat}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

@@ -42,37 +42,50 @@ export default function Coaches() {
     const fetchCoaches = async () => {
       setLoading(true);
 
+      // 🔴 ARTIK profiles TABLOSUNU OKUYORUZ
       const { data, error } = await supabase
-        .from("app_2dff6511da_coaches")
+        .from("profiles")
         .select("*")
-        // .eq("is_active", true) // aktif kolonun varsa açarsın
+        .eq("is_coach", true)
+        .order("is_featured", { ascending: false })
+        .order("rating", { ascending: false })
         .limit(100);
 
       if (error) {
         console.error("Koçlar okunamadı:", error);
+        setCoaches([]);
         setLoading(false);
         return;
       }
 
       const mapped: Coach[] =
-        data?.map((row: any) => ({
+        (data ?? []).map((row: any) => ({
           id: row.id,
-          name: row.full_name || row.name || "İsimsiz Koç",
-          title: row.title || row.headline || "Kariyer & Yönetici Koçu",
+          // ⬇️ Kolonları Supabase'teki isimlere göre map’liyoruz
+          name:
+            row.full_name ||
+            row.display_name ||
+            row.email ||
+            "İsimsiz Koç",
+          title: row.headline || "Kariyer & Yönetici Koçu",
           image:
             row.avatar_url ||
             "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg",
-          rating: row.rating || 4.8,
-          reviews: row.review_count || 135,
+          rating: row.rating ?? 4.8,
+          reviews: row.review_count ?? 0,
           experience:
             row.experience_text ||
-            `${row.experience_years || 10} Yıl Profesyonel Deneyim`,
-          nextAvailable: row.next_available || "Yarın 10:00",
-          price: row.price || row.session_price || 1500,
-          specialties:
-            row.specialties?.length
-              ? row.specialties
-              : ["Liderlik", "Kariyer"],
+            (row.experience_years
+              ? `${row.experience_years} Yıl Profesyonel Deneyim`
+              : "Deneyimli Koç"),
+          nextAvailable:
+            row.next_available || "Müsaitlik için rezervasyon alın",
+          price: row.session_price || 1500,
+          specialties: Array.isArray(row.specialties)
+            ? row.specialties
+            : typeof row.specialties === "string" && row.specialties.length
+            ? row.specialties.split(",").map((s: string) => s.trim())
+            : ["Liderlik", "Kariyer"],
           isPremium: row.is_premium || false,
         })) ?? [];
 

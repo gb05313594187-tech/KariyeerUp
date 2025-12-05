@@ -1,169 +1,412 @@
-// @ts-nocheck
-import { useEffect, useState } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/lib/supabase';
+import { useNavigate } from "react-router-dom";
+import {
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  Briefcase,
+  Star,
+  Users,
+  CalendarClock,
+  Sparkles,
+  ChevronRight,
+} from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, Globe, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-interface CoachProfile {
-  id: string;
-  full_name: string | null;
-  headline: string | null;
-  bio: string | null;
-  country: string | null;
-  city: string | null;
-  user_type: string | null;
-}
-
-export default function Coaches() {
-  const { language } = useLanguage();
+export default function CoachList() {
   const navigate = useNavigate();
-  const [coaches, setCoaches] = useState<CoachProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const t = (tr: string, en: string, fr: string) => {
-    switch (language) {
-      case 'en':
-        return en;
-      case 'fr':
-        return fr;
-      default:
-        return tr;
-    }
-  };
-
-  const getInitials = (name: string | null) => {
-    if (!name) return 'K';
-    const parts = name.split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  useEffect(() => {
-    const fetchCoaches = async () => {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, headline, bio, country, city, user_type')
-        .eq('user_type', 'coach')        // sadece koçlar
-        .order('full_name', { ascending: true });
-
-      if (error) {
-        console.error('Koçları çekerken hata:', error);
-      } else if (data) {
-        setCoaches(data as CoachProfile[]);
-      }
-
-      setLoading(false);
-    };
-
-    fetchCoaches();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        {t('Koçlar yükleniyor...', 'Loading coaches...', 'Chargement des coachs...')}
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-[60vh] bg-gray-50 py-10">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Başlık */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">
-              {t('Koçları İncele', 'Browse Coaches', 'Découvrir les coachs')}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {t(
-                'Kariyer hedeflerinize uygun koçu bulun.',
-                'Find a coach that matches your career goals.',
-                'Trouvez un coach adapté à vos objectifs de carrière.'
-              )}
-            </p>
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* HERO – KOÇLAR İÇİN ÖZEL */}
+      <section className="bg-gradient-to-r from-red-600 to-orange-500 pb-20 pt-24 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold tracking-widest uppercase mb-5">
+            Koçlar İçin Özel
+          </span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight drop-shadow-lg">
+            Kariyeer Ekosisteminin Bir <br />
+            <span className="text-yellow-300">Parçası Olun</span>
+          </h1>
+          <p className="text-base md:text-lg text-red-50 max-w-2xl mx-auto mb-10">
+            Pasif gelir, profesyonel gelişim ve sektörde tanınırlık için ideal
+            platform.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate("/coach-application")}
+              className="inline-flex items-center justify-center px-8 py-3 rounded-xl bg-white text-red-600 font-bold text-sm md:text-base shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5"
+            >
+              Hemen Başvur
+              <ChevronRight className="w-5 h-5 ml-1" />
+            </button>
+            <button
+              onClick={() => {
+                const el = document.getElementById("selection-process");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="inline-flex items-center justify-center px-8 py-3 rounded-xl border border-white/70 text-white font-semibold text-sm md:text-base hover:bg-white/10 transition-colors"
+            >
+              Seçim Süreci
+            </button>
           </div>
-          <Button variant="outline" onClick={() => navigate('/coach-application')}>
-            {t('Koç olmak ister misiniz?', 'Want to be a coach?', 'Vous voulez devenir coach ?')}
-          </Button>
+        </div>
+      </section>
+
+      {/* KAZANIMLAR */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
+            Kariyeer Ekosistemi Size Neler Kazandırır?
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Sürdürülebilir gelir, profesyonel gelişim ve sektörel tanınırlık
+          </p>
         </div>
 
-        {/* Koç kartları */}
-        {coaches.length === 0 ? (
-          <div className="text-center text-gray-500 py-16">
-            {t(
-              'Henüz listelenecek koç bulunmuyor.',
-              'There are no coaches to display yet.',
-              "Il n'y a pas encore de coachs à afficher."
-            )}
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Pasif Gelir */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <DollarSign className="w-5 h-5 text-red-600" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Pasif Gelir Fırsatları
+            </h3>
+            <p className="text-sm text-gray-600">
+              Platform üzerinden düzenli danışan akışı ile sürdürülebilir gelir
+              elde edin. Komisyon oranları %15-25 arasında değişir.
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {coaches.map((coach) => (
-              <Card key={coach.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-red-600 text-white">
-                      {getInitials(coach.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">
-                      {coach.full_name || t('İsim belirtilmemiş', 'No name', 'Nom non renseigné')}
-                    </CardTitle>
-                    <CardDescription>
-                      {coach.headline ||
-                        t(
-                          'Kariyer koçu',
-                          'Career Coach',
-                          'Coach de carrière'
-                        )}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {(coach.country || coach.city) && (
-                    <div className="flex items-center text-sm text-gray-500 gap-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>
-                        {[coach.city, coach.country].filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  )}
 
-                  {coach.bio && (
-                    <p className="text-sm text-gray-700 line-clamp-3">{coach.bio}</p>
-                  )}
-
-                  <div className="flex justify-between items-center pt-2">
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {t('Koç', 'Coach', 'Coach')}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        // ileride koç detay sayfasına gidebilirsin
-                        // navigate(`/coaches/${coach.id}`);
-                      }}
-                    >
-                      {t('Detay', 'Details', 'Détails')}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Geniş Danışan Ağı */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-4">
+              <Users className="w-5 h-5 text-orange-500" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Geniş Danışan Ağı
+            </h3>
+            <p className="text-sm text-gray-600">
+              Bireysel danışanlardan kurumsal müşterilere kadar geniş bir
+              yelpazede profesyonellerle çalışma fırsatı.
+            </p>
           </div>
-        )}
-      </div>
+
+          {/* Profesyonel Gelişim */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mb-4">
+              <Briefcase className="w-5 h-5 text-yellow-500" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Profesyonel Gelişim
+            </h3>
+            <p className="text-sm text-gray-600">
+              Webinarlar, vaka tartışmaları ve süpervizyon seansları ile sürekli
+              gelişim imkanı.
+            </p>
+          </div>
+
+          {/* Webinar ve Etkinlikler */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+              <CalendarClock className="w-5 h-5 text-blue-500" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Webinar ve Etkinlikler
+            </h3>
+            <p className="text-sm text-gray-600">
+              Düzenli webinarlar düzenleyerek görünürlüğünüzü artırın ve
+              sektörde öne çıkın.
+            </p>
+          </div>
+
+          {/* MentorCircle */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mb-4">
+              <Users className="w-5 h-5 text-purple-500" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              MentorCircle Topluluğu
+            </h3>
+            <p className="text-sm text-gray-600">
+              Diğer koçlarla etkileşim, vaka paylaşımı ve profesyonel
+              networking imkanı.
+            </p>
+          </div>
+
+          {/* Tanınırlık */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center mb-4">
+              <Star className="w-5 h-5 text-pink-500" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Tanınırlık ve Prestij
+            </h3>
+            <p className="text-sm text-gray-600">
+              Ayın Koçu, Haftanın Koçu gibi ödüllerle sektörde tanınırlığınızı
+              artırın.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* EKOSİSTEMDE NASIL AKTİF OLURSUNUZ */}
+      <section className="bg-white border-t border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
+              Ekosistemde Nasıl Aktif Olursunuz?
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              İçerik, etkileşim ve katılım ile sektörde öne çıkın
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-6 mb-10">
+            {/* İçerik Üretimi */}
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-lg text-gray-900 mb-2">
+                İçerik Üretimi
+              </h3>
+              <p className="text-sm text-gray-600">
+                MentorCircle üzerinden makaleler, vaka çalışmaları ve
+                tartışmalar paylaşarak uzmanlığınızı sergileyin.
+              </p>
+            </div>
+
+            {/* Webinar Düzenleme */}
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-lg text-gray-900 mb-2">
+                Webinar Düzenleme
+              </h3>
+              <p className="text-sm text-gray-600">
+                Düzenli webinarlar ile hem danışanlarla hem diğer koçlarla
+                etkileşim kurun.
+              </p>
+            </div>
+
+            {/* Vaka Tartışmaları */}
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-lg text-gray-900 mb-2">
+                Vaka Tartışmaları
+              </h3>
+              <p className="text-sm text-gray-600">
+                Diğer koçlarla vaka tartışmaları yaparak profesyonel
+                gelişiminizi sürdürün.
+              </p>
+            </div>
+
+            {/* Etkileşim ve Görünürlük */}
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-bold text-lg text-gray-900 mb-2">
+                Etkileşim ve Görünürlük
+              </h3>
+              <p className="text-sm text-gray-600">
+                Aktif katılım ve kaliteli içeriklerle Ayın Koçu veya Haftanın
+                Koçu seçilebilirsiniz.
+              </p>
+            </div>
+          </div>
+
+          {/* Ayın Koçu highlight */}
+          <div className="rounded-2xl border border-red-100 bg-red-50/60 px-6 py-8 md:px-10 md:py-10 text-center">
+            <h3 className="text-xl md:text-2xl font-extrabold text-red-700 mb-3 flex items-center justify-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Ayın Koçu veya Haftanın Koçu Olun!
+            </h3>
+            <p className="text-sm md:text-base text-red-900 max-w-3xl mx-auto mb-5">
+              Aktif katılım, kaliteli içerik üretimi ve yüksek danışan
+              memnuniyeti ile öne çıkan koçlar her hafta ve ay
+              ödüllendirilir. Ana sayfada özel vitrin, rozet ve artan
+              görünürlük kazanın.
+            </p>
+            <button
+              onClick={() => navigate("/mentor-circle")}
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm md:text-base shadow-md hover:bg-red-700 transition-colors"
+            >
+              MentorCircle&apos;a Katıl
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* GELİR MODELİ */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
+            Gelir Modeli
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Şeffaf, adil ve sürdürülebilir gelir sistemi
+          </p>
+        </div>
+
+        {/* Üst kartlar */}
+        <div className="grid md:grid-cols-4 gap-6 mb-10">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Kurucu Koç Avantajı
+            </h3>
+            <p className="text-sm text-gray-600">
+              İlk 50 koç için %15 komisyon oranı (standart %20 yerine).
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Esnek Ücretlendirme
+            </h3>
+            <p className="text-sm text-gray-600">
+              Kendi seans ücretinizi belirleyin (önerilen: 750-2000 ₺).
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Kurumsal Anlaşmalar
+            </h3>
+            <p className="text-sm text-gray-600">
+              Şirket anlaşmalarından düzenli gelir fırsatı.
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-2">
+              Ödeme Güvencesi
+            </h3>
+            <p className="text-sm text-gray-600">
+              Seanslarınızın ödemesi platform tarafından garanti edilir.
+            </p>
+          </div>
+        </div>
+
+        {/* Alt istatistik barı */}
+        <div className="rounded-3xl bg-gradient-to-r from-red-600 to-orange-500 text-white px-6 py-8 md:px-12 md:py-10 grid md:grid-cols-3 gap-8 text-center">
+          <div>
+            <p className="text-xs uppercase tracking-widest font-semibold mb-1">
+              Platform Komisyonu
+            </p>
+            <p className="text-3xl md:text-4xl font-extrabold">%15-25</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest font-semibold mb-1">
+              Önerilen Seans Ücreti
+            </p>
+            <p className="text-3xl md:text-4xl font-extrabold">
+              750-2000₺
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest font-semibold mb-1">
+              Sınırsız Gelir Potansiyeli
+            </p>
+            <p className="text-3xl md:text-4xl font-extrabold">∞</p>
+          </div>
+        </div>
+      </section>
+
+      {/* KOÇ SEÇİM KRİTERLERİ */}
+      <section
+        id="selection-process"
+        className="bg-white border-t border-gray-100"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
+              Koç Seçim Kriterleri
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Kalite standartlarımız ve beklentilerimiz
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 flex gap-3">
+              <CheckCircle2 className="w-6 h-6 text-red-600 mt-1" />
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  ICF veya MYK Sertifikası
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Uluslararası veya ulusal geçerliliğe sahip koçluk sertifikası
+                  zorunludur.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 flex gap-3">
+              <Clock className="w-6 h-6 text-red-600 mt-1" />
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  Minimum Deneyim
+                </h3>
+                <p className="text-sm text-gray-600">
+                  En az 2 yıl koçluk deneyimi veya 100 saat koçluk pratiği.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 flex gap-3">
+              <Briefcase className="w-6 h-6 text-red-600 mt-1" />
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  Sürekli Gelişim
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Yıllık süpervizyon ve eğitim gereksinimlerini karşılama
+                  taahhüdü.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 flex gap-3">
+              <Star className="w-6 h-6 text-red-600 mt-1" />
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-1">
+                  Kalite Standartları
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Minimum 4.0/5.0 puan ortalaması korunmalıdır. 3.5 altı için
+                  destek programı uygulanır.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <button className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-red-500 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors">
+              Tam Seçim Süreci
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 🔻 SAYFA İÇİ FOOTER / BÜYÜK CTA BLOĞU */}
+      <section className="bg-gradient-to-r from-red-600 to-orange-500 text-white mt-0">
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+          <h2 className="text-2xl md:text-3xl font-extrabold mb-3">
+            Kariyeer Ekosisteminin Bir Parçası Olmaya Hazır mısınız?
+          </h2>
+          <p className="text-red-50 max-w-2xl mx-auto mb-8 text-sm md:text-base">
+            Başvurunuzu yapın, ekosisteme katılın ve kariyer koçluğunda yeni
+            bir sayfa açın.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate("/coach-application")}
+              className="inline-flex items-center justify-center px-8 py-3 rounded-xl bg-white text-red-600 font-bold text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
+              Koç Başvurusu Yap
+            </button>
+            <button
+              onClick={() => navigate("/mentor-circle")}
+              className="inline-flex items-center justify-center px-8 py-3 rounded-xl border border-white/80 text-white font-semibold text-sm md:text-base hover:bg-white/10 transition-colors"
+            >
+              MentorCircle&apos;ı Keşfet
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

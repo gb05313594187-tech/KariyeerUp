@@ -64,7 +64,7 @@ export default function ForCompanies() {
     }
   ];
 
-  // ----------------- FORM SUBMIT (Supabase + Mailto) -----------------
+  // ----------------- FORM SUBMIT (SADECE SUPABASE) -----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -88,26 +88,10 @@ export default function ForCompanies() {
       if (error) {
         console.error("Kurumsal talep kaydedilemedi:", error);
         toast.error("Talebiniz kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
-        setIsSubmitting(false);
         return;
       }
 
-      // 2) Mail içeriğini hazırla
-      const mailBody = `
-Şirket Adı: ${companyName}
-Yetkili Kişi: ${contactPerson}
-E-posta: ${email}
-Telefon: ${phone}
-
-Mesaj:
-${message}
-      `.trim();
-
-      // 3) Kullanıcının mail istemcisini açmayı dene
-      if (typeof window !== "undefined") {
-        window.location.href =
-          `mailto:destek@kariyeer.com?subject=Kurumsal Demo Talebi&body=${encodeURIComponent(mailBody)}`;
-      }
+      // (İLERİDE) 2) Buraya backend/edge function üzerinden mail gönderim çağrısı eklenebilir
 
       toast.success("Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek.");
       setFormData({
@@ -215,7 +199,7 @@ ${message}
 
             <div className="h-48 w-full relative">
               <img src={selectedFeature.image} alt={selectedFeature.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items=end p-6">
                 <h2 className="text-white text-2xl font-bold">{selectedFeature.title}</h2>
               </div>
             </div>

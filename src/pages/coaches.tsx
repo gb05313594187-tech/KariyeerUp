@@ -42,14 +42,15 @@ export default function Coaches() {
     const fetchCoaches = async () => {
       setLoading(true);
 
-      // 🔴 ARTIK profiles TABLOSUNU OKUYORUZ
+      // 🔴 profiles tablosundan SADECE user_type = 'coach' olanları çek
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("is_coach", true)
-        .order("is_featured", { ascending: false })
-        .order("rating", { ascending: false })
+        .eq("user_type", "coach") // sadece koçlar
+        .order("created_at", { ascending: false }) // mevcut kolon
         .limit(100);
+
+      console.log("COACHES SUPABASE →", { data, error });
 
       if (error) {
         console.error("Koçlar okunamadı:", error);

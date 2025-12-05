@@ -136,7 +136,7 @@ export default function CoachSelectionProcess() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
+      {/* HERO */}
       <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <Badge className="mb-4 bg-white text-red-600 hover:bg-white">
@@ -164,7 +164,7 @@ export default function CoachSelectionProcess() {
         </div>
       </section>
 
-      {/* Timeline Overview */}
+      {/* ZAMAN ÇİZELGESİ */}
       <section className="py-12 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-red-600 mb-12">
@@ -189,7 +189,7 @@ export default function CoachSelectionProcess() {
         </div>
       </section>
 
-      {/* Selection Steps */}
+      {/* ADIM ADIM SÜREÇ */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -251,7 +251,7 @@ export default function CoachSelectionProcess() {
         </div>
       </section>
 
-      {/* Quality Criteria */}
+      {/* KALİTE KRİTERLERİ */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -291,7 +291,7 @@ export default function CoachSelectionProcess() {
         </div>
       </section>
 
-      {/* Important Notes */}
+      {/* ÖNEMLİ NOTLAR */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
           <Card className="border-2 border-yellow-200 bg-yellow-50">
@@ -342,7 +342,7 @@ export default function CoachSelectionProcess() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA */}
       <section className="py-20 px-4 bg-gradient-to-r from-red-600 to-orange-500 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Başlamaya Hazır mısınız?</h2>

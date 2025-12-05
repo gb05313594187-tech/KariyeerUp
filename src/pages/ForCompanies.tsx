@@ -75,7 +75,7 @@ export default function ForCompanies() {
     try {
       // 1) Supabase'e kaydet
       const { error } = await supabase
-        .from("company_requests") // TABLO ADI: ihtiyacına göre değiştir
+        .from("company_requests") // Supabase tablon
         .insert({
           company_name: companyName,
           contact_person: contactPerson,
@@ -168,7 +168,7 @@ ${message}
         </div>
       </div>
 
-      {/* --- İNTERAKTİF KAZANIMLAR BÖLÜMÜ (Aynen bıraktım) --- */}
+      {/* --- İNTERAKTİF KAZANIMLAR BÖLÜMÜ --- */}
       <div className="bg-gray-50 py-24 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -215,7 +215,7 @@ ${message}
 
             <div className="h-48 w-full relative">
               <img src={selectedFeature.image} alt={selectedFeature.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items=end p-6">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
                 <h2 className="text-white text-2xl font-bold">{selectedFeature.title}</h2>
               </div>
             </div>

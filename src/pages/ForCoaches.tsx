@@ -217,9 +217,8 @@ export default function CoachList() {
             </h3>
             <p className="text-sm md:text-base text-red-900 max-w-3xl mx-auto mb-5">
               Aktif katılım, kaliteli içerik üretimi ve yüksek danışan
-              memnuniyeti ile öne çıkan koçlar her hafta ve ay
-              ödüllendirilir. Ana sayfada özel vitrin, rozet ve artan
-              görünürlük kazanın.
+              memnuniyeti ile öne çıkan koçlar her hafta ve ay ödüllendirilir.
+              Ana sayfada özel vitrin, rozet ve artan görünürlük kazanın.
             </p>
             <button
               onClick={() => navigate("/mentor-circle")}
@@ -371,8 +370,12 @@ export default function CoachList() {
             </div>
           </div>
 
+          {/* 🔹 BURASI ARTIK ÇALIŞIYOR */}
           <div className="text-center">
-            <button className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-red-500 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors">
+            <button
+              onClick={() => navigate("/selection-process")}
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-red-500 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors"
+            >
               Tam Seçim Süreci
               <ChevronRight className="w-4 h-4 ml-1" />
             </button>

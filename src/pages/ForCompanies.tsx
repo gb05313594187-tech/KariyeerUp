@@ -9,6 +9,9 @@ import {
 import { toast } from 'sonner';
 import { supabase } from "@/lib/supabase";
 
+// Supabase Functions base URL (Vite env'den okunuyor)
+const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+
 export default function ForCompanies() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +67,7 @@ export default function ForCompanies() {
     }
   ];
 
-  // ----------------- FORM SUBMIT (SADECE SUPABASE) -----------------
+  // ----------------- FORM SUBMIT (SUPABASE + EDGE FUNCTION) -----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -91,7 +94,26 @@ export default function ForCompanies() {
         return;
       }
 
-      // (İLERİDE) 2) Buraya backend/edge function üzerinden mail gönderim çağrısı eklenebilir
+      // 2) Mail gönderen Edge Function çağrısı
+      try {
+        await fetch(`${FUNCTIONS_BASE_URL}/send-company-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            companyName,
+            contactPerson,
+            email,
+            phone,
+            message,
+          }),
+        });
+      } catch (mailErr) {
+        console.error("Mail gönderilemedi:", mailErr);
+        // İstersen buraya ayrıca uyarı toast'ı ekleyebilirsin:
+        // toast.error("Talep kaydedildi ancak mail bildirimi gönderilemedi.");
+      }
 
       toast.success("Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek.");
       setFormData({
@@ -177,7 +199,7 @@ export default function ForCompanies() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {feature.shortDesc}
                 </p>
-                <div className="mt-4 text-red-600 text-sm font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-4 text-red-600 text-sm font-bold flex items:center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   Detayları Gör <ArrowRight className="w-4 h-4"/>
                 </div>
               </div>

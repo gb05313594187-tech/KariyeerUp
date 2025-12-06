@@ -9,8 +9,8 @@ import {
 import { toast } from 'sonner';
 import { supabase } from "@/lib/supabase";
 
-// Supabase Functions base URL (Vite env'den okunuyor)
-const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+// Supabase Edge Functions base URL (direkt proje URL'in)
+const FUNCTIONS_BASE_URL = "https://wzadsntszslxvuvmmjwn.supabase.co/functions/v1";
 
 export default function ForCompanies() {
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ export default function ForCompanies() {
     try {
       // 1) Supabase'e kaydet
       const { error } = await supabase
-        .from("company_requests") // Supabase tablon
+        .from("company_requests")
         .insert({
           company_name: companyName,
           contact_person: contactPerson,
@@ -111,7 +111,7 @@ export default function ForCompanies() {
         });
       } catch (mailErr) {
         console.error("Mail gönderilemedi:", mailErr);
-        // İstersen buraya ayrıca uyarı toast'ı ekleyebilirsin:
+        // İstersen buraya ayrıca uyarı da koyabilirsin:
         // toast.error("Talep kaydedildi ancak mail bildirimi gönderilemedi.");
       }
 
@@ -135,7 +135,6 @@ export default function ForCompanies() {
     <div className="min-h-screen bg-white font-sans flex flex-col">
       {/* HERO SECTION (GÖRSELLİ & TURUNCU/KIRMIZI FİLTRELİ) */}
       <div className="relative bg-gray-900 text-white py-24 px-4 text-center overflow-hidden">
-        {/* Arka Plan Resmi */}
         <div 
           className="absolute inset-0 z-0 opacity-40"
           style={{
@@ -144,7 +143,6 @@ export default function ForCompanies() {
             backgroundPosition: 'center'
           }}
         />
-        {/* Kırmızı/Turuncu Filtre Katmanı */}
         <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-orange-800/80 z-0"></div>
 
         <div className="max-w-4xl mx-auto relative z-10">
@@ -199,7 +197,7 @@ export default function ForCompanies() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {feature.shortDesc}
                 </p>
-                <div className="mt-4 text-red-600 text-sm font-bold flex items:center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-4 text-red-600 text-sm font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   Detayları Gör <ArrowRight className="w-4 h-4"/>
                 </div>
               </div>
@@ -221,7 +219,7 @@ export default function ForCompanies() {
 
             <div className="h-48 w-full relative">
               <img src={selectedFeature.image} alt={selectedFeature.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items=end p-6">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
                 <h2 className="text-white text-2xl font-bold">{selectedFeature.title}</h2>
               </div>
             </div>

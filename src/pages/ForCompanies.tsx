@@ -14,40 +14,6 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
-// Supabase Edge Functions base URL (env'den gelsin)
-const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
-
-// Mail gönderen helper (fire-and-forget)
-async function sendCompanyRequestEmail(formData: any) {
-  const { companyName, contactPerson, email, phone, message } = formData;
-
-  try {
-    const res = await fetch(`${FUNCTIONS_BASE_URL}/send-company-email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        companyName,
-        contactPerson,
-        email,
-        phone,
-        message,
-      }),
-    });
-
-    console.log(
-      "📧 Edge function mail sonucu:",
-      res.status,
-      await res.text().catch(() => "")
-    );
-  } catch (mailErr) {
-    console.error("Mail gönderilemedi:", mailErr);
-    // İstersen burada toast da gösterebilirsin, ama kullanıcı zaten başarı mesajını aldı:
-    // toast.error("Talep kaydedildi ancak mail bildirimi gönderilemedi.");
-  }
-}
-
 export default function ForCompanies() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,7 +81,7 @@ export default function ForCompanies() {
     },
   ];
 
-  // ----------------- FORM SUBMIT (SUPABASE + EDGE FUNCTION) -----------------
+  // ----------------- FORM SUBMIT (SADE: SADECE SUPABASE + TOAST) -----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -124,8 +90,7 @@ export default function ForCompanies() {
     const { companyName, contactPerson, email, phone, message } = formData;
 
     try {
-      // 1) Supabase'e kaydet
-      console.log("📨 Gönderilen payload:", {
+      console.log("📨 FORM SUBMIT, giden payload:", {
         company_name: companyName,
         contact_person: contactPerson,
         email,
@@ -149,26 +114,18 @@ export default function ForCompanies() {
       console.log("🧾 SUPABASE INSERT RESULT =>", { data, error });
 
       if (error) {
-        console.error("Kurumsal talep kaydedilemedi (detay):", error);
-
-        try {
-          alert("SUPABASE HATASI:\n\n" + JSON.stringify(error, null, 2));
-        } catch (_) {
-          alert("SUPABASE HATASI:\n\n" + String(error?.message || error));
-        }
-
+        console.error("❌ Supabase insert hata:", error);
         toast.error(
           "Talebiniz kaydedilirken bir hata oluştu. Lütfen tekrar deneyin."
         );
         return;
       }
 
-      // ✅ Supabase OK → Kullanıcıya hemen başarı mesajı
+      // ✅ HER ŞEY YOLUNDA: TOAST + FORM TEMİZLE
       toast.success(
         "Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek."
       );
 
-      // ✅ Formu temizle
       setFormData({
         companyName: "",
         contactPerson: "",
@@ -176,17 +133,8 @@ export default function ForCompanies() {
         phone: "",
         message: "",
       });
-
-      // 2) Mail'i arkadan fire-and-forget gönder (UI akışını bozmasın)
-      sendCompanyRequestEmail({
-        companyName,
-        contactPerson,
-        email,
-        phone,
-        message,
-      });
     } catch (err) {
-      console.error(err);
+      console.error("❌ Beklenmeyen hata:", err);
       toast.error("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
     } finally {
       setIsSubmitting(false);

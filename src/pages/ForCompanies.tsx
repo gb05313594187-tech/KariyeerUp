@@ -81,24 +81,17 @@ export default function ForCompanies() {
     },
   ];
 
-  // ----------------- FORM SUBMIT (SADE: SADECE SUPABASE + TOAST) -----------------
+  // ----------------- FORM SUBMIT -----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
     setIsSubmitting(true);
 
     const { companyName, contactPerson, email, phone, message } = formData;
 
     try {
-      console.log("📨 FORM SUBMIT, giden payload:", {
-        company_name: companyName,
-        contact_person: contactPerson,
-        email,
-        phone,
-        message,
-        source: "for-companies-page",
-      });
-
+      // 1) SUPABASE INSERT
       const { data, error } = await supabase
         .from("company_requests")
         .insert({
@@ -111,21 +104,21 @@ export default function ForCompanies() {
         })
         .select();
 
-      console.log("🧾 SUPABASE INSERT RESULT =>", { data, error });
-
       if (error) {
-        console.error("❌ Supabase insert hata:", error);
-        toast.error(
-          "Talebiniz kaydedilirken bir hata oluştu. Lütfen tekrar deneyin."
-        );
+        toast.error("Talebiniz kaydedilirken bir hata oluştu.");
+        console.error("SUPABASE HATASI:", error);
         return;
       }
 
-      // ✅ HER ŞEY YOLUNDA: TOAST + FORM TEMİZLE
+      // 2) BAŞARI MESAJI (toast + alert)
       toast.success(
         "Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek."
       );
+      alert(
+        "Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek."
+      );
 
+      // 3) FORMU TEMİZLE
       setFormData({
         companyName: "",
         contactPerson: "",
@@ -134,8 +127,8 @@ export default function ForCompanies() {
         message: "",
       });
     } catch (err) {
-      console.error("❌ Beklenmeyen hata:", err);
-      toast.error("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
+      toast.error("Beklenmeyen bir hata oluştu.");
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -277,7 +270,7 @@ export default function ForCompanies() {
         </div>
       )}
 
-      {/* İLETİŞİM FORMU */}
+      {/* FORM */}
       <div id="contact-form" className="bg-white py-20 px-4">
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-600">
           <div className="bg-gray-50 p-8 text-center border-b border-gray-100">
@@ -323,6 +316,7 @@ export default function ForCompanies() {
                   />
                 </div>
               </div>
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -339,6 +333,7 @@ export default function ForCompanies() {
                     placeholder="ornek@sirket.com"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Telefon
@@ -355,6 +350,7 @@ export default function ForCompanies() {
                   />
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Mesajınız
@@ -368,6 +364,7 @@ export default function ForCompanies() {
                   placeholder="İhtiyaçlarınızı kısaca anlatın..."
                 ></textarea>
               </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}

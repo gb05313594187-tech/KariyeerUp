@@ -14,9 +14,39 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
-// Supabase Edge Functions base URL (proje URL'in)
-const FUNCTIONS_BASE_URL =
-  "https://wzadsntszslxvuvmmjwn.supabase.co/functions/v1";
+// Supabase Edge Functions base URL (env'den gelsin)
+const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+
+// Mail gönderen helper (fire-and-forget)
+async function sendCompanyRequestEmail(formData: any) {
+  const { companyName, contactPerson, email, phone, message } = formData;
+
+  try {
+    const res = await fetch(`${FUNCTIONS_BASE_URL}/send-company-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        companyName,
+        contactPerson,
+        email,
+        phone,
+        message,
+      }),
+    });
+
+    console.log(
+      "📧 Edge function mail sonucu:",
+      res.status,
+      await res.text().catch(() => "")
+    );
+  } catch (mailErr) {
+    console.error("Mail gönderilemedi:", mailErr);
+    // İstersen burada toast da gösterebilirsin, ama kullanıcı zaten başarı mesajını aldı:
+    // toast.error("Talep kaydedildi ancak mail bildirimi gönderilemedi.");
+  }
+}
 
 export default function ForCompanies() {
   const navigate = useNavigate();
@@ -133,42 +163,27 @@ export default function ForCompanies() {
         return;
       }
 
-      // 2) Mail gönderen Edge Function çağrısı
-      try {
-        const res = await fetch(`${FUNCTIONS_BASE_URL}/send-company-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            companyName,
-            contactPerson,
-            email,
-            phone,
-            message,
-          }),
-        });
-
-        console.log(
-          "📧 Edge function mail sonucu:",
-          res.status,
-          await res.text().catch(() => "")
-        );
-      } catch (mailErr) {
-        console.error("Mail gönderilemedi:", mailErr);
-        // İstersen buraya ayrıca uyarı da koyabilirsin:
-        // toast.error("Talep kaydedildi ancak mail bildirimi gönderilemedi.");
-      }
-
+      // ✅ Supabase OK → Kullanıcıya hemen başarı mesajı
       toast.success(
         "Talebiniz alındı! Kurumsal ekibimiz en kısa sürede sizinle iletişime geçecek."
       );
+
+      // ✅ Formu temizle
       setFormData({
         companyName: "",
         contactPerson: "",
         email: "",
         phone: "",
         message: "",
+      });
+
+      // 2) Mail'i arkadan fire-and-forget gönder (UI akışını bozmasın)
+      sendCompanyRequestEmail({
+        companyName,
+        contactPerson,
+        email,
+        phone,
+        message,
       });
     } catch (err) {
       console.error(err);

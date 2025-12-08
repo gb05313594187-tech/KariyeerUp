@@ -188,8 +188,8 @@ export default function Pricing() {
       price: 299,
       period: getNavText('ay', 'month', 'mois'),
       description: getNavText(
-        'Unicorn seviyesinde görünürlük',
-        'Unicorn-level visibility',
+        'Zirve seviyesinde görünürlük',
+        'Zirve-level visibility',
         'Visibilité niveau licorne'
       ),
       icon: Crown,
@@ -209,8 +209,8 @@ export default function Pricing() {
         getNavText('Gelişmiş analitikler', 'Advanced analytics', 'Analyses avancées'),
         getNavText('Öncelikli destek', 'Priority support', 'Support prioritaire'),
         getNavText(
-          'Özel unicorn profil teması',
-          'Custom unicorn profile theme',
+          'Özel Zirve profil teması',
+          'Custom Zirve profile theme',
           'Thème de profil licorne personnalisé'
         )
       ],
@@ -248,7 +248,7 @@ export default function Pricing() {
     },
     {
       id: 4,
-      title: getNavText('4. Adım: Unicorn Marka Ol', 'Step 4: Become a Unicorn Brand', 'Étape 4 : Deviens une marque licorne'),
+      title: getNavText('4. Adım: Zirve Marka Ol', 'Step 4: Become a Zirvve Brand', 'Étape 4 : Deviens une marque licorne'),
       text: getNavText(
         'Kariyeer ekosisteminde aranan, prestijli ve sürekli önerilen koç ol.',
         'Become a highly recommended, sought-after coach in the ecosystem.',
@@ -259,7 +259,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
-      {/* Arkaplan unicorn glow */}
+      {/* Arkaplan Zirve glow */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-32 left-[-10%] h-80 w-80 rounded-full bg-fuchsia-500/30 blur-3xl" />
         <div className="absolute top-40 right-[-5%] h-96 w-96 rounded-full bg-sky-500/25 blur-3xl" />
@@ -272,14 +272,14 @@ export default function Pricing() {
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <Badge className="mb-5 border border-white/20 bg-white/10 text-fuchsia-200 backdrop-blur">
             <Sparkles className="h-3 w-3 mr-1" />
-            {getNavText('Unicorn Planlar', 'Unicorn Plans', 'Plans Licorne')}
+            {getNavText('Zirve Planlar', 'Zirve Plans', 'Plans Licorne')}
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
             <span className="block bg-gradient-to-r from-fuchsia-300 via-amber-200 to-sky-300 bg-clip-text text-transparent">
               {getNavText(
-                'Profilini Unicorn Seviyesine Taşı',
-                'Turn Your Profile into a Unicorn',
+                'Profilini Zirve Seviyesine Taşı',
+                'Turn Your Profile into a Zirve',
                 'Fais de ton profil une licorne'
               )}
             </span>
@@ -312,11 +312,11 @@ export default function Pricing() {
               className="border-slate-500/60 bg-slate-900/50 text-slate-100 hover:bg-slate-800/80 backdrop-blur"
               onClick={() => {
                 document
-                  .getElementById('unicorn-roadmap')
+                  .getElementById('Zirve-roadmap')
                   ?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
-              {getNavText('Nasıl Unicorn Olurum?', 'See the Roadmap', 'Voir la feuille de route')}
+              {getNavText('Nasıl Başarılı Olurum?', 'See the Roadmap', 'Voir la feuille de route')}
             </Button>
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* UNICORN STATS */}
+      {/* Zirve STATS */}
       <section className="py-12 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6">
           <Card className="bg-slate-900/60 border-slate-700/70 backdrop-blur shadow-lg shadow-sky-500/10">
@@ -383,7 +383,7 @@ export default function Pricing() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
-              {getNavText('Unicorn Planlarını Seç', 'Choose Your Unicorn Plan', 'Choisis ton plan licorne')}
+              {getNavText('Öne Çıkan Planlarını Seç', 'Choose Your Zirve Plan', 'Choisis ton plan licorne')}
             </h2>
             <p className="text-slate-300 max-w-2xl mx-auto">
               {getNavText(
@@ -509,18 +509,18 @@ export default function Pricing() {
 
       {/* UNICORN ROADMAP */}
       <section
-        id="unicorn-roadmap"
+        id="Zirve-roadmap"
         className="py-16 px-4 border-t border-slate-800/80 bg-slate-950/90"
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
-              {getNavText('Unicorn Yol Haritası', 'Unicorn Roadmap', 'Feuille de route licorne')}
+              {getNavText('Zirve Yol Haritası', 'Zirve Roadmap', 'Feuille de route licorne')}
             </h2>
             <p className="text-slate-300 max-w-2xl mx-auto">
               {getNavText(
-                'Profil açmaktan unicorn marka olmaya kadar net, uygulanabilir 4 adım.',
-                'Clear 4 steps from creating a profile to becoming a unicorn brand.',
+                'Profil açmaktan Zirve marka olmaya kadar net, uygulanabilir 4 adım.',
+                'Clear 4 steps from creating a profile to becoming a Zirve brand.',
                 '4 étapes claires : de la création du profil à la marque licorne.'
               )}
             </p>
@@ -558,8 +558,8 @@ export default function Pricing() {
           </div>
           <h2 className="mt-10 text-3xl md:text-4xl font-extrabold text-slate-50 mb-4">
             {getNavText(
-              'Güvenilirliğini ve görünürlüğünü unicorn seviyesine çıkar',
-              'Boost your trust and visibility to unicorn level',
+              'Güvenilirliğini ve görünürlüğünü Öne çıkar',
+              'Boost your trust and visibility to Zirve level',
               'Monte ta confiance et ta visibilité au niveau licorne'
             )}
           </h2>

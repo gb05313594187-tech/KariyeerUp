@@ -42,12 +42,12 @@ export default function Coaches() {
     const fetchCoaches = async () => {
       setLoading(true);
 
-      // 🔴 profiles tablosundan SADECE user_type = 'coach' olanları çek
+      // 🔴 ARTIK COACHES TABLOSUNDAN ÇEKİYORUZ
       const { data, error } = await supabase
-        .from("profiles")
+        .from("app_2dff651lda_coaches")
         .select("*")
-        .eq("user_type", "coach") // sadece koçlar
-        .order("created_at", { ascending: false }) // mevcut kolon
+        .eq("status", "approved") // sadece onaylı koçlar
+        .order("rating", { ascending: false })
         .limit(100);
 
       console.log("COACHES SUPABASE →", { data, error });
@@ -62,32 +62,45 @@ export default function Coaches() {
       const mapped: Coach[] =
         (data ?? []).map((row: any) => ({
           id: row.id,
-          // ⬇️ Kolonları Supabase'teki isimlere göre map’liyoruz
-          name:
-            row.full_name ||
-            row.display_name ||
-            row.email ||
-            "İsimsiz Koç",
-          title: row.headline || "Kariyer & Yönetici Koçu",
+          // 🔹 İsim / unvan
+          name: row.full_name || "İsimsiz Koç",
+          title: row.title || "Kariyer Koçu",
+
+          // 🔹 Profil resmi
           image:
             row.avatar_url ||
             "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg",
-          rating: row.rating ?? 4.8,
-          reviews: row.review_count ?? 0,
-          experience:
-            row.experience_text ||
-            (row.experience_years
-              ? `${row.experience_years} Yıl Profesyonel Deneyim`
-              : "Deneyimli Koç"),
+
+          // 🔹 Puan / yorum
+          rating: row.rating != null ? Number(row.rating) : 4.8,
+          reviews: row.total_reviews ?? 0,
+
+          // 🔹 Deneyim
+          experience: row.experience_years
+            ? `${row.experience_years}+ Yıl Profesyonel Deneyim`
+            : "Deneyimli Koç",
+
+          // 🔹 Müsaitlik (şimdilik sabit metin)
           nextAvailable:
-            row.next_available || "Müsaitlik için rezervasyon alın",
-          price: row.session_price || 1500,
-          specialties: Array.isArray(row.specialties)
-            ? row.specialties
-            : typeof row.specialties === "string" && row.specialties.length
-            ? row.specialties.split(",").map((s: string) => s.trim())
-            : ["Liderlik", "Kariyer"],
-          isPremium: row.is_premium || false,
+            "Müsaitlik için rezervasyon alın",
+
+          // 🔹 Seans ücreti
+          price:
+            row.hourly_rate != null
+              ? Number(row.hourly_rate)
+              : 1500,
+
+          // 🔹 Uzmanlık alanı → specialization text’inden etiket üret
+          specialties:
+            typeof row.specialization === "string" &&
+            row.specialization.length > 0
+              ? row.specialization
+                  .split(",")
+                  .map((s: string) => s.trim())
+              : ["Kariyer"],
+
+          // 🔹 Premium bayrak (şimdilik deneme seansı aktifse premium gibi düşünelim)
+          isPremium: !!row.is_trial_session_active,
         })) ?? [];
 
       setCoaches(mapped);
@@ -336,7 +349,7 @@ export default function Coaches() {
                         <div className="flex flex-col items-end">
                           <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg text-yellow-700 font-bold text-lg">
                             <Star className="w-5 h-5 fill-current text-yellow-500" />{" "}
-                            {coach.rating}
+                            {coach.rating.toFixed(1)}
                           </div>
                           <span className="text-xs text-gray-400 mt-1">
                             ({coach.reviews} yorum)

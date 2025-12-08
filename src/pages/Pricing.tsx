@@ -128,7 +128,7 @@ export default function Pricing() {
     }
   };
 
-  // PLANLAR
+  // TURUNCU TEMA PLANLAR
   const plans = [
     {
       id: 'free',
@@ -141,9 +141,8 @@ export default function Pricing() {
         'Fonctionnalités de base pour démarrer'
       ),
       icon: Users,
-      color: 'text-orange-700',
+      color: 'text-orange-600',
       bgColor: 'bg-orange-50',
-      glow: 'from-orange-300/40 via-orange-100/0 to-transparent',
       features: [
         getNavText('Profil oluşturma', 'Profile creation', 'Création de profil'),
         getNavText('Temel görünürlük', 'Basic visibility', 'Visibilité de base'),
@@ -167,16 +166,11 @@ export default function Pricing() {
         'Profil vérifié et fiable'
       ),
       icon: CheckCircle,
-      color: 'text-red-500',
-      bgColor: 'bg-red-50',
-      glow: 'from-red-400/40 via-red-100/0 to-transparent',
+      color: 'text-sky-600',
+      bgColor: 'bg-sky-50',
       popular: false,
       features: [
-        getNavText(
-          '✓ Tüm ücretsiz özellikler',
-          '✓ All free features',
-          '✓ Toutes les fonctionnalités gratuites'
-        ),
+        getNavText('✓ Tüm ücretsiz özellikler', '✓ All free features', '✓ Toutes les fonctionnalités gratuites'),
         getNavText('Mavi doğrulama rozeti', 'Blue verification badge', 'Badge de vérification bleu'),
         getNavText('Profilde öne çıkma', 'Profile highlighting', 'Mise en avant du profil'),
         getNavText('20 bağlantı/ay', '20 connections/month', '20 connexions/mois'),
@@ -193,13 +187,12 @@ export default function Pricing() {
       period: getNavText('ay', 'month', 'mois'),
       description: getNavText(
         'Zirve seviyesinde görünürlük',
-        'Peak-level visibility',
-        'Visibilité au niveau sommet'
+        'Top-level visibility',
+        'Visibilité de niveau premium'
       ),
       icon: Crown,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
-      glow: 'from-amber-500/50 via-orange-200/10 to-transparent',
       popular: true,
       features: [
         getNavText(
@@ -213,8 +206,8 @@ export default function Pricing() {
         getNavText('Gelişmiş analitikler', 'Advanced analytics', 'Analyses avancées'),
         getNavText('Öncelikli destek', 'Priority support', 'Support prioritaire'),
         getNavText(
-          'Özel Zirve profil teması',
-          'Custom peak profile theme',
+          'Özel profil teması',
+          'Custom profile theme',
           'Thème de profil personnalisé'
         )
       ],
@@ -252,7 +245,7 @@ export default function Pricing() {
     },
     {
       id: 4,
-      title: getNavText('4. Adım: Zirve Marka Ol', 'Step 4: Become a Peak Brand', 'Étape 4 : Deviens une marque de référence'),
+      title: getNavText('4. Adım: Zirve Marka Ol', 'Step 4: Become a Zirve Brand', 'Étape 4 : Deviens une marque forte'),
       text: getNavText(
         'Kariyeer ekosisteminde aranan, prestijli ve sürekli önerilen koç ol.',
         'Become a highly recommended, sought-after coach in the ecosystem.',
@@ -262,25 +255,18 @@ export default function Pricing() {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-slate-50">
-      {/* Arkaplan turuncu/kırmızı glow */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 left-[-10%] h-80 w-80 rounded-full bg-orange-500/35 blur-3xl" />
-        <div className="absolute top-40 right-[-5%] h-96 w-96 rounded-full bg-red-500/25 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-amber-400/25 blur-3xl" />
-      </div>
-
-      {/* HERO */}
-      <section className="relative overflow-hidden py-20 px-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
+    <div className="min-h-screen bg-orange-50 text-gray-900">
+      {/* HERO – turuncu gradient */}
+      <section className="relative overflow-hidden py-20 px-4 bg-gradient-to-br from-red-500 via-orange-500 to-amber-400 text-white">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-15 mix-blend-soft-light" />
         <div className="max-w-6xl mx-auto text-center relative z-10">
-          <Badge className="mb-5 border border-white/20 bg-white/10 text-amber-100 backdrop-blur">
+          <Badge className="mb-5 bg-white text-orange-600 hover:bg-white shadow-sm">
             <Sparkles className="h-3 w-3 mr-1" />
-            {getNavText('Zirve Planlar', 'Premium Plans', 'Plans Premium')}
+            {getNavText('Zirve Planlar', 'Zirve Plans', 'Plans Premium')}
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
-            <span className="block bg-gradient-to-r from-red-300 via-orange-200 to-amber-200 bg-clip-text text-transparent">
+            <span className="block text-white drop-shadow-lg">
               {getNavText(
                 'Profilini Zirve Seviyesine Taşı',
                 'Take Your Profile to the Top',
@@ -293,27 +279,27 @@ export default function Pricing() {
             {getNavText(
               'Doğrulama rozetleri, premium görünürlük ve güçlü analitiklerle koçluk kariyerini bir üst seviyeye taşı.',
               'Use verification badges, premium visibility and advanced analytics to level up your coaching career.',
-              'Utilise badges de vérification, visibilité premium et analyses avancées pour booster ta carrière de coach.'
+              'Utilise badges, visibilité premium et analyses avancées pour booster ta carrière de coach.'
             )}
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Button
               size="lg"
-              className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 text-white font-semibold shadow-xl shadow-orange-500/40 hover:brightness-110 transition-all"
+              className="bg-white text-orange-600 font-semibold shadow-lg hover:bg-orange-50"
               onClick={() => {
                 document
                   .getElementById('pricing-cards')
                   ?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
-              <Star className="h-5 w-5 mr-2" />
+              <Star className="h-5 w-5 mr-2 text-orange-500" />
               {getNavText('Planları Gör', 'View Plans', 'Voir les plans')}
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="border-orange-300/70 bg-neutral-900/60 text-orange-100 hover:bg-neutral-800/80 backdrop-blur"
+              className="border-white text-white hover:bg-white/10"
               onClick={() => {
                 document
                   .getElementById('Zirve-roadmap')
@@ -327,8 +313,8 @@ export default function Pricing() {
       </section>
 
       {/* TEST MODE UYARISI */}
-      <section className="py-3 px-4 bg-amber-500/10 border-y border-amber-400/40 backdrop-blur">
-        <div className="max-w-5xl mx-auto flex items-center justify-center gap-2 text-amber-100 text-sm">
+      <section className="py-3 px-4 bg-amber-50 border-y border-amber-200">
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-2 text-amber-800 text-sm">
           <AlertCircle className="h-4 w-4" />
           <p>
             {getNavText(
@@ -340,41 +326,41 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* İSTATİSTİKLER */}
-      <section className="py-12 px-4">
+      {/* STATS – beyaz kartlar */}
+      <section className="py-12 px-4 bg-orange-50">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6">
-          <Card className="bg-neutral-900/70 border-orange-500/30 backdrop-blur shadow-lg shadow-orange-500/20">
+          <Card className="bg-white border-orange-100 shadow-md">
             <CardContent className="pt-6 text-center">
-              <TrendingUp className="h-7 w-7 text-orange-300 mx-auto mb-3" />
-              <p className="text-3xl font-bold text-slate-50">%300</p>
-              <p className="text-sm text-orange-100">
+              <TrendingUp className="h-7 w-7 text-orange-500 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-gray-900">%300</p>
+              <p className="text-sm text-gray-600">
                 {getNavText('Daha Fazla Görünürlük', 'More Visibility', 'Plus de visibilité')}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-neutral-900/70 border-red-500/30 backdrop-blur shadow-lg shadow-red-500/20">
+          <Card className="bg-white border-orange-100 shadow-md">
             <CardContent className="pt-6 text-center">
-              <Users className="h-7 w-7 text-red-300 mx-auto mb-3" />
-              <p className="text-3xl font-bold text-slate-50">%250</p>
-              <p className="text-sm text-orange-100">
+              <Users className="h-7 w-7 text-red-500 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-gray-900">%250</p>
+              <p className="text-sm text-gray-600">
                 {getNavText('Daha Fazla Bağlantı', 'More Connections', 'Plus de connexions')}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-neutral-900/70 border-amber-400/40 backdrop-blur shadow-lg shadow-amber-400/20">
+          <Card className="bg-white border-orange-100 shadow-md">
             <CardContent className="pt-6 text-center">
-              <Star className="h-7 w-7 text-amber-300 mx-auto mb-3" />
-              <p className="text-3xl font-bold text-slate-50">%400</p>
-              <p className="text-sm text-orange-100">
+              <Star className="h-7 w-7 text-amber-500 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-gray-900">%400</p>
+              <p className="text-sm text-gray-600">
                 {getNavText('Daha Fazla Güven', 'More Trust', 'Plus de confiance')}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-neutral-900/70 border-emerald-400/30 backdrop-blur shadow-lg shadow-emerald-400/20">
+          <Card className="bg-white border-orange-100 shadow-md">
             <CardContent className="pt-6 text-center">
-              <Zap className="h-7 w-7 text-emerald-300 mx-auto mb-3" />
-              <p className="text-3xl font-bold text-slate-50">%180</p>
-              <p className="text-sm text-orange-100">
+              <Zap className="h-7 w-7 text-green-500 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-gray-900">%180</p>
+              <p className="text-sm text-gray-600">
                 {getNavText('Daha Fazla Dönüşüm', 'More Conversion', 'Plus de conversion')}
               </p>
             </CardContent>
@@ -383,17 +369,13 @@ export default function Pricing() {
       </section>
 
       {/* PRICING KARTLARI */}
-      <section className="py-16 px-4" id="pricing-cards">
+      <section className="py-16 px-4 bg-white" id="pricing-cards">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
-              {getNavText(
-                'Öne Çıkan Planlarını Seç',
-                'Choose Your Premium Plan',
-                'Choisis ton plan premium'
-              )}
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
+              {getNavText('Öne Çıkan Planlarını Seç', 'Choose Your Plan', 'Choisis ton plan')}
             </h2>
-            <p className="text-orange-100 max-w-2xl mx-auto">
+            <p className="text-gray-600 max-w-2xl mx-auto">
               {getNavText(
                 'İster yeni başla, ister zaten yıldız ol – rozetlerinle profilini bir üst seviyeye taşı.',
                 'Whether you are just starting or already a star – boost your profile with badges.',
@@ -408,166 +390,158 @@ export default function Pricing() {
               const isPopular = plan.popular;
 
               return (
-                <div key={plan.id} className="relative group">
-                  {/* Glow */}
-                  <div
-                    className={`pointer-events-none absolute inset-x-6 -bottom-4 h-24 bg-gradient-to-t ${plan.glow} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500`}
-                  />
-                  <Card
-                    className={`relative h-full overflow-hidden border-2 transition-all duration-500 backdrop-blur-xl bg-neutral-900/80 ${
-                      isPopular
-                        ? 'border-amber-400/80 shadow-2xl shadow-amber-500/40 scale-[1.03] translate-y-[-4px]'
-                        : 'border-neutral-700 hover:border-orange-400/80 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-1'
-                    }`}
-                  >
-                    {isPopular && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-gradient-to-r from-red-500 to-amber-400 text-white font-bold shadow-lg">
-                          <Crown className="h-3 w-3 mr-1" />
-                          {getNavText('En Popüler', 'Most Popular', 'Le plus populaire')}
-                        </Badge>
-                      </div>
-                    )}
+                <Card
+                  key={plan.id}
+                  className={`relative h-full overflow-hidden border-2 transition-all duration-300 bg-white ${
+                    isPopular
+                      ? 'border-amber-400 shadow-xl scale-[1.03] -translate-y-1'
+                      : 'border-orange-100 hover:border-orange-400 hover:shadow-lg hover:-translate-y-1'
+                  }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold shadow-md">
+                        <Crown className="h-3 w-3 mr-1" />
+                        {getNavText('En Popüler', 'Most Popular', 'Le plus populaire')}
+                      </Badge>
+                    </div>
+                  )}
 
-                    <CardHeader className="text-center pb-6 pt-10">
-                      <div
-                        className={`w-16 h-16 ${plan.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner shadow-white/40`}
-                      >
-                        <Icon className={`h-8 w-8 ${plan.color}`} />
-                      </div>
-                      <CardTitle className="text-2xl text-slate-50 mb-1">
-                        {plan.name}
-                      </CardTitle>
-                      <CardDescription className="text-orange-100 text-sm">
-                        {plan.description}
-                      </CardDescription>
-                      <div className="mt-5">
-                        <span className="text-4xl font-extrabold text-slate-50">
-                          {plan.price === 0
-                            ? getNavText('Ücretsiz', 'Free', 'Gratuit')
-                            : `₺${plan.price}`}
-                        </span>
-                        {plan.price > 0 && (
-                          <span className="text-orange-100 ml-1 text-sm">/ {plan.period}</span>
-                        )}
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="pb-6 px-6">
-                      <div className="space-y-3 mb-6">
-                        {plan.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-start gap-3 text-sm">
-                            <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                            <span className="text-slate-100">{feature}</span>
-                          </div>
-                        ))}
-                        {plan.notIncluded.map((feature, idx) => (
-                          <div key={idx} className="flex items-start gap-3 text-xs opacity-60">
-                            <X className="h-4 w-4 text-slate-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-orange-100">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {plan.id === 'free' ? (
-                        <Button
-                          className="w-full border border-neutral-600 bg-neutral-900 text-slate-50 hover:bg-neutral-800"
-                          variant="outline"
-                          onClick={() => navigate('/register')}
-                        >
-                          {getNavText(
-                            'Ücretsiz Başla',
-                            'Start for Free',
-                            'Commencer gratuitement'
-                          )}
-                        </Button>
-                      ) : (
-                        <Button
-                          className={`w-full text-white font-semibold ${
-                            isPopular
-                              ? 'bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 hover:brightness-110'
-                              : 'bg-gradient-to-r from-orange-500 to-amber-400 hover:brightness-110'
-                          }`}
-                          onClick={() =>
-                            handleSubscribe(plan.id as 'blue_badge' | 'gold_badge', plan.price)
-                          }
-                          disabled={loading === plan.id}
-                        >
-                          {loading === plan.id ? (
-                            <span className="flex items-center gap-2">
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              {getNavText('İşleniyor...', 'Processing...', 'Traitement...')}
-                            </span>
-                          ) : (
-                            <>
-                              {isPopular && <Crown className="h-4 w-4 mr-2" />}
-                              {getNavText('Hemen Başla', 'Get Started', 'Commencer')}
-                            </>
-                          )}
-                        </Button>
+                  <CardHeader className="text-center pb-6 pt-10">
+                    <div
+                      className={`w-16 h-16 ${plan.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-4`}
+                    >
+                      <Icon className={`h-8 w-8 ${plan.color}`} />
+                    </div>
+                    <CardTitle className="text-2xl text-gray-900 mb-1">
+                      {plan.name}
+                    </CardTitle>
+                    <CardDescription className="text-gray-500 text-sm">
+                      {plan.description}
+                    </CardDescription>
+                    <div className="mt-5">
+                      <span className="text-4xl font-extrabold text-gray-900">
+                        {plan.price === 0
+                          ? getNavText('Ücretsiz', 'Free', 'Gratuit')
+                          : `₺${plan.price}`}
+                      </span>
+                      {plan.price > 0 && (
+                        <span className="text-gray-600 ml-1 text-sm">/ {plan.period}</span>
                       )}
-                    </CardContent>
-                  </Card>
-                </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="pb-6 px-6">
+                    <div className="space-y-3 mb-6">
+                      {plan.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-3 text-sm">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-800">{feature}</span>
+                        </div>
+                      ))}
+                      {plan.notIncluded.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-3 text-xs opacity-60">
+                          <X className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-500">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {plan.id === 'free' ? (
+                      <Button
+                        className="w-full border border-orange-200 text-orange-600 bg-white hover:bg-orange-50"
+                        variant="outline"
+                        onClick={() => navigate('/register')}
+                      >
+                        {getNavText(
+                          'Ücretsiz Başla',
+                          'Start for Free',
+                          'Commencer gratuitement'
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        className={`w-full text-white font-semibold ${
+                          isPopular
+                            ? 'bg-gradient-to-r from-red-500 via-orange-500 to-amber-400 hover:brightness-110'
+                            : 'bg-orange-500 hover:bg-orange-600'
+                        }`}
+                        onClick={() =>
+                          handleSubscribe(plan.id as 'blue_badge' | 'gold_badge', plan.price)
+                        }
+                        disabled={loading === plan.id}
+                      >
+                        {loading === plan.id ? (
+                          <span className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            {getNavText('İşleniyor...', 'Processing...', 'Traitement...')}
+                          </span>
+                        ) : (
+                          <>
+                            {isPopular && <Crown className="h-4 w-4 mr-2" />}
+                            {getNavText('Hemen Başla', 'Get Started', 'Commencer')}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* ROADMAP */}
+      {/* ROADMAP – açık turuncu */}
       <section
         id="Zirve-roadmap"
-        className="py-16 px-4 border-t border-neutral-800 bg-neutral-950/95"
+        className="py-16 px-4 border-t border-orange-100 bg-orange-50"
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
-              {getNavText('Zirve Yol Haritası', 'Roadmap to the Top', 'Feuille de route')}
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
+              {getNavText('Zirve Yol Haritası', 'Roadmap', 'Feuille de route')}
             </h2>
-            <p className="text-orange-100 max-w-2xl mx-auto">
+            <p className="text-gray-600 max-w-2xl mx-auto">
               {getNavText(
-                'Profil açmaktan zirve marka olmaya kadar net, uygulanabilir 4 adım.',
-                'Clear 4 steps from creating a profile to becoming a top brand.',
-                '4 étapes claires : de la création du profil à la marque de référence.'
+                'Profil açmaktan güçlü bir marka olmaya kadar net, uygulanabilir 4 adım.',
+                'Clear 4 steps from creating a profile to becoming a strong brand.',
+                '4 étapes claires : du profil à la marque forte.'
               )}
             </p>
           </div>
 
-          <div className="relative">
-            <div className="hidden md:block absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
-            <div className="grid md:grid-cols-4 gap-6 relative">
-              {roadmapSteps.map((step) => (
-                <Card
-                  key={step.id}
-                  className="bg-neutral-900/80 border-neutral-700 backdrop-blur shadow-lg shadow-neutral-900/70 relative"
-                >
-                  <CardContent className="pt-6 pb-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-amber-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                        {step.id}
-                      </div>
-                      <p className="text-sm font-semibold text-slate-50">{step.title}</p>
+          <div className="grid md:grid-cols-4 gap-6">
+            {roadmapSteps.map((step) => (
+              <Card
+                key={step.id}
+                className="bg-white border-orange-100 shadow-sm"
+              >
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center text-white font-bold text-sm">
+                      {step.id}
                     </div>
-                    <p className="text-xs text-orange-100 leading-relaxed">{step.text}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    <p className="text-sm font-semibold text-gray-900">{step.title}</p>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">{step.text}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-r from-red-700 via-orange-700 to-amber-600">
+      {/* CTA – turuncu/kırmızı gradient */}
+      <section className="py-20 px-4 bg-gradient-to-r from-red-500 via-orange-500 to-amber-400 text-white">
         <div className="max-w-4xl mx-auto text-center relative">
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-80">
-            <Shield className="h-20 w-20 text-amber-200 drop-shadow-[0_0_25px_rgba(250,204,21,0.7)]" />
+            <Shield className="h-20 w-20 text-amber-200 drop-shadow-[0_0_25px_rgba(251,191,36,0.7)]" />
           </div>
-          <h2 className="mt-10 text-3xl md:text-4xl font-extrabold text-white mb-4">
+          <h2 className="mt-10 text-3xl md:text-4xl font-extrabold mb-4">
             {getNavText(
-              'Güvenilirliğini ve görünürlüğünü öne çıkar',
-              'Boost your trust and visibility',
+              'Güvenilirliğini ve görünürlüğünü artır',
+              'Increase your trust and visibility',
               'Augmente ta confiance et ta visibilité'
             )}
           </h2>
@@ -581,20 +555,20 @@ export default function Pricing() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button
               size="lg"
-              className="bg-white text-red-600 font-semibold shadow-xl shadow-neutral-900/40 hover:bg-orange-50"
+              className="bg-white text-orange-600 font-semibold shadow-lg hover:bg-orange-50"
               onClick={() => {
                 document
                   .getElementById('pricing-cards')
                   ?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
-              <Award className="h-5 w-5 mr-2" />
+              <Award className="h-5 w-5 mr-2 text-orange-500" />
               {getNavText('Altın Tik ile Başla', 'Start with Gold Badge', 'Commencer avec le badge or')}
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="border-white/80 text-white bg-transparent hover:bg-white/10"
+              className="border-white text-white hover:bg-white/10"
               onClick={() => navigate('/register')}
             >
               {getNavText('Önce Ücretsiz Dene', 'Try Free First', 'Essayer gratuitement d’abord')}

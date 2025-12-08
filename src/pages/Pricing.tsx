@@ -24,51 +24,576 @@ import {
 
 export default function Pricing() {
   const { language } = useLanguage();
-  const { user, supabaseUser } = useAuth();
+  const { supabaseUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   const getNavText = (tr: string, en: string, fr: string) => {
     switch (language) {
-      case 'tr': return tr;
-      case 'en': return en;
-      case 'fr': return fr;
-      default: return tr;
+      case 'tr':
+        return tr;
+      case 'en':
+        return en;
+      case 'fr':
+        return fr;
+      default:
+        return tr;
     }
   };
 
   const handleSubscribe = async (type: 'blue_badge' | 'gold_badge', price: number) => {
-    // ... (TÜM KODUN AYNI – HİÇBİR ŞEY DEĞİŞMEDİ)
+    if (!supabaseUser) {
+      toast.error(
+        getNavText(
+          'Lütfen önce giriş yapın',
+          'Please login first',
+          "Veuillez vous connecter d'abord"
+        )
+      );
+      navigate('/login');
+      return;
+    }
+
+    setLoading(type);
+    const toastId = toast.loading(
+      getNavText('Ödeme başlatılıyor...', 'Starting payment...', 'Paiement en cours...')
+    );
+
+    try {
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('Session error');
+      }
+
+      const edgeUrl =
+        'https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/app_2dff6511da_create_payment';
+
+      const response = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          subscription_type: type,
+          price,
+          return_url: window.location.origin + '/payment-callback'
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = errorText;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorText;
+        } catch {
+          // ignore
+        }
+        throw new Error(`Payment API Error: ${errorMessage}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.payment_url) {
+        toast.success(
+          getNavText(
+            'Ödeme sayfasına yönlendiriliyorsunuz...',
+            'Redirecting to payment page...',
+            'Redirection vers la page de paiement...'
+          ),
+          { id: toastId }
+        );
+        window.location.href = result.payment_url;
+      } else {
+        throw new Error('Invalid payment response');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(
+        errorMessage ||
+          getNavText(
+            'Ödeme başlatılamadı',
+            'Payment failed to start',
+            'Échec du paiement'
+          ),
+        { id: toastId }
+      );
+    } finally {
+      setLoading(null);
+    }
   };
 
+  // UNICORN PRICING PLANLARI
   const plans = [
-    // ... (TÜM PLANLAR AYNI)
+    {
+      id: 'free',
+      name: getNavText('Ücretsiz', 'Free', 'Gratuit'),
+      price: 0,
+      period: getNavText('Ücretsiz', 'Free', 'Gratuit'),
+      description: getNavText(
+        'Başlamak için temel özellikler',
+        'Core features to get started',
+        'Fonctionnalités de base pour démarrer'
+      ),
+      icon: Users,
+      color: 'text-slate-700',
+      bgColor: 'bg-slate-100',
+      glow: 'from-slate-300/40 via-slate-100/0 to-transparent',
+      features: [
+        getNavText('Profil oluşturma', 'Profile creation', 'Création de profil'),
+        getNavText('Temel görünürlük', 'Basic visibility', 'Visibilité de base'),
+        getNavText('Mesajlaşma', 'Messaging', 'Messagerie'),
+        getNavText('5 bağlantı/ay', '5 connections/month', '5 connexions/mois')
+      ],
+      notIncluded: [
+        getNavText('Doğrulama rozeti', 'Verification badge', 'Badge de vérification'),
+        getNavText('Öncelikli listeleme', 'Priority listing', 'Liste prioritaire'),
+        getNavText('Analitik dashboard', 'Analytics dashboard', 'Tableau de bord analytique')
+      ]
+    },
+    {
+      id: 'blue_badge',
+      name: getNavText('Mavi Tik', 'Blue Badge', 'Badge Bleu'),
+      price: 99,
+      period: getNavText('ay', 'month', 'mois'),
+      description: getNavText(
+        'Güven veren doğrulanmış profil',
+        'Trusted verified profile',
+        'Profil vérifié et fiable'
+      ),
+      icon: CheckCircle,
+      color: 'text-sky-600',
+      bgColor: 'bg-sky-100',
+      glow: 'from-sky-400/40 via-sky-100/0 to-transparent',
+      popular: false,
+      features: [
+        getNavText('✓ Tüm ücretsiz özellikler', '✓ All free features', '✓ Toutes les fonctionnalités gratuites'),
+        getNavText('Mavi doğrulama rozeti', 'Blue verification badge', 'Badge de vérification bleu'),
+        getNavText('Profilde öne çıkma', 'Profile highlighting', 'Mise en avant du profil'),
+        getNavText('20 bağlantı/ay', '20 connections/month', '20 connexions/mois'),
+        getNavText('Temel analitikler', 'Basic analytics', 'Analyses de base')
+      ],
+      notIncluded: [
+        getNavText('Altın rozet özellikleri', 'Gold badge features', 'Fonctionnalités du badge or')
+      ]
+    },
+    {
+      id: 'gold_badge',
+      name: getNavText('Altın Tik', 'Gold Badge', 'Badge Or'),
+      price: 299,
+      period: getNavText('ay', 'month', 'mois'),
+      description: getNavText(
+        'Unicorn seviyesinde görünürlük',
+        'Unicorn-level visibility',
+        'Visibilité niveau licorne'
+      ),
+      icon: Crown,
+      color: 'text-fuchsia-600',
+      bgColor: 'bg-fuchsia-100',
+      glow: 'from-fuchsia-500/50 via-amber-200/10 to-transparent',
+      popular: true,
+      features: [
+        getNavText(
+          '✓ Tüm mavi tik özellikleri',
+          '✓ All blue badge features',
+          '✓ Toutes les fonctionnalités du badge bleu'
+        ),
+        getNavText('Altın premium rozeti', 'Gold premium badge', 'Badge premium or'),
+        getNavText('En üstte listeleme', 'Top listing', 'Liste en haut'),
+        getNavText('Sınırsız bağlantı', 'Unlimited connections', 'Connexions illimitées'),
+        getNavText('Gelişmiş analitikler', 'Advanced analytics', 'Analyses avancées'),
+        getNavText('Öncelikli destek', 'Priority support', 'Support prioritaire'),
+        getNavText(
+          'Özel unicorn profil teması',
+          'Custom unicorn profile theme',
+          'Thème de profil licorne personnalisé'
+        )
+      ],
+      notIncluded: []
+    }
+  ];
+
+  const roadmapSteps = [
+    {
+      id: 1,
+      title: getNavText('1. Adım: Profilini Aç', 'Step 1: Create Profile', 'Étape 1 : Crée ton profil'),
+      text: getNavText(
+        'Ücretsiz profilini oluştur, güçlü bir bio yaz, uzmanlık alanlarını ekle.',
+        'Create your free profile, write a strong bio, add your specialties.',
+        'Crée ton profil gratuit, écris une bio forte et ajoute tes spécialités.'
+      )
+    },
+    {
+      id: 2,
+      title: getNavText('2. Adım: Mavi Tik ile Güven İnşa Et', 'Step 2: Add Blue Badge', 'Étape 2 : Ajoute le badge bleu'),
+      text: getNavText(
+        'Doğrulama rozeti ile danışanların gözünde güven ve profesyonellik yarat.',
+        'Use verification to build trust and professionalism.',
+        'Utilise la vérification pour inspirer confiance et professionnalisme.'
+      )
+    },
+    {
+      id: 3,
+      title: getNavText('3. Adım: Altın Tik ile Zirveye Çık', 'Step 3: Go Gold', 'Étape 3 : Passe en or'),
+      text: getNavText(
+        'Aramalarda üst sıralara çık, sınırsız bağlantı ve premium görünürlük kazan.',
+        'Get top ranking, unlimited connections and premium visibility.',
+        'Sois en haut des résultats, connexions illimitées et visibilité premium.'
+      )
+    },
+    {
+      id: 4,
+      title: getNavText('4. Adım: Unicorn Marka Ol', 'Step 4: Become a Unicorn Brand', 'Étape 4 : Deviens une marque licorne'),
+      text: getNavText(
+        'Kariyeer ekosisteminde aranan, prestijli ve sürekli önerilen koç ol.',
+        'Become a highly recommended, sought-after coach in the ecosystem.',
+        'Deviens un coach très recommandé et recherché dans l’écosystème.'
+      )
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-950 text-slate-50">
+      {/* Arkaplan unicorn glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute -top-32 left-[-10%] h-80 w-80 rounded-full bg-fuchsia-500/30 blur-3xl" />
+        <div className="absolute top-40 right-[-5%] h-96 w-96 rounded-full bg-sky-500/25 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
+      </div>
 
-      {/* ❌ <Navbar /> SİLİNDİ */}
-
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-amber-500 text-white py-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge className="mb-4 bg-white text-purple-600 hover:bg-white">
+      {/* HERO */}
+      <section className="relative overflow-hidden py-20 px-4">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
+        <div className="max-w-6xl mx-auto text-center relative z-10">
+          <Badge className="mb-5 border border-white/20 bg-white/10 text-fuchsia-200 backdrop-blur">
             <Sparkles className="h-3 w-3 mr-1" />
-            {getNavText('Fiyatlandırma', 'Pricing', 'Tarification')}
+            {getNavText('Unicorn Planlar', 'Unicorn Plans', 'Plans Licorne')}
           </Badge>
 
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            {getNavText('Profilinizi Öne Çıkarın', 'Highlight Your Profile', 'Mettez en avant votre profil')}
+          <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
+            <span className="block bg-gradient-to-r from-fuchsia-300 via-amber-200 to-sky-300 bg-clip-text text-transparent">
+              {getNavText(
+                'Profilini Unicorn Seviyesine Taşı',
+                'Turn Your Profile into a Unicorn',
+                'Fais de ton profil une licorne'
+              )}
+            </span>
           </h1>
 
-          <p className="text-xl md:text-2xl mb-8 text-blue-50 max-w-3xl mx-auto">
+          <p className="text-lg md:text-2xl mb-8 text-slate-200 max-w-3xl mx-auto">
             {getNavText(
-              'Doğrulama rozetleriyle güvenilirliğinizi artırın ve daha fazla müşteriye ulaşın',
-              'Increase your credibility with verification badges and reach more clients',
-              'Augmentez votre crédibilité avec des badges de vérification et atteignez plus de clients'
+              'Doğrulama rozetleri, premium görünürlük ve güçlü analitiklerle koçluk kariyerini bir üst seviyeye taşı.',
+              'Use verification badges, premium visibility and advanced analytics to level up your coaching career.',
+              'Utilise badges de vérification, visibilité premium et analyses avancées pour booster ta carrière de coach.'
             )}
           </p>
 
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-fuchsia-500 via-amber-400 to-sky-400 text-slate-950 font-semibold shadow-xl shadow-fuchsia-500/30 hover:brightness-110 transition-all"
+              onClick={() => {
+                document
+                  .getElementById('pricing-cards')
+                  ?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <Star className="h-5 w-5 mr-2" />
+              {getNavText('Planları Gör', 'View Plans', 'Voir les plans')}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-slate-500/60 bg-slate-900/50 text-slate-100 hover:bg-slate-800/80 backdrop-blur"
+              onClick={() => {
+                document
+                  .getElementById('unicorn-roadmap')
+                  ?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              {getNavText('Nasıl Unicorn Olurum?', 'See the Roadmap', 'Voir la feuille de route')}
+            </Button>
+          </div>
         </div>
       </section>
+
+      {/* TEST MODE UYARISI */}
+      <section className="py-3 px-4 bg-amber-500/10 border-y border-amber-400/30 backdrop-blur">
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-2 text-amber-100 text-sm">
+          <AlertCircle className="h-4 w-4" />
+          <p>
+            {getNavText(
+              'Test Modu: Şu an yapılan ödemeler gerçek değildir.',
+              'Test Mode: Payments are not real right now.',
+              'Mode Test : Aucun paiement réel pour le moment.'
+            )}
+          </p>
+        </div>
+      </section>
+
+      {/* UNICORN STATS */}
+      <section className="py-12 px-4">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6">
+          <Card className="bg-slate-900/60 border-slate-700/70 backdrop-blur shadow-lg shadow-sky-500/10">
+            <CardContent className="pt-6 text-center">
+              <TrendingUp className="h-7 w-7 text-sky-300 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-slate-50">%300</p>
+              <p className="text-sm text-slate-300">
+                {getNavText('Daha Fazla Görünürlük', 'More Visibility', 'Plus de visibilité')}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/60 border-slate-700/70 backdrop-blur shadow-lg shadow-fuchsia-500/10">
+            <CardContent className="pt-6 text-center">
+              <Users className="h-7 w-7 text-fuchsia-300 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-slate-50">%250</p>
+              <p className="text-sm text-slate-300">
+                {getNavText('Daha Fazla Bağlantı', 'More Connections', 'Plus de connexions')}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/60 border-slate-700/70 backdrop-blur shadow-lg shadow-amber-400/10">
+            <CardContent className="pt-6 text-center">
+              <Star className="h-7 w-7 text-amber-300 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-slate-50">%400</p>
+              <p className="text-sm text-slate-300">
+                {getNavText('Daha Fazla Güven', 'More Trust', 'Plus de confiance')}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/60 border-slate-700/70 backdrop-blur shadow-lg shadow-emerald-400/10">
+            <CardContent className="pt-6 text-center">
+              <Zap className="h-7 w-7 text-emerald-300 mx-auto mb-3" />
+              <p className="text-3xl font-bold text-slate-50">%180</p>
+              <p className="text-sm text-slate-300">
+                {getNavText('Daha Fazla Dönüşüm', 'More Conversion', 'Plus de conversion')}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* PRICING KARTLARI */}
+      <section className="py-16 px-4" id="pricing-cards">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
+              {getNavText('Unicorn Planlarını Seç', 'Choose Your Unicorn Plan', 'Choisis ton plan licorne')}
+            </h2>
+            <p className="text-slate-300 max-w-2xl mx-auto">
+              {getNavText(
+                'İster yeni başla, ister zaten yıldız ol – rozetlerinle profilini bir üst seviyeye taşı.',
+                'Whether you are just starting or already a star – boost your profile with badges.',
+                'Que tu commences ou que tu sois déjà une star – booste ton profil avec des badges.'
+              )}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {plans.map((plan) => {
+              const Icon = plan.icon;
+              const isPopular = plan.popular;
+
+              return (
+                <div key={plan.id} className="relative group">
+                  {/* Glow */}
+                  <div
+                    className={`pointer-events-none absolute inset-x-6 -bottom-4 h-24 bg-gradient-to-t ${plan.glow} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500`}
+                  />
+                  <Card
+                    className={`relative h-full overflow-hidden border-2 transition-all duration-500 backdrop-blur-xl bg-slate-900/70 ${
+                      isPopular
+                        ? 'border-fuchsia-400/80 shadow-2xl shadow-fuchsia-500/40 scale-[1.03] translate-y-[-4px]'
+                        : 'border-slate-700/70 hover:border-sky-400/70 hover:shadow-xl hover:shadow-sky-500/30 hover:-translate-y-1'
+                    }`}
+                  >
+                    {isPopular && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-gradient-to-r from-fuchsia-500 to-amber-400 text-slate-950 font-bold shadow-lg">
+                          <Crown className="h-3 w-3 mr-1" />
+                          {getNavText('En Popüler', 'Most Popular', 'Le plus populaire')}
+                        </Badge>
+                      </div>
+                    )}
+
+                    <CardHeader className="text-center pb-6 pt-10">
+                      <div
+                        className={`w-16 h-16 ${plan.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner shadow-white/40`}
+                      >
+                        <Icon className={`h-8 w-8 ${plan.color}`} />
+                      </div>
+                      <CardTitle className="text-2xl text-slate-50 mb-1">
+                        {plan.name}
+                      </CardTitle>
+                      <CardDescription className="text-slate-300 text-sm">
+                        {plan.description}
+                      </CardDescription>
+                      <div className="mt-5">
+                        <span className="text-4xl font-extrabold text-slate-50">
+                          {plan.price === 0
+                            ? getNavText('Ücretsiz', 'Free', 'Gratuit')
+                            : `₺${plan.price}`}
+                        </span>
+                        {plan.price > 0 && (
+                          <span className="text-slate-300 ml-1 text-sm">/ {plan.period}</span>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pb-6 px-6">
+                      <div className="space-y-3 mb-6">
+                        {plan.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-start gap-3 text-sm">
+                            <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-slate-100">{feature}</span>
+                          </div>
+                        ))}
+                        {plan.notIncluded.map((feature, idx) => (
+                          <div key={idx} className="flex items-start gap-3 text-xs opacity-60">
+                            <X className="h-4 w-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-slate-300">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {plan.id === 'free' ? (
+                        <Button
+                          className="w-full border border-slate-600 bg-slate-900/80 text-slate-50 hover:bg-slate-800"
+                          variant="outline"
+                          onClick={() => navigate('/register')}
+                        >
+                          {getNavText(
+                            'Ücretsiz Başla',
+                            'Start for Free',
+                            'Commencer gratuitement'
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          className={`w-full text-slate-950 font-semibold ${
+                            isPopular
+                              ? 'bg-gradient-to-r from-fuchsia-500 via-amber-400 to-sky-400 hover:brightness-110'
+                              : 'bg-gradient-to-r from-sky-400 to-cyan-400 hover:brightness-110'
+                          }`}
+                          onClick={() =>
+                            handleSubscribe(plan.id as 'blue_badge' | 'gold_badge', plan.price)
+                          }
+                          disabled={loading === plan.id}
+                        >
+                          {loading === plan.id ? (
+                            <span className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                              {getNavText('İşleniyor...', 'Processing...', 'Traitement...')}
+                            </span>
+                          ) : (
+                            <>
+                              {isPopular && <Crown className="h-4 w-4 mr-2" />}
+                              {getNavText('Hemen Başla', 'Get Started', 'Commencer')}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* UNICORN ROADMAP */}
+      <section
+        id="unicorn-roadmap"
+        className="py-16 px-4 border-t border-slate-800/80 bg-slate-950/90"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-50 mb-3">
+              {getNavText('Unicorn Yol Haritası', 'Unicorn Roadmap', 'Feuille de route licorne')}
+            </h2>
+            <p className="text-slate-300 max-w-2xl mx-auto">
+              {getNavText(
+                'Profil açmaktan unicorn marka olmaya kadar net, uygulanabilir 4 adım.',
+                'Clear 4 steps from creating a profile to becoming a unicorn brand.',
+                '4 étapes claires : de la création du profil à la marque licorne.'
+              )}
+            </p>
+          </div>
+
+          <div className="relative">
+            <div className="hidden md:block absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-slate-600/70 to-transparent" />
+            <div className="grid md:grid-cols-4 gap-6 relative">
+              {roadmapSteps.map((step) => (
+                <Card
+                  key={step.id}
+                  className="bg-slate-900/70 border-slate-700/80 backdrop-blur shadow-lg shadow-slate-900/70 relative"
+                >
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-fuchsia-500 to-sky-400 flex items-center justify-center text-slate-950 font-bold text-sm shadow-lg">
+                        {step.id}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-50">{step.title}</p>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">{step.text}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* UNICORN CTA */}
+      <section className="py-20 px-4 bg-gradient-to-r from-fuchsia-700 via-slate-900 to-sky-800">
+        <div className="max-w-4xl mx-auto text-center relative">
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-70">
+            <Shield className="h-20 w-20 text-amber-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]" />
+          </div>
+          <h2 className="mt-10 text-3xl md:text-4xl font-extrabold text-slate-50 mb-4">
+            {getNavText(
+              'Güvenilirliğini ve görünürlüğünü unicorn seviyesine çıkar',
+              'Boost your trust and visibility to unicorn level',
+              'Monte ta confiance et ta visibilité au niveau licorne'
+            )}
+          </h2>
+          <p className="text-slate-200 max-w-2xl mx-auto mb-8">
+            {getNavText(
+              'Bugün doğrulama rozetini al, Kariyeer ekosisteminde en çok önerilen koçlar arasına gir.',
+              'Get your badge today and join the most recommended coaches in the Kariyeer ecosystem.',
+              'Obtiens ton badge aujourd’hui et rejoins les coachs les plus recommandés de Kariyeer.'
+            )}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-amber-300 via-fuchsia-300 to-sky-300 text-slate-950 font-semibold shadow-xl shadow-amber-400/40 hover:brightness-110"
+              onClick={() => {
+                document
+                  .getElementById('pricing-cards')
+                  ?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <Award className="h-5 w-5 mr-2" />
+              {getNavText('Altın Tik ile Başla', 'Start with Gold Badge', 'Commencer avec le badge or')}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-slate-300/50 text-slate-50 bg-slate-900/40 hover:bg-slate-800/70 backdrop-blur"
+              onClick={() => navigate('/register')}
+            >
+              {getNavText('Önce Ücretsiz Dene', 'Try Free First', 'Essayer gratuitement d’abord')}
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

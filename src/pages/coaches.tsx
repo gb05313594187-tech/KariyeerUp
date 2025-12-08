@@ -37,18 +37,17 @@ export default function Coaches() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // ----------------------- SUPABASE'TEN KOÇLARI ÇEK -----------------------
+  // ----------------------- SUPABASE'TEN KOÇ ÇEK -----------------------
   useEffect(() => {
     const fetchCoaches = async () => {
       setLoading(true);
 
-      // 🔴 ARTIK COACHES TABLOSUNDAN ÇEKİYORUZ
+      // 🔥 DOĞRU TABLO BURASI → app_2dff651lda_coaches
       const { data, error } = await supabase
         .from("app_2dff651lda_coaches")
         .select("*")
-        .eq("status", "approved") // sadece onaylı koçlar
-        .order("rating", { ascending: false })
-        .limit(100);
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
 
       console.log("COACHES SUPABASE →", { data, error });
 
@@ -59,49 +58,25 @@ export default function Coaches() {
         return;
       }
 
-      const mapped: Coach[] =
-        (data ?? []).map((row: any) => ({
-          id: row.id,
-          // 🔹 İsim / unvan
-          name: row.full_name || "İsimsiz Koç",
-          title: row.title || "Kariyer Koçu",
-
-          // 🔹 Profil resmi
-          image:
-            row.avatar_url ||
-            "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg",
-
-          // 🔹 Puan / yorum
-          rating: row.rating != null ? Number(row.rating) : 4.8,
-          reviews: row.total_reviews ?? 0,
-
-          // 🔹 Deneyim
-          experience: row.experience_years
-            ? `${row.experience_years}+ Yıl Profesyonel Deneyim`
-            : "Deneyimli Koç",
-
-          // 🔹 Müsaitlik (şimdilik sabit metin)
-          nextAvailable:
-            "Müsaitlik için rezervasyon alın",
-
-          // 🔹 Seans ücreti
-          price:
-            row.hourly_rate != null
-              ? Number(row.hourly_rate)
-              : 1500,
-
-          // 🔹 Uzmanlık alanı → specialization text’inden etiket üret
-          specialties:
-            typeof row.specialization === "string" &&
-            row.specialization.length > 0
-              ? row.specialization
-                  .split(",")
-                  .map((s: string) => s.trim())
-              : ["Kariyer"],
-
-          // 🔹 Premium bayrak (şimdilik deneme seansı aktifse premium gibi düşünelim)
-          isPremium: !!row.is_trial_session_active,
-        })) ?? [];
+      const mapped: Coach[] = (data ?? []).map((row: any) => ({
+        id: row.id,
+        name: row.full_name || "İsimsiz Koç",
+        title: row.title || "Kariyer Koçu",
+        image:
+          row.avatar_url ||
+          "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg",
+        rating: row.rating ?? 4.8,
+        reviews: row.total_reviews ?? 0,
+        experience: row.experience_years
+          ? `${row.experience_years} Yıl Deneyim`
+          : "Deneyimli Koç",
+        nextAvailable: "Müsaitlik için rezervasyon alın",
+        price: row.hourly_rate || 1500,
+        specialties: row.specialization
+          ? row.specialization.split(",").map((s: string) => s.trim())
+          : ["Kariyer", "Liderlik"],
+        isPremium: row.is_premium || false,
+      }));
 
       setCoaches(mapped);
       setLoading(false);
@@ -127,7 +102,6 @@ export default function Coaches() {
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* HERO - TURUNCU GRADIENT */}
       <div className="bg-gradient-to-r from-red-600 to-orange-500 pb-16 pt-20 px-4 relative overflow-hidden">
-        {/* Hafif doku */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
 
         <div className="max-w-7xl mx-auto text-center relative z-10">
@@ -140,7 +114,6 @@ export default function Coaches() {
             arasından hedeflerinize en uygun yol arkadaşını seçin.
           </p>
 
-          {/* ARAMA KUTUSU */}
           <div className="max-w-3xl mx-auto relative shadow-2xl rounded-2xl overflow-hidden border-4 border-white/20">
             <div className="flex bg-white h-16">
               <div className="flex-1 flex items-center px-6">
@@ -164,7 +137,7 @@ export default function Coaches() {
       {/* İÇERİK */}
       <div className="max-w-7xl mx-auto px-4 py-16 -mt-8 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SOL FİLTRELER (şimdilik statik) */}
+          {/* SOL FİLTRELER — (hiç dokunmadım) */}
           <div className="hidden lg:block space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg">
               <div className="flex items-center justify-between mb-6">
@@ -207,7 +180,7 @@ export default function Coaches() {
                 </div>
               </div>
 
-              {/* Deneyim */}
+              {/* Deneyim (statik) */}
               <div className="mb-8 pb-6 border-b border-gray-100">
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   Deneyim
@@ -231,7 +204,7 @@ export default function Coaches() {
                 </div>
               </div>
 
-              {/* Seans Ücreti */}
+              {/* Seans Ücreti (statik) */}
               <div>
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   Seans Ücreti
@@ -254,7 +227,6 @@ export default function Coaches() {
 
           {/* SAĞ – KOÇ LİSTESİ */}
           <div className="lg:col-span-3">
-            {/* Özet + Görünüm */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <p className="text-gray-600 font-medium mb-4 sm:mb-0">
                 <span className="font-bold text-gray-900 text-lg">
@@ -262,6 +234,7 @@ export default function Coaches() {
                 </span>{" "}
                 koç listeleniyor
               </p>
+
               <div className="flex items-center gap-4">
                 <select className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block p-2.5 outline-none font-medium">
                   <option>Önerilen Sıralama</option>
@@ -269,6 +242,7 @@ export default function Coaches() {
                   <option>Fiyata Göre (Artan)</option>
                   <option>Fiyata Göre (Azalan)</option>
                 </select>
+
                 <div className="flex border rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode("grid")}
@@ -316,7 +290,6 @@ export default function Coaches() {
                     key={coach.id}
                     className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group h-full flex flex-col"
                   >
-                    {/* Üst renkli alan */}
                     <div className="relative h-28 bg-gradient-to-r from-red-600 to-orange-500">
                       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20" />
                       {coach.isPremium && (
@@ -327,7 +300,6 @@ export default function Coaches() {
                     </div>
 
                     <div className="px-6 pb-6 relative flex-1 flex flex-col">
-                      {/* Profil resmi */}
                       <div className="absolute -top-14 left-6 p-1 bg-white rounded-2xl shadow-md">
                         <img
                           src={coach.image}
@@ -336,7 +308,6 @@ export default function Coaches() {
                         />
                       </div>
 
-                      {/* İsim + puan */}
                       <div className="mt-16 flex justify-between items-start">
                         <div>
                           <h3 className="font-bold text-2xl text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
@@ -346,10 +317,11 @@ export default function Coaches() {
                             {coach.title}
                           </p>
                         </div>
+
                         <div className="flex flex-col items-end">
                           <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg text-yellow-700 font-bold text-lg">
                             <Star className="w-5 h-5 fill-current text-yellow-500" />{" "}
-                            {coach.rating.toFixed(1)}
+                            {coach.rating}
                           </div>
                           <span className="text-xs text-gray-400 mt-1">
                             ({coach.reviews} yorum)
@@ -357,7 +329,6 @@ export default function Coaches() {
                         </div>
                       </div>
 
-                      {/* Detaylar */}
                       <div className="mt-6 space-y-3 text-sm text-gray-700 font-medium bg-gray-50 p-4 rounded-xl">
                         <div className="flex items-center gap-3">
                           <Briefcase className="w-5 h-5 text-blue-500" />
@@ -378,7 +349,6 @@ export default function Coaches() {
                         </div>
                       </div>
 
-                      {/* Etiketler */}
                       <div className="mt-6 flex flex-wrap gap-2">
                         {coach.specialties.map((tag) => (
                           <span
@@ -390,7 +360,6 @@ export default function Coaches() {
                         ))}
                       </div>
 
-                      {/* Fiyat + buton */}
                       <div className="mt-8 pt-6 border-t flex items-center justify-between mt-auto">
                         <div>
                           <span className="text-xs text-gray-500 block font-medium mb-1">
@@ -413,7 +382,7 @@ export default function Coaches() {
               </div>
             )}
 
-            {/* Sayfalama (dummy) */}
+            {/* Sayfalama */}
             <div className="mt-16 flex justify-center">
               <nav className="inline-flex rounded-xl shadow-sm bg-white border border-gray-200 p-1">
                 <button className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">

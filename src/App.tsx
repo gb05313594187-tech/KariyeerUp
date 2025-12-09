@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index"; // Ana sayfa (Index.tsx)
+import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
 import Coaches from "@/pages/Coaches";
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
@@ -105,8 +105,8 @@ function HowItWorks() {
                 Koçunu Seç &amp; Seans Planla
               </h3>
               <p className="text-gray-600 text-sm">
-                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç.
-                Uygun saatleri gör ve tek tıkla online seans oluştur.
+                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç. Uygun
+                saatleri gör ve tek tıkla online seans oluştur.
               </p>
             </div>
 
@@ -230,11 +230,13 @@ export default function App() {
             {/* Ana Sayfa */}
             <Route path="/" element={<Home />} />
 
-            {/* Nasıl Çalışır */}
+            {/* Nasıl Çalışır – TR ve EN slug'lar */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
 
-            {/* Koçlar */}
+            {/* Koçlar – TR ve EN slug'lar */}
             <Route path="/coaches" element={<Coaches />} />
+            <Route path="/for-coaches" element={<Coaches />} />
 
             {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />

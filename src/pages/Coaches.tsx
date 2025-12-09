@@ -154,7 +154,7 @@ export default function Coaches() {
 
       {/* İÇERİK */}
       <div className="max-w-7xl mx-auto px-4 py-16 -mt-8 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg">

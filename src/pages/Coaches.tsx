@@ -334,7 +334,7 @@ export default function Coaches() {
               <div
                 className={
                   viewMode === "grid"
-                    ? "grid md:grid-cols-2 gap-8"
+                    ? "grid md:grid-cols-2 gap-6"
                     : "flex flex-col gap-6"
                 }
               >
@@ -352,7 +352,7 @@ export default function Coaches() {
                       className={`bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group flex ${
                         viewMode === "list"
                           ? "flex-row max-w-2xl mx-auto"
-                          : "flex-col h-full max-w-md mx-auto"
+                          : "flex-col h-full max-w-sm mx-auto"
                       }`}
                     >
                       {/* ÜST RENKLİ ALAN */}
@@ -370,13 +370,13 @@ export default function Coaches() {
                         )}
                       </div>
 
-                      <div className="px-5 pb-5 relative flex-1 flex flex-col">
+                      <div className="px-4 pb-4 relative flex-1 flex flex-col">
                         {/* Avatar */}
                         <div
                           className={`absolute ${
                             viewMode === "list"
-                              ? "-top-8 left-4"
-                              : "-top-10 left-4"
+                              ? "-top-7 left-4"
+                              : "-top-9 left-4"
                           } p-[4px] bg-white rounded-2xl shadow-md`}
                         >
                           <img
@@ -384,7 +384,7 @@ export default function Coaches() {
                               coach.avatar_url ||
                               "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400"
                             }
-                            className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover"
+                            className="w-20 h-20 rounded-xl object-cover"
                             alt={coach.full_name}
                           />
                         </div>
@@ -392,14 +392,14 @@ export default function Coaches() {
                         {/* İsim & Puan */}
                         <div
                           className={`${
-                            viewMode === "list" ? "mt-8" : "mt-12"
+                            viewMode === "list" ? "mt-10" : "mt-14"
                           } flex justify-between items-start`}
                         >
                           <div>
-                            <h3 className="font-bold text-xl text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
+                            <h3 className="font-bold text-lg text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
                               {coach.full_name}
                             </h3>
-                            <p className="text-gray-500 font-medium text-sm">
+                            <p className="text-gray-500 font-medium text-xs">
                               {coach.title || "Kariyer Koçu"}
                             </p>
                           </div>
@@ -415,7 +415,7 @@ export default function Coaches() {
                         </div>
 
                         {/* Detaylar */}
-                        <div className="mt-4 space-y-2 text-sm text-gray-700 font-medium bg-gray-50 p-3 rounded-xl">
+                        <div className="mt-4 space-y-2 text-xs sm:text-sm text-gray-700 font-medium bg-gray-50 p-3 rounded-xl">
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-4 h-4 text-blue-500" />
                             <span>
@@ -439,7 +439,7 @@ export default function Coaches() {
                         </div>
 
                         {/* Etiketler */}
-                        <div className="mt-4 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-2">
                           {specs.length === 0 && (
                             <span className="bg-white border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
                               Uzmanlık alanları ekleniyor
@@ -456,18 +456,18 @@ export default function Coaches() {
                         </div>
 
                         {/* Alt kısım */}
-                        <div className="mt-6 pt-4 border-t flex items-center justify-between mt-auto">
+                        <div className="mt-5 pt-3 border-t flex items-center justify-between mt-auto">
                           <div>
-                            <span className="text-xs text-gray-500 block font-medium mb-1">
+                            <span className="text-[11px] text-gray-500 block font-medium mb-1">
                               45 Dk. Seans Ücreti
                             </span>
-                            <span className="text-xl font-extrabold text-gray-900">
+                            <span className="text-lg font-extrabold text-gray-900">
                               {price} {currency}
                             </span>
                           </div>
                           <button
                             onClick={() => navigate(`/coach/${coach.id}`)}
-                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm"
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm"
                           >
                             Profili İncele
                             <ChevronRight className="w-4 h-4" />

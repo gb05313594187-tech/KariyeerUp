@@ -1,3 +1,5 @@
+// src/pages/CoachApplication.tsx
+// @ts-nocheck
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +13,6 @@ import {
   FileText,
   Upload,
   CheckCircle2,
-  AlertCircle,
   Award,
   Briefcase,
   Mail,
@@ -23,11 +24,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase'; // 🔴 Supabase import
 
 export default function CoachApplication() {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false); // loading state
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -69,7 +72,7 @@ export default function CoachApplication() {
       ...prev,
       specializations: prev.specializations.includes(spec)
         ? prev.specializations.filter(s => s !== spec)
-        : [...prev.specializations, spec]
+        : [...prev.specializations, spec],
     }));
   };
 
@@ -77,7 +80,8 @@ export default function CoachApplication() {
     setFormData(prev => ({ ...prev, [field]: file }));
   };
 
-  const handleSubmit = () => {
+  // 🔥 Supabase'e kayıt atan yeni handleSubmit
+  const handleSubmit = async () => {
     if (!formData.fullName || !formData.email || !formData.phone) {
       toast.error('Lütfen tüm zorunlu alanları doldurun');
       return;
@@ -88,8 +92,49 @@ export default function CoachApplication() {
       return;
     }
 
-    toast.success('Başvurunuz başarıyla alındı!');
-    setTimeout(() => navigate('/'), 2000);
+    setIsSubmitting(true);
+
+    try {
+      const sessionFeeNumber =
+        formData.sessionFee && !Number.isNaN(Number(formData.sessionFee))
+          ? Number(formData.sessionFee)
+          : null;
+
+      const { error } = await supabase.from('coach_applications').insert([
+        {
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          city: formData.city,
+          country: formData.country,
+          certification: formData.certification,
+          certification_year: formData.certificationYear,
+          experience: formData.experience,
+          specializations: formData.specializations, // text[] kolonuna array olarak gider
+          session_fee: sessionFeeNumber,
+          bio: formData.bio,
+          linkedin: formData.linkedIn,
+          website: formData.website,
+          cv_path: formData.cvFile ? formData.cvFile.name : null,
+          certificate_path: formData.certificateFile ? formData.certificateFile.name : null,
+          // created_at otomatik now() ise göndermeye gerek yok
+        },
+      ]);
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        toast.error('Başvuru kaydedilirken bir hata oluştu');
+        return;
+      }
+
+      toast.success('Başvurunuz başarıyla alındı!');
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      toast.error('Beklenmeyen bir hata oluştu');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const steps = [
@@ -98,8 +143,6 @@ export default function CoachApplication() {
     { number: 3, title: 'Belgeler', icon: FileText },
     { number: 4, title: 'Onay', icon: CheckCircle2 },
   ];
-
-  // --- STEP RENDERERS (Hiçbir değişiklik yok, aynen bırakıldı) ---
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -111,7 +154,7 @@ export default function CoachApplication() {
             <Input
               placeholder="Adınız ve soyadınız"
               value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
+              onChange={e => handleInputChange('fullName', e.target.value)}
               className="pl-10"
             />
           </div>
@@ -125,7 +168,7 @@ export default function CoachApplication() {
               type="email"
               placeholder="ornek@email.com"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
+              onChange={e => handleInputChange('email', e.target.value)}
               className="pl-10"
             />
           </div>
@@ -138,7 +181,7 @@ export default function CoachApplication() {
             <Input
               placeholder="+90 555 123 4567"
               value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
+              onChange={e => handleInputChange('phone', e.target.value)}
               className="pl-10"
             />
           </div>
@@ -149,7 +192,7 @@ export default function CoachApplication() {
           <Input
             placeholder="İstanbul"
             value={formData.city}
-            onChange={(e) => handleInputChange('city', e.target.value)}
+            onChange={e => handleInputChange('city', e.target.value)}
           />
         </div>
 
@@ -160,7 +203,7 @@ export default function CoachApplication() {
             <Input
               placeholder="Türkiye"
               value={formData.country}
-              onChange={(e) => handleInputChange('country', e.target.value)}
+              onChange={e => handleInputChange('country', e.target.value)}
               className="pl-10"
             />
           </div>
@@ -183,7 +226,7 @@ export default function CoachApplication() {
           <Label>Sertifika Türü *</Label>
           <Select
             value={formData.certification}
-            onValueChange={(v) => handleInputChange('certification', v)}
+            onValueChange={v => handleInputChange('certification', v)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Sertifika seçin" />
@@ -204,16 +247,13 @@ export default function CoachApplication() {
             type="number"
             placeholder="2020"
             value={formData.certificationYear}
-            onChange={(e) => handleInputChange('certificationYear', e.target.value)}
+            onChange={e => handleInputChange('certificationYear', e.target.value)}
           />
         </div>
 
         <div className="space-y-2">
           <Label>Koçluk Deneyimi *</Label>
-          <Select
-            value={formData.experience}
-            onValueChange={(v) => handleInputChange('experience', v)}
-          >
+          <Select value={formData.experience} onValueChange={v => handleInputChange('experience', v)}>
             <SelectTrigger>
               <SelectValue placeholder="Deneyim seçin" />
             </SelectTrigger>
@@ -232,7 +272,7 @@ export default function CoachApplication() {
             type="number"
             placeholder="1000"
             value={formData.sessionFee}
-            onChange={(e) => handleInputChange('sessionFee', e.target.value)}
+            onChange={e => handleInputChange('sessionFee', e.target.value)}
           />
           <p className="text-xs text-gray-500">Önerilen: 750–2000 ₺</p>
         </div>
@@ -278,7 +318,7 @@ export default function CoachApplication() {
             <Input
               type="file"
               accept=".pdf,.doc,.docx"
-              onChange={(e) => handleFileChange('cvFile', e.target.files?.[0] || null)}
+              onChange={e => handleFileChange('cvFile', e.target.files?.[0] || null)}
               className="hidden"
               id="cv"
             />
@@ -295,7 +335,9 @@ export default function CoachApplication() {
             <Input
               type="file"
               accept=".pdf,.jpg,.png"
-              onChange={(e) => handleFileChange('certificateFile', e.target.files?.[0] || null)}
+              onChange={e =>
+                handleFileChange('certificateFile', e.target.files?.[0] || null)
+              }
               className="hidden"
               id="certificate"
             />
@@ -312,7 +354,7 @@ export default function CoachApplication() {
           rows={4}
           placeholder="Kendinizi kısaca tanıtın..."
           value={formData.bio}
-          onChange={(e) => handleInputChange('bio', e.target.value)}
+          onChange={e => handleInputChange('bio', e.target.value)}
         />
       </div>
 
@@ -322,7 +364,7 @@ export default function CoachApplication() {
           <Input
             placeholder="https://linkedin.com/in/..."
             value={formData.linkedIn}
-            onChange={(e) => handleInputChange('linkedIn', e.target.value)}
+            onChange={e => handleInputChange('linkedIn', e.target.value)}
           />
         </div>
 
@@ -331,13 +373,15 @@ export default function CoachApplication() {
           <Input
             placeholder="https://..."
             value={formData.website}
-            onChange={(e) => handleInputChange('website', e.target.value)}
+            onChange={e => handleInputChange('website', e.target.value)}
           />
         </div>
       </div>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(2)}>Geri</Button>
+        <Button variant="outline" onClick={() => setStep(2)}>
+          Geri
+        </Button>
         <Button onClick={() => setStep(4)} className="bg-red-600 hover:bg-red-700">
           Sonraki Adım <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
@@ -348,19 +392,31 @@ export default function CoachApplication() {
   const renderStep4 = () => (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-sm">
-        <p><strong>Ad Soyad:</strong> {formData.fullName}</p>
-        <p><strong>E-posta:</strong> {formData.email}</p>
-        <p><strong>Telefon:</strong> {formData.phone}</p>
-        <p><strong>Sertifika:</strong> {formData.certification}</p>
-        <p><strong>Deneyim:</strong> {formData.experience}</p>
-        <p><strong>Uzmanlık:</strong> {formData.specializations.join(', ')}</p>
+        <p>
+          <strong>Ad Soyad:</strong> {formData.fullName}
+        </p>
+        <p>
+          <strong>E-posta:</strong> {formData.email}
+        </p>
+        <p>
+          <strong>Telefon:</strong> {formData.phone}
+        </p>
+        <p>
+          <strong>Sertifika:</strong> {formData.certification}
+        </p>
+        <p>
+          <strong>Deneyim:</strong> {formData.experience}
+        </p>
+        <p>
+          <strong>Uzmanlık:</strong> {formData.specializations.join(', ')}
+        </p>
       </div>
 
       <div className="space-y-4">
         <div className="flex space-x-3">
           <Checkbox
             checked={formData.termsAccepted}
-            onCheckedChange={(v) => handleInputChange('termsAccepted', v)}
+            onCheckedChange={v => handleInputChange('termsAccepted', v)}
           />
           <label className="text-sm cursor-pointer">
             Kullanım Koşulları ve Gizlilik Politikasını kabul ediyorum.
@@ -370,7 +426,7 @@ export default function CoachApplication() {
         <div className="flex space-x-3">
           <Checkbox
             checked={formData.ethicsAccepted}
-            onCheckedChange={(v) => handleInputChange('ethicsAccepted', v)}
+            onCheckedChange={v => handleInputChange('ethicsAccepted', v)}
           />
           <label className="text-sm cursor-pointer">
             Etik Kurallara uyacağımı onaylıyorum.
@@ -379,14 +435,16 @@ export default function CoachApplication() {
       </div>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setStep(3)}>Geri</Button>
+        <Button variant="outline" onClick={() => setStep(3)}>
+          Geri
+        </Button>
         <Button
           className="bg-red-600 hover:bg-red-700"
-          disabled={!formData.termsAccepted || !formData.ethicsAccepted}
+          disabled={isSubmitting || !formData.termsAccepted || !formData.ethicsAccepted}
           onClick={handleSubmit}
         >
           <CheckCircle2 className="mr-2 h-4 w-4" />
-          Başvuruyu Gönder
+          {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
         </Button>
       </div>
     </div>
@@ -394,9 +452,7 @@ export default function CoachApplication() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       <div className="max-w-4xl mx-auto py-12 px-4">
-
         <div className="text-center mb-12">
           <Badge className="mb-4 bg-red-100 text-red-600">Koç Başvurusu</Badge>
           <h1 className="text-4xl font-bold text-red-600 mb-4">
@@ -479,10 +535,7 @@ export default function CoachApplication() {
         <div className="mt-8 text-center">
           <p className="text-gray-600">
             Sorularınız mı var?{' '}
-            <a
-              href="mailto:destek@kariyeer.com"
-              className="text-red-600 hover:underline"
-            >
+            <a href="mailto:destek@kariyeer.com" className="text-red-600 hover:underline">
               info@kariyeer.com
             </a>
           </p>

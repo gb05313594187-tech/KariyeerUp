@@ -31,7 +31,7 @@ export default function CoachApplication() {
     linkedin: "",
     website: "",
 
-    // Adım 4
+    // Adım 4 (sadece frontend kontrol için)
     accept_terms: false,
     accept_ethics: false,
   });
@@ -75,6 +75,7 @@ export default function CoachApplication() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Tikler zorunlu, ama DB'ye kaydetmiyoruz (şimdilik)
     if (!formData.accept_terms || !formData.accept_ethics) {
       toast.error("Lütfen tüm onay kutularını işaretleyin.");
       return;
@@ -91,7 +92,7 @@ export default function CoachApplication() {
           city: formData.city,
           country: formData.country,
 
-          // DB kolonlarıyla eşleşen alanlar
+          // DB kolonlarıyla birebir aynı
           certification: formData.certificate_type,
           certification_year: formData.certificate_year,
           experience: formData.experience_level,
@@ -107,17 +108,13 @@ export default function CoachApplication() {
           cv_path: formData.cv_file?.name || null,
           certificate_path: formData.certificate_file?.name || null,
 
-          accept_terms: formData.accept_terms,
-          accept_ethics: formData.accept_ethics,
+          // 🔴 DİKKAT: accept_terms / accept_ethics ŞİMDİLİK GÖNDERİLMİYOR
         },
       ]);
 
       if (error) {
         console.error("Supabase insert error:", error);
-
-        // 🔥 GEÇİCİ DEBUG: Supabase'in ham hatasını göster
         alert("Supabase error:\n" + JSON.stringify(error, null, 2));
-
         toast.error(error.message || "Başvuru gönderilirken hata oluştu.");
       } else {
         toast.success("Başvurunuz başarıyla gönderildi!");

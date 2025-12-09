@@ -107,6 +107,16 @@ export default function CoachApplication() {
     <div className="max-w-3xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold mb-8">Koç Başvuru Formu</h1>
 
+      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border">
+  <strong>Başvuru Ön Bilgilendirmesi:</strong><br />
+  Aşağıdaki form, profesyonel koçluk yeterliliklerinin doğrulanması amacıyla
+  yapılandırılmıştır. Lütfen bilgilerinizi eksiksiz, güncel ve doğrulanabilir
+  şekilde girin. Sağladığınız veriler; kalite standartlarımız, etik ilkelerimiz
+  ve veri güvenliği politikamız doğrultusunda incelenecek, yalnızca başvuru
+  değerlendirme sürecinde kullanılacaktır.
+</p>
+
+
       {/* -------------------- STEP 1 -------------------- */}
       {step === 1 && (
         <div className="space-y-4">

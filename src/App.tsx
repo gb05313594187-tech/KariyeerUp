@@ -7,14 +7,15 @@ import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index";          // Ana sayfa (Index.tsx)
-import Coaches from "@/pages/Coaches";     // Kullanıcılar için koç listesi
-import ForCoaches from "@/pages/ForCoaches"; // Koçlar için (büyük sayfan)
+import Home from "@/pages/Index";            // Ana sayfa (Index.tsx)
+import Coaches from "@/pages/Coaches";       // Kullanıcılar için koç listesi
+import ForCoaches from "@/pages/ForCoaches"; // Koçlar için (landing + içerik)
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import CoachSelection from "@/pages/CoachSelection"; // ✅ Koç seçim süreci sayfası
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -232,8 +233,14 @@ export default function App() {
             {/* Koç Listeleme (kullanıcılar için) */}
             <Route path="/coaches" element={<Coaches />} />
 
-            {/* Koçlar İçin – artık ayrı ForCoaches sayfası */}
+            {/* Koçlar İçin – ForCoaches sayfası */}
             <Route path="/for-coaches" element={<ForCoaches />} />
+
+            {/* Koç Seçim Süreci – ✅ BURASI YENİ */}
+            <Route
+              path="/coach-selection-process"
+              element={<CoachSelection />}
+            />
 
             {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />

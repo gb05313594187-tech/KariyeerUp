@@ -5,33 +5,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
-// --- Storage'a dosya yükleme helper'ı ---
-async function uploadFile(file, pathPrefix) {
-  if (!file) return null;
-
-  const fileExt = file.name.split(".").pop();
-  const fileName =
-    (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}`) +
-    "." +
-    fileExt;
-  const filePath = `${pathPrefix}/${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("coach_uploads") // bucket adı
-    .upload(filePath, file);
-
-  if (uploadError) {
-    console.error("Upload error:", uploadError);
-    toast.error("Dosya yüklenirken bir hata oluştu.");
-    return null;
-  }
-
-  return filePath;
-}
-
 export default function CoachApplication() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     // Adım 1
@@ -96,6 +73,26 @@ export default function CoachApplication() {
   const nextStep = () => setStep((s) => Math.min(4, s + 1));
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
+  // ---- DOSYA YÜKLEME HELPERS ----
+  async function uploadFile(file, pathPrefix) {
+    if (!file) return null;
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${pathPrefix}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("coach_uploads")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return null;
+    }
+
+    return filePath;
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -107,14 +104,14 @@ export default function CoachApplication() {
     setLoading(true);
 
     try {
-      // 1) Dosyaları Supabase Storage'a yükle
+      // 1) Önce dosyaları Storage’a yükle
       const cvPath = await uploadFile(formData.cv_file, "cv");
-      const certPath = await uploadFile(
+      const certificatePath = await uploadFile(
         formData.certificate_file,
         "certificates"
       );
 
-      // 2) Veritabanına kaydet
+      // 2) Sonra DB’ye kaydet
       const { error } = await supabase.from("coach_applications").insert([
         {
           full_name: formData.full_name,
@@ -123,6 +120,7 @@ export default function CoachApplication() {
           city: formData.city,
           country: formData.country,
 
+          // DB kolonları
           certification: formData.certificate_type,
           certification_year: formData.certificate_year,
           experience: formData.experience_level,
@@ -136,7 +134,7 @@ export default function CoachApplication() {
           website: formData.website,
 
           cv_path: cvPath,
-          certificate_path: certPath,
+          certificate_path: certificatePath,
 
           accept_terms: formData.accept_terms,
           accept_ethics: formData.accept_ethics,
@@ -148,28 +146,8 @@ export default function CoachApplication() {
         toast.error(error.message || "Başvuru gönderilirken hata oluştu.");
       } else {
         toast.success("Başvurunuz başarıyla gönderildi!");
-
-        // İstersen formu sıfırla + başa al
-        setStep(1);
-        setFormData({
-          full_name: "",
-          email: "",
-          phone: "",
-          city: "",
-          country: "",
-          certificate_type: "",
-          certificate_year: "",
-          experience_level: "",
-          session_price: "",
-          expertise_tags: [],
-          cv_file: null,
-          certificate_file: null,
-          bio: "",
-          linkedin: "",
-          website: "",
-          accept_terms: false,
-          accept_ethics: false,
-        });
+        setSubmitted(true);
+        setStep(4);
       }
     } finally {
       setLoading(false);
@@ -192,6 +170,65 @@ export default function CoachApplication() {
 
   const progressPercent = ((step - 1) / 3) * 100;
 
+  // ========= BAŞVURU BAŞARILI EKRANI =========
+  if (submitted) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <h1 className="text-3xl font-bold mb-4">Başvurunuz Alındı 🎉</h1>
+        <p className="text-gray-700 mb-4 leading-relaxed">
+          Koç başvuru formunuz başarıyla kaydedildi. Ekibimiz başvurunuzu
+          inceleyecek ve en kısa süre içinde sizinle iletişime geçecek.
+        </p>
+        <p className="text-gray-600 text-sm mb-8">
+          Ek sorularınız için{" "}
+          <a href="mailto:info@kariyeer.com" className="underline">
+            destek@kariyeer.com
+          </a>{" "}
+          adresinden bizimle iletişime geçebilirsiniz.
+        </p>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={() => {
+              // formu sıfırla, tekrar başvuru aç
+              setFormData({
+                full_name: "",
+                email: "",
+                phone: "",
+                city: "",
+                country: "",
+                certificate_type: "",
+                certificate_year: "",
+                experience_level: "",
+                session_price: "",
+                expertise_tags: [],
+                cv_file: null,
+                certificate_file: null,
+                bio: "",
+                linkedin: "",
+                website: "",
+                accept_terms: false,
+                accept_ethics: false,
+              });
+              setSubmitted(false);
+              setStep(1);
+            }}
+          >
+            Yeni Başvuru Doldur
+          </Button>
+
+          <Button
+            variant="outline"
+            asChild
+          >
+            <a href="/">Ana Sayfaya Dön</a>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ========= NORMAL FORM EKRANI =========
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold mb-4">Koç Başvuru Formu</h1>

@@ -112,7 +112,7 @@ export default function CoachProfile() {
             {/* SOL: Profil & özet */}
             <div className="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-gray-100 p-8 flex flex-col items-center">
               {/* Avatar */}
-              <div className="w-28 h-28 rounded-2xl overflow-hidden shadow-lg border-4 border-white -mt-16 bg-gray-100">
+              <div className="w-28 h-28 rounded-2xl overflow-hidden shadow-lg border-4 border-white mt-4 bg-gray-100">
                 <img
                   src={
                     coach.avatar_url ||
@@ -184,8 +184,7 @@ export default function CoachProfile() {
                     <button
                       className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-sm shadow-md hover:shadow-lg transition-all"
                       onClick={() => {
-                        // ileriye dönük: booking akışına bağlanır
-                        alert("Rezervasyon akışı yakında bağlanacak 🙂");
+                        navigate(`/coach-selection-process?coachId=${coach.id}`);
                       }}
                     >
                       Seans Planla
@@ -238,9 +237,14 @@ export default function CoachProfile() {
                 </h2>
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li>• Seans süresi: 45 dakika</li>
-                  <li>• Görüşme dili: Türkçe (isteğe göre İngilizce eklenebilir)</li>
+                  <li>
+                    • Görüşme dili: Türkçe (isteğe göre İngilizce eklenebilir)
+                  </li>
                   <li>• Online: Zoom veya Google Meet üzerinden</li>
-                  <li>• Ödeme süreci: Kariyeed güvenli altyapısı üzerinden yönetilir</li>
+                  <li>
+                    • Ödeme süreci: Kariyeed güvenli altyapısı üzerinden
+                    yönetilir
+                  </li>
                 </ul>
               </section>
             </div>

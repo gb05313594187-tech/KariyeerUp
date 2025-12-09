@@ -85,9 +85,30 @@ export default function CoachApplication() {
     try {
       const { error } = await supabase.from("coach_applications").insert([
         {
-          ...formData,
-          cv_file: formData.cv_file?.name || "",
-          certificate_file: formData.certificate_file?.name || "",
+          full_name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          city: formData.city,
+          country: formData.country,
+
+          // DB kolon isimleriyle eşleşen alanlar
+          certification: formData.certificate_type,
+          certification_year: formData.certificate_year,
+          experience: formData.experience_level,
+          specializations: formData.expertise_tags.join(", "),
+          session_fee: formData.session_price
+            ? Number(formData.session_price)
+            : null,
+
+          bio: formData.bio,
+          linkedin: formData.linkedin,
+          website: formData.website,
+
+          cv_path: formData.cv_file?.name || null,
+          certificate_path: formData.certificate_file?.name || null,
+
+          accept_terms: formData.accept_terms,
+          accept_ethics: formData.accept_ethics,
         },
       ]);
 
@@ -102,7 +123,6 @@ export default function CoachApplication() {
     }
   };
 
-  // Step başlıkları
   const stepTitles = {
     1: "Kişisel Bilgiler",
     2: "Profesyonel Bilgiler",
@@ -150,9 +170,7 @@ export default function CoachApplication() {
               >
                 {s}
               </div>
-              {s !== 4 && (
-                <div className="flex-1 h-[2px] mx-1 bg-gray-200" />
-              )}
+              {s !== 4 && <div className="flex-1 h-[2px] mx-1 bg-gray-200" />}
             </div>
           ))}
         </div>
@@ -172,7 +190,7 @@ export default function CoachApplication() {
         </div>
       </div>
 
-      {/* -------------------- STEP 1 -------------------- */}
+      {/* STEP 1 */}
       {step === 1 && (
         <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-2">Kişisel Bilgiler</h2>
@@ -231,7 +249,7 @@ export default function CoachApplication() {
         </div>
       )}
 
-      {/* -------------------- STEP 2 -------------------- */}
+      {/* STEP 2 */}
       {step === 2 && (
         <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-2">Profesyonel Bilgiler</h2>
@@ -243,28 +261,18 @@ export default function CoachApplication() {
             className="w-full border rounded-lg p-2 text-sm bg-white"
           >
             <option value="">Sertifika Türü Seçin *</option>
-
-            {/* ICF */}
             <option value="ICF - ACC">ICF - ACC</option>
             <option value="ICF - PCC">ICF - PCC</option>
             <option value="ICF - MCC">ICF - MCC</option>
-
-            {/* EMCC */}
             <option value="EMCC Foundation">EMCC Foundation</option>
             <option value="EMCC Practitioner">EMCC Practitioner</option>
             <option value="EMCC Senior Practitioner">
               EMCC Senior Practitioner
             </option>
-
-            {/* Üniversite */}
             <option value="Üniversite Sertifikası">Üniversite Sertifikası</option>
-
-            {/* MYK */}
             <option value="MYK (Mesleki Yeterlilik Kurumu)">
               MYK (Mesleki Yeterlilik Kurumu)
             </option>
-
-            {/* Diğer */}
             <option value="Diğer">Diğer</option>
           </select>
 
@@ -333,7 +341,7 @@ export default function CoachApplication() {
         </div>
       )}
 
-      {/* -------------------- STEP 3 -------------------- */}
+      {/* STEP 3 */}
       {step === 3 && (
         <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-semibold mb-2">Belgeler</h2>
@@ -403,7 +411,7 @@ export default function CoachApplication() {
         </div>
       )}
 
-      {/* -------------------- STEP 4 -------------------- */}
+      {/* STEP 4 */}
       {step === 4 && (
         <form
           onSubmit={handleSubmit}
@@ -452,7 +460,12 @@ export default function CoachApplication() {
           </label>
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={prevStep} type="button" variant="outline" className="w-1/2">
+            <Button
+              onClick={prevStep}
+              type="button"
+              variant="outline"
+              className="w-1/2"
+            >
               Geri
             </Button>
 

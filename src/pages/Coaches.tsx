@@ -349,40 +349,42 @@ export default function Coaches() {
                   return (
                     <div
                       key={coach.id}
-                      className={`bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group flex ${
-                        viewMode === "list" ? "flex-row" : "flex-col h-full"
+                      className={`bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group flex ${
+                        viewMode === "list"
+                          ? "flex-row max-w-2xl mx-auto"
+                          : "flex-col h-full max-w-md mx-auto"
                       }`}
                     >
                       {/* ÜST RENKLİ ALAN */}
                       <div
                         className={`relative ${
-                          viewMode === "list" ? "w-44" : "h-28"
+                          viewMode === "list" ? "w-40" : "h-20"
                         } bg-gradient-to-r from-red-600 to-orange-500`}
                       >
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                         {isPremium && (
-                          <span className="absolute top-4 right-4 bg-white/90 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm backdrop-blur-sm">
+                          <span className="absolute top-3 right-3 bg-white/90 text-red-600 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm backdrop-blur-sm">
                             <Star className="w-3 h-3 fill-current" /> Premium
                             Koç
                           </span>
                         )}
                       </div>
 
-                      <div className="px-6 pb-6 relative flex-1 flex flex-col">
+                      <div className="px-5 pb-5 relative flex-1 flex flex-col">
                         {/* Avatar */}
                         <div
                           className={`absolute ${
                             viewMode === "list"
-                              ? "-top-10 left-6"
-                              : "-top-14 left-6"
-                          } p-1 bg-white rounded-2xl shadow-md`}
+                              ? "-top-8 left-4"
+                              : "-top-10 left-4"
+                          } p-[4px] bg-white rounded-2xl shadow-md`}
                         >
                           <img
                             src={
                               coach.avatar_url ||
                               "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400"
                             }
-                            className="w-24 h-24 md:w-28 md:h-28 rounded-xl object-cover"
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover"
                             alt={coach.full_name}
                           />
                         </div>
@@ -390,20 +392,20 @@ export default function Coaches() {
                         {/* İsim & Puan */}
                         <div
                           className={`${
-                            viewMode === "list" ? "mt-10" : "mt-16"
+                            viewMode === "list" ? "mt-8" : "mt-12"
                           } flex justify-between items-start`}
                         >
                           <div>
-                            <h3 className="font-bold text-2xl text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
+                            <h3 className="font-bold text-xl text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
                               {coach.full_name}
                             </h3>
-                            <p className="text-gray-500 font-medium">
+                            <p className="text-gray-500 font-medium text-sm">
                               {coach.title || "Kariyer Koçu"}
                             </p>
                           </div>
                           <div className="flex flex-col items-end">
-                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg text-yellow-700 font-bold text-lg">
-                              <Star className="w-5 h-5 fill-current text-yellow-500" />
+                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg text-yellow-700 font-semibold text-sm">
+                              <Star className="w-4 h-4 fill-current text-yellow-500" />
                               {coach.rating?.toFixed(1) || "5.0"}
                             </div>
                             <span className="text-xs text-gray-400 mt-1">
@@ -413,31 +415,31 @@ export default function Coaches() {
                         </div>
 
                         {/* Detaylar */}
-                        <div className="mt-6 space-y-3 text-sm text-gray-700 font-medium bg-gray-50 p-4 rounded-xl">
+                        <div className="mt-4 space-y-2 text-sm text-gray-700 font-medium bg-gray-50 p-3 rounded-xl">
                           <div className="flex items-center gap-3">
-                            <Briefcase className="w-5 h-5 text-blue-500" />
+                            <Briefcase className="w-4 h-4 text-blue-500" />
                             <span>
                               {(coach.experience_years || 0).toString()} Yıl
                               Profesyonel Deneyim
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-green-500" />
+                            <Clock className="w-4 h-4 text-green-500" />
                             <span>
                               En erken müsaitlik:{" "}
-                              <span className="text-green-600 font-bold">
+                              <span className="text-green-600 font-semibold">
                                 Online planlanır
                               </span>
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <MapPin className="w-5 h-5 text-purple-500" />
+                            <MapPin className="w-4 h-4 text-purple-500" />
                             <span>Online görüntülü seans</span>
                           </div>
                         </div>
 
                         {/* Etiketler */}
-                        <div className="mt-6 flex flex-wrap gap-2">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           {specs.length === 0 && (
                             <span className="bg-white border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
                               Uzmanlık alanları ekleniyor
@@ -446,7 +448,7 @@ export default function Coaches() {
                           {specs.map((tag: string) => (
                             <span
                               key={tag}
-                              className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-gray-50 transition-colors"
+                              className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors"
                             >
                               {tag}
                             </span>
@@ -454,21 +456,21 @@ export default function Coaches() {
                         </div>
 
                         {/* Alt kısım */}
-                        <div className="mt-8 pt-6 border-t flex items-center justify-between mt-auto">
+                        <div className="mt-6 pt-4 border-t flex items-center justify-between mt-auto">
                           <div>
                             <span className="text-xs text-gray-500 block font-medium mb-1">
                               45 Dk. Seans Ücreti
                             </span>
-                            <span className="text-2xl font-black text-gray-900">
+                            <span className="text-xl font-extrabold text-gray-900">
                               {price} {currency}
                             </span>
                           </div>
                           <button
                             onClick={() => navigate(`/coach/${coach.id}`)}
-                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm"
                           >
                             Profili İncele
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>

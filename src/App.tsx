@@ -252,6 +252,15 @@ export default function App() {
               path="/coach-selection-process"
               element={<CoachSelection />}
             />
+             {/* Koç Seçim Süreci */}
+<Route
+  path="/coach-selection-process"
+  element={<CoachSelection />}
+/>
+
+{/* Seans Rezervasyonu – yeni takvim sayfası */}
+<Route path="/book-session" element={<BookSession />} />
+
 
             {/* Koç Başvuru Formu */}
             <Route

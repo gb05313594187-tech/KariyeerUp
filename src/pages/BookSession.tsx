@@ -1,32 +1,43 @@
 // src/pages/BookSession.tsx
 // @ts-nocheck
 import { useSearchParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  CreditCard,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Clock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const coachId = searchParams.get("coachId");
+  const coachId = searchParams.get("coachId"); // Şimdilik sadece backend için elde tutuyoruz
+
+  // Düzenli, premium saat slotları
+  const timeSlots = [
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+  ];
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    alert("Rezervasyon isteğin alındı. Takvim ve ödeme çok yakında bağlanacak!");
+    // Buraya ileride Supabase insert + mail / sms entegrasyonu gelecek
+    alert(
+      "Rezervasyon isteğin alındı. Takvim ve ödeme akışı yakında koç takvimiyle entegre edilecek."
+    );
   };
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
-
-      {/* HERO (TURUNCU–KIRMIZI GRADIENT) */}
+      {/* HERO - turuncu/kırmızı gradient */}
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white pt-8 pb-14 px-4">
         <div className="max-w-4xl mx-auto">
-
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 mb-4 text-white/90 hover:text-white text-xs font-medium"
@@ -40,22 +51,17 @@ export default function BookSession() {
           </h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-xl">
             Uygun tarih ve saati seç, koçun onayladığında seans detayları
-            e-posta ve SMS ile gelecektir.
+            e-posta ve SMS ile iletilecektir.
           </p>
-
-          {coachId && (
-            <div className="mt-5 inline-flex items-center gap-2 bg-white/20 border border-white/40 px-3 py-1.5 rounded-full text-xs">
-              <CheckCircle2 className="w-4 h-4" />
-              Seçilen koç ID: {coachId}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* FORM ALANI (BEYAZ ARKA PLAN + GÖLGELİ KART) */}
+      {/* FORM KARTI */}
       <div className="max-w-4xl mx-auto px-4 -mt-10 pb-20 relative z-10">
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 space-y-8">
-
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 space-y-8"
+        >
           {/* TARİH SEÇİMİ */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
@@ -76,18 +82,8 @@ export default function BookSession() {
             <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
               Saat Aralığı
             </label>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              {[
-                "09:00",
-                "10:30",
-                "12:00",
-                "14:00",
-                "15:30",
-                "17:00",
-                "19:00",
-                "21:00",
-              ].map((slot) => (
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-2.5">
+              {timeSlots.map((slot) => (
                 <label key={slot} className="relative cursor-pointer">
                   <input
                     type="radio"
@@ -105,7 +101,7 @@ export default function BookSession() {
             </div>
           </div>
 
-          {/* İLETİŞİM BİLGİSİ */}
+          {/* İLETİŞİM BİLGİLERİ */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
@@ -134,7 +130,7 @@ export default function BookSession() {
             </div>
           </div>
 
-          {/* NOT / HEDEF */}
+          {/* HEDEF / BEKLENTİ */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
               Hedefiniz / Beklentiniz
@@ -155,14 +151,13 @@ export default function BookSession() {
 
             <Button
               type="submit"
-              onClick={handleSubmit}
               className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
             >
               <CreditCard className="w-4 h-4 mr-1" />
               Rezervasyonu Tamamla
             </Button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

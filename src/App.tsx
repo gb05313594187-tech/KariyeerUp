@@ -18,6 +18,7 @@ import CoachSelectionProcess from "@/pages/CoachSelectionProcess";
 // YENİ SAYFALAR
 import Profile from "@/pages/Profile";
 import Pricing from "@/pages/Pricing";
+import HowItWorks from "@/pages/HowItWorks";   // ✅ NASIL ÇALIŞIR SAYFASI
 
 // KOÇ LİSTESİ SAYFASI (/coaches – Supabase’den gelen koçlar)
 import Coaches from "@/pages/coaches";
@@ -38,6 +39,7 @@ export default function App() {
               <Navbar />
 
               <Routes>
+                {/* Ana sayfa */}
                 <Route path="/" element={<Index />} />
 
                 {/* Ana public sayfalar */}
@@ -45,6 +47,9 @@ export default function App() {
                 <Route path="/for-companies" element={<ForCompanies />} />
                 <Route path="/mentor-circle" element={<MentorCircle />} />
                 <Route path="/webinars" element={<Webinars />} />
+
+                {/* Nasıl Çalışır? */}
+                <Route path="/how-it-works" element={<HowItWorks />} /> {/* ✅ */}
 
                 {/* Koçlarını Bul */}
                 <Route path="/coaches" element={<Coaches />} />
@@ -66,9 +71,9 @@ export default function App() {
                   element={<CoachApplication />}
                 />
 
-                {/* 🔴 SEÇİM SÜRECİ SAYFASI – BUTON BURAYA GİDİYOR */}
+                {/* Seçim süreci sayfası */}
                 <Route
-                  path="/selection-process"     // ⬅️ ÖNCEKİ /coach-selection-process buraya çevrildi
+                  path="/selection-process"
                   element={<CoachSelectionProcess />}
                 />
 

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function CoachApplication() {
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export default function CoachApplication() {
 
     // Adım 2
     certificate_type: "",
-    certificate_year: "",
+    certificate_year: null, // takvimden gelecek
     experience_level: "",
     session_price: "",
     expertise_tags: [],
@@ -87,6 +89,9 @@ export default function CoachApplication() {
       const { error } = await supabase.from("coach_applications").insert([
         {
           ...formData,
+          certificate_year: formData.certificate_year
+            ? formData.certificate_year.getFullYear().toString()
+            : null,
           cv_file: formData.cv_file?.name || "",
           certificate_file: formData.certificate_file?.name || "",
         },
@@ -107,16 +112,15 @@ export default function CoachApplication() {
     <div className="max-w-3xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold mb-8">Koç Başvuru Formu</h1>
 
-      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border">
-  <strong>Başvuru Ön Bilgilendirmesi:</strong><br />
-  Aşağıdaki form, profesyonel koçluk yeterliliklerinin doğrulanması amacıyla
-  yapılandırılmıştır. Lütfen bilgilerinizi eksiksiz, güncel ve doğrulanabilir
-  şekilde girin. Sağladığınız veriler; kalite standartlarımız, etik ilkelerimiz
-  ve veri güvenliği politikamız doğrultusunda incelenecek, yalnızca başvuru
-  değerlendirme sürecinde kullanılacaktır.
-</p>
-
-      
+      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border mb-8">
+        <strong>Başvuru Ön Bilgilendirmesi:</strong>
+        <br />
+        Aşağıdaki form, profesyonel koçluk yeterliliklerinin doğrulanması amacıyla
+        yapılandırılmıştır. Lütfen bilgilerinizi eksiksiz, güncel ve doğrulanabilir
+        şekilde girin. Sağladığınız veriler; kalite standartlarımız, etik ilkelerimiz
+        ve veri güvenliği politikamız doğrultusunda incelenecek, yalnızca başvuru
+        değerlendirme sürecinde kullanılacaktır.
+      </p>
 
       {/* -------------------- STEP 1 -------------------- */}
       {step === 1 && (
@@ -179,22 +183,48 @@ export default function CoachApplication() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Profesyonel Bilgiler</h2>
 
-          <input
-            type="text"
+          {/* Sertifika Türü - SELECT + MYK */}
+          <select
             name="certificate_type"
-            placeholder="Sertifika Türü *"
             value={formData.certificate_type}
             onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
+            className="w-full border rounded p-2 bg-white"
+          >
+            <option value="">Sertifika Türü Seçin *</option>
 
-          <input
-            type="text"
-            name="certificate_year"
-            placeholder="Sertifika Yılı *"
-            value={formData.certificate_year}
-            onChange={handleChange}
+            {/* ICF */}
+            <option value="ICF - ACC">ICF - ACC</option>
+            <option value="ICF - PCC">ICF - PCC</option>
+            <option value="ICF - MCC">ICF - MCC</option>
+
+            {/* EMCC */}
+            <option value="EMCC Foundation">EMCC Foundation</option>
+            <option value="EMCC Practitioner">EMCC Practitioner</option>
+            <option value="EMCC Senior Practitioner">EMCC Senior Practitioner</option>
+
+            {/* Üniversite */}
+            <option value="Üniversite Sertifikası">Üniversite Sertifikası</option>
+
+            {/* MYK */}
+            <option value="MYK (Mesleki Yeterlilik Kurumu)">
+              MYK (Mesleki Yeterlilik Kurumu)
+            </option>
+
+            {/* Diğer */}
+            <option value="Diğer">Diğer</option>
+          </select>
+
+          {/* Sertifika Yılı - Takvimden YIL seçimi */}
+          <DatePicker
+            selected={formData.certificate_year}
+            onChange={(date) =>
+              setFormData((prev) => ({ ...prev, certificate_year: date }))
+            }
+            dateFormat="yyyy"
+            showYearPicker
+            placeholderText="Sertifika Yılı *"
             className="w-full border rounded p-2"
+            maxDate={new Date()}
           />
 
           <input

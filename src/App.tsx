@@ -3,17 +3,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Ortak ikon ve butonlar
-import {
-  CheckCircle2,
-  Globe2,
-  Star,
-  LineChart,
-} from "lucide-react";
+import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
-import Coaches from "@/pages/Coaches";
+import Home from "@/pages/Index"; // Ana sayfa (Index.tsx)
+import Coaches from "@/pages/Coaches"; // Kullanıcılar için koç listesi
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
@@ -24,10 +19,9 @@ import Register from "@/pages/Register";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-/**
- * Nasıl Çalışır sayfası
- * (Artık ayrı dosyadan import ETMİYORUZ, burada tanımlı)
- */
+/* -------------------------------------------------
+   Nasıl Çalışır sayfası (kullanıcı tarafı)
+-------------------------------------------------- */
 function HowItWorks() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -105,8 +99,8 @@ function HowItWorks() {
                 Koçunu Seç &amp; Seans Planla
               </h3>
               <p className="text-gray-600 text-sm">
-                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç. Uygun
-                saatleri gör ve tek tıkla online seans oluştur.
+                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç.
+                Uygun saatleri gör ve tek tıkla online seans oluştur.
               </p>
             </div>
 
@@ -214,9 +208,147 @@ function HowItWorks() {
   );
 }
 
-/**
- * Uygulama
- */
+/* -------------------------------------------------
+   Koçlar İçin (for-coaches) – koç olmak isteyenlere
+   ayrı landing sayfası
+-------------------------------------------------- */
+function ForCoachesLanding() {
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* HERO */}
+      <section className="bg-gradient-to-br from-red-600 via-orange-500 to-orange-400 text-white py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs tracking-[0.2em] uppercase mb-4 opacity-80">
+            Koçlar İçin
+          </p>
+          <h1 className="text-3xl md:text-4xl font-black mb-4 leading-tight">
+            Kariyeer&apos;de Koç Olarak Yerini Al
+          </h1>
+          <p className="text-base md:text-lg text-orange-50 max-w-2xl mb-8">
+            ICF sertifikalı veya deneyimli bir koçsun ve daha fazla danışana
+            ulaşmak istiyorsun. Kariyeer, senin için randevu yönetimi, ödeme
+            altyapısı ve görünürlük sağlar; sen sadece koçluğa odaklanırsın.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <a href="/register">
+              <Button className="bg-white text-red-600 hover:bg-orange-50 font-semibold px-8 py-6 rounded-xl text-sm md:text-base">
+                Koç Olarak Başvur
+              </Button>
+            </a>
+            <a href="/login">
+              <Button
+                variant="outline"
+                className="border-white/80 text-white hover:bg-white/10 font-semibold px-8 py-6 rounded-xl text-sm md:text-base"
+              >
+                Koç Paneline Giriş
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* AVANTAJLAR */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+          <div className="border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
+            <h3 className="text-lg font-semibold mb-2">Daha Fazla Danışan</h3>
+            <p className="text-gray-600 text-sm">
+              Kariyeer&apos;in pazarlama gücüyle, farklı sektörlerden danışanlara
+              erişim sağlarsın. Senin için doğru profiller sana yönlendirilir.
+            </p>
+          </div>
+          <div className="border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
+            <h3 className="text-lg font-semibold mb-2">
+              Takvim ve Ödeme Kolaylığı
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Tüm randevular, takvim entegrasyonu ve ödemeler tek panelde.
+              No-show, iptal ve fatura yönetimini platform senin adına takip eder.
+            </p>
+          </div>
+          <div className="border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
+            <h3 className="text-lg font-semibold mb-2">
+              Güçlü Kişisel Marka
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Değerlendirmeler, rozetler ve görünür profilinle kişisel markanı
+              güçlendir; öne çıkan koçlar arasında yerini al.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SÜREÇ */}
+      <section className="py-16 px-4 bg-[#FFF5F0] border-t border-orange-100">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
+            3 Adımda Kariyeer&apos;de Koç Ol
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold">
+                1
+              </div>
+              <p className="text-sm font-semibold mb-1">
+                Profilini ve Uzmanlığını Tanımla
+              </p>
+              <p className="text-xs text-gray-600">
+                Deneyimlerin, sertifikaların ve hedef kitlen hakkında detaylı
+                profil oluştur.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-red-500 text-white flex items-center justify-center font-bold">
+                2
+              </div>
+              <p className="text-sm font-semibold mb-1">
+                Ücretlerini ve Takvimini Belirle
+              </p>
+              <p className="text-xs text-gray-600">
+                Seans ücretlerini, paketlerini ve uygun saatlerini panelden
+                yönet.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold">
+                3
+              </div>
+              <p className="text-sm font-semibold mb-1">
+                İlk Danışanlarınla Çalışmaya Başla
+              </p>
+              <p className="text-xs text-gray-600">
+                Onaylanan profilin yayına alınır, uygun danışanlar seni
+                keşfetmeye başlar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ALT CTA */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            Hazırsan, seni danışanlarınla buluşturalım.
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+            Kariyeer ekibi, onboarding sürecinde yanında. Profilini birlikte
+            optimize edip kısa sürede ilk seanslarını almana yardımcı oluyoruz.
+          </p>
+          <a href="/register">
+            <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl">
+              Koç Olarak Kayıt Ol
+            </Button>
+          </a>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* -------------------------------------------------
+   Uygulama
+-------------------------------------------------- */
 export default function App() {
   return (
     <Router>
@@ -230,13 +362,15 @@ export default function App() {
             {/* Ana Sayfa */}
             <Route path="/" element={<Home />} />
 
-            {/* Nasıl Çalışır – TR ve EN slug'lar */}
+            {/* Nasıl Çalışır – TR + eski slug */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
 
-            {/* Koçlar – TR ve EN slug'lar */}
+            {/* Koç Listeleme (kullanıcılar için) */}
             <Route path="/coaches" element={<Coaches />} />
-            <Route path="/for-coaches" element={<Coaches />} />
+
+            {/* Koçlar İçin Landing (koç olmak isteyenler için) */}
+            <Route path="/for-coaches" element={<ForCoachesLanding />} />
 
             {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />

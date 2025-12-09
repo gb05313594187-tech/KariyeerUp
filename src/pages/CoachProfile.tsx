@@ -184,7 +184,7 @@ export default function CoachProfile() {
                     <button
                       className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-sm shadow-md hover:shadow-lg transition-all"
                       onClick={() => {
-                        navigate(`/coach-selection-process?coachId=${coach.id}`);
+                        navigate(`/book-session?coachId=${coach.id}`);
                       }}
                     >
                       Seans Planla

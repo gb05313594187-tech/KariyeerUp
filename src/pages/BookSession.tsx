@@ -1,13 +1,38 @@
 // src/pages/BookSession.tsx
 // @ts-nocheck
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Calendar, Clock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const coachId = searchParams.get("coachId"); // Şimdilik sadece backend için elde tutuyoruz
+  const coachId = searchParams.get("coachId");
+
+  const [coach, setCoach] = useState<any | null>(null);
+
+  // Koç bilgisini Supabase'ten çek
+  useEffect(() => {
+    const fetchCoach = async () => {
+      if (!coachId) return;
+
+      const { data, error } = await supabase
+        .from("app_2dff6511da_coaches")
+        .select("*")
+        .eq("id", coachId)
+        .single();
+
+      if (!error) {
+        setCoach(data);
+      } else {
+        console.error("Coach fetch error on booking page:", error);
+      }
+    };
+
+    fetchCoach();
+  }, [coachId]);
 
   // Düzenli, premium saat slotları
   const timeSlots = [
@@ -27,11 +52,12 @@ export default function BookSession() {
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    // Buraya ileride Supabase insert + mail / sms entegrasyonu gelecek
     alert(
       "Rezervasyon isteğin alındı. Takvim ve ödeme akışı yakında koç takvimiyle entegre edilecek."
     );
   };
+
+  const specializations = (coach?.specializations || []) as string[];
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
@@ -56,8 +82,56 @@ export default function BookSession() {
         </div>
       </div>
 
-      {/* FORM KARTI */}
+      {/* KOÇ ÖZET KARTI + FORM */}
       <div className="max-w-4xl mx-auto px-4 -mt-10 pb-20 relative z-10">
+        {/* Koç bilgisi kartı */}
+        {coach && (
+          <div className="bg-white rounded-2xl shadow-md border border-red-100 p-4 mb-6 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
+              <img
+                src={
+                  coach.avatar_url ||
+                  "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400"
+                }
+                alt={coach.full_name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+                Seans planladığınız koç
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm md:text-base font-bold text-gray-900">
+                  {coach.full_name}
+                </span>
+                <span className="text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1 rounded-full">
+                  {coach.title || "Kariyer Koçu"}
+                </span>
+              </div>
+              {specializations.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {specializations.slice(0, 3).map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="text-[11px] font-medium bg-gray-50 text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {specializations.length > 3 && (
+                    <span className="text-[11px] text-gray-500">
+                      +{specializations.length - 3} alan daha
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* FORM KARTI */}
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 space-y-8"

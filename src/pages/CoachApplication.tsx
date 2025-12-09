@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 export default function CoachApplication() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     // Adım 1
@@ -75,7 +76,7 @@ export default function CoachApplication() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Tikler zorunlu, ama DB'ye kaydetmiyoruz (şimdilik)
+    // Tikler zorunlu
     if (!formData.accept_terms || !formData.accept_ethics) {
       toast.error("Lütfen tüm onay kutularını işaretleyin.");
       return;
@@ -92,7 +93,7 @@ export default function CoachApplication() {
           city: formData.city,
           country: formData.country,
 
-          // DB kolonlarıyla birebir aynı
+          // DB kolonları
           certification: formData.certificate_type,
           certification_year: formData.certificate_year,
           experience: formData.experience_level,
@@ -108,7 +109,7 @@ export default function CoachApplication() {
           cv_path: formData.cv_file?.name || null,
           certificate_path: formData.certificate_file?.name || null,
 
-          // 🔴 DİKKAT: accept_terms / accept_ethics ŞİMDİLİK GÖNDERİLMİYOR
+          // ŞİMDİLİK accept_terms / accept_ethics DB'ye gitmiyor
         },
       ]);
 
@@ -117,6 +118,7 @@ export default function CoachApplication() {
         alert("Supabase error:\n" + JSON.stringify(error, null, 2));
         toast.error(error.message || "Başvuru gönderilirken hata oluştu.");
       } else {
+        setSubmitted(true);
         toast.success("Başvurunuz başarıyla gönderildi!");
       }
     } finally {
@@ -140,6 +142,65 @@ export default function CoachApplication() {
 
   const progressPercent = ((step - 1) / 3) * 100;
 
+  // ✅ Başvuru başarıyla gönderildiyse teşekkür ekranı
+  if (submitted) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <h1 className="text-3xl font-bold mb-4">Başvurunuz Alındı 🎉</h1>
+        <p className="text-gray-700 mb-4">
+          Koç başvuru formunuz başarıyla kaydedildi. Ekibimiz başvurunuzu
+          inceleyecek ve en kısa süre içinde sizinle iletişime geçecek.
+        </p>
+        <p className="text-gray-500 text-sm mb-8">
+          Ek sorularınız için{" "}
+          <a href="mailto:info@kariyeer.com" className="underline">
+            info@kariyeer.com
+          </a>{" "}
+          adresinden bizimle iletişime geçebilirsiniz.
+        </p>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={() => {
+              // Yeni başvuru için formu sıfırla
+              setFormData({
+                full_name: "",
+                email: "",
+                phone: "",
+                city: "",
+                country: "",
+                certificate_type: "",
+                certificate_year: "",
+                experience_level: "",
+                session_price: "",
+                expertise_tags: [],
+                cv_file: null,
+                certificate_file: null,
+                bio: "",
+                linkedin: "",
+                website: "",
+                accept_terms: false,
+                accept_ethics: false,
+              });
+              setStep(1);
+              setSubmitted(false);
+            }}
+          >
+            Yeni Başvuru Doldur
+          </Button>
+
+          <Button
+            variant="outline"
+            asChild
+          >
+            <a href="/">Ana Sayfaya Dön</a>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Normal form ekranı
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold mb-4">Koç Başvuru Formu</h1>

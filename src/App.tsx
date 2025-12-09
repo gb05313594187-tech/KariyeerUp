@@ -2,14 +2,14 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // SAYFALAR
-import Home from "@/pages/Landing";              // ← ANA SAYFA ARTIK BURADAN GELİYOR
-import HowItWorks from "@/pages/HowItWorks";     // Nasıl Çalışır sayfası
-import Coaches from "@/pages/Coaches";           // Koçlar
-import ForCompanies from "@/pages/ForCompanies"; // Şirketler İçin
-import MentorCircle from "@/pages/MentorCircle"; // MentorCircle sayfası
-import Webinar from "@/pages/Webinar";           // Webinar sayfası
-import Login from "@/pages/Login";               // Giriş
-import Register from "@/pages/Register";         // Kayıt
+import Home from "@/pages/Index";               // ← ANA SAYFA ARTIK BURASI!
+import HowItWorks from "@/pages/HowItWorks";
+import Coaches from "@/pages/Coaches";
+import ForCompanies from "@/pages/ForCompanies";
+import MentorCircle from "@/pages/MentorCircle";
+import Webinar from "@/pages/Webinar";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -35,7 +35,7 @@ export default function App() {
             {/* Koçlar */}
             <Route path="/coaches" element={<Coaches />} />
 
-            {/* Şirketler için */}
+            {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />
 
             {/* MentorCircle */}
@@ -44,7 +44,7 @@ export default function App() {
             {/* Webinar */}
             <Route path="/webinar" element={<Webinar />} />
 
-            {/* Auth Sayfaları */}
+            {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>

@@ -19,7 +19,7 @@ export default function CoachApplication() {
 
     // Adım 2
     certificate_type: "",
-    certificate_year: "",   // string olarak tutuyoruz
+    certificate_year: "",
     experience_level: "",
     session_price: "",
     expertise_tags: [],
@@ -69,8 +69,8 @@ export default function CoachApplication() {
     }));
   };
 
-  const nextStep = () => setStep((s) => s + 1);
-  const prevStep = () => setStep((s) => s - 1);
+  const nextStep = () => setStep((s) => Math.min(4, s + 1));
+  const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -102,11 +102,28 @@ export default function CoachApplication() {
     }
   };
 
+  // Step başlıkları
+  const stepTitles = {
+    1: "Kişisel Bilgiler",
+    2: "Profesyonel Bilgiler",
+    3: "Belgeler",
+    4: "Onay ve Gönder",
+  };
+
+  const stepSubtitles = {
+    1: "Sizinle iletişim kurabilmemiz için temel bilgilerinizi paylaşın.",
+    2: "Koçluk yeterliliklerinizi ve uzmanlık alanlarınızı belirtin.",
+    3: "CV, sertifika ve dijital profil linklerinizi ekleyin.",
+    4: "Başvurunuzu göndermeden önce son kontrolleri yapın.",
+  };
+
+  const progressPercent = ((step - 1) / 3) * 100;
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-8">Koç Başvuru Formu</h1>
+      <h1 className="text-3xl font-bold mb-4">Koç Başvuru Formu</h1>
 
-      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border mb-8">
+      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border mb-6">
         <strong>Başvuru Ön Bilgilendirmesi:</strong>
         <br />
         Aşağıdaki form, profesyonel koçluk yeterliliklerinin doğrulanması amacıyla
@@ -116,10 +133,49 @@ export default function CoachApplication() {
         değerlendirme sürecinde kullanılacaktır.
       </p>
 
+      {/* Stepper */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center text-xs font-medium text-gray-600">
+          {[1, 2, 3, 4].map((s) => (
+            <div key={s} className="flex-1 flex items-center">
+              <div
+                className={`flex items-center justify-center w-7 h-7 rounded-full border text-xs 
+                ${
+                  step === s
+                    ? "bg-red-600 text-white border-red-600"
+                    : step > s
+                    ? "bg-green-500 text-white border-green-500"
+                    : "bg-white text-gray-500 border-gray-300"
+                }`}
+              >
+                {s}
+              </div>
+              {s !== 4 && (
+                <div className="flex-1 h-[2px] mx-1 bg-gray-200" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-1 bg-red-600 transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        <div className="mt-3">
+          <p className="text-sm font-semibold text-gray-900">
+            Adım {step} / 4 – {stepTitles[step]}
+          </p>
+          <p className="text-xs text-gray-500">{stepSubtitles[step]}</p>
+        </div>
+      </div>
+
       {/* -------------------- STEP 1 -------------------- */}
       {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Kişisel Bilgiler</h2>
+        <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-2">Kişisel Bilgiler</h2>
 
           <input
             type="text"
@@ -127,7 +183,7 @@ export default function CoachApplication() {
             placeholder="Ad Soyad *"
             value={formData.full_name}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
           <input
@@ -136,7 +192,7 @@ export default function CoachApplication() {
             placeholder="E-posta *"
             value={formData.email}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
           <input
@@ -145,44 +201,46 @@ export default function CoachApplication() {
             placeholder="Telefon *"
             value={formData.phone}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
-          <input
-            type="text"
-            name="city"
-            placeholder="Şehir"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              type="text"
+              name="city"
+              placeholder="Şehir"
+              value={formData.city}
+              onChange={handleChange}
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+            <input
+              type="text"
+              name="country"
+              placeholder="Ülke"
+              value={formData.country}
+              onChange={handleChange}
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+          </div>
 
-          <input
-            type="text"
-            name="country"
-            placeholder="Ülke"
-            value={formData.country}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          <Button className="w-full mt-4" onClick={nextStep}>
-            Sonraki Adım
-          </Button>
+          <div className="pt-2">
+            <Button className="w-full" onClick={nextStep}>
+              Sonraki Adım
+            </Button>
+          </div>
         </div>
       )}
 
       {/* -------------------- STEP 2 -------------------- */}
       {step === 2 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Profesyonel Bilgiler</h2>
+        <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-2">Profesyonel Bilgiler</h2>
 
-          {/* Sertifika Türü - SELECT + MYK */}
           <select
             name="certificate_type"
             value={formData.certificate_type}
             onChange={handleChange}
-            className="w-full border rounded p-2 bg-white"
+            className="w-full border rounded-lg p-2 text-sm bg-white"
           >
             <option value="">Sertifika Türü Seçin *</option>
 
@@ -194,7 +252,9 @@ export default function CoachApplication() {
             {/* EMCC */}
             <option value="EMCC Foundation">EMCC Foundation</option>
             <option value="EMCC Practitioner">EMCC Practitioner</option>
-            <option value="EMCC Senior Practitioner">EMCC Senior Practitioner</option>
+            <option value="EMCC Senior Practitioner">
+              EMCC Senior Practitioner
+            </option>
 
             {/* Üniversite */}
             <option value="Üniversite Sertifikası">Üniversite Sertifikası</option>
@@ -208,14 +268,13 @@ export default function CoachApplication() {
             <option value="Diğer">Diğer</option>
           </select>
 
-          {/* Sertifika Yılı - basit input */}
           <input
             type="number"
             name="certificate_year"
             placeholder="Sertifika Yılı *"
             value={formData.certificate_year}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
             min="1980"
             max="2100"
           />
@@ -223,45 +282,48 @@ export default function CoachApplication() {
           <input
             type="text"
             name="experience_level"
-            placeholder="Koçluk Deneyimi *"
+            placeholder="Koçluk Deneyimi * (Örn: 3 yıl, 50+ seans)"
             value={formData.experience_level}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
-
-          <input
-            type="number"
-            name="session_price"
-            placeholder="Önerilen Seans Ücreti *"
-            value={formData.session_price}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          <p className="text-xs text-gray-500">Önerilen: 750 – 2000 ₺</p>
 
           <div>
-            <p className="font-medium mb-2">Uzmanlık Alanları *</p>
+            <input
+              type="number"
+              name="session_price"
+              placeholder="Önerilen Seans Ücreti *"
+              value={formData.session_price}
+              onChange={handleChange}
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Önerilen aralık: 750 – 2000 ₺
+            </p>
+          </div>
 
-            <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="font-medium mb-2 text-sm">Uzmanlık Alanları *</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {expertiseOptions.map((opt) => (
                 <label
                   key={opt}
-                  className="flex items-center gap-2 border p-2 rounded cursor-pointer"
+                  className="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer text-sm"
                 >
                   <input
                     type="checkbox"
                     checked={formData.expertise_tags.includes(opt)}
                     onChange={() => toggleExpertise(opt)}
                   />
-                  {opt}
+                  <span>{opt}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="flex gap-2 mt-4">
-            <Button onClick={prevStep} className="w-1/2">
+          <div className="flex gap-2 pt-2">
+            <Button onClick={prevStep} variant="outline" className="w-1/2">
               Geri
             </Button>
             <Button onClick={nextStep} className="w-1/2">
@@ -273,58 +335,65 @@ export default function CoachApplication() {
 
       {/* -------------------- STEP 3 -------------------- */}
       {step === 3 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Belgeler</h2>
+        <div className="space-y-4 bg-white border rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-2">Belgeler</h2>
 
-          <label className="block">
+          <label className="block text-sm">
             CV / Özgeçmiş *
             <input
               type="file"
               name="cv_file"
               onChange={handleFile}
-              className="w-full border rounded p-2 mt-1"
+              className="w-full border rounded-lg p-2 mt-1 text-sm"
             />
           </label>
 
-          <label className="block">
+          <label className="block text-sm">
             Koçluk Sertifikası *
             <input
               type="file"
               name="certificate_file"
               onChange={handleFile}
-              className="w-full border rounded p-2 mt-1"
+              className="w-full border rounded-lg p-2 mt-1 text-sm"
             />
           </label>
 
           <textarea
             name="bio"
-            placeholder="Kısa Biyografi"
+            placeholder="Kısa Biyografi (Arka planınız, çalışma stiliniz, koçluk yaklaşımınız...)"
             value={formData.bio}
             onChange={handleChange}
             rows={4}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
           <input
             type="text"
             name="linkedin"
-            placeholder="LinkedIn"
+            placeholder="LinkedIn (https://linkedin.com/in/...)"
             value={formData.linkedin}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
           <input
             type="text"
             name="website"
-            placeholder="Website"
+            placeholder="Kişisel Website / Portfolyo (varsa)"
             value={formData.website}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border rounded-lg p-2 text-sm"
           />
 
-          <div className="flex gap-2 mt-4">
-            <Button onClick={prevStep} className="w-1/2">
+          <p className="text-xs text-gray-500">
+            Sorularınız mı var?{" "}
+            <a href="mailto:info@kariyeer.com" className="underline">
+              info@kariyeer.com
+            </a>
+          </p>
+
+          <div className="flex gap-2 pt-2">
+            <Button onClick={prevStep} variant="outline" className="w-1/2">
               Geri
             </Button>
             <Button onClick={nextStep} className="w-1/2">
@@ -336,8 +405,15 @@ export default function CoachApplication() {
 
       {/* -------------------- STEP 4 -------------------- */}
       {step === 4 && (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-xl font-semibold">Onay ve Gönder</h2>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 bg-white border rounded-xl shadow-sm p-6"
+        >
+          <h2 className="text-lg font-semibold mb-2">Onay ve Gönder</h2>
+
+          <p className="text-xs text-gray-600">
+            Lütfen aşağıdaki bilgileri onayladıktan sonra başvurunuzu gönderin.
+          </p>
 
           <label className="flex items-start gap-2 text-sm">
             <input
@@ -375,8 +451,8 @@ export default function CoachApplication() {
             </span>
           </label>
 
-          <div className="flex gap-2 mt-4">
-            <Button onClick={prevStep} className="w-1/2">
+          <div className="flex gap-2 pt-2">
+            <Button onClick={prevStep} type="button" variant="outline" className="w-1/2">
               Geri
             </Button>
 

@@ -6,12 +6,22 @@ import { ArrowLeft, Calendar, Clock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
+const RESERVATIONS_TABLE = "app_2dff6511da_reservations";
+
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const coachId = searchParams.get("coachId");
 
   const [coach, setCoach] = useState<any | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    date: "",
+    timeSlot: "",
+    fullName: "",
+    email: "",
+    note: "",
+  });
 
   // Koç bilgisini Supabase'ten çek
   useEffect(() => {
@@ -50,11 +60,56 @@ export default function BookSession() {
     "20:00",
   ];
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-    alert(
-      "Rezervasyon isteğin alındı. Takvim ve ödeme akışı yakında koç takvimiyle entegre edilecek."
-    );
+    if (!coachId) {
+      alert("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
+      return;
+    }
+
+    if (!form.date || !form.timeSlot || !form.fullName || !form.email) {
+      alert("Lütfen gerekli tüm alanları doldurun.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase.from(RESERVATIONS_TABLE).insert({
+        coach_id: coachId,
+        full_name: form.fullName,
+        email: form.email,
+        session_date: form.date, // HTML date input → YYYY-MM-DD
+        time_slot: form.timeSlot,
+        note: form.note || null,
+        status: "pending",
+      });
+
+      if (error) {
+        console.error("Reservation insert error:", error);
+        alert("Rezervasyon kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
+        return;
+      }
+
+      // Başarılı
+      alert(
+        "Rezervasyon isteğin alındı. Koçun onayladığında e-posta ile bilgilendirileceksin."
+      );
+
+      // Formu sıfırla
+      setForm({
+        date: "",
+        timeSlot: "",
+        fullName: "",
+        email: "",
+        note: "",
+      });
+
+      // İstersen ana sayfaya / profil sayfasına yönlendirebiliriz
+      // navigate(-1);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const specializations = (coach?.specializations || []) as string[];
@@ -147,6 +202,10 @@ export default function BookSession() {
                 type="date"
                 className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full max-w-xs focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 required
+                value={form.date}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, date: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -165,6 +224,10 @@ export default function BookSession() {
                     value={slot}
                     className="peer sr-only"
                     required
+                    checked={form.timeSlot === slot}
+                    onChange={() =>
+                      setForm((f) => ({ ...f, timeSlot: slot }))
+                    }
                   />
                   <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-300 bg-gray-50 text-sm text-gray-700 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:text-red-700 hover:border-red-400 transition">
                     <Clock className="w-4 h-4" />
@@ -187,6 +250,10 @@ export default function BookSession() {
                 placeholder="Adınız Soyadınız"
                 className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 required
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, fullName: e.target.value }))
+                }
               />
             </div>
 
@@ -200,6 +267,10 @@ export default function BookSession() {
                 placeholder="ornek@mail.com"
                 className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 required
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -213,6 +284,10 @@ export default function BookSession() {
               name="note"
               placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
               className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-24 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              value={form.note}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, note: e.target.value }))
+              }
             />
           </div>
 
@@ -225,10 +300,11 @@ export default function BookSession() {
 
             <Button
               type="submit"
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
+              disabled={isSubmitting}
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
             >
               <CreditCard className="w-4 h-4 mr-1" />
-              Rezervasyonu Tamamla
+              {isSubmitting ? "Kaydediliyor..." : "Rezervasyonu Tamamla"}
             </Button>
           </div>
         </form>

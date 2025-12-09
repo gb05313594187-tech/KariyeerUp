@@ -10,7 +10,7 @@ import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
 import Coaches from "@/pages/Coaches";
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
-import Webinar from "@/pages/Webinar";
+import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 
@@ -236,8 +236,8 @@ export default function App() {
             {/* MentorCircle */}
             <Route path="/mentor-circle" element={<MentorCircle />} />
 
-            {/* Webinar */}
-            <Route path="/webinar" element={<Webinar />} />
+            {/* Webinars */}
+            <Route path="/webinars" element={<Webinars />} />
 
             {/* Auth */}
             <Route path="/login" element={<Login />} />

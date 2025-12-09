@@ -78,7 +78,9 @@ export default function Index() {
                 Koçunu Bul <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </a>
-            <a href="/register">
+
+            {/* 🔴 BURASI DÜZELTİLDİ: /register → /how-it-works */}
+            <a href="/how-it-works">
               <Button
                 size="lg"
                 variant="outline"

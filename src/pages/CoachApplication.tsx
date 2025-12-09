@@ -113,8 +113,8 @@ export default function CoachApplication() {
       ]);
 
       if (error) {
-        console.error(error);
-        toast.error("Başvuru gönderilirken hata oluştu.");
+        console.error("Supabase insert error:", error);
+        toast.error(error.message || "Başvuru gönderilirken hata oluştu.");
       } else {
         toast.success("Başvurunuz başarıyla gönderildi!");
       }

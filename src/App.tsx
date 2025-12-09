@@ -2,10 +2,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // SAYFALAR
-import Home from "@/pages/Home";                // Ana sayfa
-import HowItWorks from "@/pages/HowItWorks";    // Nasıl Çalışır sayfan
-import Coaches from "@/pages/Coaches";          // Koçlar için
-import ForCompanies from "@/pages/ForCompanies"; // Şirketler için
+import Home from "@/pages/Home";
+import HowItWorks from "@/pages/HowItWorks";
+import Coaches from "@/pages/Coaches";
+import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinar from "@/pages/Webinar";
 import Login from "@/pages/Login";
@@ -19,29 +19,38 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-white">
-        {/* Üst menü */}
+
+        {/* NAVBAR */}
         <Navbar />
 
-        {/* Sayfa içerikleri */}
+        {/* ROUTES */}
         <main className="flex-1">
           <Routes>
-            {/* Ana sayfa */}
+            {/* Ana Sayfa */}
             <Route path="/" element={<Home />} />
 
             {/* Nasıl Çalışır */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />
 
-            {/* Diğer sayfalar */}
+            {/* Koçlar */}
             <Route path="/coaches" element={<Coaches />} />
+
+            {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />
+
+            {/* MentorCircle */}
             <Route path="/mentor-circle" element={<MentorCircle />} />
+
+            {/* Webinar */}
             <Route path="/webinar" element={<Webinar />} />
+
+            {/* Auth Sayfaları */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>
         </main>
 
-        {/* Alt kısım */}
+        {/* FOOTER */}
         <Footer />
       </div>
     </Router>

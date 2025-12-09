@@ -18,7 +18,8 @@ export default function CoachApplication() {
     country: "",
 
     // Adım 2
-    certificate_type: "",
+    certificate_type: "",           // Ek açıklama için (isteyen yazar)
+    selected_certificates: [] as string[], // Çoktan seçmeli sertifikalar
     certificate_year: "",
     experience_level: "",
     session_price: "",
@@ -45,6 +46,15 @@ export default function CoachApplication() {
     "CV & LinkedIn",
     "Performans Gelişimi",
     "Uluslararası Kariyer",
+  ];
+
+  // Sertifika seçenekleri (çoktan seçmeli)
+  const certificateOptions = [
+    "ICF",
+    "EMCC",
+    "MYK",
+    "ICF + MYK",
+    "Diğer"
   ];
 
   // ---------- Helpers ----------
@@ -84,8 +94,20 @@ export default function CoachApplication() {
     });
   };
 
+  const toggleCertificate = (cert: string) => {
+    setFormData((prev) => {
+      const exists = prev.selected_certificates.includes(cert);
+      return {
+        ...prev,
+        selected_certificates: exists
+          ? prev.selected_certificates.filter((c) => c !== cert)
+          : [...prev.selected_certificates, cert],
+      };
+    });
+  };
+
   const handleNextStep = () => {
-    // Basit step validation (çok kasmıyoruz)
+    // Basit step validation
     if (step === 1) {
       if (!formData.full_name || !formData.email || !formData.phone) {
         toast.error("Lütfen ad soyad, e-posta ve telefon alanlarını doldurun.");
@@ -93,8 +115,14 @@ export default function CoachApplication() {
       }
     }
     if (step === 2) {
-      if (!formData.certificate_type || !formData.experience_level) {
-        toast.error("Lütfen sertifika türü ve deneyim seviyesini seçin.");
+      const hasSelectedCerts =
+        formData.selected_certificates &&
+        formData.selected_certificates.length > 0;
+
+      if (!hasSelectedCerts || !formData.experience_level) {
+        toast.error(
+          "Lütfen en az bir sertifika tipi seçin ve deneyim seviyesini belirtin."
+        );
         return;
       }
     }
@@ -182,6 +210,12 @@ export default function CoachApplication() {
         certificate_path = certData?.path ?? null;
       }
 
+      // Seçili sertifikaları tek stringe çevir
+      const combinedCertificateType =
+        formData.selected_certificates && formData.selected_certificates.length
+          ? formData.selected_certificates.join(", ")
+          : formData.certificate_type;
+
       // 3) coach_applications tablosuna kayıt ekle
       const { error: insertError } = await supabase
         .from("coach_applications")
@@ -196,7 +230,7 @@ export default function CoachApplication() {
           country: formData.country,
 
           // Adım 2
-          certificate_type: formData.certificate_type,
+          certificate_type: combinedCertificateType,
           certificate_year: formData.certificate_year,
           experience_level: formData.experience_level,
           session_price: formData.session_price
@@ -225,7 +259,7 @@ export default function CoachApplication() {
         return;
       }
 
-      // 4) profiles tablosunu güncelle (opsiyonel ama güzel)
+      // 4) profiles tablosunu güncelle
       await supabase
         .from("profiles")
         .update({
@@ -385,22 +419,47 @@ export default function CoachApplication() {
                 2. Profesyonel Bilgiler
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">
-                    Sertifika Türü
-                  </label>
-                  <input
-                    type="text"
-                    name="certificate_type"
-                    value={formData.certificate_type}
-                    onChange={handleChange}
-                    placeholder="ICF, EMCC vb."
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    required
-                  />
+              {/* Sertifika türü – çoktan seçmeli */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Sertifika Türü (birden fazla seçebilirsiniz)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {certificateOptions.map((cert) => {
+                    const active =
+                      formData.selected_certificates.includes(cert);
+                    return (
+                      <button
+                        key={cert}
+                        type="button"
+                        onClick={() => toggleCertificate(cert)}
+                        className={`px-3 py-1 rounded-full text-xs border ${
+                          active
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-slate-50 text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        {cert}
+                      </button>
+                    );
+                  })}
                 </div>
+                <p className="text-xs text-slate-500">
+                  Örn: ICF, EMCC, MYK… Eğer listede yoksa aşağıya kısa bir açıklama yazabilirsiniz.
+                </p>
 
+                {/* İsteğe bağlı serbest metin */}
+                <input
+                  type="text"
+                  name="certificate_type"
+                  value={formData.certificate_type}
+                  onChange={handleChange}
+                  placeholder="İsteğe bağlı: Diğer sertifikalar / açıklama"
+                  className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-slate-700">
                     Sertifika Yılı

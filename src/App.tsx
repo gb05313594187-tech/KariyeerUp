@@ -1,12 +1,18 @@
+// src/App.tsx
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Ortak ikon ve butonlar
-import { CheckCircle2, ArrowRight, Sparkles, Globe2, Star, LineChart } from "lucide-react";
+import {
+  CheckCircle2,
+  Globe2,
+  Star,
+  LineChart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
+import Home from "@/pages/Index"; // Ana sayfa (Index.tsx)
 import Coaches from "@/pages/Coaches";
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
@@ -96,11 +102,11 @@ function HowItWorks() {
                 <Star className="w-8 h-8 text-red-500" />
               </div>
               <h3 className="text-xl font-semibold mb-2">
-                Koçunu Seç & Seans Planla
+                Koçunu Seç &amp; Seans Planla
               </h3>
               <p className="text-gray-600 text-sm">
-                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç. Uygun
-                saatleri gör ve tek tıkla online seans oluştur.
+                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç.
+                Uygun saatleri gör ve tek tıkla online seans oluştur.
               </p>
             </div>
 
@@ -166,7 +172,7 @@ function HowItWorks() {
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-100">
               <div className="text-3xl font-bold text-gray-900 mb-1">500+</div>
-              <p className="text-xs text-gray-500">Onaylı koç & mentor</p>
+              <p className="text-xs text-gray-500">Onaylı koç &amp; mentor</p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-100">
               <div className="text-3xl font-bold text-gray-900 mb-1">30+</div>

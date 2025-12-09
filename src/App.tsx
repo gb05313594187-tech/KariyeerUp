@@ -14,6 +14,7 @@ import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
+import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";       // Koç seçim süreci
 import CoachApplication from "@/pages/CoachApplication";   // Koç başvuru formu

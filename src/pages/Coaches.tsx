@@ -154,7 +154,8 @@ export default function Coaches() {
 
       {/* İÇERİK */}
       <div className="max-w-7xl mx-auto px-4 py-16 -mt-8 relative z-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+        {/* ANA LAYOUT: SOL FİLTRE + SAĞ LİSTE */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg">
@@ -232,8 +233,7 @@ export default function Coaches() {
                 </div>
               </div>
 
-              {/* Not: Fiyat aralığını şimdilik sadece UI olarak bırakıyoruz,
-                  backend filtresi istersen sonra ekleriz */}
+              {/* FİYAT BİLGİLENDİRME */}
               <div>
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   Seans Ücreti (Bilgilendirme)
@@ -285,15 +285,9 @@ export default function Coaches() {
                   <option value="rating_desc">
                     Puana Göre (Yüksek → Düşük)
                   </option>
-                  <option value="price_asc">
-                    Fiyata Göre (Artan)
-                  </option>
-                  <option value="price_desc">
-                    Fiyata Göre (Azalan)
-                  </option>
-                  <option value="exp_desc">
-                    Deneyime Göre (Yüksek)
-                  </option>
+                  <option value="price_asc">Fiyata Göre (Artan)</option>
+                  <option value="price_desc">Fiyata Göre (Azalan)</option>
+                  <option value="exp_desc">Deneyime Göre (Yüksek)</option>
                 </select>
 
                 <div className="flex border rounded-lg overflow-hidden">
@@ -483,9 +477,6 @@ export default function Coaches() {
                 })}
               </div>
             )}
-
-            {/* Sayfalama (şimdilik statik) */}
-            {/* İleride Supabase ile server-side sayfalama ekleyebiliriz */}
           </div>
         </div>
       </div>

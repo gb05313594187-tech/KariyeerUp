@@ -17,9 +17,9 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";       // Koç seçim süreci
 import CoachApplication from "@/pages/CoachApplication";   // Koç başvuru formu
-import Terms from "@/pages/Terms";
-import Privacy from "@/pages/Privacy";
-import Ethics from "@/pages/Ethics";
+import Terms from "@/pages/Terms";              // Kullanım Koşulları
+import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
+import Ethics from "@/pages/Ethics";            // Etik Kurallar
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -260,6 +260,11 @@ export default function App() {
 
             {/* Webinars */}
             <Route path="/webinars" element={<Webinars />} />
+
+            {/* Hukuki sayfalar */}
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/ethics" element={<Ethics />} />
 
             {/* Auth */}
             <Route path="/login" element={<Login />} />

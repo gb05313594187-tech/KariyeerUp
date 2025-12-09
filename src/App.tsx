@@ -2,8 +2,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // SAYFALAR
-import Home from "@/pages/Index";               // ← ANA SAYFA ARTIK BURASI!
-import HowItWorks from "@/pages/HowItWorks";
+import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
+import HowItWorks from "@/pages/HowItWorks";    // ← BU DOSYA: src/pages/HowItWorks.tsx
 import Coaches from "@/pages/Coaches";
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";

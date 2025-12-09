@@ -17,6 +17,9 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";       // Koç seçim süreci
 import CoachApplication from "@/pages/CoachApplication";   // Koç başvuru formu
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
+import Ethics from "@/pages/Ethics";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";

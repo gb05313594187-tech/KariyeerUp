@@ -4,8 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 export default function CoachApplication() {
   const [loading, setLoading] = useState(false);
@@ -21,7 +19,7 @@ export default function CoachApplication() {
 
     // Adım 2
     certificate_type: "",
-    certificate_year: null, // takvimden gelecek
+    certificate_year: "",   // string olarak tutuyoruz
     experience_level: "",
     session_price: "",
     expertise_tags: [],
@@ -38,7 +36,6 @@ export default function CoachApplication() {
     accept_ethics: false,
   });
 
-  // Checkbox list for uzmanlık alanları
   const expertiseOptions = [
     "Kariyer Geçişi",
     "Liderlik Koçluğu",
@@ -89,9 +86,6 @@ export default function CoachApplication() {
       const { error } = await supabase.from("coach_applications").insert([
         {
           ...formData,
-          certificate_year: formData.certificate_year
-            ? formData.certificate_year.getFullYear().toString()
-            : null,
           cv_file: formData.cv_file?.name || "",
           certificate_file: formData.certificate_file?.name || "",
         },
@@ -214,17 +208,16 @@ export default function CoachApplication() {
             <option value="Diğer">Diğer</option>
           </select>
 
-          {/* Sertifika Yılı - Takvimden YIL seçimi */}
-          <DatePicker
-            selected={formData.certificate_year}
-            onChange={(date) =>
-              setFormData((prev) => ({ ...prev, certificate_year: date }))
-            }
-            dateFormat="yyyy"
-            showYearPicker
-            placeholderText="Sertifika Yılı *"
+          {/* Sertifika Yılı - basit input */}
+          <input
+            type="number"
+            name="certificate_year"
+            placeholder="Sertifika Yılı *"
+            value={formData.certificate_year}
+            onChange={handleChange}
             className="w-full border rounded p-2"
-            maxDate={new Date()}
+            min="1980"
+            max="2100"
           />
 
           <input

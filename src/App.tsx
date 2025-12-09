@@ -21,6 +21,9 @@ import Terms from "@/pages/Terms";              // Kullanım Koşulları
 import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
 import Ethics from "@/pages/Ethics";            // Etik Kurallar
 
+// 🔴 YENİ: Koç profil sayfası importu
+import CoachProfile from "@/pages/CoachProfile";
+
 // LAYOUT
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -236,6 +239,9 @@ export default function App() {
 
             {/* Koç Listeleme (kullanıcılar için) */}
             <Route path="/coaches" element={<Coaches />} />
+
+            {/* 🔴 YENİ: Tekil koç profil sayfası */}
+            <Route path="/coach/:id" element={<CoachProfile />} />
 
             {/* Koçlar İçin – ForCoaches sayfası */}
             <Route path="/for-coaches" element={<ForCoaches />} />

@@ -1,3 +1,4 @@
+// src/pages/Login.tsx
 // @ts-nocheck
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,14 +15,11 @@ import {
 } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-// @ts-ignore
+// Sadece supabase, AuthContext YOK
 import { supabase } from '@/lib/supabase';
-// @ts-ignore
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -33,37 +31,64 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      // 1) Supabase ile giriş
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) {
-        throw new Error(error.message);
+        console.error('Login error:', error);
+        toast.error('E-posta veya şifre hatalı.');
+        setIsLoading(false);
+        return;
       }
 
-      if (data.user) {
-        // AuthContext içini güncelle
-        login(data.user);
+      if (!data.user) {
+        toast.error('Kullanıcı bulunamadı.');
+        setIsLoading(false);
+        return;
+      }
 
-        // İstersen bu localStorage kaydı da kalsın
-        localStorage.setItem(
-          'kariyeer_user',
-          JSON.stringify({
-            email: data.user.email,
-            id: data.user.id,
-            isLoggedIn: true,
-          }),
-        );
+      // 2) Profile çek (rol ve onay durumu için)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
 
-        toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
+      if (profileError) {
+        console.error('Profile error:', profileError);
+      }
 
-        // 🔴 ÖNEMLİ: Artık full refresh yok, SPA içinde yönlendiriyoruz
-        navigate('/dashboard');
+      // (İstersen localStorage kaydı da tutabilirsin)
+      localStorage.setItem(
+        'kariyeer_user',
+        JSON.stringify({
+          email: data.user.email,
+          id: data.user.id,
+          isLoggedIn: true,
+        })
+      );
+
+      toast.success('Giriş başarılı!');
+
+      // 3) Rol'e göre yönlendirme
+      if (profile?.account_type === 'coach') {
+        if (!profile.is_approved) {
+          // Koç ama henüz onaylanmamış → başvuru / durum sayfası
+          navigate('/coach-application');
+        } else {
+          // Onaylı koç → şimdilik ana sayfa
+          navigate('/');
+        }
+      } else {
+        // Bireysel / şirket kullanıcı → ana sayfa
+        navigate('/');
       }
     } catch (error: any) {
       console.error('Giriş Hatası:', error);
-      toast.error('E-posta veya şifre hatalı.');
+      toast.error('Giriş sırasında bir hata oluştu.');
     } finally {
       setIsLoading(false);
     }

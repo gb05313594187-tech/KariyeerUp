@@ -116,6 +116,7 @@ export default function CoachApplication() {
   değerlendirme sürecinde kullanılacaktır.
 </p>
 
+      
 
       {/* -------------------- STEP 1 -------------------- */}
       {step === 1 && (

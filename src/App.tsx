@@ -22,8 +22,12 @@ import Terms from "@/pages/Terms";              // Kullanım Koşulları
 import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
 import Ethics from "@/pages/Ethics";            // Etik Kurallar
 
-// 🔴 YENİ: Koç profil sayfası importu
+// 🔴 Koç profil sayfası importu
 import CoachProfile from "@/pages/CoachProfile";
+
+// 🔴 YENİ: Kullanıcı Dashboard ve Koç Dashboard
+import Dashboard from "@/pages/Dashboard";
+import CoachDashboard from "@/pages/CoachDashboard";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -241,7 +245,7 @@ export default function App() {
             {/* Koç Listeleme (kullanıcılar için) */}
             <Route path="/coaches" element={<Coaches />} />
 
-            {/* 🔴 YENİ: Tekil koç profil sayfası */}
+            {/* Tekil koç profil sayfası */}
             <Route path="/coach/:id" element={<CoachProfile />} />
 
             {/* Koçlar İçin – ForCoaches sayfası */}
@@ -252,15 +256,14 @@ export default function App() {
               path="/coach-selection-process"
               element={<CoachSelection />}
             />
-             {/* Koç Seçim Süreci */}
-<Route
-  path="/coach-selection-process"
-  element={<CoachSelection />}
-/>
+            {/* (Aynı route tekrar bırakıldı, hiçbir şey silmedim) */}
+            <Route
+              path="/coach-selection-process"
+              element={<CoachSelection />}
+            />
 
-{/* Seans Rezervasyonu – yeni takvim sayfası */}
-<Route path="/book-session" element={<BookSession />} />
-
+            {/* Seans Rezervasyonu – yeni takvim sayfası */}
+            <Route path="/book-session" element={<BookSession />} />
 
             {/* Koç Başvuru Formu */}
             <Route
@@ -276,6 +279,12 @@ export default function App() {
 
             {/* Webinars */}
             <Route path="/webinars" element={<Webinars />} />
+
+            {/* 🔴 Kullanıcı Dashboard */}
+            <Route path="/dashboard" element={<Dashboard />} />
+
+            {/* 🔴 Koç Dashboard */}
+            <Route path="/coach-dashboard" element={<CoachDashboard />} />
 
             {/* Hukuki sayfalar */}
             <Route path="/terms" element={<Terms />} />

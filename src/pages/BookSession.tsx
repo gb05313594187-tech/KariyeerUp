@@ -103,7 +103,7 @@ export default function BookSession() {
       // 2) Edge function ile mail gönder (Resend)
       // Supabase → Functions → reservation-email → Details sayfasındaki Endpoint URL ile birebir aynı olmalı
       const FUNCTION_URL =
-        "https://wzadsntszlxvuvmmjmwn.supabase.co/functions/v1/reservation-email";
+        "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
       await fetch(FUNCTION_URL, {
         method: "POST",

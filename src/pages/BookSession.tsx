@@ -8,6 +8,10 @@ import { supabase } from "@/lib/supabase";
 
 const RESERVATIONS_TABLE = "app_2dff6511da_reservations";
 
+// ❗ Edge Function URL – Supabase Details ekranından aldığın URL
+const FUNCTION_URL =
+  "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
+
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -15,6 +19,7 @@ export default function BookSession() {
 
   const [coach, setCoach] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     date: "",
     timeSlot: "",
@@ -86,7 +91,7 @@ export default function BookSession() {
         coach_id: coachId,
         full_name: form.fullName,
         email: form.email,
-        session_date: form.date, // HTML date input → YYYY-MM-DD
+        session_date: form.date, // YYYY-MM-DD
         time_slot: form.timeSlot,
         note: form.note || null,
         status: "pending",
@@ -100,35 +105,41 @@ export default function BookSession() {
         return;
       }
 
-      // 2) Edge function ile mail gönder (Resend)
-      // Supabase → Functions → reservation-email → Details sayfasındaki Endpoint URL ile birebir aynı olmalı
-      const FUNCTION_URL =
-        "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
+      // 2) Edge Function ile mail gönder (Resend)
+      try {
+        const res = await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            coach_email: coach?.email || "",
+            user_email: form.email,
+            coach_name: coach?.full_name || "",
+            user_name: form.fullName,
+            session_date: form.date,
+            time_slot: form.timeSlot,
+            note: form.note,
+          }),
+        });
 
-      await fetch(FUNCTION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          coach_email: coach?.email || "", // koç mail alan adı farklıysa bunu düzelt
-          user_email: form.email,
-          coach_name: coach?.full_name || "",
-          user_name: form.fullName,
-          session_date: form.date,
-          time_slot: form.timeSlot,
-          note: form.note,
-        }),
-      });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("Email function error:", res.status, text);
+          // Kullanıcıya hata gösterme, sadece logla – rezervasyon zaten kaydedildi
+        }
+      } catch (emailErr) {
+        console.error("Email function fetch error:", emailErr);
+        // Yine kullanıcıya hata gösterme; mail gitmese de rezervasyon kaydı var
+      }
 
       // 3) Kullanıcıya başarı mesajı
       alert(
         "Rezervasyon isteğin alındı. Koçun onayladığında e-posta ile bilgilendirileceksin."
       );
 
-      // 4) Formu resetle
+      // 4) Formu sıfırla
       setForm({
         date: "",
         timeSlot: "",

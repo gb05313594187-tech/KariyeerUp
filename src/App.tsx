@@ -22,12 +22,15 @@ import Terms from "@/pages/Terms";              // Kullanım Koşulları
 import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
 import Ethics from "@/pages/Ethics";            // Etik Kurallar
 
-// 🔴 Koç profil sayfası importu
+// Koç profil sayfası
 import CoachProfile from "@/pages/CoachProfile";
 
-// 🔴 YENİ: Kullanıcı Dashboard ve Koç Dashboard
+// 🔴 Kullanıcı Dashboard ve Koç Dashboard
 import Dashboard from "@/pages/Dashboard";
 import CoachDashboard from "@/pages/CoachDashboard";
+
+// 🔴 Yeni: Profil sayfası (Koç Profilim)
+import ProfilePage from "@/pages/Profile";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -256,7 +259,7 @@ export default function App() {
               path="/coach-selection-process"
               element={<CoachSelection />}
             />
-            {/* (Aynı route tekrar bırakıldı, hiçbir şey silmedim) */}
+            {/* Aynı route’u silmeden bıraktım */}
             <Route
               path="/coach-selection-process"
               element={<CoachSelection />}
@@ -280,11 +283,14 @@ export default function App() {
             {/* Webinars */}
             <Route path="/webinars" element={<Webinars />} />
 
-            {/* 🔴 Kullanıcı Dashboard */}
+            {/* Kullanıcı Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* 🔴 Koç Dashboard */}
+            {/* Koç Dashboard */}
             <Route path="/coach-dashboard" element={<CoachDashboard />} />
+
+            {/* Profil Sayfası */}
+            <Route path="/profile" element={<ProfilePage />} />
 
             {/* Hukuki sayfalar */}
             <Route path="/terms" element={<Terms />} />

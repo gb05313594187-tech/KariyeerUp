@@ -62,19 +62,26 @@ export default function BookSession() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+
     if (!coachId) {
       alert("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
       return;
     }
 
-    if (!form.date || !form.timeSlot || !form.fullName || !form.email) {
-      alert("Lütfen gerekli tüm alanları doldurun.");
+    if (!form.date || !form.timeSlot) {
+      alert("Lütfen tarih ve saat seç.");
       return;
     }
 
-    try {
-      setIsSubmitting(true);
+    if (!form.fullName || !form.email) {
+      alert("Lütfen ad soyad ve e-posta alanlarını doldurun.");
+      return;
+    }
 
+    setIsSubmitting(true);
+
+    try {
+      // 1) Rezervasyonu Supabase'e kaydet
       const { error } = await supabase.from(RESERVATIONS_TABLE).insert({
         coach_id: coachId,
         full_name: form.fullName,
@@ -87,16 +94,41 @@ export default function BookSession() {
 
       if (error) {
         console.error("Reservation insert error:", error);
-        alert("Rezervasyon kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
+        alert(
+          "Rezervasyon kaydedilirken bir hata oluştu. Lütfen tekrar deneyin."
+        );
         return;
       }
 
-      // Başarılı
+      // 2) Edge function ile mail gönder (Resend)
+      // Supabase → Functions → reservation-email → Details sayfasındaki Endpoint URL ile birebir aynı olmalı
+      const FUNCTION_URL =
+        "https://wzadsntszlxvuvmmjmwn.supabase.co/functions/v1/reservation-email";
+
+      await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          coach_email: coach?.email || "", // koç mail alan adı farklıysa bunu düzelt
+          user_email: form.email,
+          coach_name: coach?.full_name || "",
+          user_name: form.fullName,
+          session_date: form.date,
+          time_slot: form.timeSlot,
+          note: form.note,
+        }),
+      });
+
+      // 3) Kullanıcıya başarı mesajı
       alert(
         "Rezervasyon isteğin alındı. Koçun onayladığında e-posta ile bilgilendirileceksin."
       );
 
-      // Formu sıfırla
+      // 4) Formu resetle
       setForm({
         date: "",
         timeSlot: "",
@@ -104,9 +136,9 @@ export default function BookSession() {
         email: "",
         note: "",
       });
-
-      // İstersen ana sayfaya / profil sayfasına yönlendirebiliriz
-      // navigate(-1);
+    } catch (err) {
+      console.error("Reservation error:", err);
+      alert("Beklenmeyen bir hata oluştu. Lütfen tekrar dene.");
     } finally {
       setIsSubmitting(false);
     }
@@ -131,8 +163,8 @@ export default function BookSession() {
             Seans Planla
           </h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-xl">
-            Uygun tarih ve saati seç, koçun onayladığında seans detayları
-            e-posta ve SMS ile iletilecektir.
+            Uygun tarih ve saati seç, koçun onayladığında seans detayları e-posta
+            ve SMS ile iletilecektir.
           </p>
         </div>
       </div>

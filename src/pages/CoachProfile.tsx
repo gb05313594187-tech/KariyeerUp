@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-// 🔸 Sadece schedule & yorumlar şimdilik statik kalsın
 const mockSchedule = [
   { day: "Bugün", slots: ["19:00", "20:30"] },
   { day: "Yarın", slots: ["10:00", "11:30", "21:00"] },
@@ -48,11 +47,11 @@ const mockReviews = [
   },
 ];
 
-// Elif mock'u sadece fallback olarak tutalım – veri yoksa boş ekran olmasın diye
+// Elif sadece KAYIT BULUNAMAZSA fallback olsun
 const fallbackCoach = {
   name: "Elif Kara",
-  title: "Executive & Kariyer Koçu",
-  location: "İstanbul, TR",
+  title: "Kariyer Koçu",
+  location: "Online",
   rating: 4.9,
   reviewCount: 128,
   totalSessions: 780,
@@ -64,39 +63,21 @@ const fallbackCoach = {
   bio: `
 10+ yıllık kurumsal deneyime sahip Executive ve Kariyer Koçu. 
 Unilever, Google, Trendyol gibi şirketlerde liderlik gelişimi, kariyer geçişi ve performans koçluğu alanlarında birebir ve grup çalışmaları yürüttü.
-
-Özellikle:
-- Kariyer yön bulma
-- Yönetici pozisyonuna geçiş
-- Mülakat ve sunum performansı
-- Kariyer reset & yurt dışına açılma
-
-alanlarında uzmanlaşmıştır.
   `,
   methodology: `
-Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odaklı çalışma yöntemlerini kullanıyorum. 
-Her seans sonunda net aksiyon maddeleri ve takip planı ile ilerliyoruz.
+Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odaklı çalışma yöntemlerini kullanıyorum.
   `,
-  education: [
-    "ICF Onaylı Profesyonel Koçluk Programı (PCC Track)",
-    "Boğaziçi Üniversitesi – İşletme",
-    "ICF – Etik ve Mesleki Standartlar Eğitimi",
-  ],
-  experience: [
-    "Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi",
-    "Liderlik Gelişim Programları Eğitmeni",
-    "Yurt dışı kariyer geçişi danışmanlığı",
-  ],
+  education: ["ICF Onaylı Profesyonel Koçluk Programı (PCC Track)"],
+  experience: ["Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi"],
 };
 
 export default function CoachProfile() {
-  const { id } = useParams(); // URL'deki UUID buradan geliyor
-  const [coach, setCoach] = useState<any | null>(null);
+  const { id } = useParams(); // /coach/:id buradan geliyor
+  const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
   const [selectedService, setSelectedService] = useState<number | null>(null);
 
-  // 🧠 Supabase'ten koçu çek
+  // 🔥 1) SUPABASE'TEN TEK KOÇU ÇEK
   useEffect(() => {
     if (!id) return;
 
@@ -104,22 +85,23 @@ export default function CoachProfile() {
       try {
         setLoading(true);
 
-        // ❗ TABLO ADI: Eğer senin tablon "coach_profiles" ise burayı değiştir:
         const { data, error } = await supabase
-          .from("coaches") // <-- gerekirse "coach_profiles" yap
+          .from("app_2dff6511da_coaches") // 👈 Coaches.tsx ile AYNI TABLO
           .select("*")
-          .eq("id", id)
+          .eq("id", id) // 👈 navigate(`/coach/${coach.id}`) —> burada id kolonu kullanılıyor
           .single();
+
+        console.log("CoachProfile Supabase:", { id, data, error });
 
         if (error) {
           console.error("Coach fetch error:", error);
-          setCoach(null);
+          setCoachRow(null);
         } else {
-          setCoach(data);
+          setCoachRow(data);
         }
       } catch (err) {
         console.error("Unexpected error:", err);
-        setCoach(null);
+        setCoachRow(null);
       } finally {
         setLoading(false);
       }
@@ -128,74 +110,48 @@ export default function CoachProfile() {
     fetchCoach();
   }, [id]);
 
-  // 🧩 Supabase'ten gelen veri ile UI'da kullanacağımız alanları normalize edelim
-  const mergedCoach = {
-    // isim
-    name: coach?.full_name || coach?.name || fallbackCoach.name,
-    // unvan
-    title:
-      coach?.title ||
-      coach?.headline ||
-      coach?.role ||
-      "Kariyer Koçu",
-    // lokasyon
-    location: coach?.location || fallbackCoach.location,
-    // rating
-    rating:
-      coach?.average_rating ??
-      coach?.rating ??
-      fallbackCoach.rating,
-    reviewCount:
-      coach?.review_count ??
-      coach?.reviews_count ??
-      fallbackCoach.reviewCount,
-    totalSessions:
-      coach?.total_sessions ??
-      coach?.sessions_count ??
-      fallbackCoach.totalSessions,
-    favoritesCount:
-      coach?.favorites_count ??
-      coach?.favorite_count ??
-      fallbackCoach.favoritesCount,
-    isOnline:
-      typeof coach?.is_online === "boolean"
-        ? coach.is_online
-        : fallbackCoach.isOnline,
-    // foto
-    photo_url:
-      coach?.photo_url ||
-      coach?.avatar_url ||
-      coach?.image_url ||
-      fallbackCoach.photo_url,
-    // etiketler (array veya virgüllü string olabilir)
-    tags:
-      coach?.expertise_tags ||
-      coach?.tags ||
-      (typeof coach?.specialties === "string"
-        ? coach.specialties.split(",").map((t: string) => t.trim())
-        : fallbackCoach.tags),
-    // bio & metodoloji
-    bio: coach?.bio || fallbackCoach.bio,
-    methodology: coach?.methodology || fallbackCoach.methodology,
-    education: coach?.education_list || fallbackCoach.education,
-    experience: coach?.experience_list || fallbackCoach.experience,
-    // hizmet & programlar → şimdilik Supabase’te yoksa boş
-    services: coach?.services || [],
-    programs: coach?.programs || [],
-    faqs: coach?.faqs || [
-      {
-        q: "Seanslar online mı gerçekleşiyor?",
-        a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
-      },
-      {
-        q: "Seans öncesi nasıl hazırlanmalıyım?",
-        a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
-      },
-    ],
-  };
+  // 🔁 2) TABLODAN GELEN ALANLARI UI FORMATINA ÇEVİR
+  const c = (() => {
+    const coach = coachRow;
+    if (!coach) return fallbackCoach; // kayıt bulunamazsa Elif
 
-  // Yükleniyor ekranı
-  if (loading && !coach) {
+    return {
+      name: coach.full_name || fallbackCoach.name,
+      title: coach.title || "Kariyer Koçu",
+      location: coach.location || "Online",
+      rating: coach.rating ?? 5,
+      reviewCount: coach.total_reviews ?? 0,
+      totalSessions: coach.total_sessions ?? 0,
+      favoritesCount: coach.favorites_count ?? 0,
+      isOnline: coach.is_online ?? true,
+      photo_url:
+        coach.avatar_url ||
+        coach.photo_url ||
+        fallbackCoach.photo_url,
+      tags:
+        (coach.specializations as string[]) ||
+        fallbackCoach.tags,
+      bio: coach.bio || fallbackCoach.bio,
+      methodology: coach.methodology || fallbackCoach.methodology,
+      education: coach.education_list || fallbackCoach.education,
+      experience: coach.experience_list || fallbackCoach.experience,
+      services: coach.services || [], // ileride tablo bağlarız
+      programs: coach.programs || [],
+      faqs: coach.faqs || [
+        {
+          q: "Seanslar online mı gerçekleşiyor?",
+          a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
+        },
+        {
+          q: "Seans öncesi nasıl hazırlanmalıyım?",
+          a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
+        },
+      ],
+    };
+  })();
+
+  // YÜKLENİYOR EKRANI
+  if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
         Koç profili yükleniyor...
@@ -203,11 +159,9 @@ export default function CoachProfile() {
     );
   }
 
-  const c = mergedCoach;
-
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
-      {/* HERO – BEYAZ / TURUNCU / KIRMIZI */}
+      {/* HERO */}
       <section className="w-full bg-white border-b border-orange-100">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center gap-10">
           {/* Profil Fotoğrafı */}
@@ -412,7 +366,7 @@ export default function CoachProfile() {
             </Card>
           </TabsContent>
 
-          {/* HİZMETLER */}
+          {/* HİZMETLER (şimdilik boşsa info göster) */}
           <TabsContent value="services">
             <div className="grid md:grid-cols-2 gap-4">
               {(c.services || []).length === 0 && (
@@ -420,65 +374,6 @@ export default function CoachProfile() {
                   Bu koç henüz detaylı hizmet paketi eklemedi.
                 </p>
               )}
-
-              {(c.services || []).map((service: any) => (
-                <Card
-                  key={service.id}
-                  className={`bg
-                  -white border shadow-sm ${
-                    selectedService === service.id
-                      ? "border-red-400"
-                      : "border-orange-100"
-                  }`}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base text-gray-900">
-                          {service.name}
-                        </CardTitle>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {service.description || service.desc}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {service.price} TL
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {service.duration || 60} dk
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm text-gray-800">
-                    {service.gains && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Bu seans sonunda:
-                        </p>
-                        <ul className="space-y-1">
-                          {service.gains.map((g: string) => (
-                            <li
-                              key={g}
-                              className="flex items-start gap-2"
-                            >
-                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-orange-500" />
-                              <span>{g}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <Button
-                      className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm"
-                      onClick={() => setSelectedService(service.id)}
-                    >
-                      Bu Seansı Seç ve Devam Et
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </TabsContent>
 
@@ -490,44 +385,10 @@ export default function CoachProfile() {
                   Bu koç henüz program paketi eklemedi.
                 </p>
               )}
-
-              {(c.programs || []).map((program: any) => (
-                <Card
-                  key={program.id}
-                  className="bg-white border border-orange-200 shadow-sm"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base text-gray-900">
-                          {program.name}
-                        </CardTitle>
-                        <p className="text-xs text-orange-600 mt-1">
-                          {program.level || "Program"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {program.price} TL
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {program.sessions} seans · {program.duration}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm text-gray-800">
-                    <p>{program.desc || program.description}</p>
-                    <Button className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">
-                      Programı Satın Al
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </TabsContent>
 
-          {/* YORUMLAR */}
+          {/* YORUMLAR (mock) */}
           <TabsContent value="reviews">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm">
@@ -583,7 +444,7 @@ export default function CoachProfile() {
             </div>
           </TabsContent>
 
-          {/* İÇERİKLER */}
+          {/* İÇERİKLER – şimdilik dummy */}
           <TabsContent value="content">
             <div className="grid md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (

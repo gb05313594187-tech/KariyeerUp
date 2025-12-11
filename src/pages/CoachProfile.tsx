@@ -69,6 +69,7 @@ Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odak
   `,
   education: ["ICF Onaylı Profesyonel Koçluk Programı (PCC Track)"],
   experience: ["Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi"],
+  cv_url: null,
 };
 
 export default function CoachProfile() {
@@ -147,6 +148,8 @@ export default function CoachProfile() {
           a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
         },
       ],
+      // ⭐ Yeni: Özgeçmiş linki
+      cv_url: coach.cv_url || fallbackCoach.cv_url || null,
     };
   })();
 
@@ -292,7 +295,7 @@ export default function CoachProfile() {
         <Tabs defaultValue="about" className="space-y-6">
           <TabsList className="bg-white border border-orange-100 rounded-full p-1">
             <TabsTrigger value="about">Hakkında</TabsTrigger>
-            <TabsTrigger value="services">Hizmetler</TabsTrigger>
+            <TabsTrigger value="cv">Özgeçmiş</TabsTrigger>
             <TabsTrigger value="programs">Program Paketleri</TabsTrigger>
             <TabsTrigger value="reviews">Yorumlar</TabsTrigger>
             <TabsTrigger value="content">İçerikler</TabsTrigger>
@@ -366,13 +369,39 @@ export default function CoachProfile() {
             </Card>
           </TabsContent>
 
-          {/* HİZMETLER (şimdilik boşsa info göster) */}
-          <TabsContent value="services">
-            <div className="grid md:grid-cols-2 gap-4">
-              {(c.services || []).length === 0 && (
-                <p className="text-sm text-gray-500">
-                  Bu koç henüz detaylı hizmet paketi eklemedi.
-                </p>
+          {/* ÖZGEÇMİŞ */}
+          <TabsContent value="cv">
+            <div className="space-y-4">
+              {c.cv_url ? (
+                <Card className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        Koçun Özgeçmişi (CV)
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PDF formatında detaylı eğitim ve iş deneyimlerini inceleyebilirsiniz.
+                      </p>
+                    </div>
+                    <a
+                      href={c.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">
+                        Özgeçmişi Görüntüle / İndir
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4">
+                    <p className="text-sm text-gray-600">
+                      Bu koç henüz özgeçmişini eklemedi. Yakında burada görüntüleyebiliyor olacaksınız.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </TabsContent>

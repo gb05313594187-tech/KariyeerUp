@@ -81,7 +81,7 @@ export default function CoachSettings() {
       .from("app_2dff6511da_coaches")
       .update({
         full_name: formData.full_name,
-        title: formData.title,
+        title: formData.title, // veritabanında dursun ama ekranda değiştirilmiyor
         avatar_url: formData.avatar_url,
         bio: formData.bio,
         education: formData.education,
@@ -107,9 +107,7 @@ export default function CoachSettings() {
     "https://api.dicebear.com/7.x/adventurer/svg?seed=coach";
 
   // CV önizlemesi için basit derleme
-  const previewNameLine = `${formData.full_name || "Ad Soyad"} ${
-    formData.title ? "– " + formData.title : ""
-  }`;
+  const previewNameLine = `${formData.full_name || "Ad Soyad"} – Kariyer Koçu`;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -142,12 +140,11 @@ export default function CoachSettings() {
               {formData.full_name || "Ad Soyadını Güncelle"}
             </h1>
             <p className="text-lg md:text-xl font-medium text-orange-100 mb-3">
-              {formData.title || "Kariyer Koçu · Executive Koç · Mentor"}
+              Kariyer Koçu
             </p>
             <p className="text-sm md:text-base text-orange-50/90 max-w-xl">
               Buradaki bilgiler hem koç kartında hem de herkese açık profilinde
-              görünecek. Yatırımcı gözüyle bak: bu alan senin profesyonel CV&apos;nin
-              vitrini.
+              görünecek. Bu alan senin profesyonel CV&apos;nin vitrini.
             </p>
           </div>
         </div>
@@ -174,6 +171,7 @@ export default function CoachSettings() {
               1. Temel Bilgiler
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
+              {/* Ad Soyad */}
               <div>
                 <label className="text-xs font-medium text-gray-600">
                   Ad Soyad
@@ -186,20 +184,26 @@ export default function CoachSettings() {
                   placeholder="Yağız Alperen"
                 />
               </div>
+
+              {/* Rol – Sabit */}
               <div>
                 <label className="text-xs font-medium text-gray-600">
-                  Profesyonel Ünvan
+                  Profesyonel Rol
                 </label>
-                <input
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/70"
-                  placeholder="Executive & Kariyer Koçu, İK İş Ortağı…"
-                />
+                <div className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm bg-gray-100 text-gray-700 flex items-center justify-between">
+                  <span>Kariyer Koçu</span>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-orange-200 text-orange-800 font-semibold">
+                    Sabit
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Bu hesap koç hesabı olarak oluşturulduğu için rol
+                  değiştirilemez.
+                </p>
               </div>
             </div>
 
+            {/* Fotoğraf URL */}
             <div>
               <label className="text-xs font-medium text-gray-600">
                 Profil Fotoğrafı URL (tercihen kare, yüksek çözünürlük)
@@ -317,7 +321,8 @@ Her görüşmenin sonunda net bir hedef, gözlemlenebilir çıktılar ve takip p
             Canlı CV Önizlemesi
           </p>
 
-          <div className="border border-gray-200 rounded-xl p-4 md:p-5 text-sm text-gray-800 bg-gray-50/60">
+          <div className="border border-gray-200 rounded-xl p-4 md:p-5 text-sm text-gray-8
+00 bg-gray-50/60">
             <h3 className="text-base md:text-lg font-bold text-gray-900 mb-1">
               {previewNameLine}
             </h3>
@@ -388,7 +393,7 @@ Her görüşmenin sonunda net bir hedef, gözlemlenebilir çıktılar ve takip p
               !formData.experience &&
               !formData.methodology && (
                 <p className="text-xs text-gray-500">
-                  Formu sol tarafta doldurdukça burada profesyonel bir özgeçmiş
+                  Formu solda doldurdukça burada profesyonel bir özgeçmiş
                   görünümü oluşacak.
                 </p>
               )}

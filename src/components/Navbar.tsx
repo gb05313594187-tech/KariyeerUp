@@ -227,14 +227,29 @@ export default function Navbar() {
                       {getNavText("Hesabım", "My Account", "Mon compte")}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+
+                    {/* Profil */}
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="h-4 w-4 mr-2" />
                       {getNavText("Profil", "Profile", "Profil")}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+
+                    {/* 🔥 YENİ: Ayarlar linki */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/coach/settings")}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText("Ayarlar", "Settings", "Paramètres")}
+                    </DropdownMenuItem>
+
+                    {/* Panel */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/coach-dashboard")}
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       {getNavText("Panel", "Dashboard", "Tableau de bord")}
                     </DropdownMenuItem>
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}

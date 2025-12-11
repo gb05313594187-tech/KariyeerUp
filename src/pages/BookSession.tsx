@@ -86,16 +86,22 @@ export default function BookSession() {
     try {
       setIsSubmitting(true);
 
-      // Giriş yapan kullanıcı
+      // ✅ Giriş yapan kullanıcı (user_id dolması için şart)
       const { data: authUser } = await supabase.auth.getUser();
-      const userId = authUser?.user?.id || null;
+      const userId = authUser?.user?.id;
+
+      if (!userId) {
+        toast.error("Seans talebi için giriş yapmalısın.");
+        navigate("/login");
+        return;
+      }
 
       // 1) Seans talebini session_requests tablosuna kaydet
       const { error } = await supabase
         .from("app_2dff6511da_session_requests")
         .insert({
           coach_id: coachId,
-          user_id: userId, // artık NULL değil
+          user_id: userId, // ✅ artık NULL olmayacak
           full_name: form.fullName,
           email: form.email,
           selected_date: form.date, // YYYY-MM-DD
@@ -133,7 +139,7 @@ export default function BookSession() {
         if (!res.ok) {
           const text = await res.text();
           console.error("Email function error:", res.status, text);
-          // rezervasyon zaten kaydedildi, kullanıcıya ekstra hata göstermiyoruz
+          // kayıt zaten oluştu, kullanıcıya ekstra hata göstermiyoruz
         }
       } catch (emailErr) {
         console.error("Email function fetch error:", emailErr);
@@ -142,9 +148,8 @@ export default function BookSession() {
       // 3) Kullanıcıya başarı mesajı
       toast.success("Seans talebin koça iletildi!");
 
-      // 4) Dashboard'a yönlendir veya istersek ana sayfaya
+      // 4) Dashboard'a yönlendir
       navigate("/dashboard");
-
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");

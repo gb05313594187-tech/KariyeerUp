@@ -32,6 +32,9 @@ import CoachDashboard from "@/pages/CoachDashboard";
 // Profil Sayfası
 import ProfilePage from "@/pages/Profile";
 
+// 🔴 SENİN İSTEDİĞİN YENİ IMPORT (sadece bu satır eklendi)
+import CoachSettings from "@/pages/CoachSettings";
+
 // LAYOUT
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

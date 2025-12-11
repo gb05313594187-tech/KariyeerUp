@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Calendar, Clock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-
-const RESERVATIONS_TABLE = "app_2dff6511da_reservations";
+import { toast } from "sonner";
 
 // ❗ Edge Function URL – Supabase Details ekranından aldığın URL
 const FUNCTION_URL =
@@ -65,47 +64,54 @@ export default function BookSession() {
     "20:00",
   ];
 
+  // 🔥 Seans talebini session_requests tablosuna yaz
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!coachId) {
-      alert("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
+      toast.error("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
       return;
     }
 
     if (!form.date || !form.timeSlot) {
-      alert("Lütfen tarih ve saat seç.");
+      toast.error("Lütfen bir tarih ve saat seçin.");
       return;
     }
 
     if (!form.fullName || !form.email) {
-      alert("Lütfen ad soyad ve e-posta alanlarını doldurun.");
+      toast.error("Lütfen ad soyad ve e-posta alanlarını doldurun.");
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      // 1) Rezervasyonu Supabase'e kaydet
-      const { error } = await supabase.from(RESERVATIONS_TABLE).insert({
-        coach_id: coachId,
-        full_name: form.fullName,
-        email: form.email,
-        session_date: form.date, // YYYY-MM-DD
-        time_slot: form.timeSlot,
-        note: form.note || null,
-        status: "pending",
-      });
+      setIsSubmitting(true);
+
+      // Giriş yapan kullanıcı
+      const { data: authUser } = await supabase.auth.getUser();
+      const userId = authUser?.user?.id || null;
+
+      // 1) Seans talebini session_requests tablosuna kaydet
+      const { error } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: coachId,
+          user_id: userId, // artık NULL değil
+          full_name: form.fullName,
+          email: form.email,
+          selected_date: form.date, // YYYY-MM-DD
+          selected_time: form.timeSlot,
+          note: form.note || null,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        });
 
       if (error) {
-        console.error("Reservation insert error:", error);
-        alert(
-          "Rezervasyon kaydedilirken bir hata oluştu. Lütfen tekrar deneyin."
-        );
+        console.error("Insert error:", error);
+        toast.error("Seans talebi oluşturulamadı.");
         return;
       }
 
-      // 2) Edge Function ile mail gönder (Resend)
+      // 2) Edge Function ile mail gönder (isteğe bağlı)
       try {
         const res = await fetch(FUNCTION_URL, {
           method: "POST",
@@ -127,29 +133,21 @@ export default function BookSession() {
         if (!res.ok) {
           const text = await res.text();
           console.error("Email function error:", res.status, text);
-          // Kullanıcıya hata gösterme, sadece logla – rezervasyon zaten kaydedildi
+          // rezervasyon zaten kaydedildi, kullanıcıya ekstra hata göstermiyoruz
         }
       } catch (emailErr) {
         console.error("Email function fetch error:", emailErr);
-        // Yine kullanıcıya hata gösterme; mail gitmese de rezervasyon kaydı var
       }
 
       // 3) Kullanıcıya başarı mesajı
-      alert(
-        "Rezervasyon isteğin alındı. Koçun onayladığında e-posta ile bilgilendirileceksin."
-      );
+      toast.success("Seans talebin koça iletildi!");
 
-      // 4) Formu sıfırla
-      setForm({
-        date: "",
-        timeSlot: "",
-        fullName: "",
-        email: "",
-        note: "",
-      });
+      // 4) Dashboard'a yönlendir veya istersek ana sayfaya
+      navigate("/dashboard");
+
     } catch (err) {
       console.error("Reservation error:", err);
-      alert("Beklenmeyen bir hata oluştu. Lütfen tekrar dene.");
+      toast.error("Bir hata oluştu, lütfen tekrar dene.");
     } finally {
       setIsSubmitting(false);
     }

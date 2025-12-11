@@ -1,6 +1,6 @@
 // src/pages/CoachProfile.tsx
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   Card,
@@ -22,10 +22,34 @@ import {
   Globe2,
   PlayCircle,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-// Şimdilik mock veri – sonra Supabase'e bağlarız
-const mockCoach = {
-  id: 1,
+// 🔸 Sadece schedule & yorumlar şimdilik statik kalsın
+const mockSchedule = [
+  { day: "Bugün", slots: ["19:00", "20:30"] },
+  { day: "Yarın", slots: ["10:00", "11:30", "21:00"] },
+  { day: "Cuma", slots: ["18:00", "19:30"] },
+];
+
+const mockReviews = [
+  {
+    name: "Mert Y.",
+    role: "Ürün Yöneticisi",
+    rating: 5,
+    date: "02 Aralık 2025",
+    text: "3 aydır birlikte çalışıyoruz. Kariyerimdeki tıkanıklığı aşmamda çok yardımcı oldu, yönüm netleşti.",
+  },
+  {
+    name: "Zeynep A.",
+    role: "Yeni Mezun",
+    rating: 5,
+    date: "28 Kasım 2025",
+    text: "Mülakat provaları sayesinde 2 farklı yerden teklif aldım. Çok sistematik ve destekleyici bir yaklaşımı var.",
+  },
+];
+
+// Elif mock'u sadece fallback olarak tutalım – veri yoksa boş ekran olmasın diye
+const fallbackCoach = {
   name: "Elif Kara",
   title: "Executive & Kariyer Koçu",
   location: "İstanbul, TR",
@@ -63,91 +87,123 @@ Her seans sonunda net aksiyon maddeleri ve takip planı ile ilerliyoruz.
     "Liderlik Gelişim Programları Eğitmeni",
     "Yurt dışı kariyer geçişi danışmanlığı",
   ],
-  services: [
-    {
-      id: 1,
-      name: "Kariyer Yolu ve Hedef Belirleme",
-      duration: 60,
-      price: 950,
-      desc: "Kariyerinde kaybolmuş, yönünü tekrar çizmek isteyen profesyoneller için.",
-      gains: [
-        "Net kariyer yönü",
-        "Güçlü yönlerini keşfetme",
-        "Somut aksiyon planı",
-      ],
-    },
-    {
-      id: 2,
-      name: "Mülakat Provası & CV Revizyonu",
-      duration: 75,
-      price: 1200,
-      desc: "Önemli bir mülakat ya da terfi süreci öncesi odaklı hazırlık.",
-      gains: [
-        "Mülakat provası",
-        "CV & LinkedIn incelemesi",
-        "Net geri bildirim ve iyileştirme",
-      ],
-    },
-  ],
-  programs: [
-    {
-      id: 1,
-      name: "4 Haftalık Kariyer Reset Programı",
-      sessions: 4,
-      duration: "4 Hafta",
-      price: 3600,
-      level: "Önerilen",
-      desc: "Kariyerine sıfırdan, daha net ve güçlü bir başlangıç yapmak isteyenler için yapılandırılmış program.",
-    },
-    {
-      id: 2,
-      name: "8 Seanslık Liderlik Gelişim Programı",
-      sessions: 8,
-      duration: "8 Hafta",
-      price: 7200,
-      level: "Premium",
-      desc: "Yönetici veya yönetici adayı profesyoneller için, liderlik kaslarını güçlendirmeye odaklı derinlikli çalışma.",
-    },
-  ],
-  faqs: [
-    {
-      q: "Seanslar online mı gerçekleşiyor?",
-      a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
-    },
-    {
-      q: "Seans öncesi nasıl hazırlanmalıyım?",
-      a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
-    },
-  ],
 };
 
-const mockSchedule = [
-  { day: "Bugün", slots: ["19:00", "20:30"] },
-  { day: "Yarın", slots: ["10:00", "11:30", "21:00"] },
-  { day: "Cuma", slots: ["18:00", "19:30"] },
-];
-
-const mockReviews = [
-  {
-    name: "Mert Y.",
-    role: "Ürün Yöneticisi",
-    rating: 5,
-    date: "02 Aralık 2025",
-    text: "3 aydır birlikte çalışıyoruz. Kariyerimdeki tıkanıklığı aşmamda çok yardımcı oldu, yönüm netleşti.",
-  },
-  {
-    name: "Zeynep A.",
-    role: "Yeni Mezun",
-    rating: 5,
-    date: "28 Kasım 2025",
-    text: "Mülakat provaları sayesinde 2 farklı yerden teklif aldım. Çok sistematik ve destekleyici bir yaklaşımı var.",
-  },
-];
-
 export default function CoachProfile() {
-  const { id } = useParams(); // ileride Supabase'ten kullanacağız
-  const coach = mockCoach;
+  const { id } = useParams(); // URL'deki UUID buradan geliyor
+  const [coach, setCoach] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
   const [selectedService, setSelectedService] = useState<number | null>(null);
+
+  // 🧠 Supabase'ten koçu çek
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchCoach = async () => {
+      try {
+        setLoading(true);
+
+        // ❗ TABLO ADI: Eğer senin tablon "coach_profiles" ise burayı değiştir:
+        const { data, error } = await supabase
+          .from("coaches") // <-- gerekirse "coach_profiles" yap
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) {
+          console.error("Coach fetch error:", error);
+          setCoach(null);
+        } else {
+          setCoach(data);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        setCoach(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoach();
+  }, [id]);
+
+  // 🧩 Supabase'ten gelen veri ile UI'da kullanacağımız alanları normalize edelim
+  const mergedCoach = {
+    // isim
+    name: coach?.full_name || coach?.name || fallbackCoach.name,
+    // unvan
+    title:
+      coach?.title ||
+      coach?.headline ||
+      coach?.role ||
+      "Kariyer Koçu",
+    // lokasyon
+    location: coach?.location || fallbackCoach.location,
+    // rating
+    rating:
+      coach?.average_rating ??
+      coach?.rating ??
+      fallbackCoach.rating,
+    reviewCount:
+      coach?.review_count ??
+      coach?.reviews_count ??
+      fallbackCoach.reviewCount,
+    totalSessions:
+      coach?.total_sessions ??
+      coach?.sessions_count ??
+      fallbackCoach.totalSessions,
+    favoritesCount:
+      coach?.favorites_count ??
+      coach?.favorite_count ??
+      fallbackCoach.favoritesCount,
+    isOnline:
+      typeof coach?.is_online === "boolean"
+        ? coach.is_online
+        : fallbackCoach.isOnline,
+    // foto
+    photo_url:
+      coach?.photo_url ||
+      coach?.avatar_url ||
+      coach?.image_url ||
+      fallbackCoach.photo_url,
+    // etiketler (array veya virgüllü string olabilir)
+    tags:
+      coach?.expertise_tags ||
+      coach?.tags ||
+      (typeof coach?.specialties === "string"
+        ? coach.specialties.split(",").map((t: string) => t.trim())
+        : fallbackCoach.tags),
+    // bio & metodoloji
+    bio: coach?.bio || fallbackCoach.bio,
+    methodology: coach?.methodology || fallbackCoach.methodology,
+    education: coach?.education_list || fallbackCoach.education,
+    experience: coach?.experience_list || fallbackCoach.experience,
+    // hizmet & programlar → şimdilik Supabase’te yoksa boş
+    services: coach?.services || [],
+    programs: coach?.programs || [],
+    faqs: coach?.faqs || [
+      {
+        q: "Seanslar online mı gerçekleşiyor?",
+        a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
+      },
+      {
+        q: "Seans öncesi nasıl hazırlanmalıyım?",
+        a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
+      },
+    ],
+  };
+
+  // Yükleniyor ekranı
+  if (loading && !coach) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
+        Koç profili yükleniyor...
+      </div>
+    );
+  }
+
+  const c = mergedCoach;
 
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
@@ -158,11 +214,11 @@ export default function CoachProfile() {
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
-                src={coach.photo_url}
-                alt={coach.name}
+                src={c.photo_url}
+                alt={c.name}
                 className="w-36 h-36 rounded-2xl object-cover shadow-md border border-gray-200"
               />
-              {coach.isOnline && (
+              {c.isOnline && (
                 <span className="absolute -bottom-1 -right-1 flex h-5 w-5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-white" />
@@ -171,29 +227,29 @@ export default function CoachProfile() {
             </div>
 
             <button className="mt-4 px-4 py-1.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">
-              {coach.isOnline ? "• Şu An Uygun" : "• Şu An Meşgul"}
+              {c.isOnline ? "• Şu An Uygun" : "• Şu An Meşgul"}
             </button>
           </div>
 
           {/* Koç Bilgisi */}
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{coach.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{c.name}</h1>
               <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
                 Öne Çıkan Koç
               </Badge>
             </div>
 
             <p className="text-lg text-gray-700 flex items-center gap-2">
-              {coach.title}
+              {c.title}
               <span className="w-1 h-1 rounded-full bg-gray-300" />
               <Globe2 className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-500">{coach.location}</span>
+              <span className="text-sm text-gray-500">{c.location}</span>
             </p>
 
             {/* Etiketler */}
             <div className="flex flex-wrap gap-2 mt-2">
-              {coach.tags?.map((tag) => (
+              {c.tags?.map((tag: string) => (
                 <span
                   key={tag}
                   className="px-3 py-1 text-xs rounded-full bg-orange-50 text-orange-700 border border-orange-200"
@@ -207,19 +263,21 @@ export default function CoachProfile() {
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400" />
-                <span className="font-semibold">{coach.rating}</span>
+                <span className="font-semibold">
+                  {Number(c.rating || 0).toFixed(1)}
+                </span>
                 <span className="text-gray-500">
-                  ({coach.reviewCount} değerlendirme)
+                  ({c.reviewCount || 0} değerlendirme)
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4 text-orange-500" />
-                <span className="font-semibold">{coach.totalSessions}</span>
+                <span className="font-semibold">{c.totalSessions || 0}</span>
                 <span className="text-gray-500">seans</span>
               </div>
               <div className="flex items-center gap-1">
                 <Heart className="w-4 h-4 text-red-500" />
-                <span className="font-semibold">{coach.favoritesCount}</span>
+                <span className="font-semibold">{c.favoritesCount || 0}</span>
                 <span className="text-gray-500">favori</span>
               </div>
             </div>
@@ -296,7 +354,7 @@ export default function CoachProfile() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-gray-800">
-                <p className="whitespace-pre-line">{coach.bio}</p>
+                <p className="whitespace-pre-line">{c.bio}</p>
               </CardContent>
             </Card>
 
@@ -309,7 +367,7 @@ export default function CoachProfile() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-gray-800">
-                  {coach.education.map((item) => (
+                  {(c.education || []).map((item: string) => (
                     <div
                       key={item}
                       className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"
@@ -329,7 +387,7 @@ export default function CoachProfile() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-gray-800">
-                  {coach.experience.map((item) => (
+                  {(c.experience || []).map((item: string) => (
                     <div
                       key={item}
                       className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"
@@ -349,7 +407,7 @@ export default function CoachProfile() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-gray-800 whitespace-pre-line">
-                {coach.methodology}
+                {c.methodology}
               </CardContent>
             </Card>
           </TabsContent>
@@ -357,10 +415,17 @@ export default function CoachProfile() {
           {/* HİZMETLER */}
           <TabsContent value="services">
             <div className="grid md:grid-cols-2 gap-4">
-              {coach.services.map((service) => (
+              {(c.services || []).length === 0 && (
+                <p className="text-sm text-gray-500">
+                  Bu koç henüz detaylı hizmet paketi eklemedi.
+                </p>
+              )}
+
+              {(c.services || []).map((service: any) => (
                 <Card
                   key={service.id}
-                  className={`bg-white border shadow-sm ${
+                  className={`bg
+                  -white border shadow-sm ${
                     selectedService === service.id
                       ? "border-red-400"
                       : "border-orange-100"
@@ -373,7 +438,7 @@ export default function CoachProfile() {
                           {service.name}
                         </CardTitle>
                         <p className="text-xs text-gray-500 mt-1">
-                          {service.desc}
+                          {service.description || service.desc}
                         </p>
                       </div>
                       <div className="text-right">
@@ -381,25 +446,30 @@ export default function CoachProfile() {
                           {service.price} TL
                         </p>
                         <p className="text-xs text-gray-500">
-                          {service.duration} dk
+                          {service.duration || 60} dk
                         </p>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm text-gray-800">
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-500 mb-1">
-                        Bu seans sonunda:
-                      </p>
-                      <ul className="space-y-1">
-                        {service.gains.map((g) => (
-                          <li key={g} className="flex items-start gap-2">
-                            <span className="mt-1 w-1.5 h-1.5 rounded-full bg-orange-500" />
-                            <span>{g}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    {service.gains && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 mb-1">
+                          Bu seans sonunda:
+                        </p>
+                        <ul className="space-y-1">
+                          {service.gains.map((g: string) => (
+                            <li
+                              key={g}
+                              className="flex items-start gap-2"
+                            >
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-orange-500" />
+                              <span>{g}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <Button
                       className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm"
                       onClick={() => setSelectedService(service.id)}
@@ -415,7 +485,13 @@ export default function CoachProfile() {
           {/* PROGRAM PAKETLERİ */}
           <TabsContent value="programs">
             <div className="grid md:grid-cols-2 gap-4">
-              {coach.programs.map((program) => (
+              {(c.programs || []).length === 0 && (
+                <p className="text-sm text-gray-500">
+                  Bu koç henüz program paketi eklemedi.
+                </p>
+              )}
+
+              {(c.programs || []).map((program: any) => (
                 <Card
                   key={program.id}
                   className="bg-white border border-orange-200 shadow-sm"
@@ -427,7 +503,7 @@ export default function CoachProfile() {
                           {program.name}
                         </CardTitle>
                         <p className="text-xs text-orange-600 mt-1">
-                          {program.level}
+                          {program.level || "Program"}
                         </p>
                       </div>
                       <div className="text-right">
@@ -441,7 +517,7 @@ export default function CoachProfile() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm text-gray-800">
-                    <p>{program.desc}</p>
+                    <p>{program.desc || program.description}</p>
                     <Button className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">
                       Programı Satın Al
                     </Button>
@@ -457,10 +533,10 @@ export default function CoachProfile() {
               <div className="flex items-center gap-2 text-sm">
                 <Star className="w-5 h-5 text-yellow-400" />
                 <span className="font-medium text-gray-900">
-                  {coach.rating.toFixed(1)} / 5
+                  {Number(c.rating || 0).toFixed(1)} / 5
                 </span>
                 <span className="text-gray-500">
-                  ({coach.reviewCount} değerlendirme)
+                  ({c.reviewCount || 0} değerlendirme)
                 </span>
               </div>
               <Button
@@ -541,7 +617,7 @@ export default function CoachProfile() {
           {/* SSS */}
           <TabsContent value="faq">
             <div className="space-y-3">
-              {coach.faqs.map((item, idx) => (
+              {(c.faqs || []).map((item: any, idx: number) => (
                 <Card
                   key={idx}
                   className="bg-white border border-orange-100 shadow-sm"

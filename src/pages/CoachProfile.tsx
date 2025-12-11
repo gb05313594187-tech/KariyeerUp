@@ -23,6 +23,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const mockReviews = [
   {
@@ -79,8 +80,8 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   return fallback;
 };
 
-// Önümüzdeki X günü üret (Bugün, Yarın, vs)
-const getNextDays = (count = 3) => {
+// Önümüzdeki X günü üret (Bugün, Yarın, vs) → default 14 gün
+const getNextDays = (count = 14) => {
   const days = [];
   const today = new Date();
 
@@ -215,6 +216,38 @@ export default function CoachProfile() {
     };
   })();
 
+  // Seans talebi Supabase'e yaz
+  const handleRequestSession = async () => {
+    if (!selectedSlot) {
+      toast.error("Lütfen önce bir saat seç.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: coachRow?.id,
+          selected_date: selectedDate, // "2025-12-11"
+          selected_time: selectedSlot, // "19:00"
+          status: "pending",
+        });
+
+      if (error) {
+        console.error("Seans talebi hatası:", error);
+        toast.error("Seans talebi oluşturulamadı.");
+        return;
+      }
+
+      toast.success(
+        "Seans talebin iletildi. Koç onayladığında sana dönüş yapılacak."
+      );
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Beklenmeyen bir hata oluştu.");
+    }
+  };
+
   if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
@@ -302,7 +335,11 @@ export default function CoachProfile() {
 
             {/* CTA Butonlar */}
             <div className="flex flex-wrap gap-3 mt-5">
-              <Button className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow">
+              <Button
+                className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
+                onClick={handleRequestSession}
+                disabled={!selectedSlot}
+              >
                 Hemen Seans Al
               </Button>
               <Button
@@ -315,7 +352,7 @@ export default function CoachProfile() {
             </div>
           </div>
 
-          {/* Sağ Özet Kartı – Uygun Saatler (30 dk slotlu takvim) */}
+          {/* Sağ Özet Kartı – Uygun Saatler (14 gün, 30 dk slotlu takvim) */}
           <div className="w-full md:w-72">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
               <CardHeader>
@@ -325,16 +362,16 @@ export default function CoachProfile() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
-                {/* Gün seçimi */}
-                <div className="flex gap-2 mb-2">
-                  {getNextDays(3).map((day) => (
+                {/* Gün seçimi - yatay scroll */}
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-1 no-scrollbar">
+                  {getNextDays(14).map((day) => (
                     <Button
                       key={day.value}
                       variant={
                         day.value === selectedDate ? "default" : "outline"
                       }
                       size="sm"
-                      className={`flex-1 rounded-full h-8 text-[11px] ${
+                      className={`rounded-full h-8 text-[11px] whitespace-nowrap ${
                         day.value === selectedDate
                           ? "bg-red-600 text-white"
                           : "border-orange-200 text-gray-700 hover:bg-orange-50"
@@ -381,8 +418,8 @@ export default function CoachProfile() {
                 )}
                 {!selectedSlot && (
                   <p className="text-[11px] text-gray-500 mt-2">
-                    Bir gün ve saat seç; bir sonraki adımda bu seçimi
-                    rezervasyon akışına ve Supabase’e bağlayacağız.
+                    Bir gün ve saat seç; seçimin otomatik olarak koça iletilen
+                    seans talebi olarak kaydedilecek.
                   </p>
                 )}
               </CardContent>

@@ -24,12 +24,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-const mockSchedule = [
-  { day: "Bugün", slots: ["19:00", "20:30"] },
-  { day: "Yarın", slots: ["10:00", "11:30", "21:00"] },
-  { day: "Cuma", slots: ["18:00", "19:30"] },
-];
-
 const mockReviews = [
   {
     name: "Mert Y.",
@@ -85,11 +79,60 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   return fallback;
 };
 
+// Önümüzdeki X günü üret (Bugün, Yarın, vs)
+const getNextDays = (count = 3) => {
+  const days = [];
+  const today = new Date();
+
+  for (let i = 0; i < count; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+
+    const value = d.toISOString().slice(0, 10); // YYYY-MM-DD
+    let label = d.toLocaleDateString("tr-TR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+
+    if (i === 0) label = "Bugün";
+    if (i === 1) label = "Yarın";
+
+    days.push({ date: d, value, label });
+  }
+
+  return days;
+};
+
+// Belirli saat aralığında 30 dk'lık slotlar üret
+const generateTimeSlots = (
+  startHour = 10,
+  endHour = 22,
+  intervalMinutes = 30
+) => {
+  const slots: string[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (let m = 0; m < 60; m += intervalMinutes) {
+      const hh = h.toString().padStart(2, "0");
+      const mm = m.toString().padStart(2, "0");
+      slots.push(`${hh}:${mm}`);
+    }
+  }
+  return slots;
+};
+
 export default function CoachProfile() {
   const { id } = useParams(); // /coach/:id
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedService, setSelectedService] = useState<number | null>(null);
+
+  // Takvim state'leri
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  });
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   // 1) Supabase'ten tek koçu çek
   useEffect(() => {
@@ -143,11 +186,11 @@ export default function CoachProfile() {
         coach.photo_url ||
         fallbackCoach.photo_url,
       tags: toStringArray(coach.specializations, fallbackCoach.tags),
-      // 🔥 Hakkında alanı: summary -> bio
+      // Hakkında alanı: summary -> bio
       bio: coach.summary || coach.bio || fallbackCoach.bio,
-      // 🔥 Metodoloji direkt methodology kolonundan
+      // Metodoloji
       methodology: coach.methodology || fallbackCoach.methodology,
-      // 🔥 Eğitim & deneyim listeleri text[]
+      // Eğitim & deneyim listeleri text[]
       education: toStringArray(coach.education_list, fallbackCoach.education),
       experience: toStringArray(
         coach.experience_list,
@@ -167,7 +210,7 @@ export default function CoachProfile() {
             a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
           },
         ],
-      // 🔥 Özgeçmiş linki
+      // Özgeçmiş linki
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
     };
   })();
@@ -272,36 +315,76 @@ export default function CoachProfile() {
             </div>
           </div>
 
-          {/* Sağ Özet Kartı – Uygun Saatler (şimdilik mock) */}
+          {/* Sağ Özet Kartı – Uygun Saatler (30 dk slotlu takvim) */}
           <div className="w-full md:w-72">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
                   <CalendarDays className="w-4 h-4 text-orange-500" />
-                  En Yakın Uygun Saatler
+                  Uygun Saat Seç
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
-                {mockSchedule.map((day) => (
-                  <div key={day.day}>
-                    <div className="flex items-center justify-between text-gray-500 mb-1">
-                      <span>{day.day}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {day.slots.map((slot) => (
-                        <Button
-                          key={slot}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full h-8 text-[11px] border-orange-200 text-gray-700 hover:bg-orange-50"
-                        >
-                          <Clock className="w-3 h-3 mr-1" />
-                          {slot}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                {/* Gün seçimi */}
+                <div className="flex gap-2 mb-2">
+                  {getNextDays(3).map((day) => (
+                    <Button
+                      key={day.value}
+                      variant={
+                        day.value === selectedDate ? "default" : "outline"
+                      }
+                      size="sm"
+                      className={`flex-1 rounded-full h-8 text-[11px] ${
+                        day.value === selectedDate
+                          ? "bg-red-600 text-white"
+                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                      }`}
+                      onClick={() => {
+                        setSelectedDate(day.value);
+                        setSelectedSlot(null);
+                      }}
+                    >
+                      {day.label}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Saat slotları */}
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                  {generateTimeSlots(10, 22, 30).map((slot) => (
+                    <Button
+                      key={slot}
+                      variant={
+                        selectedSlot === slot ? "default" : "outline"
+                      }
+                      size="sm"
+                      className={`rounded-full h-8 text-[11px] ${
+                        selectedSlot === slot
+                          ? "bg-red-600 text-white"
+                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                      }`}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      <Clock className="w-3 h-3 mr-1" />
+                      {slot}
+                    </Button>
+                  ))}
+                </div>
+
+                {selectedSlot && (
+                  <p className="text-[11px] text-gray-600 mt-2">
+                    Seçilen saat:{" "}
+                    <span className="font-semibold">
+                      {selectedSlot} ({selectedDate})
+                    </span>
+                  </p>
+                )}
+                {!selectedSlot && (
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Bir gün ve saat seç; bir sonraki adımda bu seçimi
+                    rezervasyon akışına ve Supabase’e bağlayacağız.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

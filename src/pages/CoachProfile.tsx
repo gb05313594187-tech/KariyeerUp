@@ -47,7 +47,7 @@ const mockReviews = [
   },
 ];
 
-// Elif sadece KAYIT BULUNAMAZSA fallback olsun
+// Kayıt bulunamazsa fallback koç
 const fallbackCoach = {
   name: "Elif Kara",
   title: "Kariyer Koçu",
@@ -72,13 +72,26 @@ Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odak
   cv_url: null,
 };
 
+// Supabase text[] / string / null -> string[]
+const toStringArray = (value: any, fallback: string[] = []) => {
+  if (!value) return fallback;
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return fallback;
+};
+
 export default function CoachProfile() {
-  const { id } = useParams(); // /coach/:id buradan geliyor
+  const { id } = useParams(); // /coach/:id
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedService, setSelectedService] = useState<number | null>(null);
 
-  // 🔥 1) SUPABASE'TEN TEK KOÇU ÇEK
+  // 1) Supabase'ten tek koçu çek
   useEffect(() => {
     if (!id) return;
 
@@ -87,9 +100,9 @@ export default function CoachProfile() {
         setLoading(true);
 
         const { data, error } = await supabase
-          .from("app_2dff6511da_coaches") // 👈 Coaches.tsx ile AYNI TABLO
+          .from("app_2dff6511da_coaches")
           .select("*")
-          .eq("id", id) // 👈 navigate(`/coach/${coach.id}`) —> burada id kolonu kullanılıyor
+          .eq("id", id)
           .single();
 
         console.log("CoachProfile Supabase:", { id, data, error });
@@ -111,15 +124,15 @@ export default function CoachProfile() {
     fetchCoach();
   }, [id]);
 
-  // 🔁 2) TABLODAN GELEN ALANLARI UI FORMATINA ÇEVİR
+  // 2) Tablo alanlarını UI formatına çevir
   const c = (() => {
     const coach = coachRow;
-    if (!coach) return fallbackCoach; // kayıt bulunamazsa Elif
+    if (!coach) return fallbackCoach;
 
     return {
       name: coach.full_name || fallbackCoach.name,
       title: coach.title || "Kariyer Koçu",
-      location: coach.location || "Online",
+      location: coach.location || coach.city || coach.country || "Online",
       rating: coach.rating ?? 5,
       reviewCount: coach.total_reviews ?? 0,
       totalSessions: coach.total_sessions ?? 0,
@@ -129,31 +142,36 @@ export default function CoachProfile() {
         coach.avatar_url ||
         coach.photo_url ||
         fallbackCoach.photo_url,
-      tags:
-        (coach.specializations as string[]) ||
-        fallbackCoach.tags,
-      bio: coach.bio || fallbackCoach.bio,
+      tags: toStringArray(coach.specializations, fallbackCoach.tags),
+      // 🔥 Hakkında alanı: summary -> bio
+      bio: coach.summary || coach.bio || fallbackCoach.bio,
+      // 🔥 Metodoloji direkt methodology kolonundan
       methodology: coach.methodology || fallbackCoach.methodology,
-      education: coach.education_list || fallbackCoach.education,
-      experience: coach.experience_list || fallbackCoach.experience,
-      services: coach.services || [], // ileride tablo bağlarız
+      // 🔥 Eğitim & deneyim listeleri text[]
+      education: toStringArray(coach.education_list, fallbackCoach.education),
+      experience: toStringArray(
+        coach.experience_list,
+        fallbackCoach.experience
+      ),
+      services: coach.services || [],
       programs: coach.programs || [],
-      faqs: coach.faqs || [
-        {
-          q: "Seanslar online mı gerçekleşiyor?",
-          a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
-        },
-        {
-          q: "Seans öncesi nasıl hazırlanmalıyım?",
-          a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
-        },
-      ],
-      // ⭐ Yeni: Özgeçmiş linki
+      faqs:
+        coach.faqs ||
+        [
+          {
+            q: "Seanslar online mı gerçekleşiyor?",
+            a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
+          },
+          {
+            q: "Seans öncesi nasıl hazırlanmalıyım?",
+            a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
+          },
+        ],
+      // 🔥 Özgeçmiş linki
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
     };
   })();
 
-  // YÜKLENİYOR EKRANI
   if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
@@ -254,7 +272,7 @@ export default function CoachProfile() {
             </div>
           </div>
 
-          {/* Sağ Özet Kartı – Uygun Saatler */}
+          {/* Sağ Özet Kartı – Uygun Saatler (şimdilik mock) */}
           <div className="w-full md:w-72">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
               <CardHeader>
@@ -380,7 +398,8 @@ export default function CoachProfile() {
                         Koçun Özgeçmişi (CV)
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        PDF formatında detaylı eğitim ve iş deneyimlerini inceleyebilirsiniz.
+                        PDF formatında detaylı eğitim ve iş deneyimlerini
+                        inceleyebilirsiniz.
                       </p>
                     </div>
                     <a
@@ -398,7 +417,8 @@ export default function CoachProfile() {
                 <Card className="bg-white border border-orange-100 shadow-sm">
                   <CardContent className="py-4">
                     <p className="text-sm text-gray-600">
-                      Bu koç henüz özgeçmişini eklemedi. Yakında burada görüntüleyebiliyor olacaksınız.
+                      Bu koç henüz özgeçmişini eklemedi. Yakında burada
+                      görüntüleyebiliyor olacaksınız.
                     </p>
                   </CardContent>
                 </Card>

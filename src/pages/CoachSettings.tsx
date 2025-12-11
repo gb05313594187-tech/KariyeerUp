@@ -546,7 +546,7 @@ export default function CoachSettings() {
                   className="border-green-200 text-green-700 bg-green-50 text-[10px]"
                 >
                   <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Kayıtların Supabase&apos;e güvenle kaydedilir
+                  
                 </Badge>
               </div>
               <Button

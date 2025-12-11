@@ -35,6 +35,9 @@ import ProfilePage from "@/pages/Profile";
 // 🔴 Koç Ayarları sayfası
 import CoachSettings from "@/pages/CoachSettings";
 
+// 🔴 Koçun seans talepleri sayfası
+import CoachRequests from "@/pages/CoachRequests";
+
 // LAYOUT
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -284,12 +287,15 @@ export default function App() {
             {/* Kullanıcı Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Koç Dashboard – iki path birden çalışsın istersen */}
+            {/* Koç Dashboard – iki path birden çalışsın */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
             <Route path="/coach-dashboard" element={<CoachDashboard />} />
 
             {/* 🔴 Koç Ayarları sayfası */}
             <Route path="/coach/settings" element={<CoachSettings />} />
+
+            {/* 🔴 Koçun seans talepleri sayfası */}
+            <Route path="/coach/requests" element={<CoachRequests />} />
 
             {/* Profil Sayfası */}
             <Route path="/profile" element={<ProfilePage />} />

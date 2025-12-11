@@ -1,6 +1,9 @@
 // src/pages/CoachSettings.tsx
 // @ts-nocheck
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+
 import {
   Card,
   CardHeader,
@@ -8,638 +11,576 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   User,
-  Settings,
-  Camera,
-  MapPin,
-  Globe2,
+  Save,
+  ImageIcon,
+  Award,
   Briefcase,
-  Star,
-  Clock,
+  FileText,
   CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
-/**
- * Bu sayfa sadece koçun kendi profilini düzenlemesi için.
- * Buradaki bilgiler /coach/:id sayfasında danışanlara gösterilecek.
- */
+const specializationOptions = [
+  "Kariyer Geçişi",
+  "Liderlik Koçluğu",
+  "Yeni Mezun Koçluğu",
+  "Yöneticiler için Koçluk",
+  "Mülakat Hazırlığı",
+  "CV & LinkedIn",
+  "Yetenek Yönetimi",
+  "Kurumsal Koçluk",
+];
 
 export default function CoachSettings() {
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
 
-  // Form state
-  const [form, setForm] = useState<any>({
+  const [email, setEmail] = useState("");
+  const [form, setForm] = useState({
     full_name: "",
-    title: "Kariyer Koçu", // sabit – koç hesaplarında değiştirilemez
-    location: "Online",
-    languages: "",
-    experience_years: 5,
+    avatar_url: "",
     bio: "",
-    cv_summary: "",
     methodology: "",
-    specializations_text: "",
+    cv_url: "",
+    specializations: [] as string[],
     education_text: "",
     experience_text: "",
-    hourly_rate: "",
-    currency: "TRY",
-    avatar_url: "",
-    linkedin: "",
-    website: "",
-    instagram: "",
-    is_online: true,
   });
 
-  // --------------------------------------------------
-  // Yardımcılar
-  // --------------------------------------------------
-  const handleChange = (field: string) => (e: any) => {
-    setForm((prev: any) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
-
-  const toggleOnline = () => {
-    setForm((prev: any) => ({
-      ...prev,
-      is_online: !prev.is_online,
-    }));
-  };
-
-  // --------------------------------------------------
-  // VERİ ÇEKME
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // 1) GİRİŞ YAPAN KULLANICININ KENDİ KOÇ KAYDINI ÇEK
+  // ------------------------------------------------
   useEffect(() => {
-    const load = async () => {
+    const loadProfile = async () => {
       try {
         setLoading(true);
-        setError(null);
 
-        // 1) Aktif kullanıcıyı al
         const {
           data: { user },
-          error: userErr,
+          error: userError,
         } = await supabase.auth.getUser();
 
-        if (userErr || !user) {
-          setError("Profil ayarlarını görmek için giriş yapmanız gerekiyor.");
-          setLoading(false);
+        if (userError || !user) {
+          console.error("Auth error:", userError);
+          navigate("/login");
           return;
         }
 
-        setUserEmail(user.email || null);
+        setEmail(user.email || "");
 
-        // 2) İlgili koç kaydını bul (user_id veya email üzerinden)
-        let { data: coach, error: coachErr } = await supabase
+        const { data, error } = await supabase
           .from("app_2dff6511da_coaches")
           .select("*")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (!coach && user.email) {
-          const resultByMail = await supabase
-            .from("app_2dff6511da_coaches")
-            .select("*")
-            .eq("email", user.email)
-            .maybeSingle();
-
-          coach = resultByMail.data;
-          if (!coachErr) coachErr = resultByMail.error;
-        }
-
-        if (coachErr && !coach) {
-          // Hiç kayıt yoksa, sadece boş form gösterelim
-          console.warn("Koç kaydı bulunamadı, boş form gösteriliyor.");
-          setLoading(false);
+        if (error) {
+          console.error("CoachSettings fetch error:", error);
+          toast.error("Koç profili yüklenirken bir hata oluştu.");
           return;
         }
 
-        if (coach) {
-          setCoachId(coach.id);
-
-          setForm((prev: any) => ({
-            ...prev,
-            full_name: coach.full_name || coach.name || "",
-            title: "Kariyer Koçu", // koç ise sabit
-            location: coach.location || "Online",
-            languages: coach.languages || "",
-            experience_years: coach.experience_years || 5,
-            bio: coach.bio || "",
-            cv_summary:
-              coach.cv_summary ||
-              coach.cv ||
-              "",
-            methodology: coach.methodology || "",
-            specializations_text: Array.isArray(coach.specializations)
-              ? coach.specializations.join(", ")
-              : "",
-            education_text: Array.isArray(coach.education_list)
-              ? coach.education_list.join("\n")
-              : "",
-            experience_text: Array.isArray(coach.experience_list)
-              ? coach.experience_list.join("\n")
-              : "",
-            hourly_rate:
-              coach.hourly_rate != null ? String(coach.hourly_rate) : "",
-            currency: coach.currency || "TRY",
-            avatar_url:
-              coach.avatar_url ||
-              coach.photo_url ||
-              "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=400&q=80",
-            linkedin: coach.linkedin || "",
-            website: coach.website || "",
-            instagram: coach.instagram || "",
-            is_online: coach.is_online ?? true,
-          }));
+        if (!data) {
+          toast.error(
+            "Bu hesapla ilişkilendirilmiş bir koç profili bulunamadı."
+          );
+          return;
         }
-      } catch (err: any) {
-        console.error(err);
-        setError("Profil ayarları yüklenirken bir hata oluştu.");
+
+        setCoachId(data.id);
+
+        setForm({
+          full_name: data.full_name || "",
+          avatar_url: data.avatar_url || data.photo_url || "",
+          bio: data.bio || "",
+          methodology: data.methodology || "",
+          cv_url: data.cv_url || "",
+          specializations: data.specializations || [],
+          education_text: (data.education_list || []).join("\n"),
+          experience_text: (data.experience_list || []).join("\n"),
+        });
+      } catch (err) {
+        console.error("Unexpected CoachSettings error:", err);
+        toast.error("Koç ayarları yüklenirken beklenmeyen bir hata oluştu.");
       } finally {
         setLoading(false);
       }
     };
 
-    load();
-  }, []);
+    loadProfile();
+  }, [navigate]);
 
-  // --------------------------------------------------
-  // KAYDET
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // 2) FORM DEĞİŞİKLİKLERİ
+  // ------------------------------------------------
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleSpecialization = (tag: string) => {
+    setForm((prev) => {
+      const exists = prev.specializations.includes(tag);
+      return {
+        ...prev,
+        specializations: exists
+          ? prev.specializations.filter((t) => t !== tag)
+          : [...prev.specializations, tag],
+      };
+    });
+  };
+
+  // ------------------------------------------------
+  // 3) KAYDET BUTONU
+  // ------------------------------------------------
   const handleSave = async () => {
+    if (!coachId) {
+      toast.error("Koç kaydı bulunamadı. Lütfen daha sonra tekrar deneyin.");
+      return;
+    }
+
+    if (!form.full_name.trim()) {
+      toast.error("İsim alanı boş bırakılamaz.");
+      return;
+    }
+
+    setSaving(true);
     try {
-      setSaving(true);
-      setError(null);
-      setSuccess(null);
-
-      // Metinsel alanlardan array üret
-      const specializations = form.specializations_text
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0);
-
       const education_list = form.education_text
         .split("\n")
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0);
+        .map((l) => l.trim())
+        .filter(Boolean);
 
       const experience_list = form.experience_text
         .split("\n")
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0);
+        .map((l) => l.trim())
+        .filter(Boolean);
 
-      const payload: any = {
-        full_name: form.full_name,
-        location: form.location,
-        languages: form.languages,
-        experience_years: Number(form.experience_years) || 0,
-        bio: form.bio,
-        cv_summary: form.cv_summary,
-        methodology: form.methodology,
-        specializations,
+      const payload = {
+        full_name: form.full_name.trim(),
+        avatar_url: form.avatar_url.trim() || null,
+        bio: form.bio.trim(),
+        methodology: form.methodology.trim(),
+        cv_url: form.cv_url.trim() || null,
+        specializations: form.specializations,
         education_list,
         experience_list,
-        hourly_rate: form.hourly_rate ? Number(form.hourly_rate) : null,
-        currency: form.currency,
-        avatar_url: form.avatar_url,
-        linkedin: form.linkedin,
-        website: form.website,
-        instagram: form.instagram,
-        is_online: form.is_online,
+        status: "active",
+        updated_at: new Date().toISOString(),
       };
 
-      if (!coachId) {
-        setError(
-          "Bu hesapla ilişkili koç kaydı bulunamadı. Lütfen yönetici ile iletişime geçin."
-        );
-        setSaving(false);
-        return;
-      }
-
-      const { error: updateErr } = await supabase
+      const { error } = await supabase
         .from("app_2dff6511da_coaches")
         .update(payload)
         .eq("id", coachId);
 
-      if (updateErr) {
-        console.error(updateErr);
-        setError("Kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
-      } else {
-        setSuccess("Profiliniz başarıyla güncellendi.");
+      if (error) {
+        console.error("CoachSettings update error:", error);
+        toast.error("Değişiklikler kaydedilemedi.");
+        return;
       }
+
+      toast.success("Profilin başarıyla güncellendi.");
     } catch (err) {
-      console.error(err);
-      setError("Beklenmeyen bir hata oluştu.");
+      console.error("CoachSettings save error:", err);
+      toast.error("Kaydederken bir hata oluştu.");
     } finally {
       setSaving(false);
     }
   };
 
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // 4) YÜKLENİYOR EKRANI
+  // ------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
-        Koç profil ayarlarınız yükleniyor...
+        Koç ayarların yükleniyor...
       </div>
     );
   }
 
-  if (error && !userEmail) {
+  if (!coachId) {
     return (
-      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center">
-        <Card className="max-w-md w-full shadow-lg border-red-100">
-          <CardContent className="p-6 text-center space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Giriş Yapmanız Gerekiyor
-            </h2>
-            <p className="text-sm text-gray-600">
-              Koç profilinizi düzenleyebilmek için önce oturum açmalısınız.
-            </p>
-            <a href="/login">
-              <Button className="mt-2 bg-red-600 hover:bg-red-700 text-white">
-                Giriş Yap
-              </Button>
-            </a>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-700">
+        Bu hesapla eşleştirilmiş bir koç profili bulunamadı.
       </div>
     );
   }
 
+  // ------------------------------------------------
+  // 5) SAYFA
+  // ------------------------------------------------
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
       {/* HERO */}
-      <section className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 text-white pb-10 pt-16">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center md:items-end gap-8">
-          {/* Fotoğraf */}
-          <div className="relative">
-            <div className="w-32 h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden border-4 border-white/70 shadow-xl bg-white">
-              {form.avatar_url ? (
-                <img
-                  src={form.avatar_url}
-                  alt={form.full_name || "Koç Profil Fotoğrafı"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-                  <User className="w-10 h-10" />
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="absolute -bottom-2 right-2 px-3 py-1.5 rounded-full bg-white text-xs font-semibold text-gray-800 flex items-center gap-1 shadow-md"
-            >
-              <Camera className="w-3 h-3" />
-              Fotoğraf URL&apos;i
-            </button>
-          </div>
-
-          {/* Başlık */}
+      <section className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-400 text-white">
+        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold uppercase tracking-wider">
-              <Settings className="w-3 h-3" />
-              Koç Profil Ayarları
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold tracking-wide">
+              <CheckCircle2 className="w-3 h-3 text-lime-300" />
+              <span>Koç Ayarları</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black leading-tight">
-              {form.full_name || "Adınızı Soyadınızı Girin"}
+
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+              Profesyonel Koç Profilini
+              <br />
+              <span className="text-yellow-300">Yatırımcı Seviyesinde</span>{" "}
+              Hazırla
             </h1>
-            <p className="text-sm md:text-base text-orange-50 flex flex-wrap items-center gap-2">
-              <span className="font-semibold">Kariyer Koçu</span>
-              <span className="w-1 h-1 rounded-full bg-orange-100" />
-              <MapPin className="w-4 h-4" />
-              <span>{form.location || "Online"}</span>
-              <span className="w-1 h-1 rounded-full bg-orange-100" />
-              <Globe2 className="w-4 h-4" />
-              <span>{form.languages || "TR / EN"}</span>
+
+            <p className="text-sm md:text-base text-orange-50 max-w-xl">
+              Bu sayfada doldurduğun bilgiler, herkese açık koç profilinde
+              görüntülenir. Fotoğrafın, uzmanlık etiketlerin, özgeçmişin ve
+              metodolojinle tam anlamıyla profesyonel bir vitrin oluştur.
             </p>
-            <div className="flex flex-wrap gap-4 text-xs md:text-sm text-orange-50/90">
-              <span className="inline-flex items-center gap-1">
-                <Briefcase className="w-4 h-4" />
-                {form.experience_years || 0} yıl profesyonel deneyim
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Star className="w-4 h-4" />
-                Profil görünürlüğü{" "}
-                {form.is_online ? "AÇIK (yayında)" : "KAPALI"}
-              </span>
-              {form.hourly_rate && (
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  45 dk seans ücreti{" "}
-                  <strong>
-                    {form.hourly_rate} {form.currency}
-                  </strong>
-                </span>
-              )}
+
+            <div className="flex flex-wrap items-center gap-3 text-xs text-orange-50/90">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-300" />
+                <span>Özgeçmiş &amp; Metodoloji</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-300" />
+                <span>Eğitim &amp; Deneyim Listesi</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-lime-300" />
+                <span>Uzmanlık Etiketleri</span>
+              </div>
             </div>
           </div>
 
-          {/* Kaydet butonu */}
-          <div className="flex flex-col items-stretch gap-3 w-full md:w-auto">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-white text-red-600 hover:bg-orange-50 font-semibold rounded-xl shadow-lg"
-            >
-              {saving ? "Kaydediliyor..." : "Profili Kaydet"}
-            </Button>
-            <button
-              type="button"
-              onClick={toggleOnline}
-              className={`text-xs px-3 py-1.5 rounded-full border flex items-center gap-1 justify-center ${
-                form.is_online
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-gray-300 bg-white/10 text-white"
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              {form.is_online ? "Profil yayında" : "Profili yayına al"}
-            </button>
+          {/* Avatar Kartı */}
+          <div className="w-full md:w-80">
+            <Card className="bg-white/95 border-none shadow-xl rounded-2xl">
+              <CardContent className="pt-6 pb-5 flex flex-col items-center gap-4">
+                <div className="relative">
+                  {form.avatar_url ? (
+                    <img
+                      src={form.avatar_url}
+                      alt={form.full_name || "Koç Avatarı"}
+                      className="w-28 h-28 rounded-2xl object-cover shadow-md border border-gray-200 bg-gray-50"
+                    />
+                  ) : (
+                    <div className="w-28 h-28 rounded-2xl bg-gray-100 flex items-center justify-center border border-dashed border-gray-300">
+                      <User className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {form.full_name || "İsmini Gir"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {/* Kullanıcı talebi: unvan sabit olsun */}
+                    Kariyer Koçu
+                  </p>
+                  {email && (
+                    <p className="text-[11px] text-gray-400">{email}</p>
+                  )}
+                </div>
+
+                <div className="w-full space-y-2">
+                  <label className="text-[11px] font-medium text-gray-600">
+                    Profil Fotoğrafı URL&apos;si
+                  </label>
+                  <Input
+                    value={form.avatar_url}
+                    onChange={(e) =>
+                      handleChange("avatar_url", e.target.value)
+                    }
+                    placeholder="https://... (Unsplash, iStock vb.)"
+                    className="text-xs"
+                  />
+                  <p className="text-[10px] text-gray-400">
+                    Şimdilik sadece URL kullanıyoruz. İleride doğrudan dosya
+                    yükleme gelecektir.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Uyarılar */}
-      <div className="max-w-6xl mx-auto px-4 mt-6 space-y-3">
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {success}
-          </div>
-        )}
-        <p className="text-xs text-gray-500">
-          Bu sayfadaki bilgiler yalnızca sana görünür. Kaydettikten sonra
-          değişiklikler danışanların gördüğü profil sayfasına yansır.
-        </p>
-      </div>
-
-      {/* FORM ALANI */}
+      {/* İÇERİK */}
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* SOL: Temel Bilgiler */}
-          <Card className="border-orange-100 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <User className="w-4 h-4 text-orange-500" />
-                Temel Bilgiler
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
+        {/* ÜST BAR: Kaydet + Canlı Profil */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Koç Profil Ayarları
+            </h2>
+            <p className="text-xs text-gray-500">
+              Burada yaptığın değişiklikler, herkese açık koç profilinde
+              görüntülenir.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => navigate("/coach-dashboard")}
+            >
+              Panelime Dön
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => navigate("/coaches")}
+            >
+              Koç Listesini Gör
+            </Button>
+            <Button
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 text-white text-xs"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              <Save className="w-3 h-3 mr-1" />
+              {saving ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+            </Button>
+          </div>
+        </div>
+
+        {/* GENEL BİLGİLER */}
+        <Card className="bg-white border border-orange-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+              <User className="w-4 h-4 text-orange-500" />
+              Genel Bilgiler
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">
                   Ad Soyad
                 </label>
-                <input
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="Örn. Yağız Alperen"
+                <Input
                   value={form.full_name}
-                  onChange={handleChange("full_name")}
+                  onChange={(e) =>
+                    handleChange("full_name", e.target.value)
+                  }
+                  placeholder="Örn: Yağız Alperen"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Unvan (Koç tipi)
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">
+                  Unvan (sabit)
                 </label>
-                <input
-                  className="w-full rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+                <Input
                   value="Kariyer Koçu"
                   disabled
+                  className="bg-gray-50 text-gray-500"
                 />
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Koç olarak kayıt olduğunuz için unvan sabittir. İleride
-                  uzmanlık etiketleri ile zenginleştirilecektir.
+                <p className="text-[10px] text-gray-400">
+                  Unvan, koç hesabı açtığın için sistem tarafından otomatik
+                  atanır.
                 </p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Konum
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder="İstanbul, TR / Online"
-                    value={form.location}
-                    onChange={handleChange("location")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Konuşulan Diller
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder="Örn. Türkçe, İngilizce"
-                    value={form.languages}
-                    onChange={handleChange("languages")}
-                  />
-                </div>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-700">
+                Kısa Özgeçmiş / Hakkında Metni
+              </label>
+              <Textarea
+                rows={5}
+                value={form.bio}
+                onChange={(e) => handleChange("bio", e.target.value)}
+                placeholder="Kariyer eğitimin, kurumsal deneyimin ve koçluk yaklaşımın hakkında özet bir metin yaz. Bu bölüm, herkese açık profilinde ilk görülen alan olacaktır."
+              />
+              <p className="text-[10px] text-gray-400">
+                4–8 cümlelik net ve profesyonel bir özet önerilir.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Deneyim (yıl)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    value={form.experience_years}
-                    onChange={handleChange("experience_years")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    45 dk seans ücreti
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                      placeholder="Örn. 1500"
-                      value={form.hourly_rate}
-                      onChange={handleChange("hourly_rate")}
-                    />
-                    <select
-                      className="w-20 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                      value={form.currency}
-                      onChange={handleChange("currency")}
-                    >
-                      <option value="TRY">TRY</option>
-                      <option value="EUR">EUR</option>
-                      <option value="USD">USD</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+        {/* UZMANLIK ALANLARI */}
+        <Card className="bg-white border border-orange-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+              <ImageIcon className="w-4 h-4 text-orange-500" />
+              Uzmanlık Etiketleri
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-xs text-gray-600">
+              Kullanıcılar koç ararken bu etiketleri filtrelemek için
+              kullanacak. Uzmanlık alanlarını mümkün olduğunca net seç.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {specializationOptions.map((tag) => {
+                const active = form.specializations.includes(tag);
+                return (
+                  <Button
+                    key={tag}
+                    type="button"
+                    variant={active ? "default" : "outline"}
+                    size="sm"
+                    className={`rounded-full px-3 py-1 text-xs ${
+                      active
+                        ? "bg-orange-500 hover:bg-orange-600 text-white border-none"
+                        : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                    }`}
+                    onClick={() => toggleSpecialization(tag)}
+                  >
+                    {tag}
+                  </Button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400">
+              En az 2, en fazla 6 etiket seçmeni öneririz.
+            </p>
+          </CardContent>
+        </Card>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Profil Fotoğrafı URL&apos;i
-                </label>
-                <input
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="https://..."
-                  value={form.avatar_url}
-                  onChange={handleChange("avatar_url")}
-                />
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Geçici olarak Unsplash / Pexels gibi telifsiz bir görsel
-                  URL&apos;i kullanabilirsiniz.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    LinkedIn
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder="https://linkedin.com/in/..."
-                    value={form.linkedin}
-                    onChange={handleChange("linkedin")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Web Sitesi
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder="https://..."
-                    value={form.website}
-                    onChange={handleChange("website")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Instagram
-                  </label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder="@kullaniciadi"
-                    value={form.instagram}
-                    onChange={handleChange("instagram")}
-                  />
-                </div>
-              </div>
+        {/* EĞİTİM & DENEYİM */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="bg-white border border-orange-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+                <Award className="w-4 h-4 text-orange-500" />
+                Eğitim &amp; Sertifikalar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <Textarea
+                rows={6}
+                value={form.education_text}
+                onChange={(e) =>
+                  handleChange("education_text", e.target.value)
+                }
+                placeholder={`Her satıra bir eğitim / sertifika yaz.\nÖrn:\nICF Onaylı Profesyonel Koçluk Programı (PCC Track)\nBoğaziçi Üniversitesi - Psikoloji Lisans`}
+              />
+              <p className="text-[10px] text-gray-400">
+                Kaydederken her satır, herkese açık profilinde madde madde
+                listelenir.
+              </p>
             </CardContent>
           </Card>
 
-          {/* SAĞ: Özgeçmiş ve Uzmanlık */}
-          <Card className="border-orange-100 shadow-sm">
+          <Card className="bg-white border border-orange-100 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
                 <Briefcase className="w-4 h-4 text-orange-500" />
-                Profesyonel Özgeçmiş
+                İş Deneyimi &amp; Roller
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Kısa Özgeçmiş (profilde üstte gözükecek)
-                </label>
-                <textarea
-                  className="w-full min-h-[80px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="Eğitim geçmişiniz, şu anki rolünüz ve koçluk yaklaşımınızı birkaç cümle ile özetleyin."
-                  value={form.bio}
-                  onChange={handleChange("bio")}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Detaylı Özgeçmiş (CV anlatımı)
-                </label>
-                <textarea
-                  className="w-full min-h-[120px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="İş tecrübeleriniz, üstlendiğiniz sorumluluklar, koçluk yaptığınız alanlar... (klasik CV girişinizi buraya yazabilirsiniz)"
-                  value={form.cv_summary}
-                  onChange={handleChange("cv_summary")}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Uzmanlık Alanları (virgülle ayırın)
-                </label>
-                <input
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="Kariyer Geçişi, Liderlik Koçluğu, Yeni Mezun Koçluğu, Mülakat Hazırlığı..."
-                  value={form.specializations_text}
-                  onChange={handleChange("specializations_text")}
-                />
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Bu alanlar profil kartınızda etiket olarak görünecek.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    Eğitim & Sertifikalar (her satıra bir madde)
-                  </label>
-                  <textarea
-                    className="w-full min-h-[90px] rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder={`ICF Onaylı Profesyonel Koçluk Programı (PCC Track)\nBoğaziçi Üniversitesi – Psikoloji Lisans`}
-                    value={form.education_text}
-                    onChange={handleChange("education_text")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-gray-700">
-                    İş Tecrübeleri (her satıra bir rol)
-                  </label>
-                  <textarea
-                    className="w-full min-h-[90px] rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                    placeholder={`Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi\nKariyer ve Liderlik Koçu – Freelance`}
-                    value={form.experience_text}
-                    onChange={handleChange("experience_text")}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-700">
-                  Koçluk Metodolojisi
-                </label>
-                <textarea
-                  className="w-full min-h-[80px] rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/60"
-                  placeholder="Seanslarınızda kullandığınız yaklaşım, araçlar, çerçeveler (çözüm odaklı koçluk, pozitif psikoloji, GROW modeli vb.)"
-                  value={form.methodology}
-                  onChange={handleChange("methodology")}
-                />
-              </div>
+            <CardContent className="space-y-2 text-sm">
+              <Textarea
+                rows={6}
+                value={form.experience_text}
+                onChange={(e) =>
+                  handleChange("experience_text", e.target.value)
+                }
+                placeholder={`Her satıra bir rol / kurum yaz.\nÖrn:\nKıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi\nKariyer ve Liderlik Koçu – Serbest`}
+              />
+              <p className="text-[10px] text-gray-400">
+                Bu alan ziyaretçilerin senin arka planını hızlı anlaması için
+                kullanılır.
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Alt kaydet alanı */}
-        <div className="flex justify-end mt-4">
+        {/* METODOLOJİ & CV */}
+        <Card className="bg-white border border-orange-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+              <FileText className="w-4 h-4 text-orange-500" />
+              Koçluk Metodolojisi &amp; CV
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-700">
+                Koçluk Metodolojin
+              </label>
+              <Textarea
+                rows={5}
+                value={form.methodology}
+                onChange={(e) =>
+                  handleChange("methodology", e.target.value)
+                }
+                placeholder="Seanslarda kullandığın yaklaşımlar, ekoller, araçlar ve çalışma biçimini yaz. Örn: Çözüm odaklı koçluk, pozitif psikoloji, aksiyon planı odaklı çalışma, güçlü soru teknikleri vb."
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-700">
+                CV / LinkedIn / Portfolyo Linki (opsiyonel)
+              </label>
+              <Input
+                value={form.cv_url}
+                onChange={(e) => handleChange("cv_url", e.target.value)}
+                placeholder="https://www.linkedin.com/in/... veya PDF CV linki"
+              />
+              <p className="text-[10px] text-gray-400">
+                Bu link herkese açık profilinde “Detaylı CV&apos;yi Gör” gibi
+                bir buton olarak gösterilebilir.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                <Badge
+                  variant="outline"
+                  className="border-green-200 text-green-700 bg-green-50 text-[10px]"
+                >
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Kayıtların Supabase&apos;e güvenle kaydedilir
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white text-xs"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                <Save className="w-3 h-3 mr-1" />
+                {saving ? "Kaydediliyor..." : "Tüm Değişiklikleri Kaydet"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ALT CTA */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500 mt-4 mb-10">
+          <div className="flex items-center gap-2">
+            <ArrowRight className="w-3 h-3" />
+            <span>
+              Bu sayfayı doldurduktan sonra{" "}
+              <span className="font-medium text-gray-700">
+                koç profilini yatırımcıya
+              </span>{" "}
+              bile gösterebilirsin. Tüm kritik bilgiler tek yerde.
+            </span>
+          </div>
           <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 rounded-xl shadow-md"
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => navigate("/coach/" + coachId)}
           >
-            {saving ? "Kaydediliyor..." : "Tüm Değişiklikleri Kaydet"}
+            Herkese Açık Profili Gör
           </Button>
         </div>
       </div>

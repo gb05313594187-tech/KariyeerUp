@@ -22,14 +22,14 @@ import Terms from "@/pages/Terms";              // Kullanım Koşulları
 import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
 import Ethics from "@/pages/Ethics";            // Etik Kurallar
 
-// Koç profil sayfası
+// Koç profil sayfası (müşteriye görünen)
 import CoachProfile from "@/pages/CoachProfile";
 
-// 🔴 Kullanıcı Dashboard ve Koç Dashboard
+// Kullanıcı Dashboard ve Koç Dashboard
 import Dashboard from "@/pages/Dashboard";
 import CoachDashboard from "@/pages/CoachDashboard";
 
-// 🔴 Yeni: Profil sayfası (Koç Profilim)
+// Profil Sayfası
 import ProfilePage from "@/pages/Profile";
 
 // LAYOUT
@@ -259,11 +259,6 @@ export default function App() {
               path="/coach-selection-process"
               element={<CoachSelection />}
             />
-            {/* Aynı route’u silmeden bıraktım */}
-            <Route
-              path="/coach-selection-process"
-              element={<CoachSelection />}
-            />
 
             {/* Seans Rezervasyonu – yeni takvim sayfası */}
             <Route path="/book-session" element={<BookSession />} />
@@ -286,7 +281,8 @@ export default function App() {
             {/* Kullanıcı Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Koç Dashboard */}
+            {/* Koç Dashboard – iki path birden çalışsın istersen */}
+            <Route path="/coach/dashboard" element={<CoachDashboard />} />
             <Route path="/coach-dashboard" element={<CoachDashboard />} />
 
             {/* Profil Sayfası */}

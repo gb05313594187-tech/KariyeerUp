@@ -32,7 +32,7 @@ import CoachDashboard from "@/pages/CoachDashboard";
 // Profil Sayfası
 import ProfilePage from "@/pages/Profile";
 
-// 🔴 SENİN İSTEDİĞİN YENİ IMPORT (sadece bu satır eklendi)
+// 🔴 Koç Ayarları sayfası
 import CoachSettings from "@/pages/CoachSettings";
 
 // LAYOUT
@@ -287,6 +287,9 @@ export default function App() {
             {/* Koç Dashboard – iki path birden çalışsın istersen */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
             <Route path="/coach-dashboard" element={<CoachDashboard />} />
+
+            {/* 🔴 Koç Ayarları sayfası */}
+            <Route path="/coach/settings" element={<CoachSettings />} />
 
             {/* Profil Sayfası */}
             <Route path="/profile" element={<ProfilePage />} />

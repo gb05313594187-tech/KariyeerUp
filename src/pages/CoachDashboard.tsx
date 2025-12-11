@@ -19,7 +19,6 @@ import {
   Wallet,
   TrendingUp,
   Star,
-  Filter,
   MessageCircle,
   Video,
   Download,
@@ -209,8 +208,7 @@ export default function CoachDashboard() {
   };
 
   const pendingCount = requests.filter((r) => r.status === "pending").length;
-  const approvedCount = requests.filter((r) => r.status === "approved")
-    .length;
+  const approvedCount = requests.filter((r) => r.status === "approved").length;
 
   // Filtrelenmiş istekler (Tümü / Bugün / Bu Hafta)
   const filteredRequests = requests.filter((req) => {

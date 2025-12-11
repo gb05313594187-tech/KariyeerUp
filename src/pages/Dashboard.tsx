@@ -68,7 +68,7 @@ export default function Dashboard() {
       try {
         setLoading(true);
 
-        // 1) Kullanıcıyı al
+        // 1) Kullanıcı
         const { data: auth } = await supabase.auth.getUser();
         const userId = auth?.user?.id;
         if (!userId) {
@@ -217,34 +217,31 @@ export default function Dashboard() {
         {/* SEANSLAR TABS */}
         <section>
           <Card className="bg-slate-900/90 border-slate-800">
-            <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-sky-400" />
-                Seansların
-              </CardTitle>
-              <TabsList className="bg-slate-950 border border-slate-800">
-                <TabsTrigger
-                  value="upcoming"
-                  onClick={() => setActiveTab("upcoming")}
-                >
-                  Yaklaşan &amp; Bekleyen
-                </TabsTrigger>
-                <TabsTrigger
-                  value="past"
-                  onClick={() => setActiveTab("past")}
-                >
-                  Geçmiş Seanslar
-                </TabsTrigger>
-              </TabsList>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab}>
+            <Tabs
+              value={activeTab}
+              onValueChange={(v: any) => setActiveTab(v)}
+            >
+              <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-sky-400" />
+                  Seansların
+                </CardTitle>
+                <TabsList className="bg-slate-950 border border-slate-800">
+                  <TabsTrigger value="upcoming">
+                    Yaklaşan &amp; Bekleyen
+                  </TabsTrigger>
+                  <TabsTrigger value="past">Geçmiş Seanslar</TabsTrigger>
+                </TabsList>
+              </CardHeader>
+
+              <CardContent>
                 {/* YAKLAŞAN / BEKLEYEN */}
                 <TabsContent value="upcoming" className="space-y-3">
                   {upcoming.length === 0 && (
                     <p className="text-xs text-slate-400">
                       Henüz yaklaşan veya bekleyen seans talebin yok. Bir koç
-                      profiline giderek “Hemen Seans Al” butonunu kullanabilirsin.
+                      profiline giderek “Hemen Seans Al” butonunu
+                      kullanabilirsin.
                     </p>
                   )}
 
@@ -338,8 +335,8 @@ export default function Dashboard() {
                     );
                   })}
                 </TabsContent>
-              </Tabs>
-            </CardContent>
+              </CardContent>
+            </Tabs>
           </Card>
         </section>
       </main>

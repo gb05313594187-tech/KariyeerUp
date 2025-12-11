@@ -1,65 +1,121 @@
 // src/pages/Dashboard.tsx
 // @ts-nocheck
-/* eslint-disable */
-
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { 
-  Calendar, 
-  CreditCard, 
-  ArrowRight, 
-  User 
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import {
+  CalendarDays,
+  Clock,
+  User,
+  Star,
+  TrendingUp,
+  Loader2,
 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+const SESSION_TABLE = "app_2dff6511da_session_requests";
+const COACHES_TABLE = "app_2dff6511da_coaches";
 
-// Supabase
-import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Duruma göre rozet
+const renderStatusBadge = (status: string) => {
+  const s = status || "pending";
+  if (s === "approved") {
+    return (
+      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px]">
+        Onaylandı
+      </Badge>
+    );
+  }
+  if (s === "rejected") {
+    return (
+      <Badge className="bg-red-50 text-red-700 border border-red-200 text-[11px]">
+        Reddedildi
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-amber-50 text-amber-700 border border-amber-200 text-[11px]">
+      Beklemede
+    </Badge>
+  );
+};
+
+// TR tarih formatı
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return "-";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+};
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
-  const [appointments, setAppointments] = useState([]);
-  const [user, setUser] = useState(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [coachMap, setCoachMap] = useState<Record<string, any>>({});
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
-  // -------------------------------
-  // 1) Kullanıcı + Randevular
-  // -------------------------------
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Kullanıcıyı bul
-        const { data: auth } = await supabase.auth.getUser();
+        setLoading(true);
 
-        if (!auth?.user) {
-          navigate("/login");
+        // 1) Kullanıcıyı al
+        const { data: auth } = await supabase.auth.getUser();
+        const userId = auth?.user?.id;
+        if (!userId) {
+          setRequests([]);
+          setCoachMap({});
+          setLoading(false);
           return;
         }
 
-        setUser(auth.user);
-
-        // Kullanıcının randevularını getir
-        const { data: bookings, error } = await supabase
-          .from("bookings")
+        // 2) Bu kullanıcıya ait seans talepleri
+        const { data: reqs, error } = await supabase
+          .from(SESSION_TABLE)
           .select("*")
-          .eq("user_id", auth.user.id)
-          .order("session_date", { ascending: true });
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
 
-        if (error) console.log("Bookings Error:", error);
+        if (error || !reqs) {
+          console.error("User session requests error:", error);
+          setRequests([]);
+          setCoachMap({});
+          setLoading(false);
+          return;
+        }
 
-        setAppointments(bookings || []);
-      } catch (e) {
-        console.log("Fetch Error:", e);
+        setRequests(reqs);
+
+        // 3) İlgili koçları tek seferde çek
+        const coachIds = Array.from(
+          new Set(reqs.map((r) => r.coach_id).filter(Boolean))
+        );
+
+        if (coachIds.length > 0) {
+          const { data: coaches, error: coachErr } = await supabase
+            .from(COACHES_TABLE)
+            .select("id, full_name, title, rating")
+            .in("id", coachIds);
+
+          if (!coachErr && coaches) {
+            const map: Record<string, any> = {};
+            coaches.forEach((c) => {
+              map[c.id] = c;
+            });
+            setCoachMap(map);
+          }
+        }
+      } catch (err) {
+        console.error("User dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -68,181 +124,225 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // -------------------------------
-  // 2) Görüşme linki açma
-  // -------------------------------
-  const handleJoinMeeting = (url) => {
-    if (!url) return toast.error("Görüşme linki henüz hazır değil.");
-    window.open(url, "_blank");
-  };
+  // Gelecek / geçmiş ayrımı
+  const today = new Date();
+
+  const upcoming = requests.filter((req) => {
+    const dStr = req.selected_date || req.session_date;
+    if (!dStr) return false;
+    const d = new Date(dStr);
+    // Gelecek + beklemede olanlar
+    return d >= today || req.status === "pending";
+  });
+
+  const past = requests.filter((req) => {
+    const dStr = req.selected_date || req.session_date;
+    if (!dStr) return false;
+    const d = new Date(dStr);
+    return d < today && req.status === "approved";
+  });
+
+  const totalCount = requests.length;
+  const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const approvedCount = requests.filter((r) => r.status === "approved").length;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600 text-lg">
-        Yükleniyor...
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-slate-100">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p className="text-sm">Panelin yükleniyor...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-6">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* -------------------------------------- */}
-        {/* ÜST BANNER */}
-        {/* -------------------------------------- */}
-        <div className="bg-white shadow-sm p-6 rounded-xl">
-          <h1 className="text-2xl font-bold text-gray-900">Kontrol Paneli</h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Hoş geldiniz, {user?.email}
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          
-          {/* -------------------------------------- */}
-          {/* SOL TARAF — RANDEVULAR */}
-          {/* -------------------------------------- */}
-          <div className="md:col-span-2 space-y-6">
-            <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="upcoming">Randevularım</TabsTrigger>
-                <TabsTrigger value="history">Geçmiş</TabsTrigger>
-              </TabsList>
-
-              {/* ——— GELECEK RANDEVULAR ——— */}
-              <TabsContent value="upcoming">
-                <Card className="border-t-4 border-blue-900 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-blue-900" />
-                        Aktif Randevular
-                      </div>
-                      <Badge variant="outline" className="text-blue-900">
-                        {appointments.length} kayıt
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent>
-                    {appointments.length > 0 ? (
-                      <div className="space-y-4">
-                        {appointments.map((app) => (
-                          <div
-                            key={app.id}
-                            className="bg-white border p-4 rounded-lg flex flex-col md:flex-row items-start md:items-center gap-4 hover:shadow-md transition"
-                          >
-                            {/* Avatar */}
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                              <User className="w-6 h-6 text-blue-600" />
-                            </div>
-
-                            {/* İçerik */}
-                            <div className="flex-1">
-                              <h3 className="font-bold text-lg text-gray-900">
-                                Koç Görüşmesi
-                              </h3>
-
-                              <p className="text-sm text-gray-500 mt-1">
-                                {new Date(app.session_date).toLocaleDateString("tr-TR")} •{" "}
-                                {app.session_time}
-                              </p>
-
-                              <Badge
-                                className={
-                                  app.is_trial
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-blue-100 text-blue-700"
-                                }
-                              >
-                                {app.is_trial ? "Deneme Seansı" : "Standart"}
-                              </Badge>
-                            </div>
-
-                            {/* Buton */}
-                            <Button
-                              className="bg-blue-900 hover:bg-blue-800 w-full md:w-auto"
-                              onClick={() => handleJoinMeeting(app.meeting_url)}
-                            >
-                              Görüşmeye Git
-                              <ArrowRight className="ml-2 w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 text-gray-500">
-                        <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                        <p>Henüz planlanmış bir randevunuz bulunmamaktadır.</p>
-
-                        <Button
-                          variant="link"
-                          className="text-blue-900 text-sm"
-                          onClick={() => navigate("/coaches")}
-                        >
-                          Koçlara Göz At → 
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* ——— GEÇMİŞ ——— */}
-              <TabsContent value="history">
-                <Card>
-                  <CardContent className="py-10 text-center text-gray-500">
-                    Henüz geçmiş bir randevunuz yok.
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+    <div className="min-h-screen bg-[#020617] text-slate-50">
+      {/* HERO */}
+      <header className="border-b border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-[0.2em] mb-1">
+              Kariyeer Paneli
+            </p>
+            <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+              Kariyer Yolculuğun Tek Ekranda
+            </h1>
+            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+              Gönderdiğin seans taleplerini, durumlarını ve yaklaşan görüşmeleri
+              buradan takip edebilirsin.
+            </p>
           </div>
+        </div>
+      </header>
 
-          {/* -------------------------------------- */}
-          {/* SAĞ TARAF — İSTATİSTİK + ROZET */}
-          {/* -------------------------------------- */}
-          <div className="space-y-6">
+      {/* İÇERİK */}
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* ÖZET KARTLAR */}
+        <section className="grid md:grid-cols-3 gap-4">
+          <Card className="bg-slate-900/90 border-slate-800">
+            <CardContent className="py-4">
+              <p className="text-xs text-slate-400 mb-1">Toplam Seans Talebin</p>
+              <p className="text-2xl font-semibold">{totalCount}</p>
+              <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                Hedef: düzenli 2 seans / ay
+              </p>
+            </CardContent>
+          </Card>
 
-            {/* İSTATİSTİKLER */}
-            <Card>
-              <CardHeader>
-                <CardTitle>İstatistikler</CardTitle>
-              </CardHeader>
+          <Card className="bg-slate-900/90 border-slate-800">
+            <CardContent className="py-4">
+              <p className="text-xs text-slate-400 mb-1">Bekleyen Talepler</p>
+              <p className="text-2xl font-semibold">{pendingCount}</p>
+              <p className="text-[11px] text-amber-400 mt-1">
+                Koç onayladığında e-posta ile bilgi verilecek.
+              </p>
+            </CardContent>
+          </Card>
 
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 p-3 rounded">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" /> Toplam Randevu
-                  </span>
-                  <span className="font-bold">{appointments.length}</span>
-                </div>
-              </CardContent>
-            </Card>
+          <Card className="bg-slate-900/90 border-slate-800">
+            <CardContent className="py-4">
+              <p className="text-xs text-slate-400 mb-1">Onaylanmış Seanslar</p>
+              <p className="text-2xl font-semibold">{approvedCount}</p>
+              <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+                <Star className="w-3 h-3 text-yellow-400" />
+                Her seans sonrası kısa bir not almayı unutma.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
 
-            {/* ROZET */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Rozet Durumu</CardTitle>
-              </CardHeader>
-
-              <CardContent className="text-center py-6">
-                <User className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900">Rozetiniz Yok</h3>
-
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
-                  onClick={() => navigate("/pricing")}
+        {/* SEANSLAR TABS */}
+        <section>
+          <Card className="bg-slate-900/90 border-slate-800">
+            <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-sky-400" />
+                Seansların
+              </CardTitle>
+              <TabsList className="bg-slate-950 border border-slate-800">
+                <TabsTrigger
+                  value="upcoming"
+                  onClick={() => setActiveTab("upcoming")}
                 >
-                  Rozet Satın Al
-                </Button>
-              </CardContent>
-            </Card>
+                  Yaklaşan &amp; Bekleyen
+                </TabsTrigger>
+                <TabsTrigger
+                  value="past"
+                  onClick={() => setActiveTab("past")}
+                >
+                  Geçmiş Seanslar
+                </TabsTrigger>
+              </TabsList>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab}>
+                {/* YAKLAŞAN / BEKLEYEN */}
+                <TabsContent value="upcoming" className="space-y-3">
+                  {upcoming.length === 0 && (
+                    <p className="text-xs text-slate-400">
+                      Henüz yaklaşan veya bekleyen seans talebin yok. Bir koç
+                      profiline giderek “Hemen Seans Al” butonunu kullanabilirsin.
+                    </p>
+                  )}
 
-          </div>
-        </div>
-      </div>
+                  {upcoming.map((req) => {
+                    const coach = coachMap[req.coach_id] || null;
+                    return (
+                      <div
+                        key={req.id}
+                        className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-xs">
+                            <User className="w-4 h-4 text-sky-300" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {coach?.full_name || "Koç"}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {coach?.title || "Kariyer Koçu"}
+                            </p>
+                            <p className="text-[11px] text-slate-500 flex items-center gap-2 mt-1">
+                              <span>{formatDate(req.selected_date)}</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-700" />
+                              <Clock className="w-3 h-3" />
+                              {req.selected_time}
+                            </p>
+                            {req.note && (
+                              <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                                Notun: {req.note}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {renderStatusBadge(req.status)}
+                          {coach?.rating && (
+                            <span className="flex items-center gap-1 text-[11px] text-slate-300">
+                              <Star className="w-3 h-3 text-yellow-400" />
+                              {coach.rating.toFixed(1)} ortalama puan
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+
+                {/* GEÇMİŞ SEANSLAR */}
+                <TabsContent value="past" className="space-y-3">
+                  {past.length === 0 && (
+                    <p className="text-xs text-slate-400">
+                      Henüz tamamlanmış onaylı seansın yok.
+                    </p>
+                  )}
+
+                  {past.map((req) => {
+                    const coach = coachMap[req.coach_id] || null;
+                    return (
+                      <div
+                        key={req.id}
+                        className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {coach?.full_name || "Koç"}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {coach?.title || "Kariyer Koçu"}
+                          </p>
+                          <p className="text-[11px] text-slate-500 flex items-center gap-2 mt-1">
+                            <span>{formatDate(req.selected_date)}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-700" />
+                            <Clock className="w-3 h-3" />
+                            {req.selected_time}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {renderStatusBadge(req.status)}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-[11px] border-slate-700"
+                          >
+                            Seans Notu Ekle (yakında)
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </section>
+      </main>
     </div>
   );
 }

@@ -2,12 +2,7 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -137,8 +132,6 @@ export default function CoachProfile() {
   });
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   // 1) Supabase'ten tek koçu çek
   useEffect(() => {
     if (!id) return;
@@ -188,11 +181,8 @@ export default function CoachProfile() {
       isOnline: coach.is_online ?? true,
       photo_url: coach.avatar_url || coach.photo_url || fallbackCoach.photo_url,
       tags: toStringArray(coach.specializations, fallbackCoach.tags),
-      // Hakkında alanı: summary -> bio
       bio: coach.summary || coach.bio || fallbackCoach.bio,
-      // Metodoloji
       methodology: coach.methodology || fallbackCoach.methodology,
-      // Eğitim & deneyim listeleri text[]
       education: toStringArray(coach.education_list, fallbackCoach.education),
       experience: toStringArray(coach.experience_list, fallbackCoach.experience),
       services: coach.services || [],
@@ -209,48 +199,37 @@ export default function CoachProfile() {
             a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
           },
         ],
-      // Özgeçmiş linki
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
     };
   })();
 
-  // ✅ Seans talebi Supabase'e yaz (user_id ile)
+  // ✅ DOĞRU VE ÇALIŞAN HALİ (user_id ile)
   const handleRequestSession = async () => {
-    if (!id) {
-      toast.error("Koç bilgisi bulunamadı.");
+    if (!selectedSlot) {
+      toast.error("Lütfen önce bir saat seç.");
       return;
     }
 
-    if (!selectedDate || !selectedSlot) {
-      toast.error("Lütfen önce gün ve saat seç.");
+    // 🔑 GİRİŞ YAPAN KULLANICI
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth?.user?.id;
+
+    if (!userId) {
+      toast.error("Seans almak için giriş yapmalısın.");
+      navigate("/login");
       return;
     }
 
     try {
-      setIsSubmitting(true);
-
-      // Giriş yapan kullanıcı
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth?.user?.id || null;
-
-      if (!userId) {
-        toast.error("Seans talebi için giriş yapmalısın.");
-        navigate("/login");
-        return;
-      }
-
-      const payload = {
-        coach_id: id,
-        user_id: userId, // 🔥 artık NULL olmayacak
-        selected_date: selectedDate,
-        selected_time: selectedSlot,
-        status: "pending",
-        created_at: new Date().toISOString(),
-      };
-
       const { error } = await supabase
         .from("app_2dff6511da_session_requests")
-        .insert(payload);
+        .insert({
+          coach_id: coachRow?.id || id,
+          user_id: userId, // 🔥 KRİTİK SATIR
+          selected_date: selectedDate,
+          selected_time: selectedSlot,
+          status: "pending",
+        });
 
       if (error) {
         console.error("Seans talebi hatası:", error);
@@ -258,13 +237,13 @@ export default function CoachProfile() {
         return;
       }
 
-      toast.success("Seans talebin iletildi. Koç onayladığında göreceksin.");
+      toast.success(
+        "Seans talebin iletildi. Koç onayladığında dashboard’ta göreceksin."
+      );
       navigate("/dashboard");
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("Beklenmeyen bir hata oluştu.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -358,9 +337,9 @@ export default function CoachProfile() {
               <Button
                 className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
                 onClick={handleRequestSession}
-                disabled={!selectedSlot || isSubmitting}
+                disabled={!selectedSlot}
               >
-                {isSubmitting ? "Gönderiliyor..." : "Hemen Seans Al"}
+                Hemen Seans Al
               </Button>
               <Button
                 variant="outline"
@@ -434,7 +413,8 @@ export default function CoachProfile() {
                 )}
                 {!selectedSlot && (
                   <p className="text-[11px] text-gray-500 mt-2">
-                    Bir gün ve saat seç; seçimin koça iletilen seans talebi olarak kaydedilecek.
+                    Bir gün ve saat seç; seçimin otomatik olarak koça iletilen
+                    seans talebi olarak kaydedilecek.
                   </p>
                 )}
               </CardContent>
@@ -533,10 +513,15 @@ export default function CoachProfile() {
                         Koçun Özgeçmişi (CV)
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        PDF formatında detaylı eğitim ve iş deneyimlerini inceleyebilirsiniz.
+                        PDF formatında detaylı eğitim ve iş deneyimlerini
+                        inceleyebilirsiniz.
                       </p>
                     </div>
-                    <a href={c.cv_url} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={c.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">
                         Özgeçmişi Görüntüle / İndir
                       </Button>
@@ -547,7 +532,8 @@ export default function CoachProfile() {
                 <Card className="bg-white border border-orange-100 shadow-sm">
                   <CardContent className="py-4">
                     <p className="text-sm text-gray-600">
-                      Bu koç henüz özgeçmişini eklemedi. Yakında burada görüntüleyebiliyor olacaksınız.
+                      Bu koç henüz özgeçmişini eklemedi. Yakında burada
+                      görüntüleyebiliyor olacaksınız.
                     </p>
                   </CardContent>
                 </Card>
@@ -578,18 +564,27 @@ export default function CoachProfile() {
                   ({c.reviewCount || 0} değerlendirme)
                 </span>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 text-xs"
+              >
                 Filtrele
               </Button>
             </div>
 
             <div className="space-y-3">
               {mockReviews.map((rev, idx) => (
-                <Card key={idx} className="bg-white border border-orange-100 shadow-sm">
+                <Card
+                  key={idx}
+                  className="bg-white border border-orange-100 shadow-sm"
+                >
                   <CardContent className="py-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{rev.name}</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {rev.name}
+                        </p>
                         <p className="text-xs text-gray-500">{rev.role}</p>
                       </div>
                       <div className="flex items-center gap-1 text-xs">
@@ -599,7 +594,11 @@ export default function CoachProfile() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-800">{rev.text}</p>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-gray-500"
+                    >
                       <MessageCircle className="w-3 h-3 mr-1" />
                       Koç Yanıtı Yaz (yakında)
                     </Button>
@@ -627,7 +626,11 @@ export default function CoachProfile() {
                     <p className="text-xs text-gray-500">
                       8 dk · Video · 1.2K görüntülenme
                     </p>
-                    <Button variant="ghost" size="sm" className="px-0 h-7 text-xs text-red-600">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-0 h-7 text-xs text-red-600"
+                    >
                       İçeriği Görüntüle
                     </Button>
                   </CardContent>
@@ -640,7 +643,10 @@ export default function CoachProfile() {
           <TabsContent value="faq">
             <div className="space-y-3">
               {(c.faqs || []).map((item: any, idx: number) => (
-                <Card key={idx} className="bg-white border border-orange-100 shadow-sm">
+                <Card
+                  key={idx}
+                  className="bg-white border border-orange-100 shadow-sm"
+                >
                   <CardContent className="py-3">
                     <p className="text-sm font-semibold text-gray-900 mb-1">
                       {item.q}

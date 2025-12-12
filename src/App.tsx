@@ -7,20 +7,20 @@ import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index";               // Ana sayfa (Index.tsx)
-import Coaches from "@/pages/Coaches";          // Kullanıcılar için koç listesi
-import ForCoaches from "@/pages/ForCoaches";    // Koçlar için sayfa
+import Home from "@/pages/Index"; // Ana sayfa (Index.tsx)
+import Coaches from "@/pages/Coaches"; // Kullanıcılar için koç listesi
+import ForCoaches from "@/pages/ForCoaches"; // Koçlar için sayfa
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
 import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
-import CoachSelection from "@/pages/CoachSelection";       // Koç seçim süreci
-import CoachApplication from "@/pages/CoachApplication";   // Koç başvuru formu
-import Terms from "@/pages/Terms";              // Kullanım Koşulları
-import Privacy from "@/pages/Privacy";          // Gizlilik Politikası
-import Ethics from "@/pages/Ethics";            // Etik Kurallar
+import CoachSelection from "@/pages/CoachSelection"; // Koç seçim süreci
+import CoachApplication from "@/pages/CoachApplication"; // Koç başvuru formu
+import Terms from "@/pages/Terms"; // Kullanım Koşulları
+import Privacy from "@/pages/Privacy"; // Gizlilik Politikası
+import Ethics from "@/pages/Ethics"; // Etik Kurallar
 
 // Koç profil sayfası (müşteriye görünen)
 import CoachProfile from "@/pages/CoachProfile";
@@ -37,6 +37,14 @@ import CoachSettings from "@/pages/CoachSettings";
 
 // 🔴 Koçun seans talepleri sayfası
 import CoachRequests from "@/pages/CoachRequests";
+
+// ✅ YENİ: USER & CORPORATE SAYFALARI
+import UserDashboard from "@/pages/UserDashboard";
+import UserProfile from "@/pages/UserProfile";
+import UserSettings from "@/pages/UserSettings";
+import CorporateDashboard from "@/pages/CorporateDashboard";
+import CorporateProfile from "@/pages/CorporateProfile";
+import CorporateSettings from "@/pages/CorporateSettings";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -60,8 +68,8 @@ function HowItWorks() {
             <span className="text-yellow-300">En Kolay Yolu</span>
           </h1>
           <p className="text-base md:text-lg text-orange-50 max-w-2xl mx-auto mb-8">
-            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
-            Hiçbir gereksiz karmaşa yok, sadece odaklı ilerleme.
+            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç. Hiçbir
+            gereksiz karmaşa yok, sadece odaklı ilerleme.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a href="/register">
@@ -207,8 +215,8 @@ function HowItWorks() {
             Hazırsan, biz de hazırız.
           </h2>
           <p className="text-gray-600 mb-6 max-w-xl mx-auto">
-            İster ilk işine başlayacak ol, ister C-level hedefle; senin için doğru
-            koç ve doğru hızda bir yol haritası tasarlıyoruz.
+            İster ilk işine başlayacak ol, ister C-level hedefle; senin için
+            doğru koç ve doğru hızda bir yol haritası tasarlıyoruz.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a href="/register">
@@ -270,10 +278,7 @@ export default function App() {
             <Route path="/book-session" element={<BookSession />} />
 
             {/* Koç Başvuru Formu */}
-            <Route
-              path="/coach-application"
-              element={<CoachApplication />}
-            />
+            <Route path="/coach-application" element={<CoachApplication />} />
 
             {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />
@@ -284,8 +289,18 @@ export default function App() {
             {/* Webinars */}
             <Route path="/webinars" element={<Webinars />} />
 
-            {/* Kullanıcı Dashboard */}
+            {/* Kullanıcı Dashboard (eski) */}
             <Route path="/dashboard" element={<Dashboard />} />
+
+            {/* ✅ YENİ: USER PANEL ROUTES */}
+            <Route path="/user/dashboard" element={<UserDashboard />} />
+            <Route path="/user/profile" element={<UserProfile />} />
+            <Route path="/user/settings" element={<UserSettings />} />
+
+            {/* ✅ YENİ: CORPORATE PANEL ROUTES */}
+            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
+            <Route path="/corporate/profile" element={<CorporateProfile />} />
+            <Route path="/corporate/settings" element={<CorporateSettings />} />
 
             {/* Koç Dashboard – iki path birden çalışsın */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />

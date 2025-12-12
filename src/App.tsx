@@ -173,7 +173,9 @@ function HowItWorks() {
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <span>Her seans sonrası gerçek kullanıcı değerlendirmeleri.</span>
+                <span>
+                  Her seans sonrası gerçek kullanıcı değerlendirmeleri.
+                </span>
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
@@ -298,9 +300,15 @@ export default function App() {
             <Route path="/user/settings" element={<UserSettings />} />
 
             {/* ✅ YENİ: CORPORATE PANEL ROUTES */}
-            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
+            <Route
+              path="/corporate/dashboard"
+              element={<CorporateDashboard />}
+            />
             <Route path="/corporate/profile" element={<CorporateProfile />} />
-            <Route path="/corporate/settings" element={<CorporateSettings />} />
+            <Route
+              path="/corporate/settings"
+              element={<CorporateSettings />}
+            />
 
             {/* Koç Dashboard – iki path birden çalışsın */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />

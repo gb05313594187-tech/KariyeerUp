@@ -260,12 +260,34 @@ export default function Navbar() {
                       {getNavText("Profil", "Profile", "Profil")}
                     </DropdownMenuItem>
 
-                    {/* 🔥 YENİ: Ayarlar linki */}
+                    {/* ✅ DÜZELTİLDİ: AYARLAR ARTIK AYRI AYRI */}
+                    <DropdownMenuItem onClick={() => navigate("/user/settings")}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Kullanıcı Ayarları",
+                        "User Settings",
+                        "Paramètres Utilisateur"
+                      )}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => navigate("/coach/settings")}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Koç Ayarları",
+                        "Coach Settings",
+                        "Paramètres Coach"
+                      )}
+                    </DropdownMenuItem>
+
                     <DropdownMenuItem
-                      onClick={() => navigate("/coach/settings")}
+                      onClick={() => navigate("/corporate/settings")}
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      {getNavText("Ayarlar", "Settings", "Paramètres")}
+                      {getNavText(
+                        "Şirket Ayarları",
+                        "Corporate Settings",
+                        "Paramètres Entreprise"
+                      )}
                     </DropdownMenuItem>
 
                     {/* Panel */}
@@ -389,6 +411,55 @@ export default function Navbar() {
                     >
                       <Building2 className="h-4 w-4 mr-2" />
                       Corporate Panel
+                    </Button>
+
+                    {/* ✅ DÜZELTİLDİ: SETTINGS BUTONLARI (MOBILE) AYRI AYRI */}
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/user/settings");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Kullanıcı Ayarları",
+                        "User Settings",
+                        "Paramètres Utilisateur"
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/coach/settings");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Koç Ayarları",
+                        "Coach Settings",
+                        "Paramètres Coach"
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/corporate/settings");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Şirket Ayarları",
+                        "Corporate Settings",
+                        "Paramètres Entreprise"
+                      )}
                     </Button>
 
                     {/* MEVCUT BUTONLAR AYNI */}

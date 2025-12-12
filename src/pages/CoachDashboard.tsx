@@ -234,9 +234,19 @@ export default function CoachDashboard() {
     return d < today && req.status === "approved";
   });
 
+  const coachInitials =
+    coach?.full_name
+      ? coach.full_name
+          .split(" ")
+          .map((p: string) => p[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : "KO";
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-300">
+      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
         Koç paneli yükleniyor...
       </div>
     );
@@ -244,7 +254,7 @@ export default function CoachDashboard() {
 
   if (!coach) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-300 px-4 text-center">
+      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700 px-4 text-center">
         Koç profiliniz bulunamadı. Lütfen önce koç başvurusu yapın veya
         <span className="font-semibold mx-1">/coach/settings</span>
         sayfasından profilinizi tamamlayın.
@@ -253,27 +263,35 @@ export default function CoachDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
-      {/* HERO TOP BAR */}
-      <section className="border-b border-white/5 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+    <div className="min-h-screen bg-white text-slate-900">
+      {/* HERO TOP BAR (turuncu) */}
+      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
         <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-center text-xl font-semibold">
-              {coach.full_name
-                ? coach.full_name
-                    .split(" ")
-                    .map((p: string) => p[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()
-                : "KO"}
-            </div>
+            {/* Profil foto + fallback */}
+            {coach.avatar_url ? (
+              <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/30 shadow-sm bg-white/10">
+                <img
+                  src={coach.avatar_url}
+                  alt={coach.full_name || "Koç"}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-xl font-semibold text-white">
+                {coachInitials}
+              </div>
+            )}
+
             <div>
-              <p className="text-xs text-slate-400">Koç Kontrol Paneli</p>
-              <h1 className="text-xl font-semibold tracking-tight">
-                Hoş geldin, {coach.full_name || "Koç"}
+              <p className="text-xs text-white/90">Koç Kontrol Paneli</p>
+              <h1 className="text-xl font-semibold tracking-tight text-white">
+                Hoş geldin,{" "}
+                <span className="text-yellow-200">
+                  {coach.full_name || "Koç"}
+                </span>
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-white/85">
                 {pendingCount} bekleyen seans talebin, {approvedCount} onaylı
                 seansın var.
               </p>
@@ -281,13 +299,17 @@ export default function CoachDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" size="sm" className="border-white/20">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/40 text-white hover:bg-white/15"
+            >
               <Video className="w-3 h-3 mr-2" />
               Tanıtım Videosu Ekle
             </Button>
             <Button
               size="sm"
-              className="bg-indigo-500 hover:bg-indigo-400 rounded-full"
+              className="bg-white text-slate-900 hover:bg-white/90 rounded-full"
             >
               <CalendarDays className="w-3 h-3 mr-2" />
               Takvimimi Düzenle
@@ -296,51 +318,57 @@ export default function CoachDashboard() {
         </div>
       </section>
 
-      {/* ANA İÇERİK */}
+      {/* ANA İÇERİK (beyaz zemin) */}
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         {/* ÜST ÖZET KARTLARI */}
         <div className="grid md:grid-cols-4 gap-4">
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardContent className="py-4">
-              <p className="text-xs text-slate-400 mb-1">Bekleyen Talepler</p>
-              <p className="text-2xl font-semibold">{pendingCount}</p>
-              <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+              <p className="text-xs text-slate-500 mb-1">Bekleyen Talepler</p>
+              <p className="text-2xl font-semibold text-slate-900">
+                {pendingCount}
+              </p>
+              <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" /> Toplam istek:{" "}
                 {requests.length}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardContent className="py-4">
-              <p className="text-xs text-slate-400 mb-1">Onaylı Seans</p>
-              <p className="text-2xl font-semibold">{approvedCount}</p>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mb-1">Onaylı Seans</p>
+              <p className="text-2xl font-semibold text-slate-900">
+                {approvedCount}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1">
                 (Geçmiş + gelecek onaylı seanslar)
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardContent className="py-4">
-              <p className="text-xs text-slate-400 mb-1">Toplam Talep</p>
-              <p className="text-2xl font-semibold">{requests.length}</p>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mb-1">Toplam Talep</p>
+              <p className="text-2xl font-semibold text-slate-900">
+                {requests.length}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1">
                 Hemen Seans Al üzerinden
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardContent className="py-4">
-              <p className="text-xs text-slate-400 mb-1">Ortalama Puan</p>
+              <p className="text-xs text-slate-500 mb-1">Ortalama Puan</p>
               <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400" />
-                <p className="text-2xl font-semibold">
+                <Star className="w-4 h-4 text-yellow-500" />
+                <p className="text-2xl font-semibold text-slate-900">
                   {coach.rating ? coach.rating.toFixed(1) : "4.9"}
                 </p>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-500 mt-1">
                 (Puan alanı Supabase’e bağlanabilir)
               </p>
             </CardContent>
@@ -349,17 +377,25 @@ export default function CoachDashboard() {
 
         {/* GRAFİK + KAZANÇ ÖZETİ (şimdilik mock) */}
         <div className="grid lg:grid-cols-3 gap-4">
-          <Card className="bg-slate-900/80 border-white/10 lg:col-span-2">
+          <Card className="bg-white border-slate-200 shadow-sm lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-emerald-400" />
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-900">
+                <Wallet className="w-4 h-4 text-emerald-600" />
                 Aylık Kazanç Trendi (örnek)
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="xs" className="h-7 border-white/20">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="h-7 border-slate-200 text-slate-800"
+                >
                   Son 6 Ay
                 </Button>
-                <Button variant="ghost" size="xs" className="h-7 text-xs">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="h-7 text-xs text-slate-700"
+                >
                   <Download className="w-3 h-3 mr-1" />
                   Rapor Al
                 </Button>
@@ -368,19 +404,20 @@ export default function CoachDashboard() {
             <CardContent className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <ReLineChart data={earningsData}>
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={10} />
-                  <YAxis stroke="#64748b" fontSize={10} />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} />
+                  <YAxis stroke="#94a3b8" fontSize={10} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#020617",
-                      border: "1px solid #1e293b",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
                       fontSize: 11,
+                      color: "#0f172a",
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="amount"
-                    stroke="#6366f1"
+                    stroke="#f97316"
                     strokeWidth={2}
                   />
                 </ReLineChart>
@@ -388,10 +425,10 @@ export default function CoachDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-sky-400" />
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-900">
+                <TrendingUp className="w-4 h-4 text-sky-600" />
                 En Çok Tercih Edilen Hizmetler (mock)
               </CardTitle>
             </CardHeader>
@@ -415,11 +452,11 @@ export default function CoachDashboard() {
               ].map((item) => (
                 <div key={item.name} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-slate-100">{item.name}</p>
-                    <p className="text-slate-400">{item.count} seans</p>
+                    <p className="font-medium text-slate-900">{item.name}</p>
+                    <p className="text-slate-500">{item.count} seans</p>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-400">
+                    <span className="text-emerald-600">
                       {item.revenue.toLocaleString("tr-TR")} TL
                     </span>
                     <span className="text-slate-500">
@@ -434,17 +471,21 @@ export default function CoachDashboard() {
         </div>
 
         {/* SEANSLAR BÖLÜMÜ – GERÇEK SUPABASE VERİSİ */}
-        <Card className="bg-slate-900/80 border-white/10">
+        <Card className="bg-white border-slate-200 shadow-sm">
           <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-indigo-400" />
+            <CardTitle className="text-sm flex items-center gap-2 text-slate-900">
+              <CalendarDays className="w-4 h-4 text-orange-600" />
               Seans Yönetimi (Supabase)
             </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
               <Button
                 variant={sessionFilter === "all" ? "default" : "outline"}
                 size="sm"
-                className="h-8 rounded-full text-xs"
+                className={
+                  sessionFilter === "all"
+                    ? "h-8 rounded-full text-xs bg-orange-600 hover:bg-orange-500"
+                    : "h-8 rounded-full text-xs border-slate-200 text-slate-800"
+                }
                 onClick={() => setSessionFilter("all")}
               >
                 Tümü
@@ -452,7 +493,11 @@ export default function CoachDashboard() {
               <Button
                 variant={sessionFilter === "today" ? "default" : "outline"}
                 size="sm"
-                className="h-8 rounded-full text-xs"
+                className={
+                  sessionFilter === "today"
+                    ? "h-8 rounded-full text-xs bg-orange-600 hover:bg-orange-500"
+                    : "h-8 rounded-full text-xs border-slate-200 text-slate-800"
+                }
                 onClick={() => setSessionFilter("today")}
               >
                 Bugün
@@ -460,7 +505,11 @@ export default function CoachDashboard() {
               <Button
                 variant={sessionFilter === "week" ? "default" : "outline"}
                 size="sm"
-                className="h-8 rounded-full text-xs"
+                className={
+                  sessionFilter === "week"
+                    ? "h-8 rounded-full text-xs bg-orange-600 hover:bg-orange-500"
+                    : "h-8 rounded-full text-xs border-slate-200 text-slate-800"
+                }
                 onClick={() => setSessionFilter("week")}
               >
                 Bu Hafta
@@ -468,7 +517,7 @@ export default function CoachDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-full text-xs border-white/20"
+                className="h-8 rounded-full text-xs border-slate-200 text-slate-800"
                 onClick={() => window.location.reload()}
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
@@ -478,7 +527,7 @@ export default function CoachDashboard() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="upcoming">
-              <TabsList className="bg-slate-950 border border-white/10">
+              <TabsList className="bg-white border border-slate-200">
                 <TabsTrigger value="upcoming">Gelecek / Bekleyen</TabsTrigger>
                 <TabsTrigger value="past">Geçmiş Onaylı</TabsTrigger>
               </TabsList>
@@ -486,7 +535,7 @@ export default function CoachDashboard() {
               {/* Gelecek Seanslar / Bekleyenler */}
               <TabsContent value="upcoming" className="mt-4 space-y-3">
                 {upcomingRequests.length === 0 && (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Henüz bu filtreye uygun seans talebi yok.
                   </p>
                 )}
@@ -494,27 +543,27 @@ export default function CoachDashboard() {
                 {upcomingRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-3"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs">
-                        <User className="w-4 h-4 text-indigo-300" />
+                      <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-xs border border-orange-100">
+                        <User className="w-4 h-4 text-orange-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium text-slate-900">
                           {req.full_name || "Danışan"}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                           {req.note || "Hedef: (yakında not alanı eklenecek)"}
                         </p>
                         <p className="text-[11px] text-slate-500 flex items-center gap-2">
                           <span>{formatDate(req.selected_date)}</span>
-                          <span className="w-1 h-1 rounded-full bg-slate-500" />
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
                           <Clock className="w-3 h-3" />
                           {req.selected_time}
                         </p>
                         {req.email && (
-                          <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <p className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
                             <Mail className="w-3 h-3" />
                             {req.email}
                           </p>
@@ -528,7 +577,7 @@ export default function CoachDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-[11px] border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10"
+                          className="h-8 text-[11px] border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                           onClick={() => updateStatus(req.id, "approved")}
                           disabled={
                             updatingId === req.id || req.status === "approved"
@@ -540,7 +589,7 @@ export default function CoachDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-[11px] border-red-500/60 text-red-300 hover:bg-red-500/10"
+                          className="h-8 text-[11px] border-red-300 text-red-700 hover:bg-red-50"
                           onClick={() => updateStatus(req.id, "rejected")}
                           disabled={
                             updatingId === req.id || req.status === "rejected"
@@ -558,7 +607,7 @@ export default function CoachDashboard() {
               {/* Geçmiş Onaylı Seanslar */}
               <TabsContent value="past" className="mt-4 space-y-3">
                 {pastRequests.length === 0 && (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Henüz geçmiş onaylı seans bulunmuyor.
                   </p>
                 )}
@@ -566,18 +615,18 @@ export default function CoachDashboard() {
                 {pastRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-3"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium">
+                      <p className="text-sm font-medium text-slate-900">
                         {req.full_name || "Danışan"}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-600">
                         {req.note || "Seans tamamlandı."}
                       </p>
                       <p className="text-[11px] text-slate-500 flex items-center gap-2">
                         <span>{formatDate(req.selected_date)}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-500" />
+                        <span className="w-1 h-1 rounded-full bg-slate-300" />
                         <Clock className="w-3 h-3" />
                         {req.selected_time}
                       </p>
@@ -587,7 +636,7 @@ export default function CoachDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 text-[11px] border-white/20"
+                        className="h-8 text-[11px] border-slate-200 text-slate-800"
                       >
                         AI Seans Özeti (yakında)
                       </Button>
@@ -601,10 +650,10 @@ export default function CoachDashboard() {
 
         {/* ALT BLOK: Müşteri & Mesaj – şimdilik mock, sonra bağlarız */}
         <div className="grid lg:grid-cols-2 gap-4">
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <User className="w-4 h-4 text-indigo-400" />
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-900">
+                <User className="w-4 h-4 text-orange-600" />
                 Son Müşteriler (örnek)
               </CardTitle>
             </CardHeader>
@@ -612,11 +661,11 @@ export default function CoachDashboard() {
               {["Mert Y.", "Zeynep A.", "Ali K."].map((name, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-lg bg-slate-950/60 px-3 py-2"
+                  className="flex items-center justify-between rounded-lg bg-white px-3 py-2 border border-slate-200"
                 >
                   <div>
-                    <p className="text-sm font-medium">{name}</p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-sm font-medium text-slate-900">{name}</p>
+                    <p className="text-[11px] text-slate-500">
                       Son seans: {idx === 0 ? "Dün" : `${idx + 2} gün önce`}
                     </p>
                   </div>
@@ -624,14 +673,14 @@ export default function CoachDashboard() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[11px] border-white/20"
+                      className="h-7 text-[11px] border-slate-200 text-slate-800"
                     >
                       Profil
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-[11px] text-slate-300"
+                      className="h-7 text-[11px] text-slate-700"
                     >
                       Notlar
                     </Button>
@@ -641,10 +690,10 @@ export default function CoachDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 border-white/10">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-400" />
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-900">
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
                 Son Mesajlar (örnek)
               </CardTitle>
             </CardHeader>
@@ -661,18 +710,18 @@ export default function CoachDashboard() {
               ].map((m, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-lg bg-slate-950/60 px-3 py-2"
+                  className="flex items-center justify-between rounded-lg bg-white px-3 py-2 border border-slate-200"
                 >
                   <div>
-                    <p className="text-sm font-medium">{m.from}</p>
-                    <p className="text-[11px] text-slate-400 line-clamp-1">
+                    <p className="text-sm font-medium text-slate-900">{m.from}</p>
+                    <p className="text-[11px] text-slate-500 line-clamp-1">
                       {m.text}
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-[11px] border-white/20"
+                    className="h-7 text-[11px] border-slate-200 text-slate-800"
                   >
                     Yanıtla
                   </Button>

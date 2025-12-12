@@ -11,6 +11,8 @@ import {
   LogOut,
   Settings,
   Home,
+  LayoutDashboard, // ✅ EKLENDİ
+  Building2,       // ✅ EKLENDİ
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -228,6 +230,30 @@ export default function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
+                    {/* ✅ EKLENDİ: 3 PANEL KISAYOLU */}
+                    <DropdownMenuItem onClick={() => navigate("/user/dashboard")}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      {getNavText("User Panel", "User Panel", "User Panel")}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => navigate("/coach/dashboard")}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      {getNavText("Coach Panel", "Coach Panel", "Coach Panel")}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => navigate("/corporate/dashboard")}
+                    >
+                      <Building2 className="h-4 w-4 mr-2" />
+                      {getNavText(
+                        "Corporate Panel",
+                        "Corporate Panel",
+                        "Corporate Panel"
+                      )}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
                     {/* Profil */}
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="h-4 w-4 mr-2" />
@@ -328,6 +354,44 @@ export default function Navbar() {
 
                 {isLoggedIn ? (
                   <>
+                    {/* ✅ EKLENDİ: 3 PANEL BUTONU (MOBILE) */}
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/user/dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      User Panel
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/coach/dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Coach Panel
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
+                      onClick={() => {
+                        navigate("/corporate/dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Corporate Panel
+                    </Button>
+
+                    {/* MEVCUT BUTONLAR AYNI */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"

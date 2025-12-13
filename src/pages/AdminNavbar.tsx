@@ -1,39 +1,26 @@
 // src/components/admin/AdminNavbar.tsx
 // @ts-nocheck
-import { NavLink } from "react-router-dom";
 
-const linkClass = ({ isActive }: any) =>
-  `px-3 py-2 rounded-lg text-sm font-medium ${
-    isActive ? "bg-red-600 text-white" : "text-gray-700 hover:bg-gray-100"
-  }`;
+import { Link } from "react-router-dom";
 
 export default function AdminNavbar() {
   return (
-    <div className="bg-white border-b">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold">
-            K
-          </div>
-          <div className="font-bold text-gray-900">Admin</div>
+    <div className="bg-white border-b shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="font-bold text-red-600">
+          Kariyeer Admin
         </div>
 
-        <nav className="flex items-center gap-2">
-          <NavLink to="/admin" className={linkClass} end>
+        <nav className="flex gap-6 text-sm font-medium">
+          <Link to="/admin" className="hover:text-red-600">
             Dashboard
-          </NavLink>
-          <NavLink to="/admin/coaches" className={linkClass}>
-            Koçlar
-          </NavLink>
-          <NavLink to="/admin/companies" className={linkClass}>
-            Şirketler
-          </NavLink>
-          <NavLink to="/admin/requests" className={linkClass}>
-            Talepler
-          </NavLink>
-          <NavLink to="/admin/settings" className={linkClass}>
+          </Link>
+          <Link to="/admin/profile" className="hover:text-red-600">
+            Profil
+          </Link>
+          <Link to="/admin/settings" className="hover:text-red-600">
             Ayarlar
-          </NavLink>
+          </Link>
         </nav>
       </div>
     </div>

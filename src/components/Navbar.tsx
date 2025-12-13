@@ -1,3 +1,4 @@
+// src/components/Navbar.tsx
 // @ts-nocheck
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -11,12 +12,13 @@ import {
   LogOut,
   Settings,
   Home,
-  LayoutDashboard, // ✅ EKLENDİ
-  Building2,       // ✅ EKLENDİ
+  LayoutDashboard,
+  Building2,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
+import { supabase } from "@/lib/supabase";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,10 +34,17 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
 
-  // ---- LOGIN DURUMUNU LOCALSTORAGE'DAN OKU ----
   const authCtx = useAuth?.();
+
+  // ---- LOGIN DURUMUNU LOCALSTORAGE'DAN OKU ----
   const [storageLoggedIn, setStorageLoggedIn] = useState(false);
   const [storageEmail, setStorageEmail] = useState<string | null>(null);
+
+  // ---- ROLE ----
+  const [role, setRole] = useState<"user" | "coach" | "corporate" | "admin" | null>(
+    null
+  );
+  const [loadingRole, setLoadingRole] = useState(false);
 
   useEffect(() => {
     try {
@@ -77,11 +86,7 @@ export default function Navbar() {
       path: "/for-coaches",
     },
     {
-      name: getNavText(
-        "Şirketler İçin",
-        "For Companies",
-        "Pour les entreprises"
-      ),
+      name: getNavText("Şirketler İçin", "For Companies", "Pour les entreprises"),
       path: "/for-companies",
     },
     {
@@ -133,24 +138,115 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      // context varsa onu da logout et
       await authCtx?.logout?.();
     } catch (e) {
       console.error("Logout error:", e);
     }
-    // localStorage kaydını temizle
     localStorage.removeItem("kariyeer_user");
-    // tamamen sıfırdan yükle
     window.location.href = "/";
   };
 
   const getUserDisplayName = () => {
     if (authCtx?.user?.fullName) return authCtx.user.fullName;
-    if (authCtx?.supabaseUser?.email)
-      return authCtx.supabaseUser.email.split("@")[0];
+    if (authCtx?.supabaseUser?.email) return authCtx.supabaseUser.email.split("@")[0];
     if (storageEmail) return storageEmail.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
+
+  // ---- ROLE'Ü SUPABASE'TEN ÇEK ----
+  useEffect(() => {
+    const loadRole = async () => {
+      if (!isLoggedIn) {
+        setRole(null);
+        return;
+      }
+
+      setLoadingRole(true);
+      try {
+        const { data } = await supabase.auth.getUser();
+        const u = data?.user;
+
+        if (!u) {
+          setRole(null);
+          setLoadingRole(false);
+          return;
+        }
+
+        // profiles.role (önerilen)
+        const { data: prof, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", u.id)
+          .single();
+
+        if (!error && prof?.role) {
+          setRole(prof.role);
+        } else {
+          // fallback: metadata
+          setRole(u.user_metadata?.role ?? null);
+        }
+      } catch (e) {
+        console.error("loadRole error", e);
+        setRole(null);
+      } finally {
+        setLoadingRole(false);
+      }
+    };
+
+    loadRole();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => loadRole());
+    return () => sub.subscription.unsubscribe();
+  }, [isLoggedIn]);
+
+  // ---- ROLE-BASED ROUTES / LABELS ----
+  const panelRoute =
+    role === "coach"
+      ? "/coach/dashboard"
+      : role === "corporate"
+      ? "/corporate/dashboard"
+      : role === "admin"
+      ? "/admin"
+      : "/user/dashboard";
+
+  const settingsRoute =
+    role === "coach"
+      ? "/coach/settings"
+      : role === "corporate"
+      ? "/corporate/settings"
+      : role === "admin"
+      ? "/admin/settings"
+      : "/user/settings";
+
+  const profileRoute =
+    role === "coach"
+      ? "/coach/profile"
+      : role === "corporate"
+      ? "/corporate/profile"
+      : role === "admin"
+      ? "/admin/profile"
+      : "/user/profile";
+
+  const panelLabel =
+    role === "coach"
+      ? getNavText("Coach Panel", "Coach Panel", "Coach Panel")
+      : role === "corporate"
+      ? getNavText("Corporate Panel", "Corporate Panel", "Corporate Panel")
+      : role === "admin"
+      ? getNavText("CEO Panel", "CEO Panel", "CEO Panel")
+      : getNavText("User Panel", "User Panel", "User Panel");
+
+  const settingsLabel =
+    role === "coach"
+      ? getNavText("Koç Ayarları", "Coach Settings", "Paramètres Coach")
+      : role === "corporate"
+      ? getNavText("Şirket Ayarları", "Corporate Settings", "Paramètres Entreprise")
+      : role === "admin"
+      ? getNavText("Sistem Ayarları", "System Settings", "Paramètres Système")
+      : getNavText("Kullanıcı Ayarları", "User Settings", "Paramètres Utilisateur");
+
+  const panelIcon =
+    role === "corporate" ? Building2 : role === "admin" ? LayoutDashboard : LayoutDashboard;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -212,7 +308,7 @@ export default function Navbar() {
                   {getNavText("Ana Sayfa", "Home", "Accueil")}
                 </Button>
 
-                {/* Kullanıcı menüsü + Çıkış */}
+                {/* Kullanıcı menüsü */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -224,85 +320,47 @@ export default function Navbar() {
                       {getUserDisplayName()}
                     </Button>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       {getNavText("Hesabım", "My Account", "Mon compte")}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
-                    {/* ✅ EKLENDİ: 3 PANEL KISAYOLU */}
-                    <DropdownMenuItem onClick={() => navigate("/user/dashboard")}>
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      {getNavText("User Panel", "User Panel", "User Panel")}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={() => navigate("/coach/dashboard")}>
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      {getNavText("Coach Panel", "Coach Panel", "Coach Panel")}
-                    </DropdownMenuItem>
-
+                    {/* ✅ ROLE-BASED PANEL (TEK) */}
                     <DropdownMenuItem
-                      onClick={() => navigate("/corporate/dashboard")}
+                      onClick={() => navigate(panelRoute)}
+                      disabled={loadingRole}
                     >
-                      <Building2 className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Corporate Panel",
-                        "Corporate Panel",
-                        "Corporate Panel"
-                      )}
+                      <panelIcon className="h-4 w-4 mr-2" />
+                      {loadingRole
+                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
+                        : panelLabel}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
-                    {/* Profil */}
-                    <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    {/* ✅ ROLE-BASED PROFILE (TEK) */}
+                    <DropdownMenuItem
+                      onClick={() => navigate(profileRoute)}
+                      disabled={loadingRole}
+                    >
                       <User className="h-4 w-4 mr-2" />
                       {getNavText("Profil", "Profile", "Profil")}
                     </DropdownMenuItem>
 
-                    {/* ✅ DÜZELTİLDİ: AYARLAR ARTIK AYRI AYRI */}
-                    <DropdownMenuItem onClick={() => navigate("/user/settings")}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Kullanıcı Ayarları",
-                        "User Settings",
-                        "Paramètres Utilisateur"
-                      )}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={() => navigate("/coach/settings")}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Koç Ayarları",
-                        "Coach Settings",
-                        "Paramètres Coach"
-                      )}
-                    </DropdownMenuItem>
-
+                    {/* ✅ ROLE-BASED SETTINGS (TEK) */}
                     <DropdownMenuItem
-                      onClick={() => navigate("/corporate/settings")}
+                      onClick={() => navigate(settingsRoute)}
+                      disabled={loadingRole}
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Şirket Ayarları",
-                        "Corporate Settings",
-                        "Paramètres Entreprise"
-                      )}
-                    </DropdownMenuItem>
-
-                    {/* Panel */}
-                    <DropdownMenuItem
-                      onClick={() => navigate("/coach-dashboard")}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText("Panel", "Dashboard", "Tableau de bord")}
+                      {settingsLabel}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-red-600"
-                    >
+
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="h-4 w-4 mr-2" />
                       {getNavText("Çıkış Yap", "Logout", "Se déconnecter")}
                     </DropdownMenuItem>
@@ -311,7 +369,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/* Giriş / Kayıt sadece login DEĞİLKEN */}
+                {/* Giriş / Kayıt */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -332,10 +390,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="lg:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button className="lg:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? (
               <X className="h-6 w-6 text-red-600" />
             ) : (
@@ -376,93 +431,55 @@ export default function Navbar() {
 
                 {isLoggedIn ? (
                   <>
-                    {/* ✅ EKLENDİ: 3 PANEL BUTONU (MOBILE) */}
+                    {/* ✅ ROLE-BASED PANEL (MOBILE) */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
                       onClick={() => {
-                        navigate("/user/dashboard");
+                        navigate(panelRoute);
                         setMobileMenuOpen(false);
                       }}
+                      disabled={loadingRole}
                     >
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      User Panel
+                      {role === "corporate" ? (
+                        <Building2 className="h-4 w-4 mr-2" />
+                      ) : (
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                      )}
+                      {loadingRole
+                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
+                        : panelLabel}
                     </Button>
 
+                    {/* ✅ ROLE-BASED PROFILE (MOBILE) */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
                       onClick={() => {
-                        navigate("/coach/dashboard");
+                        navigate(profileRoute);
                         setMobileMenuOpen(false);
                       }}
+                      disabled={loadingRole}
                     >
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Coach Panel
+                      <User className="h-4 w-4 mr-2" />
+                      {getNavText("Profil", "Profile", "Profil")}
                     </Button>
 
+                    {/* ✅ ROLE-BASED SETTINGS (MOBILE) */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
                       onClick={() => {
-                        navigate("/corporate/dashboard");
+                        navigate(settingsRoute);
                         setMobileMenuOpen(false);
                       }}
-                    >
-                      <Building2 className="h-4 w-4 mr-2" />
-                      Corporate Panel
-                    </Button>
-
-                    {/* ✅ DÜZELTİLDİ: SETTINGS BUTONLARI (MOBILE) AYRI AYRI */}
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
-                      onClick={() => {
-                        navigate("/user/settings");
-                        setMobileMenuOpen(false);
-                      }}
+                      disabled={loadingRole}
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Kullanıcı Ayarları",
-                        "User Settings",
-                        "Paramètres Utilisateur"
-                      )}
+                      {settingsLabel}
                     </Button>
 
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
-                      onClick={() => {
-                        navigate("/coach/settings");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Koç Ayarları",
-                        "Coach Settings",
-                        "Paramètres Coach"
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
-                      onClick={() => {
-                        navigate("/corporate/settings");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText(
-                        "Şirket Ayarları",
-                        "Corporate Settings",
-                        "Paramètres Entreprise"
-                      )}
-                    </Button>
-
-                    {/* MEVCUT BUTONLAR AYNI */}
+                    {/* Home */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
@@ -474,17 +491,8 @@ export default function Navbar() {
                       <Home className="h-4 w-4 mr-2" />
                       {getNavText("Ana Sayfa", "Home", "Accueil")}
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="border-red-600 text-red-600 hover:bg-red-50 w-full justify-start"
-                      onClick={() => {
-                        navigate("/dashboard");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      {getNavText("Panel", "Dashboard", "Tableau de bord")}
-                    </Button>
+
+                    {/* Logout */}
                     <Button
                       variant="outline"
                       className="border-red-600 text-red-600 hover:bg-red-50 w-full justify-start"

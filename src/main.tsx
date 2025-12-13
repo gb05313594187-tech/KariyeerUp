@@ -10,6 +10,9 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
+// ✅ EKLENDİ: Sonner Toaster
+import { Toaster } from "sonner";
+
 /* =====================================================
    ✅ SADECE EKLENDİ: ErrorBoundary
    (Hiçbir şey çıkarılmadı, optimize edilmedi)
@@ -37,7 +40,9 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       const message =
         this.state.error?.message ||
-        (typeof this.state.error === "string" ? this.state.error : "Unknown error");
+        (typeof this.state.error === "string"
+          ? this.state.error
+          : "Unknown error");
       const stack = this.state.error?.stack || "";
 
       return (
@@ -73,6 +78,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
           <ErrorBoundary>
             <App />
           </ErrorBoundary>
+
+          {/* ✅ Toast’ların görünmesi için root'a eklendi */}
+          <Toaster richColors position="top-right" />
         </NotificationProvider>
       </AuthProvider>
     </LanguageProvider>

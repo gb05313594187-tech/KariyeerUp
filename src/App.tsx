@@ -2,13 +2,16 @@
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// LAYOUT
+// UI / Icons
+import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-// ✅ Admin Layout + Navbar
-import AdminLayout from "@/layouts/AdminLayout"; // oluşturduğun dosya
-// Eğer AdminLayout yoksa geçici olarak: import AdminLayout from "@/pages/AdminLayout"; gibi düzelt
+// ✅ Admin Layout (SENİN DOSYAN: src/pages/AdminLayout.tsx)
+import AdminLayout from "@/pages/AdminLayout";
 
 // SAYFALAR
 import Home from "@/pages/Index";
@@ -67,12 +70,8 @@ function PublicLayout() {
 }
 
 /* -------------------------------------------------
-   Nasıl Çalışır sayfası (kullanıcı tarafı)
-   (Senin dosyandaki içerik burada durabilir)
+   Nasıl Çalışır sayfası
 -------------------------------------------------- */
-import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 function HowItWorks() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -211,7 +210,6 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<AdminSettings />} />
-          {/* istersen buraya /admin/requests, /admin/coaches vs ekleriz */}
         </Route>
 
         {/* ✅ PUBLIC: Navbar/Footer var */}

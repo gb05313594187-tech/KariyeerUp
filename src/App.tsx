@@ -281,9 +281,9 @@ export default function App() {
 
             {/* ✅ COACH PANEL */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
+            <Route path="/coach/profile" element={<CoachSelfProfile />} />
             <Route path="/coach/settings" element={<CoachSettings />} />
             <Route path="/coach/requests" element={<CoachRequests />} />
-            <Route path="/coach/profile" element={<CoachSelfProfile />} />
 
             {/* ✅ Eski path'leri geriye dönük yönlendir */}
             <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />

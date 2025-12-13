@@ -1,6 +1,6 @@
 // src/pages/CorporateDashboard.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,17 +17,13 @@ export default function CorporateDashboard() {
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
 
-  const canRender = useMemo(() => !loading, [loading]);
-
   const fetchRequests = async () => {
     setRequestsLoading(true);
     setRequestsError(null);
 
     const { data, error } = await supabase
       .from("company_requests")
-      .select(
-        "id, company_name, contact_person, email, phone, message, status, created_at"
-      )
+      .select("id, company_name, contact_person, email, phone, message, status, created_at")
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -42,12 +38,10 @@ export default function CorporateDashboard() {
     setRequestsLoading(false);
   };
 
-  const updateStatus = async (id: string, nextStatus: string) => {
-    // UI hızlı hissetsin diye optimistik güncelleme
+  const updateStatus = async (id: string, nextStatus: (typeof STATUS)[number]) => {
+    // optimistik güncelleme
     const prev = requests;
-    setRequests((cur) =>
-      cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
-    );
+    setRequests((cur) => cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r)));
 
     const { error } = await supabase
       .from("company_requests")
@@ -55,7 +49,7 @@ export default function CorporateDashboard() {
       .eq("id", id);
 
     if (error) {
-      setRequests(prev); // geri al
+      setRequests(prev);
       toast.error("Status güncellenemedi (RLS/Policy kontrol).");
       console.error("UPDATE ERROR:", error);
       return;
@@ -99,8 +93,7 @@ export default function CorporateDashboard() {
             <p className="text-xs text-white/90">Corporate Panel</p>
             <h1 className="text-2xl font-bold text-white">Şirket Paneli</h1>
             <p className="text-xs text-white/85 mt-1">
-              Kullanıcı:{" "}
-              <span className="text-yellow-200">{me?.email || "-"}</span>
+              Kullanıcı: <span className="text-yellow-200">{me?.email || "-"}</span>
             </p>
           </div>
 
@@ -138,9 +131,7 @@ export default function CorporateDashboard() {
                 <Inbox className="w-4 h-4 text-orange-600" /> Talepler
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-slate-700">
-              Son 50 talep listelenir.
-            </CardContent>
+            <CardContent className="text-sm text-slate-700">Son 50 talep listelenir.</CardContent>
           </Card>
 
           <Card className="bg-white border-slate-200 shadow-sm">
@@ -149,9 +140,7 @@ export default function CorporateDashboard() {
                 <Users className="w-4 h-4 text-orange-600" /> Koç Havuzu
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-slate-700">
-              Aktif koçlara hızlı erişim (demo).
-            </CardContent>
+            <CardContent className="text-sm text-slate-700">Aktif koçlara hızlı erişim (demo).</CardContent>
           </Card>
 
           <Card className="bg-white border-slate-200 shadow-sm">
@@ -185,9 +174,7 @@ export default function CorporateDashboard() {
               </div>
             )}
 
-            {!requestsError && requestsLoading && (
-              <div className="py-4">Talepler getiriliyor...</div>
-            )}
+            {!requestsError && requestsLoading && <div className="py-4">Talepler getiriliyor...</div>}
 
             {!requestsError && !requestsLoading && requests.length === 0 && (
               <div className="py-4 text-slate-500">Kayıt yok.</div>
@@ -196,45 +183,30 @@ export default function CorporateDashboard() {
             {!requestsError && !requestsLoading && requests.length > 0 && (
               <div className="space-y-3">
                 {requests.map((r) => (
-                  <div
-                    key={r.id}
-                    className="rounded-xl border border-slate-200 p-4 bg-white"
-                  >
+                  <div key={r.id} className="rounded-xl border border-slate-200 p-4 bg-white">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-slate-900">
-                        {r.company_name || "-"}
-                      </div>
+                      <div className="font-semibold text-slate-900">{r.company_name || "-"}</div>
 
                       <div className="flex items-center gap-2">
                         <span className="text-xs px-2 py-1 rounded-full border border-slate-200 bg-slate-50">
                           {r.status || "new"}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {r.created_at
-                            ? new Date(r.created_at).toLocaleString()
-                            : ""}
+                          {r.created_at ? new Date(r.created_at).toLocaleString() : ""}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-2 text-xs text-slate-600 space-y-1">
                       <div>
-                        Yetkili:{" "}
-                        <span className="text-slate-800">
-                          {r.contact_person || "-"}
-                        </span>
+                        Yetkili: <span className="text-slate-800">{r.contact_person || "-"}</span>
                       </div>
                       <div>
-                        Email:{" "}
-                        <span className="text-slate-800">{r.email || "-"}</span>
-                        {"  "}• Tel:{" "}
-                        <span className="text-slate-800">{r.phone || "-"}</span>
+                        Email: <span className="text-slate-800">{r.email || "-"}</span>
+                        {"  "}• Tel: <span className="text-slate-800">{r.phone || "-"}</span>
                       </div>
-                      {r.message && (
-                        <div className="pt-2 text-sm text-slate-700">
-                          {r.message}
-                        </div>
-                      )}
+
+                      {r.message && <div className="pt-2 text-sm text-slate-700">{r.message}</div>}
 
                       {/* STATUS BUTTONS */}
                       <div className="pt-3 flex flex-wrap gap-2">
@@ -246,9 +218,7 @@ export default function CorporateDashboard() {
                               size="sm"
                               variant={active ? "default" : "outline"}
                               className={
-                                active
-                                  ? "bg-orange-600 hover:bg-orange-500"
-                                  : "border-slate-200"
+                                active ? "bg-orange-600 hover:bg-orange-500" : "border-slate-200"
                               }
                               onClick={() => updateStatus(r.id, s)}
                             >
@@ -258,9 +228,7 @@ export default function CorporateDashboard() {
                         })}
                       </div>
 
-                      <div className="pt-2 text-[11px] text-slate-400 font-mono">
-                        id: {r.id}
-                      </div>
+                      <div className="pt-2 text-[11px] text-slate-400 font-mono">id: {r.id}</div>
                     </div>
                   </div>
                 ))}

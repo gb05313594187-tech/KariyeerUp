@@ -24,7 +24,9 @@ export default function CorporateDashboard() {
     // Bu yüzden son talepleri listeliyoruz (policy izin veriyorsa döner).
     const { data, error } = await supabase
       .from("company_requests")
-      .select("id, company_name, contact_person, email, phone, message, status, created_at")
+      .select(
+        "id, company_name, contact_person, email, phone, message, status, created_at"
+      )
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -57,7 +59,7 @@ export default function CorporateDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  if (loading) {
+  if (!canRender) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
         Yükleniyor...
@@ -158,7 +160,8 @@ export default function CorporateDashboard() {
                 <div className="font-semibold">Okuma hatası</div>
                 <div className="text-xs mt-1">{requestsError}</div>
                 <div className="text-xs mt-2 text-red-600/90">
-                  Not: Eğer policy SELECT izni yoksa burada hata/boş liste görürsün.
+                  Not: Eğer policy SELECT izni yoksa burada hata/boş liste
+                  görürsün.
                 </div>
               </div>
             )}
@@ -189,24 +192,33 @@ export default function CorporateDashboard() {
                           {r.status || "new"}
                         </span>
                         <span className="ml-2 text-slate-500">
-                          {r.created_at ? new Date(r.created_at).toLocaleString() : ""}
+                          {r.created_at
+                            ? new Date(r.created_at).toLocaleString()
+                            : ""}
                         </span>
                       </div>
                     </div>
 
                     <div className="mt-2 text-xs text-slate-600 space-y-1">
                       <div>
-                        Yetkili: <span className="text-slate-800">{r.contact_person || "-"}</span>
+                        Yetkili:{" "}
+                        <span className="text-slate-800">
+                          {r.contact_person || "-"}
+                        </span>
                       </div>
                       <div>
-                        Email: <span className="text-slate-800">{r.email || "-"}</span>
-                        {"  "}• Tel: <span className="text-slate-800">{r.phone || "-"}</span>
+                        Email:{" "}
+                        <span className="text-slate-800">{r.email || "-"}</span>
+                        {"  "}• Tel:{" "}
+                        <span className="text-slate-800">{r.phone || "-"}</span>
                       </div>
+
                       {r.message && (
                         <div className="pt-2 text-sm text-slate-700">
                           {r.message}
                         </div>
                       )}
+
                       <div className="pt-2 text-[11px] text-slate-400 font-mono">
                         id: {r.id}
                       </div>

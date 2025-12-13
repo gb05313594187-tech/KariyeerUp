@@ -1,50 +1,51 @@
 // src/App.tsx
 // @ts-nocheck
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 // Ortak ikon ve butonlar
 import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // SAYFALAR
-import Home from "@/pages/Index"; // Ana sayfa (Index.tsx)
-import Coaches from "@/pages/Coaches"; // Kullanıcılar için koç listesi
-import ForCoaches from "@/pages/ForCoaches"; // Koçlar için sayfa
+import Home from "@/pages/Index";
+import Coaches from "@/pages/Coaches";
+import ForCoaches from "@/pages/ForCoaches";
 import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
 import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
-import CoachSelection from "@/pages/CoachSelection"; // Koç seçim süreci
-import CoachApplication from "@/pages/CoachApplication"; // Koç başvuru formu
-import Terms from "@/pages/Terms"; // Kullanım Koşulları
-import Privacy from "@/pages/Privacy"; // Gizlilik Politikası
-import Ethics from "@/pages/Ethics"; // Etik Kurallar
+import CoachSelection from "@/pages/CoachSelection";
+import CoachApplication from "@/pages/CoachApplication";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
+import Ethics from "@/pages/Ethics";
 
-// Koç profil sayfası (müşteriye görünen)
-import CoachProfile from "@/pages/CoachProfile";
+// ✅ Public koç profil (müşteriye görünen)
+import CoachPublicProfile from "@/pages/CoachProfile";
 
-// Kullanıcı Dashboard ve Koç Dashboard
-import Dashboard from "@/pages/Dashboard";
-import CoachDashboard from "@/pages/CoachDashboard";
-
-// Profil Sayfası
-import ProfilePage from "@/pages/Profile";
-
-// 🔴 Koç Ayarları sayfası
-import CoachSettings from "@/pages/CoachSettings";
-
-// 🔴 Koçun seans talepleri sayfası
-import CoachRequests from "@/pages/CoachRequests";
-
-// ✅ YENİ: USER & CORPORATE SAYFALARI
+// ✅ Panel sayfaları
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
 import UserSettings from "@/pages/UserSettings";
+
 import CorporateDashboard from "@/pages/CorporateDashboard";
 import CorporateProfile from "@/pages/CorporateProfile";
 import CorporateSettings from "@/pages/CorporateSettings";
+
+import CoachDashboard from "@/pages/CoachDashboard";
+import CoachSettings from "@/pages/CoachSettings";
+import CoachRequests from "@/pages/CoachRequests";
+
+// ⚠️ Koçun kendi profili ayrı dosya olmalı (öneri)
+// Eğer sende panel koç profili ayrı bir dosyada değilse,
+// şimdilik CoachPublicProfile'ı kullanabilirsin ama doğru değil.
+import CoachSelfProfile from "@/pages/CoachProfile"; // <- eğer ayrı dosyan varsa bunu değiştir: "@/pages/CoachSelfProfile"
+
+// Eski sayfalar (geriye dönük uyumluluk)
+import Dashboard from "@/pages/Dashboard";
+import ProfilePage from "@/pages/Profile";
 
 // LAYOUT
 import Navbar from "@/components/Navbar";
@@ -143,9 +144,7 @@ function HowItWorks() {
               <div className="mt-4 mb-4">
                 <LineChart className="w-8 h-8 text-yellow-500" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">
-                Gelişimini Takip Et
-              </h3>
+              <h3 className="text-xl font-semibold mb-2">Gelişimini Takip Et</h3>
               <p className="text-gray-600 text-sm">
                 Her seans sonrası notlarını kaydet, hedeflerini güncelle ve
                 ilerlemeni temiz bir dashboard üzerinden takip et.
@@ -173,9 +172,7 @@ function HowItWorks() {
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <span>
-                  Her seans sonrası gerçek kullanıcı değerlendirmeleri.
-                </span>
+                <span>Her seans sonrası gerçek kullanıcı değerlendirmeleri.</span>
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
@@ -248,80 +245,56 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-white">
-        {/* NAVBAR */}
         <Navbar />
 
-        {/* ROUTES */}
         <main className="flex-1">
           <Routes>
             {/* Ana Sayfa */}
             <Route path="/" element={<Home />} />
 
-            {/* Nasıl Çalışır – TR + eski slug */}
+            {/* Nasıl Çalışır */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
 
-            {/* Koç Listeleme (kullanıcılar için) */}
+            {/* Public koç listesi ve koç sayfası */}
             <Route path="/coaches" element={<Coaches />} />
+            <Route path="/coach/:id" element={<CoachPublicProfile />} />
 
-            {/* Tekil koç profil sayfası */}
-            <Route path="/coach/:id" element={<CoachProfile />} />
-
-            {/* Koçlar İçin – ForCoaches sayfası */}
+            {/* Public sayfalar */}
             <Route path="/for-coaches" element={<ForCoaches />} />
-
-            {/* Koç Seçim Süreci */}
-            <Route
-              path="/coach-selection-process"
-              element={<CoachSelection />}
-            />
-
-            {/* Seans Rezervasyonu – yeni takvim sayfası */}
-            <Route path="/book-session" element={<BookSession />} />
-
-            {/* Koç Başvuru Formu */}
-            <Route path="/coach-application" element={<CoachApplication />} />
-
-            {/* Şirketler İçin */}
             <Route path="/for-companies" element={<ForCompanies />} />
-
-            {/* MentorCircle */}
             <Route path="/mentor-circle" element={<MentorCircle />} />
-
-            {/* Webinars */}
             <Route path="/webinars" element={<Webinars />} />
 
-            {/* Kullanıcı Dashboard (eski) */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Akışlar */}
+            <Route path="/coach-selection-process" element={<CoachSelection />} />
+            <Route path="/book-session" element={<BookSession />} />
+            <Route path="/coach-application" element={<CoachApplication />} />
 
-            {/* ✅ YENİ: USER PANEL ROUTES */}
+            {/* ✅ USER PANEL */}
             <Route path="/user/dashboard" element={<UserDashboard />} />
             <Route path="/user/profile" element={<UserProfile />} />
             <Route path="/user/settings" element={<UserSettings />} />
 
-            {/* ✅ YENİ: CORPORATE PANEL ROUTES */}
-            <Route
-              path="/corporate/dashboard"
-              element={<CorporateDashboard />}
-            />
+            {/* ✅ CORPORATE PANEL */}
+            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
             <Route path="/corporate/profile" element={<CorporateProfile />} />
-            <Route
-              path="/corporate/settings"
-              element={<CorporateSettings />}
-            />
+            <Route path="/corporate/settings" element={<CorporateSettings />} />
 
-            {/* Koç Dashboard – iki path birden çalışsın */}
+            {/* ✅ COACH PANEL */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
-            <Route path="/coach-dashboard" element={<CoachDashboard />} />
-
-            {/* 🔴 Koç Ayarları sayfası */}
             <Route path="/coach/settings" element={<CoachSettings />} />
-
-            {/* 🔴 Koçun seans talepleri sayfası */}
             <Route path="/coach/requests" element={<CoachRequests />} />
+            <Route path="/coach/profile" element={<CoachSelfProfile />} />
 
-            {/* Profil Sayfası */}
-            <Route path="/profile" element={<ProfilePage />} />
+            {/* ✅ Eski path'leri geriye dönük yönlendir */}
+            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+            <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
+            <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+
+            {/* Eski sayfalar (istersen tamamen kaldırabilirsin) */}
+            <Route path="/legacy-dashboard" element={<Dashboard />} />
+            <Route path="/legacy-profile" element={<ProfilePage />} />
 
             {/* Hukuki sayfalar */}
             <Route path="/terms" element={<Terms />} />
@@ -331,10 +304,12 @@ export default function App() {
             {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* 404 */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
-        {/* FOOTER */}
         <Footer />
       </div>
     </Router>

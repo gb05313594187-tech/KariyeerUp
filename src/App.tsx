@@ -1,10 +1,14 @@
 // src/App.tsx
 // @ts-nocheck
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// Ortak ikon ve butonlar
-import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// LAYOUT
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+// ✅ Admin Layout + Navbar
+import AdminLayout from "@/layouts/AdminLayout"; // oluşturduğun dosya
+// Eğer AdminLayout yoksa geçici olarak: import AdminLayout from "@/pages/AdminLayout"; gibi düzelt
 
 // SAYFALAR
 import Home from "@/pages/Index";
@@ -22,10 +26,7 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Ethics from "@/pages/Ethics";
 
-// ✅ Public koç profil (müşteriye görünen) - AYRI DOSYA
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
-
-// ✅ Koçun kendi profili (koç login olunca) - AYRI DOSYA
 import CoachSelfProfile from "@/pages/CoachProfile";
 
 // ✅ Panel sayfaları
@@ -41,26 +42,40 @@ import CoachDashboard from "@/pages/CoachDashboard";
 import CoachSettings from "@/pages/CoachSettings";
 import CoachRequests from "@/pages/CoachRequests";
 
-// ✅ ADMIN SAYFALARI (NAVBAR’DA GÖSTERMEZSİN)
+// ✅ ADMIN sayfaları
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
 
-// Eski sayfalar (geriye dönük uyumluluk)
+// Eski sayfalar
 import Dashboard from "@/pages/Dashboard";
 import ProfilePage from "@/pages/Profile";
 
-// LAYOUT
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+/* -------------------------------------------------
+   Public Layout: Navbar + Footer burada
+-------------------------------------------------- */
+function PublicLayout() {
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <Navbar />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 /* -------------------------------------------------
    Nasıl Çalışır sayfası (kullanıcı tarafı)
+   (Senin dosyandaki içerik burada durabilir)
 -------------------------------------------------- */
+import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 function HowItWorks() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {/* HERO */}
       <section className="bg-gradient-to-br from-orange-500 via-red-500 to-orange-400 text-white py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur text-xs font-semibold uppercase tracking-wider mb-6">
@@ -93,7 +108,6 @@ function HowItWorks() {
         </div>
       </section>
 
-      {/* 3 ADIM BLOĞU */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -107,7 +121,6 @@ function HowItWorks() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Adım 1 */}
             <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
               <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold shadow-md">
                 1
@@ -122,7 +135,6 @@ function HowItWorks() {
               </p>
             </div>
 
-            {/* Adım 2 */}
             <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
               <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-bold shadow-md">
                 2
@@ -139,7 +151,6 @@ function HowItWorks() {
               </p>
             </div>
 
-            {/* Adım 3 */}
             <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
               <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold shadow-md">
                 3
@@ -157,90 +168,109 @@ function HowItWorks() {
         </div>
       </section>
 
-      {/* ... (sayfa devamı aynı) ... */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <Globe2 className="w-10 h-10 text-orange-500 mx-auto mb-4" />
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            Hazırsan, biz de hazırız.
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+            İster ilk işine başlayacak ol, ister C-level hedefle; senin için
+            doğru koç ve doğru hızda bir yol haritası tasarlıyoruz.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a href="/register">
+              <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl">
+                Hemen Ücretsiz Kayıt Ol
+              </Button>
+            </a>
+            <a href="/coaches">
+              <Button
+                variant="outline"
+                className="border-gray-300 text-gray-800 hover:bg-gray-50 px-8 py-6 rounded-xl"
+              >
+                Koç Listesini Gör
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 /* -------------------------------------------------
-   Uygulama
+   APP
 -------------------------------------------------- */
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-white">
-        <Navbar />
+      <Routes>
+        {/* ✅ ADMIN: Public Navbar/Footer yok */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="profile" element={<AdminProfile />} />
+          <Route path="settings" element={<AdminSettings />} />
+          {/* istersen buraya /admin/requests, /admin/coaches vs ekleriz */}
+        </Route>
 
-        <main className="flex-1">
-          <Routes>
-            {/* Ana Sayfa */}
-            <Route path="/" element={<Home />} />
+        {/* ✅ PUBLIC: Navbar/Footer var */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
 
-            {/* Nasıl Çalışır */}
-            <Route path="/nasil-calisir" element={<HowItWorks />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/nasil-calisir" element={<HowItWorks />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
 
-            {/* Public koç listesi ve koç sayfası */}
-            <Route path="/coaches" element={<Coaches />} />
-            <Route path="/coach/:id" element={<CoachPublicProfile />} />
+          <Route path="/coaches" element={<Coaches />} />
+          <Route path="/coach/:id" element={<CoachPublicProfile />} />
 
-            {/* Public sayfalar */}
-            <Route path="/for-coaches" element={<ForCoaches />} />
-            <Route path="/for-companies" element={<ForCompanies />} />
-            <Route path="/mentor-circle" element={<MentorCircle />} />
-            <Route path="/webinars" element={<Webinars />} />
+          <Route path="/for-coaches" element={<ForCoaches />} />
+          <Route path="/for-companies" element={<ForCompanies />} />
+          <Route path="/mentor-circle" element={<MentorCircle />} />
+          <Route path="/webinars" element={<Webinars />} />
 
-            {/* Akışlar */}
-            <Route path="/coach-selection-process" element={<CoachSelection />} />
-            <Route path="/book-session" element={<BookSession />} />
-            <Route path="/coach-application" element={<CoachApplication />} />
+          <Route path="/coach-selection-process" element={<CoachSelection />} />
+          <Route path="/book-session" element={<BookSession />} />
+          <Route path="/coach-application" element={<CoachApplication />} />
 
-            {/* ✅ USER PANEL */}
-            <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/user/profile" element={<UserProfile />} />
-            <Route path="/user/settings" element={<UserSettings />} />
+          {/* USER */}
+          <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/profile" element={<UserProfile />} />
+          <Route path="/user/settings" element={<UserSettings />} />
 
-            {/* ✅ CORPORATE PANEL */}
-            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
-            <Route path="/corporate/profile" element={<CorporateProfile />} />
-            <Route path="/corporate/settings" element={<CorporateSettings />} />
+          {/* CORPORATE */}
+          <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
+          <Route path="/corporate/profile" element={<CorporateProfile />} />
+          <Route path="/corporate/settings" element={<CorporateSettings />} />
 
-            {/* ✅ COACH PANEL */}
-            <Route path="/coach/dashboard" element={<CoachDashboard />} />
-            <Route path="/coach/profile" element={<CoachSelfProfile />} />
-            <Route path="/coach/settings" element={<CoachSettings />} />
-            <Route path="/coach/requests" element={<CoachRequests />} />
+          {/* COACH */}
+          <Route path="/coach/dashboard" element={<CoachDashboard />} />
+          <Route path="/coach/profile" element={<CoachSelfProfile />} />
+          <Route path="/coach/settings" element={<CoachSettings />} />
+          <Route path="/coach/requests" element={<CoachRequests />} />
 
-            {/* ✅ ADMIN PANEL (NAVBAR’DA YOK, SADECE URL İLE) */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/profile" element={<AdminProfile />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
+          {/* legacy redirect */}
+          <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+          <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
+          <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
 
-            {/* ✅ Eski path'leri geriye dönük yönlendir */}
-            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
-            <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
-            <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+          {/* legacy pages */}
+          <Route path="/legacy-dashboard" element={<Dashboard />} />
+          <Route path="/legacy-profile" element={<ProfilePage />} />
 
-            {/* Eski sayfalar (istersen tamamen kaldırabilirsin) */}
-            <Route path="/legacy-dashboard" element={<Dashboard />} />
-            <Route path="/legacy-profile" element={<ProfilePage />} />
+          {/* legal */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/ethics" element={<Ethics />} />
 
-            {/* Hukuki sayfalar */}
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/ethics" element={<Ethics />} />
+          {/* auth */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-            {/* Auth */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-
-            {/* 404 */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-
-        <Footer />
-      </div>
+          {/* 404 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }

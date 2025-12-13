@@ -59,8 +59,7 @@ export default function ForCompanies() {
       title: "İletişim Kültürü",
       shortDesc:
         "Departmanlar arası siloları yıkarak şeffaf bir kültür inşa edin.",
-      fullDesc:
-        "Takım koçluğu ile geri bildirim kültürünü güçlendiriyoruz.",
+      fullDesc: "Takım koçluğu ile geri bildirim kültürünü güçlendiriyoruz.",
       image:
         "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=600",
       color: "text-blue-600",
@@ -89,12 +88,28 @@ export default function ForCompanies() {
     setIsSubmitting(true);
 
     try {
+      // ✅ 1) Login olan kullanıcıyı al
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        toast.error("Lütfen giriş yapın.");
+        console.error(authError || "User not authenticated");
+        return;
+      }
+
+      // ✅ 2) Insert (artık sahipsiz değil)
       const { error } = await supabase.from("company_requests").insert({
+        user_id: user.id,
+        created_by: user.id,
         company_name: formData.companyName,
         contact_person: formData.contactPerson,
         email: formData.email,
         phone: formData.phone,
         message: formData.message,
+        status: "new",
       });
 
       if (error) {

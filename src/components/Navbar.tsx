@@ -28,43 +28,46 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type Role = "user" | "coach" | "corporate" | "admin" | null;
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
-
   const authCtx = useAuth?.();
 
-  // ---- LOGIN DURUMUNU LOCALSTORAGE'DAN OKU ----
+  // ---- LOGIN DURUMU (LOCALSTORAGE) ----
   const [storageLoggedIn, setStorageLoggedIn] = useState(false);
   const [storageEmail, setStorageEmail] = useState<string | null>(null);
 
   // ---- ROLE ----
-  const [role, setRole] = useState<"user" | "coach" | "corporate" | "admin" | null>(
-    null
-  );
+  const [role, setRole] = useState<Role>(null);
   const [loadingRole, setLoadingRole] = useState(false);
 
+  // ✅ 1) İlk kaynak: localStorage (en hızlı + en stabil)
   useEffect(() => {
     try {
       const raw = localStorage.getItem("kariyeer_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.isLoggedIn) {
-          setStorageLoggedIn(true);
-          setStorageEmail(parsed.email || null);
-        }
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      if (parsed?.isLoggedIn) {
+        setStorageLoggedIn(true);
+        setStorageEmail(parsed.email || null);
+
+        // ✅ localStorage'da role varsa direkt onu kullan
+        if (parsed?.role) setRole(parsed.role);
       }
     } catch (e) {
       console.error("localStorage parse error", e);
     }
   }, []);
 
+  // ✅ Context login var mı?
   const contextLoggedIn = Boolean(
     authCtx?.isAuthenticated || authCtx?.supabaseUser || authCtx?.user
   );
-
   const isLoggedIn = storageLoggedIn || contextLoggedIn;
 
   const getNavText = (tr: string, en: string, fr: string) => {
@@ -86,18 +89,15 @@ export default function Navbar() {
       path: "/for-coaches",
     },
     {
-      name: getNavText("Şirketler İçin", "For Companies", "Pour les entreprises"),
+      name: getNavText(
+        "Şirketler İçin",
+        "For Companies",
+        "Pour les entreprises"
+      ),
       path: "/for-companies",
     },
-    {
-      name: "MentorCircle",
-      path: "/mentor-circle",
-    },
-    {
-      name: "Webinar",
-      path: "/webinars",
-      icon: Video,
-    },
+    { name: "MentorCircle", path: "/mentor-circle" },
+    { name: "Webinar", path: "/webinars", icon: Video },
   ];
 
   const cycleLanguage = () => {
@@ -148,12 +148,13 @@ export default function Navbar() {
 
   const getUserDisplayName = () => {
     if (authCtx?.user?.fullName) return authCtx.user.fullName;
-    if (authCtx?.supabaseUser?.email) return authCtx.supabaseUser.email.split("@")[0];
+    if (authCtx?.supabaseUser?.email)
+      return authCtx.supabaseUser.email.split("@")[0];
     if (storageEmail) return storageEmail.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
 
-  // ---- ROLE'Ü SUPABASE'TEN ÇEK ----
+  // ✅ 2) İkinci kaynak: Supabase profiles (varsa role'u günceller)
   useEffect(() => {
     const loadRole = async () => {
       if (!isLoggedIn) {
@@ -166,13 +167,12 @@ export default function Navbar() {
         const { data } = await supabase.auth.getUser();
         const u = data?.user;
 
+        // Supabase session yoksa localStorage role ile devam
         if (!u) {
-          setRole(null);
           setLoadingRole(false);
           return;
         }
 
-        // profiles.role (önerilen)
         const { data: prof, error } = await supabase
           .from("profiles")
           .select("role")
@@ -181,72 +181,86 @@ export default function Navbar() {
 
         if (!error && prof?.role) {
           setRole(prof.role);
+
+          // ✅ localStorage'ı da güncelle (kalıcı olsun)
+          try {
+            const raw = localStorage.getItem("kariyeer_user");
+            const parsed = raw ? JSON.parse(raw) : {};
+            localStorage.setItem(
+              "kariyeer_user",
+              JSON.stringify({
+                ...parsed,
+                isLoggedIn: true,
+                email: parsed?.email || u.email,
+                role: prof.role,
+              })
+            );
+          } catch {}
         } else {
           // fallback: metadata
-          setRole(u.user_metadata?.role ?? null);
+          const metaRole = u.user_metadata?.role ?? null;
+          if (metaRole) setRole(metaRole);
         }
       } catch (e) {
         console.error("loadRole error", e);
-        setRole(null);
       } finally {
         setLoadingRole(false);
       }
     };
 
     loadRole();
-
     const { data: sub } = supabase.auth.onAuthStateChange(() => loadRole());
     return () => sub.subscription.unsubscribe();
   }, [isLoggedIn]);
 
-  // ---- ROLE-BASED ROUTES / LABELS ----
+  // ✅ ROLE-BASED ROUTES (ADMIN/CEO navbar’da gösterilmeyecek)
+  const safeRole: "user" | "coach" | "corporate" =
+    role === "coach" || role === "corporate" ? role : "user";
+
   const panelRoute =
-    role === "coach"
+    safeRole === "coach"
       ? "/coach/dashboard"
-      : role === "corporate"
+      : safeRole === "corporate"
       ? "/corporate/dashboard"
-      : role === "admin"
-      ? "/admin"
       : "/user/dashboard";
 
   const settingsRoute =
-    role === "coach"
+    safeRole === "coach"
       ? "/coach/settings"
-      : role === "corporate"
+      : safeRole === "corporate"
       ? "/corporate/settings"
-      : role === "admin"
-      ? "/admin/settings"
       : "/user/settings";
 
   const profileRoute =
-    role === "coach"
+    safeRole === "coach"
       ? "/coach/profile"
-      : role === "corporate"
+      : safeRole === "corporate"
       ? "/corporate/profile"
-      : role === "admin"
-      ? "/admin/profile"
       : "/user/profile";
 
   const panelLabel =
-    role === "coach"
+    safeRole === "coach"
       ? getNavText("Coach Panel", "Coach Panel", "Coach Panel")
-      : role === "corporate"
+      : safeRole === "corporate"
       ? getNavText("Corporate Panel", "Corporate Panel", "Corporate Panel")
-      : role === "admin"
-      ? getNavText("CEO Panel", "CEO Panel", "CEO Panel")
       : getNavText("User Panel", "User Panel", "User Panel");
 
   const settingsLabel =
-    role === "coach"
+    safeRole === "coach"
       ? getNavText("Koç Ayarları", "Coach Settings", "Paramètres Coach")
-      : role === "corporate"
-      ? getNavText("Şirket Ayarları", "Corporate Settings", "Paramètres Entreprise")
-      : role === "admin"
-      ? getNavText("Sistem Ayarları", "System Settings", "Paramètres Système")
-      : getNavText("Kullanıcı Ayarları", "User Settings", "Paramètres Utilisateur");
+      : safeRole === "corporate"
+      ? getNavText(
+          "Şirket Ayarları",
+          "Corporate Settings",
+          "Paramètres Entreprise"
+        )
+      : getNavText(
+          "Kullanıcı Ayarları",
+          "User Settings",
+          "Paramètres Utilisateur"
+        );
 
-  const panelIcon =
-    role === "corporate" ? Building2 : role === "admin" ? LayoutDashboard : LayoutDashboard;
+  const PanelIcon = safeRole === "corporate" ? Building2 : LayoutDashboard;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -297,7 +311,7 @@ export default function Navbar() {
 
             {isLoggedIn ? (
               <>
-                {/* Ana Sayfa butonu */}
+                {/* Ana Sayfa */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -308,7 +322,7 @@ export default function Navbar() {
                   {getNavText("Ana Sayfa", "Home", "Accueil")}
                 </Button>
 
-                {/* Kullanıcı menüsü */}
+                {/* Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -327,20 +341,24 @@ export default function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
-                    {/* ✅ ROLE-BASED PANEL (TEK) */}
+                    {/* ✅ TEK PANEL */}
                     <DropdownMenuItem
                       onClick={() => navigate(panelRoute)}
                       disabled={loadingRole}
                     >
-                      <panelIcon className="h-4 w-4 mr-2" />
+                      <PanelIcon className="h-4 w-4 mr-2" />
                       {loadingRole
-                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
+                        ? getNavText(
+                            "Yükleniyor...",
+                            "Loading...",
+                            "Chargement..."
+                          )
                         : panelLabel}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
-                    {/* ✅ ROLE-BASED PROFILE (TEK) */}
+                    {/* ✅ TEK PROFİL */}
                     <DropdownMenuItem
                       onClick={() => navigate(profileRoute)}
                       disabled={loadingRole}
@@ -349,7 +367,7 @@ export default function Navbar() {
                       {getNavText("Profil", "Profile", "Profil")}
                     </DropdownMenuItem>
 
-                    {/* ✅ ROLE-BASED SETTINGS (TEK) */}
+                    {/* ✅ TEK AYAR */}
                     <DropdownMenuItem
                       onClick={() => navigate(settingsRoute)}
                       disabled={loadingRole}
@@ -360,7 +378,10 @@ export default function Navbar() {
 
                     <DropdownMenuSeparator />
 
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-red-600"
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       {getNavText("Çıkış Yap", "Logout", "Se déconnecter")}
                     </DropdownMenuItem>
@@ -369,7 +390,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/* Giriş / Kayıt */}
+                {/* Login/Register */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -390,7 +411,10 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="lg:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button
+            className="lg:hidden p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
             {mobileMenuOpen ? (
               <X className="h-6 w-6 text-red-600" />
             ) : (
@@ -431,7 +455,7 @@ export default function Navbar() {
 
                 {isLoggedIn ? (
                   <>
-                    {/* ✅ ROLE-BASED PANEL (MOBILE) */}
+                    {/* Panel */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
@@ -441,17 +465,17 @@ export default function Navbar() {
                       }}
                       disabled={loadingRole}
                     >
-                      {role === "corporate" ? (
-                        <Building2 className="h-4 w-4 mr-2" />
-                      ) : (
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                      )}
+                      <PanelIcon className="h-4 w-4 mr-2" />
                       {loadingRole
-                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
+                        ? getNavText(
+                            "Yükleniyor...",
+                            "Loading...",
+                            "Chargement..."
+                          )
                         : panelLabel}
                     </Button>
 
-                    {/* ✅ ROLE-BASED PROFILE (MOBILE) */}
+                    {/* Profil */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"
@@ -465,7 +489,7 @@ export default function Navbar() {
                       {getNavText("Profil", "Profile", "Profil")}
                     </Button>
 
-                    {/* ✅ ROLE-BASED SETTINGS (MOBILE) */}
+                    {/* Ayarlar */}
                     <Button
                       variant="outline"
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full justify-start"

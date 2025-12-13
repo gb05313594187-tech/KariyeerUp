@@ -22,8 +22,11 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Ethics from "@/pages/Ethics";
 
-// ✅ Public koç profil (müşteriye görünen)
-import CoachPublicProfile from "@/pages/CoachProfile";
+// ✅ Public koç profil (müşteriye görünen) - AYRI DOSYA
+import CoachPublicProfile from "@/pages/CoachPublicProfile";
+
+// ✅ Koçun kendi profili (koç login olunca) - AYRI DOSYA
+import CoachSelfProfile from "@/pages/CoachProfile";
 
 // ✅ Panel sayfaları
 import UserDashboard from "@/pages/UserDashboard";
@@ -37,11 +40,6 @@ import CorporateSettings from "@/pages/CorporateSettings";
 import CoachDashboard from "@/pages/CoachDashboard";
 import CoachSettings from "@/pages/CoachSettings";
 import CoachRequests from "@/pages/CoachRequests";
-
-// ⚠️ Koçun kendi profili ayrı dosya olmalı (öneri)
-// Eğer sende panel koç profili ayrı bir dosyada değilse,
-// şimdilik CoachPublicProfile'ı kullanabilirsin ama doğru değil.
-import CoachSelfProfile from "@/pages/CoachProfile"; // <- eğer ayrı dosyan varsa bunu değiştir: "@/pages/CoachSelfProfile"
 
 // Eski sayfalar (geriye dönük uyumluluk)
 import Dashboard from "@/pages/Dashboard";

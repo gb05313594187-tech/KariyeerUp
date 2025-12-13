@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Users, Briefcase, Inbox } from "lucide-react";
+import { toast } from "sonner";
+
+const STATUS = ["new", "contacted", "closed"] as const;
 
 export default function CorporateDashboard() {
   const [loading, setLoading] = useState(true);
@@ -20,8 +23,6 @@ export default function CorporateDashboard() {
     setRequestsLoading(true);
     setRequestsError(null);
 
-    // Not: tablonda user_id yoksa "own rows" filtresi yapamayız.
-    // Bu yüzden son talepleri listeliyoruz (policy izin veriyorsa döner).
     const { data, error } = await supabase
       .from("company_requests")
       .select(
@@ -39,6 +40,28 @@ export default function CorporateDashboard() {
 
     setRequests(data || []);
     setRequestsLoading(false);
+  };
+
+  const updateStatus = async (id: string, nextStatus: string) => {
+    // UI hızlı hissetsin diye optimistik güncelleme
+    const prev = requests;
+    setRequests((cur) =>
+      cur.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
+    );
+
+    const { error } = await supabase
+      .from("company_requests")
+      .update({ status: nextStatus })
+      .eq("id", id);
+
+    if (error) {
+      setRequests(prev); // geri al
+      toast.error("Status güncellenemedi (RLS/Policy kontrol).");
+      console.error("UPDATE ERROR:", error);
+      return;
+    }
+
+    toast.success(`Status güncellendi: ${nextStatus}`);
   };
 
   useEffect(() => {
@@ -59,7 +82,7 @@ export default function CorporateDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  if (!canRender) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
         Yükleniyor...
@@ -116,7 +139,7 @@ export default function CorporateDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-slate-700">
-              Son 50 talep listelenir. (Policy izin vermezse boş gelir.)
+              Son 50 talep listelenir.
             </CardContent>
           </Card>
 
@@ -159,10 +182,6 @@ export default function CorporateDashboard() {
               <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700">
                 <div className="font-semibold">Okuma hatası</div>
                 <div className="text-xs mt-1">{requestsError}</div>
-                <div className="text-xs mt-2 text-red-600/90">
-                  Not: Eğer policy SELECT izni yoksa burada hata/boş liste
-                  görürsün.
-                </div>
               </div>
             )}
 
@@ -171,9 +190,7 @@ export default function CorporateDashboard() {
             )}
 
             {!requestsError && !requestsLoading && requests.length === 0 && (
-              <div className="py-4 text-slate-500">
-                Kayıt yok (ya gerçekten yok, ya da RLS/Policy SELECT izni vermiyor).
-              </div>
+              <div className="py-4 text-slate-500">Kayıt yok.</div>
             )}
 
             {!requestsError && !requestsLoading && requests.length > 0 && (
@@ -187,11 +204,12 @@ export default function CorporateDashboard() {
                       <div className="font-semibold text-slate-900">
                         {r.company_name || "-"}
                       </div>
-                      <div className="text-xs">
-                        <span className="px-2 py-1 rounded-full border border-slate-200 bg-slate-50">
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-2 py-1 rounded-full border border-slate-200 bg-slate-50">
                           {r.status || "new"}
                         </span>
-                        <span className="ml-2 text-slate-500">
+                        <span className="text-xs text-slate-500">
                           {r.created_at
                             ? new Date(r.created_at).toLocaleString()
                             : ""}
@@ -212,12 +230,33 @@ export default function CorporateDashboard() {
                         {"  "}• Tel:{" "}
                         <span className="text-slate-800">{r.phone || "-"}</span>
                       </div>
-
                       {r.message && (
                         <div className="pt-2 text-sm text-slate-700">
                           {r.message}
                         </div>
                       )}
+
+                      {/* STATUS BUTTONS */}
+                      <div className="pt-3 flex flex-wrap gap-2">
+                        {STATUS.map((s) => {
+                          const active = (r.status || "new") === s;
+                          return (
+                            <Button
+                              key={s}
+                              size="sm"
+                              variant={active ? "default" : "outline"}
+                              className={
+                                active
+                                  ? "bg-orange-600 hover:bg-orange-500"
+                                  : "border-slate-200"
+                              }
+                              onClick={() => updateStatus(r.id, s)}
+                            >
+                              {s}
+                            </Button>
+                          );
+                        })}
+                      </div>
 
                       <div className="pt-2 text-[11px] text-slate-400 font-mono">
                         id: {r.id}

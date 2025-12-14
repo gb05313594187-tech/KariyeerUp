@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-// ✅ Admin Layout (SENİN DOSYAN: src/pages/AdminLayout.tsx)
-import AdminLayout from "@/pages/AdminLayout";
+// ✅ Admin Layout (DOĞRU YER: src/layouts/AdminLayout.tsx)
+import AdminLayout from "@/layouts/AdminLayout";
 
 // SAYFALAR
 import Home from "@/pages/Index";

@@ -20,13 +20,11 @@ export default function AdminDashboard() {
       const coachRes = await supabase
         .from("coach_applications")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
         .limit(5);
 
       const companyRes = await supabase
         .from("company_requests")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
         .limit(5);
 
       if (coachRes?.error || companyRes?.error) {

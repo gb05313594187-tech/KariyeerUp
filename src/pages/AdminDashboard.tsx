@@ -6,9 +6,12 @@ import { supabase } from "@/lib/supabase";
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
+  // view: admin_overview_metrics
+  const [overview, setOverview] = useState<any>(null);
+
+  // tablolardan son kayıtlar + count
   const [coachCount, setCoachCount] = useState(0);
   const [companyCount, setCompanyCount] = useState(0);
-
   const [latestCoachApps, setLatestCoachApps] = useState<any[]>([]);
   const [latestCompanyReqs, setLatestCompanyReqs] = useState<any[]>([]);
 
@@ -27,14 +30,20 @@ export default function AdminDashboard() {
       setLoading(true);
       setErrorText(null);
 
-      // ✅ COACH APPLICATIONS (son 5)
+      // 1) Admin KPI view
+      const overviewRes = await supabase
+        .from("admin_overview_metrics")
+        .select("*")
+        .single();
+
+      // 2) Koç başvuruları (son 5)
       const coachRes = await supabase
         .from("coach_applications")
         .select("id, full_name, email, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .limit(5);
 
-      // ✅ COMPANY REQUESTS (son 5) - kolonlar DB ile bire bir uyumlu
+      // 3) Kurumsal talepler (son 5)
       const companyRes = await supabase
         .from("company_requests")
         .select("id, company_name, contact_person, email, phone, created_at", {
@@ -43,18 +52,25 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      // Debug (gerekirse console’dan kontrol edersin)
+      // Debug
       console.log("SUPABASE URL:", supabaseUrl);
+      console.log("ADMIN admin_overview_metrics:", overviewRes);
       console.log("ADMIN coach_applications:", coachRes);
       console.log("ADMIN company_requests:", companyRes);
 
-      if (coachRes?.error || companyRes?.error) {
+      const anyError =
+        overviewRes?.error || coachRes?.error || companyRes?.error;
+
+      if (anyError) {
         setErrorText(
-          coachRes?.error?.message ||
+          overviewRes?.error?.message ||
+            coachRes?.error?.message ||
             companyRes?.error?.message ||
             "Bilinmeyen hata"
         );
       }
+
+      setOverview(overviewRes?.data || null);
 
       setCoachCount(coachRes?.count || 0);
       setCompanyCount(companyRes?.count || 0);
@@ -67,6 +83,14 @@ export default function AdminDashboard() {
 
     run();
   }, [supabaseUrl]);
+
+  const fmtDate = (v: any) => {
+    try {
+      return v ? new Date(v).toLocaleString() : "";
+    } catch {
+      return "";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white p-6">
@@ -81,6 +105,48 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* KPI ÖZET */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <KpiCard
+          title="Toplam Kullanıcı"
+          value={loading ? "…" : overview?.total_users ?? 0}
+        />
+        <KpiCard
+          title="Toplam Koç"
+          value={loading ? "…" : overview?.total_coaches ?? 0}
+        />
+        <KpiCard
+          title="Toplam Şirket"
+          value={loading ? "…" : overview?.total_companies ?? 0}
+        />
+        <KpiCard
+          title="Toplam Admin"
+          value={loading ? "…" : overview?.total_admins ?? 0}
+        />
+
+        <KpiCard
+          title="Aktif Koç (30g)"
+          value={loading ? "…" : overview?.active_coaches_30d ?? 0}
+        />
+        <KpiCard
+          title="Seans (30g)"
+          value={loading ? "…" : overview?.sessions_30d_total ?? 0}
+        />
+        <KpiCard
+          title="Tamamlanan (30g)"
+          value={loading ? "…" : overview?.sessions_30d_completed ?? 0}
+        />
+        <KpiCard
+          title="İptal (30g)"
+          value={loading ? "…" : overview?.sessions_30d_cancelled ?? 0}
+        />
+
+        <div className="col-span-2 md:col-span-4 text-xs text-gray-500">
+          Son hesaplama: {loading ? "…" : fmtDate(overview?.computed_at)}
+        </div>
+      </div>
+
+      {/* LİSTELER */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* KOÇ BAŞVURULARI */}
         <div className="rounded-xl border bg-white p-5">
@@ -98,9 +164,7 @@ export default function AdminDashboard() {
                 <span className="font-medium">
                   {x.full_name || x.email || "Başvuru"}
                 </span>
-                <span className="text-gray-500">
-                  {x.created_at ? new Date(x.created_at).toLocaleString() : ""}
-                </span>
+                <span className="text-gray-500">{fmtDate(x.created_at)}</span>
               </div>
             ))}
 
@@ -126,9 +190,7 @@ export default function AdminDashboard() {
                 <span className="font-medium">
                   {x.company_name || x.email || "Talep"}
                 </span>
-                <span className="text-gray-500">
-                  {x.created_at ? new Date(x.created_at).toLocaleString() : ""}
-                </span>
+                <span className="text-gray-500">{fmtDate(x.created_at)}</span>
               </div>
             ))}
 
@@ -137,17 +199,27 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* küçük detay satırı (istersen kaldır) */}
           {!loading && latestCompanyReqs.length > 0 && (
             <div className="mt-4 text-xs text-gray-500">
               İlk kayıt:{" "}
               {latestCompanyReqs[0]?.contact_person
-                ? `${latestCompanyReqs[0].contact_person} • ${latestCompanyReqs[0].email || ""}`
+                ? `${latestCompanyReqs[0].contact_person} • ${
+                    latestCompanyReqs[0].email || ""
+                  }`
                 : latestCompanyReqs[0]?.email || ""}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiCard({ title, value }: { title: string; value: any }) {
+  return (
+    <div className="rounded-xl border bg-white p-4">
+      <div className="text-xs text-gray-500">{title}</div>
+      <div className="mt-2 text-2xl font-bold">{value}</div>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-// ✅ Admin Layout (DOĞRU YER: src/layouts/AdminLayout.tsx)
+// ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";
 
 // SAYFALAR
@@ -25,37 +25,45 @@ import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
-import Terms from "@/pages/Terms";
+
+// ✅ YENİ EKLENEN LEGAL SAYFALAR
+import About from "@/pages/About";
 import Privacy from "@/pages/Privacy";
+import Returns from "@/pages/Returns";
+import DistanceSales from "@/pages/DistanceSales";
+
+import Terms from "@/pages/Terms";
 import Ethics from "@/pages/Ethics";
 
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
 
-// ✅ Panel sayfaları
+// USER
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
 import UserSettings from "@/pages/UserSettings";
 
+// CORPORATE
 import CorporateDashboard from "@/pages/CorporateDashboard";
 import CorporateProfile from "@/pages/CorporateProfile";
 import CorporateSettings from "@/pages/CorporateSettings";
 
+// COACH
 import CoachDashboard from "@/pages/CoachDashboard";
 import CoachSettings from "@/pages/CoachSettings";
 import CoachRequests from "@/pages/CoachRequests";
 
-// ✅ ADMIN sayfaları
+// ADMIN
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
 
-// Eski sayfalar
+// LEGACY
 import Dashboard from "@/pages/Dashboard";
 import ProfilePage from "@/pages/Profile";
 
 /* -------------------------------------------------
-   Public Layout: Navbar + Footer burada
+   Public Layout
 -------------------------------------------------- */
 function PublicLayout() {
   return (
@@ -70,7 +78,7 @@ function PublicLayout() {
 }
 
 /* -------------------------------------------------
-   Nasıl Çalışır sayfası
+   Nasıl Çalışır
 -------------------------------------------------- */
 function HowItWorks() {
   return (
@@ -86,109 +94,20 @@ function HowItWorks() {
             <span className="text-yellow-300">En Kolay Yolu</span>
           </h1>
           <p className="text-base md:text-lg text-orange-50 max-w-2xl mx-auto mb-8">
-            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç. Hiçbir
-            gereksiz karmaşa yok, sadece odaklı ilerleme.
+            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a href="/register">
-              <Button className="bg-white text-red-600 hover:bg-orange-50 font-semibold px-8 py-6 rounded-xl text-sm md:text-base">
+              <Button className="bg-white text-red-600 hover:bg-orange-50 px-8 py-6 rounded-xl">
                 Hemen Başla
               </Button>
             </a>
             <a href="/coaches">
               <Button
                 variant="outline"
-                className="border-white/80 text-white hover:bg-white/10 font-semibold px-8 py-6 rounded-xl text-sm md:text-base"
+                className="border-white/80 text-white hover:bg-white/10 px-8 py-6 rounded-xl"
               >
                 Koçları İncele
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              3 Adımda Kariyeer Deneyimi
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Apple gibi sade, net ve odaklı: her adımın ne işe yaradığını tam
-              olarak bilerek ilerlersin.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
-              <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold shadow-md">
-                1
-              </div>
-              <div className="mt-4 mb-4">
-                <CheckCircle2 className="w-8 h-8 text-orange-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Profilini Oluştur</h3>
-              <p className="text-gray-600 text-sm">
-                Kısa bir kayıt formu ile kariyer hedeflerini, sektörünü ve
-                deneyim seviyeni belirt. Sadece birkaç dakikanı alır.
-              </p>
-            </div>
-
-            <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
-              <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-bold shadow-md">
-                2
-              </div>
-              <div className="mt-4 mb-4">
-                <Star className="w-8 h-8 text-red-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">
-                Koçunu Seç &amp; Seans Planla
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Uzmanlık alanı, fiyat ve değerlendirmelere göre koçunu seç.
-                Uygun saatleri gör ve tek tıkla online seans oluştur.
-              </p>
-            </div>
-
-            <div className="relative border border-orange-100 rounded-2xl p-6 shadow-sm bg-white">
-              <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold shadow-md">
-                3
-              </div>
-              <div className="mt-4 mb-4">
-                <LineChart className="w-8 h-8 text-yellow-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Gelişimini Takip Et</h3>
-              <p className="text-gray-600 text-sm">
-                Her seans sonrası notlarını kaydet, hedeflerini güncelle ve
-                ilerlemeni temiz bir dashboard üzerinden takip et.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <Globe2 className="w-10 h-10 text-orange-500 mx-auto mb-4" />
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">
-            Hazırsan, biz de hazırız.
-          </h2>
-          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
-            İster ilk işine başlayacak ol, ister C-level hedefle; senin için
-            doğru koç ve doğru hızda bir yol haritası tasarlıyoruz.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a href="/register">
-              <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl">
-                Hemen Ücretsiz Kayıt Ol
-              </Button>
-            </a>
-            <a href="/coaches">
-              <Button
-                variant="outline"
-                className="border-gray-300 text-gray-800 hover:bg-gray-50 px-8 py-6 rounded-xl"
-              >
-                Koç Listesini Gör
               </Button>
             </a>
           </div>
@@ -205,14 +124,14 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* ✅ ADMIN: Public Navbar/Footer yok */}
+        {/* ADMIN */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
-        {/* ✅ PUBLIC: Navbar/Footer var */}
+        {/* PUBLIC */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
 
@@ -247,23 +166,24 @@ export default function App() {
           <Route path="/coach/settings" element={<CoachSettings />} />
           <Route path="/coach/requests" element={<CoachRequests />} />
 
-          {/* legacy redirect */}
+          {/* LEGAL – EKLENEN ROOTLAR */}
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/returns" element={<Returns />} />
+          <Route path="/distance-sales" element={<DistanceSales />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/ethics" element={<Ethics />} />
+
+          {/* AUTH */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* LEGACY */}
           <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
           <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
           <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
-
-          {/* legacy pages */}
           <Route path="/legacy-dashboard" element={<Dashboard />} />
           <Route path="/legacy-profile" element={<ProfilePage />} />
-
-          {/* legal */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/ethics" element={<Ethics />} />
-
-          {/* auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
 
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />

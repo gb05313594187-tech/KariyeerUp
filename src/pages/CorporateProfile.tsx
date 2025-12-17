@@ -542,7 +542,9 @@ export default function CorporateProfile() {
                     placeholder='Örn: "İşinizi büyüten çözümler"'
                     className="mt-1 w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
-                  <div className="text-[11px] text-slate-500 mt-1">{(form.tagline || "").length}/100</div>
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    {(form.tagline || "").length}/100
+                  </div>
                 </div>
 
                 <div>
@@ -623,5 +625,6 @@ export default function CorporateProfile() {
           </CardContent>
         </Card>
       </div>
+    </div>
   );
 }

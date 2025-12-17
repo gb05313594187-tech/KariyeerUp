@@ -623,6 +623,5 @@ export default function CorporateProfile() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

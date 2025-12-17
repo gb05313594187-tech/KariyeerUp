@@ -45,6 +45,36 @@ export default function Navbar() {
   const [role, setRole] = useState<Role>(null);
   const [loadingRole, setLoadingRole] = useState(false);
 
+  // ✅ normalize: DB'de "company" gelebilir -> UI'da "corporate" olarak kullanacağız
+  const normalizeRole = (r: any): Role => {
+    if (!r) return null;
+    if (r === "company") return "corporate";
+    if (r === "corporate" || r === "coach" || r === "user" || r === "admin") return r;
+    return null;
+  };
+
+  // ✅ profiles'tan gelen alanlara göre tek karar noktası
+  const computeRoleFromProfile = (prof: any): Role => {
+    const dbRole = normalizeRole(prof?.role);
+    const dbUserType = normalizeRole(prof?.user_type); // user_type: company ise corporate'e maplenir
+    const dbAccountType = normalizeRole(prof?.account_type); // constraint yüzünden "user" kalabilir, ama yine de okuyoruz
+    const isCoach = Boolean(prof?.is_coach);
+
+    // 1) Admin (varsa)
+    if (dbRole === "admin") return "admin";
+
+    // 2) Şirket (role/user_type/account_type üzerinden)
+    if (dbRole === "corporate" || dbUserType === "corporate" || dbAccountType === "corporate") {
+      return "corporate";
+    }
+
+    // 3) Koç (role veya flag)
+    if (dbRole === "coach" || isCoach) return "coach";
+
+    // 4) Default user
+    return "user";
+  };
+
   // ✅ 1) İlk kaynak: localStorage (en hızlı + en stabil)
   useEffect(() => {
     try {
@@ -56,8 +86,8 @@ export default function Navbar() {
         setStorageLoggedIn(true);
         setStorageEmail(parsed.email || null);
 
-        // ✅ localStorage'da role varsa direkt onu kullan
-        if (parsed?.role) setRole(parsed.role);
+        // ✅ localStorage'da role varsa direkt onu kullan (normalize ederek)
+        if (parsed?.role) setRole(normalizeRole(parsed.role));
       }
     } catch (e) {
       console.error("localStorage parse error", e);
@@ -89,11 +119,7 @@ export default function Navbar() {
       path: "/for-coaches",
     },
     {
-      name: getNavText(
-        "Şirketler İçin",
-        "For Companies",
-        "Pour les entreprises"
-      ),
+      name: getNavText("Şirketler İçin", "For Companies", "Pour les entreprises"),
       path: "/for-companies",
     },
     { name: "MentorCircle", path: "/mentor-circle" },
@@ -148,8 +174,7 @@ export default function Navbar() {
 
   const getUserDisplayName = () => {
     if (authCtx?.user?.fullName) return authCtx.user.fullName;
-    if (authCtx?.supabaseUser?.email)
-      return authCtx.supabaseUser.email.split("@")[0];
+    if (authCtx?.supabaseUser?.email) return authCtx.supabaseUser.email.split("@")[0];
     if (storageEmail) return storageEmail.split("@")[0];
     return getNavText("Kullanıcı", "User", "Utilisateur");
   };
@@ -173,32 +198,36 @@ export default function Navbar() {
           return;
         }
 
+        // ✅ role + user_type + account_type + is_coach çekiyoruz
         const { data: prof, error } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role,user_type,account_type,is_coach")
           .eq("id", u.id)
           .single();
 
-        if (!error && prof?.role) {
-          setRole(prof.role);
+        if (!error && prof) {
+          const computed = computeRoleFromProfile(prof);
+          if (computed) {
+            setRole(computed);
 
-          // ✅ localStorage'ı da güncelle (kalıcı olsun)
-          try {
-            const raw = localStorage.getItem("kariyeer_user");
-            const parsed = raw ? JSON.parse(raw) : {};
-            localStorage.setItem(
-              "kariyeer_user",
-              JSON.stringify({
-                ...parsed,
-                isLoggedIn: true,
-                email: parsed?.email || u.email,
-                role: prof.role,
-              })
-            );
-          } catch {}
+            // ✅ localStorage'ı da güncelle (kalıcı olsun)
+            try {
+              const raw = localStorage.getItem("kariyeer_user");
+              const parsed = raw ? JSON.parse(raw) : {};
+              localStorage.setItem(
+                "kariyeer_user",
+                JSON.stringify({
+                  ...parsed,
+                  isLoggedIn: true,
+                  email: parsed?.email || u.email,
+                  role: computed, // normalize edilmiş role
+                })
+              );
+            } catch {}
+          }
         } else {
           // fallback: metadata
-          const metaRole = u.user_metadata?.role ?? null;
+          const metaRole = normalizeRole(u.user_metadata?.role ?? null);
           if (metaRole) setRole(metaRole);
         }
       } catch (e) {
@@ -240,25 +269,17 @@ export default function Navbar() {
 
   const panelLabel =
     safeRole === "coach"
-      ? getNavText("Coach Panel", "Coach Panel", "Coach Panel")
+      ? getNavText("Koç Paneli", "Coach Panel", "Coach Panel")
       : safeRole === "corporate"
-      ? getNavText("Corporate Panel", "Corporate Panel", "Corporate Panel")
-      : getNavText("User Panel", "User Panel", "User Panel");
+      ? getNavText("Şirket Paneli", "Corporate Panel", "Corporate Panel")
+      : getNavText("Kullanıcı Paneli", "User Panel", "User Panel");
 
   const settingsLabel =
     safeRole === "coach"
       ? getNavText("Koç Ayarları", "Coach Settings", "Paramètres Coach")
       : safeRole === "corporate"
-      ? getNavText(
-          "Şirket Ayarları",
-          "Corporate Settings",
-          "Paramètres Entreprise"
-        )
-      : getNavText(
-          "Kullanıcı Ayarları",
-          "User Settings",
-          "Paramètres Utilisateur"
-        );
+      ? getNavText("Şirket Ayarları", "Corporate Settings", "Paramètres Entreprise")
+      : getNavText("Kullanıcı Ayarları", "User Settings", "Paramètres Utilisateur");
 
   const PanelIcon = safeRole === "corporate" ? Building2 : LayoutDashboard;
 
@@ -348,11 +369,7 @@ export default function Navbar() {
                     >
                       <PanelIcon className="h-4 w-4 mr-2" />
                       {loadingRole
-                        ? getNavText(
-                            "Yükleniyor...",
-                            "Loading...",
-                            "Chargement..."
-                          )
+                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
                         : panelLabel}
                     </DropdownMenuItem>
 
@@ -467,11 +484,7 @@ export default function Navbar() {
                     >
                       <PanelIcon className="h-4 w-4 mr-2" />
                       {loadingRole
-                        ? getNavText(
-                            "Yükleniyor...",
-                            "Loading...",
-                            "Chargement..."
-                          )
+                        ? getNavText("Yükleniyor...", "Loading...", "Chargement...")
                         : panelLabel}
                     </Button>
 

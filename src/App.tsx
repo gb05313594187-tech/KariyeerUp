@@ -1,194 +1,479 @@
-// src/App.tsx
+// src/pages/Howitworks.tsx
 // @ts-nocheck
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// UI / Icons
-import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-// LAYOUT (Public)
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import {
+  CheckCircle2,
+  ShieldCheck,
+  Star,
+  Users,
+  Building2,
+  UserCircle2,
+  CalendarCheck2,
+  LineChart,
+  Sparkles,
+  MessageSquare,
+  BadgeCheck,
+  Lock,
+  CreditCard,
+  ArrowRight,
+} from "lucide-react";
 
-// ✅ Admin Layout
-import AdminLayout from "@/layouts/AdminLayout";
+export default function HowItWorks() {
+  const steps = [
+    {
+      no: "01",
+      title: "Hedefini belirle",
+      desc: "Kısa bir onboarding ile hedefini, sektörünü ve deneyim seviyeni seç. Sistem sana uygun koçları öne çıkarır.",
+      icon: UserCircle2,
+    },
+    {
+      no: "02",
+      title: "Koçunu seç & seans planla",
+      desc: "Uzmanlık, ücret ve değerlendirmelere göre filtrele. Uygun saatleri gör ve tek tıkla talep gönder.",
+      icon: CalendarCheck2,
+    },
+    {
+      no: "03",
+      title: "Gelişimini takip et",
+      desc: "Seans notları, aksiyon planı ve hedef takibiyle ilerlemeni net biçimde gör. Geri bildirim döngüsü oluşur.",
+      icon: LineChart,
+    },
+  ];
 
-// SAYFALAR
-import Home from "@/pages/Index";
-import Coaches from "@/pages/Coaches";
-import ForCoaches from "@/pages/ForCoaches";
-import ForCompanies from "@/pages/ForCompanies";
-import MentorCircle from "@/pages/MentorCircle";
-import Webinars from "@/pages/Webinars";
-import Login from "@/pages/Login";
-import BookSession from "@/pages/BookSession";
-import Register from "@/pages/Register";
-import CoachSelection from "@/pages/CoachSelection";
-import CoachApplication from "@/pages/CoachApplication";
+  const personas = [
+    {
+      title: "Bireyler için",
+      subtitle: "Kariyerini hızlandır",
+      icon: Users,
+      bullets: [
+        "Doğru koç eşleşmesi (hedef + sektör + seviye)",
+        "Şeffaf fiyat / değerlendirme / uzmanlık",
+        "Seans sonrası net aksiyon listesi",
+        "İlerlemeni takip eden sade panel",
+      ],
+      ctaText: "Koçları incele",
+      ctaHref: "/coaches",
+    },
+    {
+      title: "Koçlar için",
+      subtitle: "Görünürlüğünü artır",
+      icon: Star,
+      bullets: [
+        "Profil + uzmanlık alanı ile öne çıkma",
+        "Seans taleplerini tek yerden yönetme",
+        "Değerlendirmelerle güven inşa etme",
+        "Premium / doğrulama rozetleri (opsiyonel)",
+      ],
+      ctaText: "Koç olarak başvur",
+      ctaHref: "/for-coaches",
+    },
+    {
+      title: "Şirketler için",
+      subtitle: "Takım gelişimini ölç",
+      icon: Building2,
+      bullets: [
+        "Kurumsal talep & koç havuzuna erişim",
+        "Demo / tanışma görüşmeleri",
+        "Koçluk programı tasarlama desteği",
+        "Kurumsal panelde takip (kapsam genişletilebilir)",
+      ],
+      ctaText: "Kurumsal çözümler",
+      ctaHref: "/for-companies",
+    },
+  ];
 
-// ✅ YENİ EKLENEN LEGAL SAYFALAR
-import About from "@/pages/About";
-import Privacy from "@/pages/Privacy";
-import Returns from "@/pages/Returns";
-import DistanceSales from "@/pages/DistanceSales";
+  const trust = [
+    {
+      title: "Doğrulama & kalite",
+      desc: "Koç profilleri başvuru sürecinden geçer. Rozetler ve değerlendirmeler şeffaf şekilde görünür.",
+      icon: BadgeCheck,
+    },
+    {
+      title: "Gizlilik",
+      desc: "Kullanıcı verileri güvenlik prensiplerine uygun şekilde işlenir. İletişim ve süreçler kayıt altında ilerler.",
+      icon: Lock,
+    },
+    {
+      title: "Güvenli ödeme",
+      desc: "Ödemeler lisanslı ödeme kuruluşları üzerinden alınır. Kart bilgileri platformda saklanmaz.",
+      icon: CreditCard,
+    },
+    {
+      title: "Destek",
+      desc: "Sorun yaşarsan hızlı destek kanalıyla çözüm üretiriz. Süreçlerin görünür olması önceliğimiz.",
+      icon: MessageSquare,
+    },
+  ];
 
-import Terms from "@/pages/Terms";
-import Ethics from "@/pages/Ethics";
+  const faqs = [
+    {
+      q: "Koç seçerken nelere bakmalıyım?",
+      a: "Uzmanlık alanı, deneyim, değerlendirme puanı ve yaklaşımına bak. Hedefin netse filtrelerle doğru koçu hızlıca bulursun.",
+    },
+    {
+      q: "Koçlar nasıl listeleniyor?",
+      a: "Profil bilgileri, onay durumu, uzmanlık alanı ve kullanıcı değerlendirmeleri gibi sinyallerle sıralama yapılır.",
+    },
+    {
+      q: "İptal / iade nasıl işliyor?",
+      a: "Koşullar “İptal ve İade Koşulları” sayfasında belirtilir. Zamanlamaya göre iade politikası değişebilir.",
+    },
+    {
+      q: "Şirket olarak nasıl başlarız?",
+      a: "Kurumsal formu doldurursun; ihtiyaç, kapsam ve hedeflere göre koç havuzu ve program seçenekleriyle ilerleriz.",
+    },
+  ];
 
-import CoachPublicProfile from "@/pages/CoachPublicProfile";
-import CoachSelfProfile from "@/pages/CoachProfile";
-
-// USER
-import UserDashboard from "@/pages/UserDashboard";
-import UserProfile from "@/pages/UserProfile";
-import UserSettings from "@/pages/UserSettings";
-
-// CORPORATE
-import CorporateDashboard from "@/pages/CorporateDashboard";
-import CorporateProfile from "@/pages/CorporateProfile";
-import CorporateSettings from "@/pages/CorporateSettings";
-
-// COACH
-import CoachDashboard from "@/pages/CoachDashboard";
-import CoachSettings from "@/pages/CoachSettings";
-import CoachRequests from "@/pages/CoachRequests";
-
-// ADMIN
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminProfile from "@/pages/AdminProfile";
-import AdminSettings from "@/pages/AdminSettings";
-
-// LEGACY
-import Dashboard from "@/pages/Dashboard";
-import ProfilePage from "@/pages/Profile";
-
-/* -------------------------------------------------
-   Public Layout
--------------------------------------------------- */
-function PublicLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white text-slate-900">
       <Navbar />
-      <main className="flex-1">
-        <Outlet />
+
+      <main className="flex-1 bg-white relative z-0">
+        {/* DEBUG: bunu görmüyorsan bu dosya render olmuyor (route/import yanlış) */}
+        <div className="sticky top-0 z-50 bg-yellow-200 text-black text-sm font-semibold px-4 py-2 border-b border-yellow-300">
+          HOWITWORKS RENDER ✅ (Bunu görmüyorsan route/import bu sayfaya bağlı değil)
+        </div>
+
+        {/* HERO */}
+        <section className="border-b bg-gradient-to-b from-red-600 via-orange-500 to-orange-400">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 sm:pt-20 sm:pb-14">
+            <div className="text-center">
+              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+                Kariyer Koçuna Ulaşmanın
+                <br />
+                <span className="text-yellow-300">En Kolay Yolu</span>
+              </h1>
+
+              <p className="mt-4 text-white/90 text-base sm:text-lg">
+                3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
+              </p>
+
+              <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100 transition"
+                >
+                  Hemen Başla
+                </Link>
+                <Link
+                  to="/coaches"
+                  className="inline-flex items-center justify-center rounded-full border border-white/60 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition"
+                >
+                  Koçları İncele
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Top value strip */}
+        <section className="border-b">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="grid gap-6 lg:grid-cols-12 items-start">
+              <div className="lg:col-span-7">
+                <p className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-700">
+                  <Sparkles className="h-4 w-4 text-red-600" />
+                  Net, hızlı, ölçülebilir gelişim
+                </p>
+
+                <h2 className="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">
+                  Kariyeer’de süreç karmaşık değil.
+                  <br className="hidden sm:block" />
+                  <span className="text-gray-900">3 adım, tek akış.</span>
+                </h2>
+
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım
+                  şeffaf, sade ve ölçülebilir.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                  >
+                    Koçları incele <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  >
+                    Hemen başla
+                  </Link>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border bg-gray-50 p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-white border flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-gray-900" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        Güven odaklı deneyim
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli
+                        ödeme ile uçtan uca kontrollü süreç.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Ortalama memnuniyet</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">4.8/5</p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Aktif koç havuzu</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">120+</p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Tamamlanan seans</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">15.000+</p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Sektör çeşitliliği</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">30+</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs text-gray-500">
+                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden yönetilebilir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3 Steps */}
+        <section className="py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                  Nasıl çalışır?
+                </h2>
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  Her adımın amacı net: doğru eşleşme, doğru planlama, doğru takip.
+                </p>
+              </div>
+
+              <div className="flex gap-3 flex-wrap">
+                <Link
+                  to="/coaches"
+                  className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                >
+                  Koçları incele
+                </Link>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black transition"
+                >
+                  Ücretsiz kayıt ol
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {steps.map((s) => (
+                <div
+                  key={s.no}
+                  className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                      {s.no}
+                    </span>
+                    <s.icon className="h-6 w-6 text-gray-700" />
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {s.desc}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <CheckCircle2 className="h-4 w-4 text-red-600" />
+                    Şeffaf ve ölçülebilir akış
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Personas */}
+        <section className="border-t bg-gray-50 py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Kimler için?
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Platformu üç ayrı ihtiyaç için tasarladık: birey, koç ve şirket.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-3">
+              {personas.map((p) => (
+                <div key={p.title} className="rounded-2xl border bg-white p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="h-11 w-11 rounded-xl bg-gray-900 flex items-center justify-center">
+                      <p.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {p.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">{p.subtitle}</p>
+                    </div>
+                  </div>
+
+                  <ul className="mt-5 space-y-3">
+                    {p.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-red-600 mt-0.5" />
+                        <span className="text-sm text-gray-700">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6">
+                    <Link
+                      to={p.ctaHref}
+                      className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition w-full"
+                    >
+                      {p.ctaText} <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Trust */}
+        <section className="py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Güven, kalite ve şeffaflık
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Süreç, sadece “koç bul” değil; doğru deneyim için kontrol noktalarıyla tasarlandı.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {trust.map((t) => (
+                <div key={t.title} className="rounded-2xl border bg-white p-6">
+                  <t.icon className="h-6 w-6 text-gray-900" />
+                  <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {t.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Hızlı başlamak ister misin?
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Koçları incele veya doğrudan kayıt olup hedefini seç.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                  >
+                    Koçları incele
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  >
+                    Ücretsiz kayıt ol
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="border-t bg-white py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Sık sorulan sorular
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                En çok gelen soruları burada yanıtladık.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              {faqs.map((f) => (
+                <div key={f.q} className="rounded-2xl border bg-white p-6">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-red-600" />
+                    {f.q}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {f.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 rounded-2xl bg-gray-900 p-8 text-white">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                  <p className="text-sm text-white/80">Son adım</p>
+                  <h3 className="mt-1 text-2xl font-semibold">
+                    Bugün başla, 30 gün sonra farkı gör.
+                  </h3>
+                  <p className="mt-2 text-sm text-white/80">
+                    Hedef → Koç → Seans → Aksiyon planı. Bu kadar net.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition"
+                  >
+                    Ücretsiz kayıt ol <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                  <Link
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full border border-white/30 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10 transition"
+                  >
+                    Koçları incele
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* sayfanın footer'a “yapışmaması” için min boşluk */}
+        <div className="h-6" />
       </main>
+
       <Footer />
     </div>
-  );
-}
-
-/* -------------------------------------------------
-   Nasıl Çalışır
--------------------------------------------------- */
-function HowItWorks() {
-  return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <section className="bg-gradient-to-br from-orange-500 via-red-500 to-orange-400 text-white py-20 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur text-xs font-semibold uppercase tracking-wider mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-lime-300 animate-pulse" />
-            Nasıl Çalışır?
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
-            Kariyer Koçuna Ulaşmanın <br />
-            <span className="text-yellow-300">En Kolay Yolu</span>
-          </h1>
-          <p className="text-base md:text-lg text-orange-50 max-w-2xl mx-auto mb-8">
-            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a href="/register">
-              <Button className="bg-white text-red-600 hover:bg-orange-50 px-8 py-6 rounded-xl">
-                Hemen Başla
-              </Button>
-            </a>
-            <a href="/coaches">
-              <Button
-                variant="outline"
-                className="border-white/80 text-white hover:bg-white/10 px-8 py-6 rounded-xl"
-              >
-                Koçları İncele
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/* -------------------------------------------------
-   APP
--------------------------------------------------- */
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* ADMIN */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="profile" element={<AdminProfile />} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
-
-        {/* PUBLIC */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<Home />} />
-
-          <Route path="/nasil-calisir" element={<HowItWorks />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-
-          <Route path="/coaches" element={<Coaches />} />
-          <Route path="/coach/:id" element={<CoachPublicProfile />} />
-
-          <Route path="/for-coaches" element={<ForCoaches />} />
-          <Route path="/for-companies" element={<ForCompanies />} />
-          <Route path="/mentor-circle" element={<MentorCircle />} />
-          <Route path="/webinars" element={<Webinars />} />
-
-          <Route path="/coach-selection-process" element={<CoachSelection />} />
-          <Route path="/book-session" element={<BookSession />} />
-          <Route path="/coach-application" element={<CoachApplication />} />
-
-          {/* USER */}
-          <Route path="/user/dashboard" element={<UserDashboard />} />
-          <Route path="/user/profile" element={<UserProfile />} />
-          <Route path="/user/settings" element={<UserSettings />} />
-
-          {/* CORPORATE */}
-          <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
-          <Route path="/corporate/profile" element={<CorporateProfile />} />
-          <Route path="/corporate/settings" element={<CorporateSettings />} />
-
-          {/* COACH */}
-          <Route path="/coach/dashboard" element={<CoachDashboard />} />
-          <Route path="/coach/profile" element={<CoachSelfProfile />} />
-          <Route path="/coach/settings" element={<CoachSettings />} />
-          <Route path="/coach/requests" element={<CoachRequests />} />
-
-          {/* LEGAL – EKLENEN ROOTLAR */}
-          <Route path="/about" element={<About />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/returns" element={<Returns />} />
-          <Route path="/distance-sales" element={<DistanceSales />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/ethics" element={<Ethics />} />
-
-          {/* AUTH */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* LEGACY */}
-          <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
-          <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
-          <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
-          <Route path="/legacy-dashboard" element={<Dashboard />} />
-          <Route path="/legacy-profile" element={<ProfilePage />} />
-
-          {/* 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
   );
 }

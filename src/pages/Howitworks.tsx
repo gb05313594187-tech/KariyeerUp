@@ -2,6 +2,8 @@
 // @ts-nocheck
 
 import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import {
   CheckCircle2,
   ShieldCheck,
@@ -126,315 +128,353 @@ export default function HowItWorks() {
   ];
 
   return (
-    <main className="bg-white">
-      {/* ✅ Hero zaten layout/üst bölümde var. Bu sayfa sadece içerik alanını doldurur. */}
+    <div className="min-h-screen flex flex-col bg-white text-slate-900">
+      <Navbar />
 
-      {/* Section: Top value strip */}
-      <section className="border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid gap-6 lg:grid-cols-12 items-start">
-            <div className="lg:col-span-7">
-              <p className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-700">
-                <Sparkles className="h-4 w-4 text-red-600" />
-                Net, hızlı, ölçülebilir gelişim
+      <main className="flex-1 bg-white">
+        {/* HERO (üstteki kırmızı alan) */}
+        <section className="border-b bg-gradient-to-b from-red-600 via-orange-500 to-orange-400">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14 sm:pt-24 sm:pb-16">
+            <div className="text-center">
+              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+                Kariyer Koçuna Ulaşmanın
+                <br />
+                <span className="text-yellow-300">En Kolay Yolu</span>
+              </h1>
+
+              <p className="mt-4 text-white/90 text-base sm:text-lg">
+                3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
               </p>
 
-              <h2 className="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">
-                Kariyeer’de süreç karmaşık değil.
-                <br className="hidden sm:block" />
-                <span className="text-gray-900">3 adım, tek akış.</span>
-              </h2>
-
-              <p className="mt-3 text-gray-600 leading-relaxed">
-                Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım
-                şeffaf, sade ve ölçülebilir.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  to="/coaches"
-                  className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
-                >
-                  Koçları incele <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
+              <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100 transition"
                 >
-                  Hemen başla
+                  Hemen Başla
+                </Link>
+                <Link
+                  to="/coaches"
+                  className="inline-flex items-center justify-center rounded-full border border-white/60 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition"
+                >
+                  Koçları İncele
                 </Link>
               </div>
             </div>
-
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl border bg-gray-50 p-6">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-white border flex items-center justify-center">
-                    <ShieldCheck className="h-5 w-5 text-gray-900" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      Güven odaklı deneyim
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli
-                      ödeme ile uçtan uca kontrollü süreç.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white border p-4">
-                    <p className="text-xs text-gray-500">Ortalama memnuniyet</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
-                      4.8/5
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-white border p-4">
-                    <p className="text-xs text-gray-500">Aktif koç havuzu</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
-                      120+
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-white border p-4">
-                    <p className="text-xs text-gray-500">Tamamlanan seans</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
-                      15.000+
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-white border p-4">
-                    <p className="text-xs text-gray-500">Sektör çeşitliliği</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
-                      30+
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Section: 3 Steps */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                Nasıl çalışır?
-              </h2>
-              <p className="mt-3 text-gray-600 leading-relaxed">
-                Her adımın amacı net: doğru eşleşme, doğru planlama, doğru takip.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <Link
-                to="/coaches"
-                className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
-              >
-                Koçları incele
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black transition"
-              >
-                Ücretsiz kayıt ol
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {steps.map((s) => (
-              <div
-                key={s.no}
-                className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-                    {s.no}
-                  </span>
-                  <s.icon className="h-6 w-6 text-gray-700" />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                  {s.title}
-                </h3>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                  {s.desc}
+        {/* Section: Top value strip */}
+        <section className="border-b">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="grid gap-6 lg:grid-cols-12 items-start">
+              <div className="lg:col-span-7">
+                <p className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-700">
+                  <Sparkles className="h-4 w-4 text-red-600" />
+                  Net, hızlı, ölçülebilir gelişim
                 </p>
 
-                <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-                  <CheckCircle2 className="h-4 w-4 text-red-600" />
-                  Şeffaf ve ölçülebilir akış
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <h2 className="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">
+                  Kariyeer’de süreç karmaşık değil.
+                  <br className="hidden sm:block" />
+                  <span className="text-gray-900">3 adım, tek akış.</span>
+                </h2>
 
-      {/* Section: Personas */}
-      <section className="border-t bg-gray-50 py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-              Kimler için?
-            </h2>
-            <p className="mt-3 text-gray-600 leading-relaxed">
-              Platformu üç ayrı ihtiyaç için tasarladık: birey, koç ve şirket.
-            </p>
-          </div>
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım
+                  şeffaf, sade ve ölçülebilir.
+                </p>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-3">
-            {personas.map((p) => (
-              <div key={p.title} className="rounded-2xl border bg-white p-6">
-                <div className="flex items-start gap-3">
-                  <div className="h-11 w-11 rounded-xl bg-gray-900 flex items-center justify-center">
-                    <p.icon className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {p.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">{p.subtitle}</p>
-                  </div>
-                </div>
-
-                <ul className="mt-5 space-y-3">
-                  {p.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-red-600 mt-0.5" />
-                      <span className="text-sm text-gray-700">{b}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-6">
+                <div className="mt-6 flex flex-wrap gap-3">
                   <Link
-                    to={p.ctaHref}
-                    className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition w-full"
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
                   >
-                    {p.ctaText} <ArrowRight className="h-4 w-4 ml-2" />
+                    Koçları incele <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  >
+                    Hemen başla
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Section: Trust */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-              Güven, kalite ve şeffaflık
-            </h2>
-            <p className="mt-3 text-gray-600 leading-relaxed">
-              Süreç, sadece “koç bul” değil; doğru deneyim için kontrol
-              noktalarıyla tasarlandı.
-            </p>
-          </div>
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border bg-gray-50 p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-white border flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-gray-900" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        Güven odaklı deneyim
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli
+                        ödeme ile uçtan uca kontrollü süreç.
+                      </p>
+                    </div>
+                  </div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {trust.map((t) => (
-              <div
-                key={t.title}
-                className="rounded-2xl border bg-white p-6"
-              >
-                <t.icon className="h-6 w-6 text-gray-900" />
-                <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                  {t.desc}
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Ortalama memnuniyet</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">
+                        4.8/5
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Aktif koç havuzu</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">
+                        120+
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Tamamlanan seans</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">
+                        15.000+
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-white border p-4">
+                      <p className="text-xs text-gray-500">Sektör çeşitliliği</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-900">
+                        30+
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs text-gray-500">
+                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden yönetilebilir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section: 3 Steps */}
+        <section className="py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                  Nasıl çalışır?
+                </h2>
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  Her adımın amacı net: doğru eşleşme, doğru planlama, doğru takip.
                 </p>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  Hızlı başlamak ister misin?
-                </p>
-                <p className="mt-1 text-sm text-gray-600">
-                  Koçları incele veya doğrudan kayıt olup hedefini seç.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Link
                   to="/coaches"
-                  className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                  className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
                 >
                   Koçları incele
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  className="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black transition"
                 >
                   Ücretsiz kayıt ol
                 </Link>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Section: FAQ */}
-      <section className="border-t bg-white py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-              Sık sorulan sorular
-            </h2>
-            <p className="mt-3 text-gray-600 leading-relaxed">
-              En çok gelen soruları burada yanıtladık.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 lg:grid-cols-2">
-            {faqs.map((f) => (
-              <div key={f.q} className="rounded-2xl border bg-white p-6">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-red-600" />
-                  {f.q}
-                </h3>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                  {f.a}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 rounded-2xl bg-gray-900 p-8 text-white">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <p className="text-sm text-white/80">Son adım</p>
-                <h3 className="mt-1 text-2xl font-semibold">
-                  Bugün başla, 30 gün sonra farkı gör.
-                </h3>
-                <p className="mt-2 text-sm text-white/80">
-                  Hedef → Koç → Seans → Aksiyon planı. Bu kadar net.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/register"
-                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition"
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {steps.map((s) => (
+                <div
+                  key={s.no}
+                  className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
                 >
-                  Ücretsiz kayıt ol <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-                <Link
-                  to="/coaches"
-                  className="inline-flex items-center justify-center rounded-full border border-white/30 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10 transition"
-                >
-                  Koçları incele
-                </Link>
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                      {s.no}
+                    </span>
+                    <s.icon className="h-6 w-6 text-gray-700" />
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {s.desc}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                    <CheckCircle2 className="h-4 w-4 text-red-600" />
+                    Şeffaf ve ölçülebilir akış
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Personas */}
+        <section className="border-t bg-gray-50 py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Kimler için?
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Platformu üç ayrı ihtiyaç için tasarladık: birey, koç ve şirket.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-3">
+              {personas.map((p) => (
+                <div key={p.title} className="rounded-2xl border bg-white p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="h-11 w-11 rounded-xl bg-gray-900 flex items-center justify-center">
+                      <p.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {p.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">{p.subtitle}</p>
+                    </div>
+                  </div>
+
+                  <ul className="mt-5 space-y-3">
+                    {p.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-red-600 mt-0.5" />
+                        <span className="text-sm text-gray-700">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6">
+                    <Link
+                      to={p.ctaHref}
+                      className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition w-full"
+                    >
+                      {p.ctaText} <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Section: Trust */}
+        <section className="py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Güven, kalite ve şeffaflık
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Süreç, sadece “koç bul” değil; doğru deneyim için kontrol
+                noktalarıyla tasarlandı.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {trust.map((t) => (
+                <div key={t.title} className="rounded-2xl border bg-white p-6">
+                  <t.icon className="h-6 w-6 text-gray-900" />
+                  <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {t.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Hızlı başlamak ister misin?
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Koçları incele veya doğrudan kayıt olup hedefini seç.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                  >
+                    Koçları incele
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                  >
+                    Ücretsiz kayıt ol
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+
+        {/* Section: FAQ */}
+        <section className="border-t bg-white py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                Sık sorulan sorular
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                En çok gelen soruları burada yanıtladık.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              {faqs.map((f) => (
+                <div key={f.q} className="rounded-2xl border bg-white p-6">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-red-600" />
+                    {f.q}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    {f.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 rounded-2xl bg-gray-900 p-8 text-white">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                  <p className="text-sm text-white/80">Son adım</p>
+                  <h3 className="mt-1 text-2xl font-semibold">
+                    Bugün başla, 30 gün sonra farkı gör.
+                  </h3>
+                  <p className="mt-2 text-sm text-white/80">
+                    Hedef → Koç → Seans → Aksiyon planı. Bu kadar net.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition"
+                  >
+                    Ücretsiz kayıt ol <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                  <Link
+                    to="/coaches"
+                    className="inline-flex items-center justify-center rounded-full border border-white/30 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10 transition"
+                  >
+                    Koçları incele
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

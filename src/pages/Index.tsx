@@ -243,7 +243,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ÖNE ÇIKAN KOÇLAR (BURADA) */}
+      {/* ✅ ÖNE ÇIKAN KOÇLAR (EKLENDİ / KORUNDU) */}
       <section className="py-18 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">

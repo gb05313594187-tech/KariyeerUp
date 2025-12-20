@@ -2,8 +2,6 @@
 // @ts-nocheck
 
 import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import {
   CheckCircle2,
   ShieldCheck,
@@ -21,9 +19,6 @@ import {
 } from "lucide-react";
 
 export default function HowItWorks() {
-  // ✅ DEBUG: Bu console log görünmüyorsa, bu dosya render edilmiyor demektir.
-  console.log("HOWITWORKS FULL VERSION LOADED ✅");
-
   const steps = [
     {
       no: "01",
@@ -130,16 +125,8 @@ export default function HowItWorks() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900">
-      <Navbar />
-
-      <main className="flex-1 bg-white text-slate-900">
-        {/* ✅ DEBUG BAND: BUNU MUTLAKA GÖRMELİSİN */}
-        <div className="bg-black text-white p-3 text-center text-sm font-semibold">
-          DEBUG: Howitworks FULL PAGE render edildi ✅ (Bunu görmüyorsan route yanlış dosyayı
-          açıyor)
-        </div>
-
+    <div className="min-h-screen bg-white text-slate-900">
+      <main className="bg-white text-slate-900">
         {/* HERO */}
         <section className="border-b bg-gradient-to-b from-red-600 via-orange-500 to-orange-400">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14 sm:pt-24 sm:pb-16">
@@ -189,8 +176,8 @@ export default function HowItWorks() {
                 </h2>
 
                 <p className="mt-3 text-gray-600 leading-relaxed">
-                  Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım
-                  şeffaf, sade ve ölçülebilir.
+                  Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım şeffaf,
+                  sade ve ölçülebilir.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -216,12 +203,9 @@ export default function HowItWorks() {
                       <ShieldCheck className="h-5 w-5 text-gray-900" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">
-                        Güven odaklı deneyim
-                      </h3>
+                      <h3 className="font-semibold text-gray-900">Güven odaklı deneyim</h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli
-                        ödeme ile uçtan uca kontrollü süreç.
+                        Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli ödeme ile uçtan uca kontrollü süreç.
                       </p>
                     </div>
                   </div>
@@ -235,16 +219,13 @@ export default function HowItWorks() {
                     ].map((m, i) => (
                       <div key={i} className="rounded-xl bg-white border p-4">
                         <p className="text-xs text-gray-500">{m.label}</p>
-                        <p className="mt-1 text-lg font-semibold text-gray-900">
-                          {m.value}
-                        </p>
+                        <p className="mt-1 text-lg font-semibold text-gray-900">{m.value}</p>
                       </div>
                     ))}
                   </div>
 
                   <p className="mt-4 text-xs text-gray-500">
-                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden
-                    yönetilebilir.
+                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden yönetilebilir.
                   </p>
                 </div>
               </div>
@@ -257,9 +238,7 @@ export default function HowItWorks() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div className="max-w-2xl">
-                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                  Nasıl çalışır?
-                </h2>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Nasıl çalışır?</h2>
                 <p className="mt-3 text-gray-600 leading-relaxed">
                   Her adımın amacı net: doğru eşleşme, doğru planlama, doğru takip.
                 </p>
@@ -285,10 +264,7 @@ export default function HowItWorks() {
               {steps.map((s, idx) => {
                 const Icon = s.icon;
                 return (
-                  <div
-                    key={idx}
-                    className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
-                  >
+                  <div key={idx} className="rounded-2xl border bg-white p-6 hover:shadow-sm transition">
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
                         {s.no}
@@ -296,12 +272,8 @@ export default function HowItWorks() {
                       {Icon ? <Icon className="h-6 w-6 text-gray-700" /> : null}
                     </div>
 
-                    <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                      {s.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                      {s.desc}
-                    </p>
+                    <h3 className="mt-4 text-lg font-semibold text-gray-900">{s.title}</h3>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">{s.desc}</p>
 
                     <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
                       <CheckCircle2 className="h-4 w-4 text-red-600" />
@@ -318,9 +290,7 @@ export default function HowItWorks() {
         <section className="border-t bg-gray-50 py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                Kimler için?
-              </h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Kimler için?</h2>
               <p className="mt-3 text-gray-600 leading-relaxed">
                 Platformu üç ayrı ihtiyaç için tasarladık: birey, koç ve şirket.
               </p>
@@ -336,9 +306,7 @@ export default function HowItWorks() {
                         {Icon ? <Icon className="h-5 w-5 text-white" /> : null}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {p.title}
-                        </h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{p.title}</h3>
                         <p className="text-sm text-gray-600">{p.subtitle}</p>
                       </div>
                     </div>
@@ -371,12 +339,9 @@ export default function HowItWorks() {
         <section className="py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                Güven, kalite ve şeffaflık
-              </h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Güven, kalite ve şeffaflık</h2>
               <p className="mt-3 text-gray-600 leading-relaxed">
-                Süreç, sadece “koç bul” değil; doğru deneyim için kontrol
-                noktalarıyla tasarlandı.
+                Süreç, sadece “koç bul” değil; doğru deneyim için kontrol noktalarıyla tasarlandı.
               </p>
             </div>
 
@@ -387,9 +352,7 @@ export default function HowItWorks() {
                   <div key={idx} className="rounded-2xl border bg-white p-6">
                     {Icon ? <Icon className="h-6 w-6 text-gray-900" /> : null}
                     <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
-                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                      {t.desc}
-                    </p>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
                   </div>
                 );
               })}
@@ -398,9 +361,7 @@ export default function HowItWorks() {
             <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    Hızlı başlamak ister misin?
-                  </p>
+                  <p className="text-sm font-semibold text-gray-900">Hızlı başlamak ister misin?</p>
                   <p className="mt-1 text-sm text-gray-600">
                     Koçları incele veya doğrudan kayıt olup hedefini seç.
                   </p>
@@ -428,12 +389,8 @@ export default function HowItWorks() {
         <section className="border-t bg-white py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                Sık sorulan sorular
-              </h2>
-              <p className="mt-3 text-gray-600 leading-relaxed">
-                En çok gelen soruları burada yanıtladık.
-              </p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Sık sorulan sorular</h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">En çok gelen soruları burada yanıtladık.</p>
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -443,9 +400,7 @@ export default function HowItWorks() {
                     <ShieldCheck className="h-5 w-5 text-red-600" />
                     {f.q}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                    {f.a}
-                  </p>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{f.a}</p>
                 </div>
               ))}
             </div>
@@ -454,9 +409,7 @@ export default function HowItWorks() {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
                   <p className="text-sm text-white/80">Son adım</p>
-                  <h3 className="mt-1 text-2xl font-semibold">
-                    Bugün başla, 30 gün sonra farkı gör.
-                  </h3>
+                  <h3 className="mt-1 text-2xl font-semibold">Bugün başla, 30 gün sonra farkı gör.</h3>
                   <p className="mt-2 text-sm text-white/80">
                     Hedef → Koç → Seans → Aksiyon planı. Bu kadar net.
                   </p>
@@ -480,8 +433,6 @@ export default function HowItWorks() {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }

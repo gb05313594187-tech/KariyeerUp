@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import {
   CheckCircle2,
   ShieldCheck,
-  Star,
   Users,
   Building2,
   UserCircle2,
@@ -60,7 +59,7 @@ export default function HowItWorks() {
     {
       title: "Koçlar için",
       subtitle: "Görünürlüğünü artır",
-      icon: Star,
+      icon: BadgeCheck,
       bullets: [
         "Profil + uzmanlık alanı ile öne çıkma",
         "Seans taleplerini tek yerden yönetme",
@@ -131,8 +130,8 @@ export default function HowItWorks() {
     <div className="min-h-screen flex flex-col bg-white text-slate-900">
       <Navbar />
 
-      <main className="flex-1 bg-white">
-        {/* HERO (üstteki kırmızı alan) */}
+      <main className="flex-1 bg-white text-slate-900">
+        {/* HERO */}
         <section className="border-b bg-gradient-to-b from-red-600 via-orange-500 to-orange-400">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14 sm:pt-24 sm:pb-16">
             <div className="text-center">
@@ -164,7 +163,7 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        {/* Section: Top value strip */}
+        {/* Top value strip */}
         <section className="border-b">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="grid gap-6 lg:grid-cols-12 items-start">
@@ -219,34 +218,24 @@ export default function HowItWorks() {
                   </div>
 
                   <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white border p-4">
-                      <p className="text-xs text-gray-500">Ortalama memnuniyet</p>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">
-                        4.8/5
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-white border p-4">
-                      <p className="text-xs text-gray-500">Aktif koç havuzu</p>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">
-                        120+
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-white border p-4">
-                      <p className="text-xs text-gray-500">Tamamlanan seans</p>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">
-                        15.000+
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-white border p-4">
-                      <p className="text-xs text-gray-500">Sektör çeşitliliği</p>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">
-                        30+
-                      </p>
-                    </div>
+                    {[
+                      { label: "Ortalama memnuniyet", value: "4.8/5" },
+                      { label: "Aktif koç havuzu", value: "120+" },
+                      { label: "Tamamlanan seans", value: "15.000+" },
+                      { label: "Sektör çeşitliliği", value: "30+" },
+                    ].map((m, i) => (
+                      <div key={i} className="rounded-xl bg-white border p-4">
+                        <p className="text-xs text-gray-500">{m.label}</p>
+                        <p className="mt-1 text-lg font-semibold text-gray-900">
+                          {m.value}
+                        </p>
+                      </div>
+                    ))}
                   </div>
 
                   <p className="mt-4 text-xs text-gray-500">
-                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden yönetilebilir.
+                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden
+                    yönetilebilir.
                   </p>
                 </div>
               </div>
@@ -254,7 +243,7 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        {/* Section: 3 Steps */}
+        {/* 3 Steps */}
         <section className="py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
@@ -284,36 +273,39 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {steps.map((s) => (
-                <div
-                  key={s.no}
-                  className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-                      {s.no}
-                    </span>
-                    <s.icon className="h-6 w-6 text-gray-700" />
-                  </div>
+              {steps.map((s, idx) => {
+                const Icon = s.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-2xl border bg-white p-6 hover:shadow-sm transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                        {s.no}
+                      </span>
+                      {Icon ? <Icon className="h-6 w-6 text-gray-700" /> : null}
+                    </div>
 
-                  <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                    {s.desc}
-                  </p>
+                    <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                      {s.desc}
+                    </p>
 
-                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
-                    <CheckCircle2 className="h-4 w-4 text-red-600" />
-                    Şeffaf ve ölçülebilir akış
+                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="h-4 w-4 text-red-600" />
+                      Şeffaf ve ölçülebilir akış
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Section: Personas */}
+        {/* Personas */}
         <section className="border-t bg-gray-50 py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
@@ -326,44 +318,47 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-3">
-              {personas.map((p) => (
-                <div key={p.title} className="rounded-2xl border bg-white p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="h-11 w-11 rounded-xl bg-gray-900 flex items-center justify-center">
-                      <p.icon className="h-5 w-5 text-white" />
+              {personas.map((p, idx) => {
+                const Icon = p.icon;
+                return (
+                  <div key={idx} className="rounded-2xl border bg-white p-6">
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-gray-900 flex items-center justify-center">
+                        {Icon ? <Icon className="h-5 w-5 text-white" /> : null}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {p.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">{p.subtitle}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {p.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">{p.subtitle}</p>
+
+                    <ul className="mt-5 space-y-3">
+                      {p.bullets.map((b, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-red-600 mt-0.5" />
+                          <span className="text-sm text-gray-700">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-6">
+                      <Link
+                        to={p.ctaHref}
+                        className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition w-full"
+                      >
+                        {p.ctaText} <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
                     </div>
                   </div>
-
-                  <ul className="mt-5 space-y-3">
-                    {p.bullets.map((b) => (
-                      <li key={b} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-red-600 mt-0.5" />
-                        <span className="text-sm text-gray-700">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="mt-6">
-                    <Link
-                      to={p.ctaHref}
-                      className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition w-full"
-                    >
-                      {p.ctaText} <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Section: Trust */}
+        {/* Trust */}
         <section className="py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
@@ -377,15 +372,18 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {trust.map((t) => (
-                <div key={t.title} className="rounded-2xl border bg-white p-6">
-                  <t.icon className="h-6 w-6 text-gray-900" />
-                  <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                    {t.desc}
-                  </p>
-                </div>
-              ))}
+              {trust.map((t, idx) => {
+                const Icon = t.icon;
+                return (
+                  <div key={idx} className="rounded-2xl border bg-white p-6">
+                    {Icon ? <Icon className="h-6 w-6 text-gray-900" /> : null}
+                    <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                      {t.desc}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
@@ -417,7 +415,7 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        {/* Section: FAQ */}
+        {/* FAQ */}
         <section className="border-t bg-white py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
@@ -430,8 +428,8 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              {faqs.map((f) => (
-                <div key={f.q} className="rounded-2xl border bg-white p-6">
+              {faqs.map((f, idx) => (
+                <div key={idx} className="rounded-2xl border bg-white p-6">
                   <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-red-600" />
                     {f.q}

@@ -11,6 +11,8 @@ import {
   Building2,
   TrendingUp,
   Clock,
+  Star,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function Index() {
@@ -32,7 +34,7 @@ export default function Index() {
       label: "Koç",
       icon: Briefcase,
       subtitle:
-        "Profilini büyüt, daha fazla danışana ulaş, seanslarını tek panelden yönet.",
+        "Profilini büyüt, daha fazla danışana ulaş, seanslarını ve gelirini tek panelden yönet.",
     },
     {
       key: "company",
@@ -62,6 +64,33 @@ export default function Index() {
     navigate(`/coaches?${qs.toString()}`);
   };
 
+  /* =========================
+     FEATURED COACHES (SELLABLE)
+  ========================= */
+  const featuredCoaches = [
+    {
+      name: "Dr. Ayşe Yılmaz",
+      title: "Kariyer & Liderlik Koçu",
+      rating: "4.9",
+      reviews: "120+",
+      tags: ["Liderlik", "Kariyer"],
+    },
+    {
+      name: "Mehmet Demir",
+      title: "Teknoloji & Startup Mentoru",
+      rating: "5.0",
+      reviews: "85+",
+      tags: ["Teknoloji", "Startup"],
+    },
+    {
+      name: "Zeynep Kaya",
+      title: "Mülakat & CV Uzmanı",
+      rating: "4.8",
+      reviews: "200+",
+      tags: ["Mülakat", "CV"],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       {/* =========================
@@ -69,7 +98,6 @@ export default function Index() {
       ========================= */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           {/* Trust badge */}
           <div className="flex justify-center">
@@ -164,7 +192,6 @@ export default function Index() {
         <div className="max-w-5xl mx-auto px-4">
           <div className="bg-white border border-orange-200 rounded-2xl shadow-lg p-6">
             <div className="grid md:grid-cols-4 gap-4">
-              {/* Goal */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   Hedef
@@ -180,7 +207,6 @@ export default function Index() {
                 </select>
               </div>
 
-              {/* Level */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   Seviye
@@ -198,7 +224,6 @@ export default function Index() {
                 </select>
               </div>
 
-              {/* Language */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   Dil
@@ -213,7 +238,6 @@ export default function Index() {
                 </select>
               </div>
 
-              {/* CTA */}
               <div className="flex items-end">
                 <Button
                   onClick={onMatch}
@@ -222,6 +246,105 @@ export default function Index() {
                   Eşleş
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          FEATURED COACHES
+      ========================= */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-end mb-10">
+            <div>
+              <h2 className="text-3xl font-black text-gray-900">
+                Öne Çıkan Koçlar
+              </h2>
+              <p className="text-gray-600 mt-2">
+                En yüksek puanlı ve en çok tercih edilen koçlar
+              </p>
+            </div>
+            <Link to="/coaches">
+              <Button variant="outline">Tümünü Gör</Button>
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {featuredCoaches.map((coach, i) => (
+              <div
+                key={i}
+                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition"
+              >
+                <h3 className="text-lg font-bold text-gray-900">
+                  {coach.name}
+                </h3>
+                <p className="text-sm text-gray-500">{coach.title}</p>
+
+                <div className="flex items-center gap-2 mt-3 text-sm">
+                  <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                  <span className="font-semibold">{coach.rating}</span>
+                  <span className="text-gray-400">
+                    ({coach.reviews} yorum)
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {coach.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-700"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-6 flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Doğrulanmış
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================
+          2025 INSIGHT
+      ========================= */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+            2025’te Kariyer Gelişimi Nasıl Kazandırıyor?
+          </h2>
+          <p className="mt-4 text-gray-600 max-w-3xl mx-auto">
+            2025 itibarıyla bireysel koçluk alan profesyoneller, almayanlara göre
+            daha hızlı terfi ediyor, daha yüksek maaş artışı yakalıyor ve iş
+            değişimlerinde avantaj sağlıyor.
+          </p>
+
+          <div className="mt-12 grid md:grid-cols-3 gap-8">
+            <div className="p-6 rounded-2xl border border-orange-200">
+              <div className="text-4xl font-black text-orange-600">%37</div>
+              <p className="mt-2 text-gray-600">
+                Daha hızlı terfi oranı
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl border border-orange-200">
+              <div className="text-4xl font-black text-red-600">%42</div>
+              <p className="mt-2 text-gray-600">
+                Maaş artışı avantajı
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl border border-orange-200">
+              <div className="text-4xl font-black text-green-600">%58</div>
+              <p className="mt-2 text-gray-600">
+                İş değiştirmede başarı
+              </p>
             </div>
           </div>
         </div>

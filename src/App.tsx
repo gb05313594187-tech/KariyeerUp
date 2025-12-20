@@ -6,6 +6,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-
 import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// LAYOUT (Public)
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
 // ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";
 

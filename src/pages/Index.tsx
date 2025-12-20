@@ -1,468 +1,231 @@
 // src/pages/Index.tsx
 // @ts-nocheck
-import { useMemo, useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-
 import {
-  ArrowRight,
-  PlayCircle,
   Users,
-  Briefcase,
-  Building2,
   TrendingUp,
   Clock,
-  Search,
-  Star,
+  ArrowRight,
+  PlayCircle,
 } from "lucide-react";
 
 export default function Index() {
-  const navigate = useNavigate();
-
-  /* =========================
-     PERSONA SWITCH
-  ========================= */
-  const personas = useMemo(
-    () => [
-      {
-        key: "user",
-        label: "Kullanıcı",
-        icon: Users,
-        headline: (
-          <>
-            Potansiyelini <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
-              Zirveye Taşı
-            </span>
-          </>
-        ),
-        sub: "Global standartlarda koç ve mentorlarla hedefini netleştir, planını oluştur, gelişimini takip et.",
-        primaryCta: { label: "Koçunu Bul", to: "/coaches" },
-        secondaryCta: { label: "Nasıl Çalışır?", to: "/how-it-works" },
-      },
-      {
-        key: "coach",
-        label: "Koç",
-        icon: Briefcase,
-        headline: (
-          <>
-            Uzmanlığını <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
-              Gelire Dönüştür
-            </span>
-          </>
-        ),
-        sub: "Profilini oluştur, doğrulan, takvimini aç. Görünürlüğünü artır, seanslarını yönet.",
-        primaryCta: { label: "Koç Olarak Başvur", to: "/coach-application" },
-        secondaryCta: { label: "Nasıl Çalışır?", to: "/how-it-works" },
-      },
-      {
-        key: "company",
-        label: "Şirket",
-        icon: Building2,
-        headline: (
-          <>
-            Ekibin İçin <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
-              Ölçeklenebilir Gelişim
-            </span>
-          </>
-        ),
-        sub: "Hedef bazlı koçluk programları, ölçümleme ve raporlama ile kurumsal etki yarat.",
-        primaryCta: { label: "Kurumsal Çözüm", to: "/for-companies" },
-        secondaryCta: { label: "Demo Akışını Gör", to: "/how-it-works" },
-      },
-    ],
-    []
-  );
-
-  const [persona, setPersona] = useState("user");
-  const active = useMemo(
-    () => personas.find((p) => p.key === persona) || personas[0],
-    [persona, personas]
-  );
-
-  /* =========================
-     CANLI İSTATİSTİKLER (UI)
-  ========================= */
-  const [live, setLive] = useState({
-    onlineCoaches: 34,
-    todayMatches: 147,
-    plannedSessions: 15,
-  });
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      const bump = (n: number, min: number, max: number) => {
-        const d = Math.random() > 0.5 ? 1 : -1;
-        const next = n + d;
-        return Math.max(min, Math.min(max, next));
-      };
-      setLive((p) => ({
-        onlineCoaches: bump(p.onlineCoaches, 12, 120),
-        todayMatches: bump(p.todayMatches, 60, 600),
-        plannedSessions: bump(p.plannedSessions, 5, 140),
-      }));
-    }, 2400);
-    return () => clearInterval(t);
-  }, []);
-
-  /* =========================
-     QUICK SEARCH
-  ========================= */
-  const [goal, setGoal] = useState("interview");
-  const [lang, setLang] = useState("tr");
-  const [level, setLevel] = useState("mid");
-
-  const onQuickSearch = () => {
-    const qs = new URLSearchParams({ goal, lang, level });
-    navigate(`/coaches?${qs.toString()}`);
-  };
-
-  /* =========================
-     ÖNE ÇIKAN KOÇLAR (VİTRİN)
-  ========================= */
-  const featuredCoaches = [
-    {
-      name: "Dr. Ayşe Yılmaz",
-      title: "Kariyer & Liderlik Koçu",
-      rating: "4.9",
-      sessions: "Bu hafta 12 seans",
-      tags: ["Liderlik", "Kariyer"],
-    },
-    {
-      name: "Mehmet Demir",
-      title: "Teknoloji & Startup Mentoru",
-      rating: "5.0",
-      sessions: "Bu hafta 9 seans",
-      tags: ["Teknoloji", "Startup"],
-    },
-    {
-      name: "Zeynep Kaya",
-      title: "Mülakat & CV Uzmanı",
-      rating: "4.8",
-      sessions: "Bu hafta 15 seans",
-      tags: ["Mülakat", "CV"],
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* ================= HERO ================= */}
-      <section className="relative bg-[#FFF5F2] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 pt-14 pb-10 text-center">
-          {/* Trust line */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-red-200 text-sm font-semibold text-red-700">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            Doğrulanmış Platform • Hedef Bazlı Takip
-          </div>
-
-          {/* Persona */}
-          <div className="mt-6 flex justify-center">
-            <div className="inline-flex rounded-2xl border bg-white/80 p-1 shadow-sm">
-              {personas.map((p) => {
-                const Icon = p.icon;
-                const activeTab = persona === p.key;
-                return (
-                  <button
-                    key={p.key}
-                    onClick={() => setPersona(p.key)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition
-                      ${
-                        activeTab
-                          ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {p.label}
-                  </button>
-                );
-              })}
+    <div className="bg-[#FFF7F4]">
+      {/* =========================
+          HERO – ONE SURFACE
+      ========================= */}
+      <section className="pt-24 pb-28 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-[32px] px-8 md:px-14 py-16 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.15)]">
+            {/* Trust pill */}
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 text-red-600 text-sm font-semibold">
+                ● Doğrulanmış Platform · Hedef Bazlı Takip
+              </div>
             </div>
-          </div>
 
-          {/* Headline */}
-          <h1 className="mt-8 text-5xl md:text-7xl font-black text-gray-900 leading-tight">
-            {active.headline}
-          </h1>
+            {/* Persona */}
+            <div className="flex justify-center mb-10">
+              <div className="inline-flex bg-gray-100 rounded-2xl p-1">
+                {["Kullanıcı", "Koç", "Şirket"].map((item, i) => (
+                  <button
+                    key={i}
+                    className={`px-5 py-2 rounded-xl text-sm font-semibold ${
+                      i === 0
+                        ? "bg-red-600 text-white"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <p className="mt-5 max-w-2xl mx-auto text-xl text-gray-600">
-            {active.sub}
-          </p>
+            {/* Headline */}
+            <h1 className="text-center text-4xl md:text-6xl font-black text-gray-900 leading-tight">
+              Potansiyelini{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">
+                Zirveye Taşı
+              </span>
+            </h1>
 
-          {/* CTA */}
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to={active.primaryCta.to}>
-              <Button
-                size="lg"
-                className="bg-red-600 hover:bg-red-700 text-white h-14 px-8 rounded-xl"
-              >
-                {active.primaryCta.label}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <p className="mt-6 max-w-3xl mx-auto text-center text-lg text-gray-600">
+              Global standartlarda koç ve mentorlarla hedefini netleştir,
+              planını oluştur, gelişimini ölç ve takip et.
+            </p>
 
-            <Link to={active.secondaryCta.to}>
-              <Button size="lg" variant="outline" className="h-14 px-8 rounded-xl">
-                <PlayCircle className="mr-2 h-5 w-5" />
-                {active.secondaryCta.label}
-              </Button>
-            </Link>
-          </div>
-
-          {/* Live Stats */}
-          <div className="mt-10 grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            <Stat title="Online Koç" value={live.onlineCoaches} color="emerald" icon={Users} />
-            <Stat title="Bugün Eşleşme" value={live.todayMatches} color="orange" icon={TrendingUp} />
-            <Stat title="Son 1 Saatte" value={live.plannedSessions} color="red" icon={Clock} />
-          </div>
-
-          {/* Quick Search */}
-          <div className="mt-10 max-w-5xl mx-auto">
-            <Card className="border border-gray-200 shadow-sm">
-              <CardContent className="p-4 flex flex-col md:flex-row gap-3 items-center">
-                <Select
-                  label="Hedef"
-                  value={goal}
-                  onChange={setGoal}
-                  options={[
-                    ["interview", "Mülakat"],
-                    ["cv", "CV & LinkedIn"],
-                    ["promotion", "Terfi & Kariyer Planı"],
-                    ["leadership", "Liderlik"],
-                    ["startup", "Girişim / Startup"],
-                  ]}
-                />
-                <Select
-                  label="Dil"
-                  value={lang}
-                  onChange={setLang}
-                  options={[
-                    ["tr", "TR"],
-                    ["en", "EN"],
-                    ["ar", "AR"],
-                    ["fr", "FR"],
-                  ]}
-                />
-                <Select
-                  label="Seviye"
-                  value={level}
-                  onChange={setLevel}
-                  options={[
-                    ["junior", "Junior"],
-                    ["mid", "Mid"],
-                    ["senior", "Senior"],
-                    ["exec", "Yönetici"],
-                  ]}
-                />
+            {/* CTA */}
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <Link to="/coaches">
                 <Button
-                  onClick={onQuickSearch}
-                  className="h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 w-full md:w-auto"
+                  size="lg"
+                  className="h-14 px-8 rounded-xl bg-red-600 hover:bg-red-700 text-white text-lg"
                 >
-                  <Search className="mr-2 h-4 w-4" />
+                  Koçunu Bul <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link to="/how-it-works">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 px-8 rounded-xl text-lg"
+                >
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  Nasıl Çalışır?
+                </Button>
+              </Link>
+            </div>
+
+            {/* INLINE STATS (NO BOXES) */}
+            <div className="mt-14 flex flex-wrap justify-center gap-6 text-sm font-semibold text-gray-700">
+              <StatInline
+                icon={<Users className="h-4 w-4 text-green-600" />}
+                label="Online Koç"
+                value="33"
+              />
+              <Dot />
+              <StatInline
+                icon={<TrendingUp className="h-4 w-4 text-orange-600" />}
+                label="Bugün Eşleşme"
+                value="146"
+              />
+              <Dot />
+              <StatInline
+                icon={<Clock className="h-4 w-4 text-red-600" />}
+                label="Son 1 Saatte"
+                value="18"
+              />
+            </div>
+
+            {/* QUICK SEARCH – SINGLE BAR */}
+            <div className="mt-16">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex flex-wrap gap-4 items-center justify-between">
+                <select className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold">
+                  <option>Hedef: Mülakat</option>
+                </select>
+                <select className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold">
+                  <option>Dil: TR</option>
+                </select>
+                <select className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold">
+                  <option>Seviye: Mid</option>
+                </select>
+                <Button className="h-12 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white">
                   Eşleş
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* =========================
-         2025 KARIYER GERÇEĞİ (UNICORN STORY)
+          2025 CAREER REALITY
       ========================= */}
-      <section className="py-16 px-4 bg-white border-t">
+      <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-black text-gray-900">
             2025’te Kariyerler Neden Tıkanıyor?
           </h2>
-
           <p className="mt-4 max-w-3xl mx-auto text-lg text-gray-600">
-            Kariyer gelişimi artık rastgele ilerliyor. İnsanlar neyi, ne zaman,
-            kiminle geliştireceğini bilmiyor.
+            Kariyer gelişimi artık rastgele ilerliyor. İnsanlar neyi,
+            ne zaman ve kiminle geliştireceğini bilmiyor.
           </p>
 
-          <div className="mt-10 grid md:grid-cols-3 gap-6">
-            <StatCard
+          <div className="mt-12 grid md:grid-cols-3 gap-8">
+            <RealityCard
               value="%67"
               title="Hedef Belirsizliği"
-              desc="Çalışanların çoğu kariyerinde hangi beceriyi geliştirmesi gerektiğini bilmiyor."
+              text="Çalışanların çoğu hangi beceriyi geliştirmesi gerektiğini bilmiyor."
             />
-            <StatCard
+            <RealityCard
               value="%54"
               title="Yanlış Yönlenme"
-              desc="Junior & Mid seviye çalışanlar yanlış rehberlik nedeniyle iş değiştiriyor."
+              text="Junior ve Mid seviye çalışanlar yanlış rehberlikle yön değiştiriyor."
             />
-            <StatCard
+            <RealityCard
               value="%72"
               title="Ölçülemeyen Gelişim"
-              desc="Şirketler çalışan gelişimini ölçemediği için bütçe ve zaman kaybediyor."
+              text="Şirketler gelişimi ölçemediği için zaman ve bütçe kaybediyor."
             />
           </div>
 
-          <p className="mt-10 text-lg font-semibold text-gray-900">
+          <p className="mt-12 text-lg font-semibold text-gray-800">
             Kariyeer, kariyer gelişimini rastgele olmaktan çıkarır.
           </p>
-          <p className="text-gray-600">Hedef • Uzman • İlerleme aynı yerde.</p>
+          <p className="text-gray-600">Hedef · Uzman · İlerleme</p>
         </div>
       </section>
 
       {/* =========================
-         ÖNE ÇIKAN KOÇLAR (SATILABİLİR)
+          FEATURED COACHES (PAID)
       ========================= */}
-      <section className="py-16 px-4 bg-gray-50 border-t">
+      <section className="py-24 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <Badge className="bg-red-100 text-red-700 hover:bg-red-100 mb-3">
-              Marketplace
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900">
-              Öne Çıkan Koçlar
-            </h2>
-            <p className="mt-3 text-gray-600">
-              En çok tercih edilen, yüksek puanlı ve aktif koçlar
-            </p>
-          </div>
+          <h2 className="text-center text-3xl md:text-4xl font-black text-gray-900">
+            Öne Çıkan Koçlar
+          </h2>
+          <p className="mt-3 text-center text-gray-600">
+            En çok tercih edilen ve aktif koçlar
+          </p>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {featuredCoaches.map((coach, i) => (
+          <div className="mt-12 grid md:grid-cols-3 gap-8">
+            {[
+              { name: "Dr. Ayşe Yılmaz", role: "Kariyer & Liderlik", stat: "⭐ 4.9 · Bu hafta 12 seans" },
+              { name: "Mehmet Demir", role: "Teknoloji & Startup", stat: "⭐ 5.0 · Bu hafta 9 seans" },
+              { name: "Zeynep Kaya", role: "Mülakat & CV", stat: "⭐ 4.8 · Bu hafta 15 seans" },
+            ].map((c, i) => (
               <div
                 key={i}
-                onClick={() => navigate("/coaches")}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition cursor-pointer"
+                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-600">
-                    Öne Çıkan
-                  </span>
-                  <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                    {coach.rating}
-                  </span>
+                <div className="text-xs font-bold text-red-600 mb-2">
+                  Öne Çıkan
                 </div>
-
-                <div className="mt-4">
-                  <div className="font-black text-lg text-gray-900">{coach.name}</div>
-                  <div className="text-sm text-gray-600">{coach.title}</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {c.name}
                 </div>
-
-                <div className="mt-3 text-sm text-gray-500">{coach.sessions}</div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {coach.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-5 flex items-center justify-between pt-4 border-t">
-                  <span className="text-sm text-gray-500">
-                    Listeleme: <span className="font-semibold text-gray-800">Ücretli</span>
-                  </span>
-                  <span className="text-sm font-semibold text-red-600">
-                    Detay →
-                  </span>
-                </div>
+                <div className="text-sm text-gray-600">{c.role}</div>
+                <div className="mt-4 text-sm text-gray-500">{c.stat}</div>
               </div>
             ))}
           </div>
 
-          <div className="mt-10 text-center">
-            <p className="text-sm text-gray-600">
-              Koç musun? Bu liste{" "}
-              <span className="font-semibold">ücretlidir</span> ve sınırlıdır.
-            </p>
-
-            <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/coach-application">
-                <Button className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-7 h-12">
-                  Öne Çıkmak İstiyorum
-                </Button>
-              </Link>
-              <Link to="/coaches">
-                <Button variant="outline" className="rounded-xl px-7 h-12">
-                  Tüm Koçları İncele
-                </Button>
-              </Link>
-            </div>
-
-            <p className="mt-3 text-xs text-gray-500">
-              Öne çıkan koçlar: görünürlük + daha hızlı dönüşüm için listeleme alanıdır.
-            </p>
-          </div>
+          <p className="mt-10 text-center text-sm text-gray-600">
+            Koç musun? Bu alan <strong>ücretlidir</strong> ve sınırlıdır.
+          </p>
         </div>
       </section>
     </div>
   );
 }
 
-/* ================= HELPERS ================= */
+/* =========================
+   SMALL HELPERS
+========================= */
 
-function Stat({ title, value, color, icon: Icon }) {
-  // NOTE: tailwind dynamic class riskini sıfırlamak için mapping kullandım
-  const bg = {
-    emerald: "bg-emerald-50",
-    orange: "bg-orange-50",
-    red: "bg-red-50",
-  }[color] || "bg-gray-50";
-
-  const txt = {
-    emerald: "text-emerald-600",
-    orange: "text-orange-600",
-    red: "text-red-600",
-  }[color] || "text-gray-600";
-
+function StatInline({ icon, label, value }) {
   return (
-    <Card className="border border-gray-200 shadow-sm">
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="text-left">
-          <div className="text-xs uppercase text-gray-500 font-semibold">
-            {title}
-          </div>
-          <div className="text-2xl font-black text-gray-900 mt-1">{value}</div>
-        </div>
-
-        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>
-          <Icon className={`h-5 w-5 ${txt}`} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Select({ label, value, onChange, options }) {
-  return (
-    <div className="flex-1 w-full border border-gray-200 rounded-xl px-3 py-2 bg-white">
-      <div className="text-xs uppercase text-gray-500 font-semibold">{label}</div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full mt-1 bg-transparent outline-none text-gray-900"
-      >
-        {options.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
+    <div className="flex items-center gap-2">
+      {icon}
+      <span className="font-semibold">{label}</span>
+      <span className="font-black text-gray-900">{value}</span>
     </div>
   );
 }
 
-function StatCard({ value, title, desc }) {
+function Dot() {
+  return <span className="text-gray-300">•</span>;
+}
+
+function RealityCard({ value, title, text }) {
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-left shadow-sm">
+    <div className="text-left bg-gray-50 border border-gray-200 rounded-2xl p-6">
       <div className="text-4xl font-black text-red-600">{value}</div>
       <div className="mt-2 font-bold text-gray-900">{title}</div>
-      <div className="mt-1 text-sm text-gray-600 leading-relaxed">{desc}</div>
+      <p className="mt-1 text-sm text-gray-600">{text}</p>
     </div>
   );
 }

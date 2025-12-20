@@ -25,15 +25,15 @@ import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
+
+// ✅ Nasıl Çalışır sayfan (pages içinden)
 import HowItWorks from "@/pages/Howitworks";
 
-// ✅ YENİ EKLENEN LEGAL SAYFALAR
+// ✅ LEGAL
 import About from "@/pages/About";
 import Privacy from "@/pages/Privacy";
 import Returns from "@/pages/Returns";
 import DistanceSales from "@/pages/DistanceSales";
-import HowItWorks from "@/pages/Howitworks";
-
 import Terms from "@/pages/Terms";
 import Ethics from "@/pages/Ethics";
 
@@ -80,46 +80,6 @@ function PublicLayout() {
 }
 
 /* -------------------------------------------------
-   Nasıl Çalışır
--------------------------------------------------- */
-function HowItWorks() {
-  return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <section className="bg-gradient-to-br from-orange-500 via-red-500 to-orange-400 text-white py-20 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur text-xs font-semibold uppercase tracking-wider mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-lime-300 animate-pulse" />
-            Nasıl Çalışır?
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
-            Kariyer Koçuna Ulaşmanın <br />
-            <span className="text-yellow-300">En Kolay Yolu</span>
-          </h1>
-          <p className="text-base md:text-lg text-orange-50 max-w-2xl mx-auto mb-8">
-            3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a href="/register">
-              <Button className="bg-white text-red-600 hover:bg-orange-50 px-8 py-6 rounded-xl">
-                Hemen Başla
-              </Button>
-            </a>
-            <a href="/coaches">
-              <Button
-                variant="outline"
-                className="border-white/80 text-white hover:bg-white/10 px-8 py-6 rounded-xl"
-              >
-                Koçları İncele
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/* -------------------------------------------------
    APP
 -------------------------------------------------- */
 export default function App() {
@@ -137,6 +97,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
 
+          {/* ✅ How it works */}
           <Route path="/nasil-calisir" element={<HowItWorks />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
 
@@ -168,7 +129,7 @@ export default function App() {
           <Route path="/coach/settings" element={<CoachSettings />} />
           <Route path="/coach/requests" element={<CoachRequests />} />
 
-          {/* LEGAL – EKLENEN ROOTLAR */}
+          {/* LEGAL */}
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/returns" element={<Returns />} />

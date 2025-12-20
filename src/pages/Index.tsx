@@ -1,6 +1,6 @@
 // src/pages/Index.tsx
 // @ts-nocheck
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,14 +13,13 @@ import {
   Clock,
   Star,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 export default function Index() {
   const navigate = useNavigate();
 
-  /* =========================
-     PERSONA (UI only)
-  ========================= */
+  // Persona: Kullanıcı / Koç / Şirket
   const personas = [
     {
       key: "user",
@@ -48,25 +47,17 @@ export default function Index() {
   const [persona, setPersona] = useState("user");
   const personaCopy = personas.find((p) => p.key === persona) ?? personas[0];
 
-  /* =========================
-     MATCH FILTERS
-  ========================= */
+  // Match filters
   const [goal, setGoal] = useState("interview");
   const [level, setLevel] = useState("mid");
   const [lang, setLang] = useState("tr");
 
   const onMatch = () => {
-    const qs = new URLSearchParams({
-      goal,
-      level,
-      lang,
-    });
+    const qs = new URLSearchParams({ goal, level, lang });
     navigate(`/coaches?${qs.toString()}`);
   };
 
-  /* =========================
-     FEATURED COACHES (SELLABLE)
-  ========================= */
+  // Featured coaches (statik vitrin)
   const featuredCoaches = [
     {
       name: "Dr. Ayşe Yılmaz",
@@ -93,13 +84,11 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* =========================
-          HERO
-      ========================= */}
+      {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          {/* Trust badge */}
+          {/* Trust */}
           <div className="flex justify-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -107,7 +96,7 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Persona switch */}
+          {/* Persona */}
           <div className="mt-8 flex justify-center">
             <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-sm">
               {personas.map((p) => {
@@ -131,7 +120,7 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Headline */}
+          {/* Title */}
           <div className="mt-10 text-center">
             <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight">
               Potansiyelini{" "}
@@ -144,7 +133,7 @@ export default function Index() {
               {personaCopy.subtitle}
             </p>
 
-            {/* CTAs */}
+            {/* CTA */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
@@ -166,7 +155,7 @@ export default function Index() {
               </Link>
             </div>
 
-            {/* Live stats */}
+            {/* Inline stats */}
             <div className="mt-10 flex flex-wrap justify-center gap-8 text-sm font-semibold text-gray-700">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-green-600" />
@@ -185,10 +174,8 @@ export default function Index() {
         </div>
       </section>
 
-      {/* =========================
-          QUICK MATCH
-      ========================= */}
-      <section className="relative z-10 -mt-10 pb-20">
+      {/* QUICK MATCH */}
+      <section className="relative z-10 -mt-10 pb-14">
         <div className="max-w-5xl mx-auto px-4">
           <div className="bg-white border border-orange-200 rounded-2xl shadow-lg p-6">
             <div className="grid md:grid-cols-4 gap-4">
@@ -248,26 +235,43 @@ export default function Index() {
               </div>
             </div>
           </div>
+
+          {/* mini note */}
+          <div className="mt-4 text-center text-xs text-gray-500">
+            İpucu: “Öne Çıkan Koçlar” alanı premium slot olarak satılabilir.
+          </div>
         </div>
       </section>
 
-      {/* =========================
-          FEATURED COACHES
-      ========================= */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-end mb-10">
+      {/* ÖNE ÇIKAN KOÇLAR (BURADA) */}
+      <section className="py-18 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div>
-              <h2 className="text-3xl font-black text-gray-900">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                <Sparkles className="h-4 w-4" />
+                Sponsorlu Alan / Premium Slot
+              </div>
+              <h2 className="mt-3 text-3xl font-black text-gray-900">
                 Öne Çıkan Koçlar
               </h2>
-              <p className="text-gray-600 mt-2">
-                En yüksek puanlı ve en çok tercih edilen koçlar
+              <p className="mt-2 text-gray-600">
+                En çok tercih edilen uzmanlar. (Bu alana girmek ücretli olabilir.)
               </p>
             </div>
-            <Link to="/coaches">
-              <Button variant="outline">Tümünü Gör</Button>
-            </Link>
+
+            <div className="flex gap-3">
+              <Link to="/pricing">
+                <Button className="bg-red-600 hover:bg-red-700 text-white rounded-xl">
+                  Premium’a Geç
+                </Button>
+              </Link>
+              <Link to="/coaches">
+                <Button variant="outline" className="rounded-xl">
+                  Tüm Koçlar
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -313,39 +317,44 @@ export default function Index() {
         </div>
       </section>
 
-      {/* =========================
-          2025 INSIGHT
-      ========================= */}
+      {/* 2025 BLOĞU (BURADA) */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-gray-900">
-            2025’te Kariyer Gelişimi Nasıl Kazandırıyor?
+            2025’te Ne Problemi Çözüyoruz?
           </h2>
           <p className="mt-4 text-gray-600 max-w-3xl mx-auto">
-            2025 itibarıyla bireysel koçluk alan profesyoneller, almayanlara göre
-            daha hızlı terfi ediyor, daha yüksek maaş artışı yakalıyor ve iş
-            değişimlerinde avantaj sağlıyor.
+            Kariyer belirsizliği, mülakat performansı ve “hangi yola gideceğim?”
+            problemi. Kariyeer, hedef bazlı eşleşme ve takip ile bunu ölçülebilir
+            hale getirir.
           </p>
 
           <div className="mt-12 grid md:grid-cols-3 gap-8">
             <div className="p-6 rounded-2xl border border-orange-200">
               <div className="text-4xl font-black text-orange-600">%37</div>
-              <p className="mt-2 text-gray-600">
-                Daha hızlı terfi oranı
-              </p>
+              <p className="mt-2 text-gray-600">Daha hızlı terfi etkisi</p>
             </div>
             <div className="p-6 rounded-2xl border border-orange-200">
               <div className="text-4xl font-black text-red-600">%42</div>
-              <p className="mt-2 text-gray-600">
-                Maaş artışı avantajı
-              </p>
+              <p className="mt-2 text-gray-600">Maaş artışı avantajı</p>
             </div>
             <div className="p-6 rounded-2xl border border-orange-200">
               <div className="text-4xl font-black text-green-600">%58</div>
-              <p className="mt-2 text-gray-600">
-                İş değiştirmede başarı
-              </p>
+              <p className="mt-2 text-gray-600">İş değiştirmede başarı</p>
             </div>
+          </div>
+
+          <div className="mt-10 flex justify-center gap-4 flex-wrap">
+            <Link to="/coaches">
+              <Button className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110">
+                Koçları İncele
+              </Button>
+            </Link>
+            <Link to="/for-companies">
+              <Button variant="outline" className="rounded-xl">
+                Kurumsal Çözümler
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

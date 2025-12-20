@@ -226,7 +226,7 @@ export default function Index() {
                     ["junior", "Junior"],
                     ["mid", "Mid"],
                     ["senior", "Senior"],
-                    ["Yönetici", "Yönetici"],
+                    ["yönetici", "Yönetici"],
                   ]}
                 />
                 <Select

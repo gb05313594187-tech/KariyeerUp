@@ -10,7 +10,6 @@ import {
   Users,
   TrendingUp,
   Clock,
-  GraduationCap,
   Briefcase,
   Building2,
   Star,
@@ -21,43 +20,39 @@ export default function Index() {
   const navigate = useNavigate();
 
   // =========================
-  // Persona (UI only)
+  // Persona (UI only) — ÖĞRENCİ YOK
   // =========================
   const personas = useMemo(
     () => [
       {
-        key: "student",
-        label: "Öğrenci",
-        icon: GraduationCap,
-        title: "Staj & İlk İş İçin",
-        subtitle: "CV, mülakat, yön seçimi ve doğru planla hızlı ilerle.",
-      },
-      {
         key: "user",
         label: "Kullanıcı",
         icon: Users,
-        title: "Kariyerin İçin",
         subtitle: "Doğru koçla hedefini netleştir, gelişimini ölç, hızlan.",
       },
       {
         key: "coach",
         label: "Koç",
         icon: Briefcase,
-        title: "Koçlar İçin",
         subtitle: "Profilini büyüt, daha fazla danışana ulaş, seanslarını yönet.",
       },
       {
         key: "company",
         label: "Şirket",
         icon: Building2,
-        title: "Ekipler İçin",
-        subtitle: "Hedef bazlı koçluk programlarıyla ölçülebilir gelişim yarat.",
+        subtitle:
+          "Hedef bazlı koçluk programlarıyla ölçülebilir gelişim ve raporlama yarat.",
       },
     ],
     []
   );
 
   const [persona, setPersona] = useState("user");
+
+  const personaCopy = useMemo(() => {
+    const p = personas.find((x) => x.key === persona) || personas[0];
+    return p;
+  }, [persona, personas]);
 
   // =========================
   // Quick Match
@@ -70,11 +65,6 @@ export default function Index() {
     const qs = new URLSearchParams({ goal, level, lang });
     navigate(`/coaches?${qs.toString()}`);
   };
-
-  const personaCopy = useMemo(() => {
-    const p = personas.find((x) => x.key === persona) || personas[1];
-    return p;
-  }, [persona, personas]);
 
   // =========================
   // Featured Coaches (sellable area)
@@ -109,7 +99,6 @@ export default function Index() {
           HERO (RED / ORANGE)
       ========================= */}
       <section className="relative overflow-hidden">
-        {/* very light brand gradient (NOT pink) */}
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 lg:pt-24 lg:pb-20">
           {/* top trust line */}
@@ -130,7 +119,7 @@ export default function Index() {
                   <button
                     key={p.key}
                     onClick={() => setPersona(p.key)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition ${
                       active
                         ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow"
                         : "text-gray-700 hover:bg-orange-50"
@@ -179,7 +168,7 @@ export default function Index() {
               </Link>
             </div>
 
-            {/* inline stats (no boxes) */}
+            {/* inline stats */}
             <div className="mt-10 flex flex-wrap justify-center gap-7 text-sm font-semibold text-gray-700">
               <InlineStat
                 icon={<Users className="h-4 w-4 text-emerald-600" />}
@@ -201,7 +190,7 @@ export default function Index() {
             </div>
           </div>
 
-          {/* quick match bar (ONE BAR) */}
+          {/* quick match bar */}
           <div className="mt-12 max-w-5xl mx-auto">
             <div className="bg-white border border-orange-200 rounded-2xl p-4 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
@@ -212,9 +201,9 @@ export default function Index() {
                   options={[
                     ["interview", "Mülakat"],
                     ["cv", "CV & LinkedIn"],
-                    ["internship", "Staj / İlk İş"],
                     ["promotion", "Terfi & Kariyer Planı"],
                     ["leadership", "Liderlik"],
+                    ["salary", "Maaş Pazarlığı"],
                   ]}
                 />
                 <Select
@@ -222,11 +211,10 @@ export default function Index() {
                   value={level}
                   onChange={setLevel}
                   options={[
-                    ["student", "Öğrenci"],
                     ["junior", "Junior"],
                     ["mid", "Mid"],
                     ["senior", "Senior"],
-                    ["yönetici", "Yönetici"],
+                    ["manager", "Manager"],
                   ]}
                 />
                 <Select
@@ -253,7 +241,7 @@ export default function Index() {
       </section>
 
       {/* =========================
-          2025 GERÇEĞİ (BACK)
+          2025 GERÇEĞİ
       ========================= */}
       <section className="py-20 px-4 bg-white border-t">
         <div className="max-w-6xl mx-auto text-center">
@@ -277,7 +265,7 @@ export default function Index() {
             <RealityCard
               value="%54"
               title="Yanlış Rehberlik"
-              desc="Özellikle Öğrenci/Junior/Mid segmenti, yanlış yönlendirme yüzünden rota değiştiriyor."
+              desc="Özellikle junior–mid segmenti, yanlış yönlendirme yüzünden rota değiştiriyor."
             />
             <RealityCard
               value="%72"
@@ -289,7 +277,7 @@ export default function Index() {
       </section>
 
       {/* =========================
-          ÖNE ÇIKAN KOÇLAR (BACK)
+          ÖNE ÇIKAN KOÇLAR
       ========================= */}
       <section className="py-20 px-4 bg-gradient-to-b from-orange-50 to-white border-t">
         <div className="max-w-7xl mx-auto">
@@ -366,7 +354,10 @@ export default function Index() {
                 </Button>
               </Link>
               <Link to="/coaches">
-                <Button variant="outline" className="rounded-xl h-12 px-7 border-orange-200">
+                <Button
+                  variant="outline"
+                  className="rounded-xl h-12 px-7 border-orange-200"
+                >
                   Tüm Koçları İncele
                 </Button>
               </Link>
@@ -395,7 +386,9 @@ function InlineStat({ icon, label, value }) {
 function Select({ label, value, onChange, options }) {
   return (
     <div className="w-full border border-orange-200 rounded-xl px-3 py-2 bg-white">
-      <div className="text-xs uppercase text-gray-500 font-semibold">{label}</div>
+      <div className="text-xs uppercase text-gray-500 font-semibold">
+        {label}
+      </div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

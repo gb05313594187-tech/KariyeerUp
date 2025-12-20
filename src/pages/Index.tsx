@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   Zap,
   Globe,
+  Crown,
+  Sparkles,
 } from "lucide-react";
 
 export default function Index() {
@@ -43,10 +45,9 @@ export default function Index() {
             </span>
           </>
         ),
-        sub: "Global standartlarda koçlar ve mentorlarla hedefini netleştir, planını oluştur, gelişimini takip et.",
+        sub: "Global standartlarda koç ve mentorlarla hedefini netleştir, planını oluştur, gelişimini takip et.",
         primaryCta: { label: "Koçunu Bul", to: "/coaches" },
         secondaryCta: { label: "Nasıl Çalışır?", to: "/how-it-works" },
-        micro: ["Doğrulanmış profiller", "Güvenli ödeme", "Hızlı eşleşme"],
       },
       {
         key: "coach",
@@ -60,10 +61,9 @@ export default function Index() {
             </span>
           </>
         ),
-        sub: "Profilini oluştur, doğrulan, takvimini aç. Seanslarını yönet, görünürlüğünü artır, gelire dönüştür.",
+        sub: "Profilini oluştur, doğrulan, takvimini aç. Görünürlüğünü artır, seanslarını yönet.",
         primaryCta: { label: "Koç Olarak Başvur", to: "/coach-application" },
         secondaryCta: { label: "Nasıl Çalışır?", to: "/how-it-works" },
-        micro: ["Takvim & seans yönetimi", "Doğrulama rozeti", "Görünürlük & sıralama"],
       },
       {
         key: "company",
@@ -77,10 +77,9 @@ export default function Index() {
             </span>
           </>
         ),
-        sub: "Çalışan gelişimi için hedef bazlı koçluk programları, ölçümleme ve raporlama ile kurumsal etki yarat.",
+        sub: "Hedef bazlı koçluk programları, ölçümleme ve raporlama ile kurumsal etki yarat.",
         primaryCta: { label: "Kurumsal Çözüm", to: "/for-companies" },
         secondaryCta: { label: "Demo Akışını Gör", to: "/how-it-works" },
-        micro: ["Program & bütçe kontrolü", "Raporlama & KPI", "Kurumsal yönetim"],
       },
     ],
     []
@@ -120,7 +119,7 @@ export default function Index() {
   }, []);
 
   // =========================
-  // Mini search (route param üretir)
+  // Mini search
   // =========================
   const GOALS = [
     { id: "interview", label: "Mülakat Hazırlığı" },
@@ -187,7 +186,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* =========================
-          HERO (pembe/şeftali)
+          HERO (daha sade / daha premium)
          ========================= */}
       <section className="relative overflow-hidden bg-[#FFF5F2]">
         <div className="absolute inset-0 pointer-events-none">
@@ -195,10 +194,21 @@ export default function Index() {
           <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-red-200/40 blur-3xl" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-14 pb-12 lg:pt-20 lg:pb-14">
-          {/* Persona Switch */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-10 pb-10 lg:pt-16 lg:pb-12">
+          {/* Top trust line (tek satır, premium) */}
           <div className="flex justify-center">
-            <div className="inline-flex rounded-2xl border border-red-200/60 bg-white/70 backdrop-blur px-2 py-2 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 border border-red-200/60 backdrop-blur text-sm font-semibold text-red-700">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              Doğrulanmış Platform • Hedef Bazlı Takip
+            </div>
+          </div>
+
+          {/* Persona switch (daha ince) */}
+          <div className="mt-6 flex justify-center">
+            <div className="inline-flex rounded-2xl border border-gray-200 bg-white/80 backdrop-blur px-1.5 py-1.5 shadow-sm">
               {personas.map((p) => {
                 const Icon = p.icon;
                 const activeTab = persona === p.key;
@@ -207,7 +217,7 @@ export default function Index() {
                     key={p.key}
                     onClick={() => setPersona(p.key)}
                     className={[
-                      "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition",
+                      "flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition",
                       activeTab
                         ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow"
                         : "text-gray-700 hover:bg-gray-50",
@@ -221,29 +231,22 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="mt-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold mb-7">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-              </span>
-              Canlı Platform • Doğrulama • Takip & Rapor
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 tracking-tight leading-tight">
+          {/* Headline */}
+          <div className="mt-8 text-center">
+            <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight leading-tight">
               {active.headline}
             </h1>
 
-            <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-5 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
               {active.sub}
             </p>
 
-            {/* CTAs */}
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {/* CTA row (daha net) */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to={active.primaryCta.to}>
                 <Button
                   size="lg"
-                  className="bg-red-600 hover:bg-red-700 text-white text-lg h-14 px-8 rounded-xl shadow-lg shadow-red-200 transition-all hover:scale-[1.03]"
+                  className="bg-red-600 hover:bg-red-700 text-white text-lg h-14 px-8 rounded-xl shadow-lg shadow-red-200 transition-all hover:scale-[1.02]"
                 >
                   {active.primaryCta.label} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -253,7 +256,7 @@ export default function Index() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300 text-lg h-14 px-8 rounded-xl transition-all"
+                  className="bg-white text-gray-800 border-2 border-gray-200 hover:border-gray-300 text-lg h-14 px-8 rounded-xl"
                 >
                   <PlayCircle className="mr-2 h-5 w-5 text-gray-500" />
                   {active.secondaryCta.label}
@@ -261,27 +264,85 @@ export default function Index() {
               </Link>
             </div>
 
-            {/* Micro trust bullets */}
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              {active.micro.map((m) => (
-                <span
-                  key={m}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 bg-white/70 border border-gray-200 rounded-full px-4 py-2"
-                >
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  {m}
-                </span>
-              ))}
+            {/* Trust bar (güven kanıtı) */}
+            <div className="mt-8 max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: ShieldCheck,
+                    title: "Doğrulama & Şeffaf Profil",
+                    desc: "Rozetler, yorumlar ve kanıtlı uzmanlık.",
+                  },
+                  {
+                    icon: Zap,
+                    title: "Hızlı Eşleşme",
+                    desc: "Hedeflerine göre doğru uzman.",
+                  },
+                  {
+                    icon: Globe,
+                    title: "Global & Online",
+                    desc: "Saat dilimi uyumlu seanslar.",
+                  },
+                ].map((x, i) => {
+                  const Ico = x.icon;
+                  return (
+                    <Card key={i} className="border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
+                      <CardContent className="p-4 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center">
+                          <Ico className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-bold text-gray-900">{x.title}</div>
+                          <div className="text-sm text-gray-600 mt-0.5">{x.desc}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Live activity */}
-            <div className="mt-10 max-w-4xl mx-auto">
+            {/* Premium value prop (ilk ekranda net) */}
+            <div className="mt-6 max-w-3xl mx-auto">
+              <Card className="border border-red-200 bg-white/85 backdrop-blur shadow-sm">
+                <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-red-600 to-orange-600 flex items-center justify-center">
+                      <Crown className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-extrabold text-gray-900">
+                        Premium ile daha hızlı sonuç
+                      </div>
+                      <div className="text-sm text-gray-600 mt-0.5">
+                        Öncelikli eşleşme • Üst sıralama • Gelişim takibi
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link to="/pricing">
+                      <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
+                        Premium’u Gör
+                      </Button>
+                    </Link>
+                    <Link to="/register">
+                      <Button variant="outline" className="rounded-xl">
+                        Ücretsiz Başla
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Live activity (daha aşağı, daha sakin) */}
+            <div className="mt-8 max-w-4xl mx-auto">
               <div className="grid sm:grid-cols-3 gap-3">
                 <Card className="border border-gray-200 bg-white/80 backdrop-blur">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide">
-                        Şu anda online koç
+                        Online koç
                       </div>
                       <div className="text-2xl font-bold text-gray-900 mt-1">
                         <span className="text-emerald-600">●</span> {live.onlineCoaches}
@@ -329,7 +390,7 @@ export default function Index() {
           </div>
 
           {/* Mini Search */}
-          <div className="mt-12 max-w-5xl mx-auto">
+          <div className="mt-10 max-w-5xl mx-auto">
             <Card className="border border-gray-200 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row gap-3 md:items-center">
@@ -398,11 +459,11 @@ export default function Index() {
           </div>
 
           {/* Sosyal proof (iddiasız) */}
-          <div className="mt-10 text-center">
+          <div className="mt-8 text-center">
             <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">
               Profesyonellerin kullandığı hedef odaklı gelişim deneyimi
             </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-3 opacity-90">
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
               {["Teknoloji", "Fintech", "E-ticaret", "Sağlık", "Eğitim", "Danışmanlık"].map((x) => (
                 <span
                   key={x}
@@ -417,25 +478,25 @@ export default function Index() {
       </section>
 
       {/* =========================
-          Kısa “Neden Biz?”
+          Neden Biz? (daha kısa, daha net)
          ========================= */}
-      <section className="py-16 px-4 bg-white border-b">
+      <section className="py-14 px-4 bg-white border-b">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Kariyerin İçin Net Sistem
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+              Net akış. Net sonuç.
             </h2>
             <p className="mt-3 text-lg text-gray-600">
-              Hedef → doğru uzman → seans → takip. Karmaşa yok, ilerleme var.
+              Hedefini seç → doğru uzmanı bul → seans planla → gelişimini takip et.
             </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-4">
             {[
-              { icon: ShieldCheck, t: "Doğrulama", d: "Şeffaf profil & süreç" },
-              { icon: Zap, t: "Hız", d: "Dakikalar içinde eşleş" },
-              { icon: Globe, t: "Global", d: "Saat dilimi uyumu" },
-              { icon: Star, t: "Kalite", d: "Yorum & puanlama" },
+              { icon: ShieldCheck, t: "Doğrulama", d: "Rozet + yorum + şeffaflık" },
+              { icon: Zap, t: "Hız", d: "Dakikalar içinde eşleşme" },
+              { icon: Globe, t: "Global", d: "Online, saat dilimi uyumlu" },
+              { icon: Star, t: "Kalite", d: "Puanlama ve geri bildirim" },
             ].map((x, i) => {
               const Ico = x.icon;
               return (
@@ -457,16 +518,16 @@ export default function Index() {
       {/* =========================
           Öne Çıkan Koçlar
          ========================= */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-18 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div>
               <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 mb-2">
                 Uzman Kadro
               </Badge>
-              <h2 className="text-3xl font-bold text-gray-900">Haftanın Öne Çıkanları</h2>
+              <h2 className="text-3xl font-black text-gray-900">Haftanın Öne Çıkanları</h2>
               <p className="mt-2 text-gray-600">
-                Doğrulanmış profil, yorumlar ve uzmanlık alanlarına göre seçilmiş vitrin.
+                Doğrulanmış profil, yorumlar ve uzmanlık alanlarına göre vitrin.
               </p>
             </div>
             <Link to="/coaches" className="hidden md:flex">
@@ -517,7 +578,7 @@ export default function Index() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>Doğrulanmış Profil</span>
                   </div>
-                  <ArrowRight className="w-4 w-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             ))}
@@ -530,6 +591,61 @@ export default function Index() {
               </Button>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* =========================
+          Premium alt bölüm (pasif gelir için tekrar)
+         ========================= */}
+      <section className="py-14 px-4 bg-gray-50 border-t">
+        <div className="max-w-7xl mx-auto">
+          <Card className="border border-gray-200 shadow-sm">
+            <CardContent className="p-8 md:p-10">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+                <div className="max-w-2xl">
+                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 mb-3">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                  <h3 className="text-2xl md:text-3xl font-black text-gray-900">
+                    Daha hızlı ilerlemek için Premium
+                  </h3>
+                  <p className="mt-2 text-gray-600">
+                    Öncelikli eşleşme, üst sıralama, gelişim takibi ve özel içerikler.
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {["Öncelikli eşleşme", "Üst sıralama", "Plan & takip", "Özel içerikler"].map((x) => (
+                      <span
+                        key={x}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-full px-4 py-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        {x}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link to="/pricing">
+                    <Button className="h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white px-7">
+                      Premium’u Gör <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button variant="outline" className="h-12 rounded-xl px-7">
+                      Ücretsiz Başla
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <p className="mt-4 text-xs text-gray-500">
+                Premium satın alma sayfası: /pricing
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </section>
     </div>

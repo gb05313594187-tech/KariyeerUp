@@ -32,6 +32,7 @@ import About from "@/pages/About";
 import Privacy from "@/pages/Privacy";
 import Returns from "@/pages/Returns";
 import DistanceSales from "@/pages/DistanceSales";
+import HowItWorks from "@/pages/Howitworks";
 
 import Terms from "@/pages/Terms";
 import Ethics from "@/pages/Ethics";

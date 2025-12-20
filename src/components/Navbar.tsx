@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,18 +17,14 @@ import {
   Menu,
   X,
   Globe,
-  Bell,
   ChevronDown,
-  Home,
   LayoutDashboard,
   User,
   LogOut,
   Settings,
-  Briefcase,
-  Building2,
-  Video,
-  Users,
   Sparkles,
+  Video,
+  Crown,
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -59,45 +56,19 @@ export default function Navbar() {
     return "/login";
   }, [role]);
 
-  const productMenu = useMemo(() => {
-    // Rol varsa: rol tabanlı ürün menüsü
-    if (role === "coach") {
-      return [
-        { label: "Koç Paneli", to: "/coach/dashboard", icon: LayoutDashboard },
-        { label: "Koç Profili", to: "/coach/profile", icon: User },
-        { label: "Koç Ayarları", to: "/coach/settings", icon: Settings },
-      ];
-    }
-    if (role === "corporate") {
-      return [
-        { label: "Kurumsal Panel", to: "/corporate/dashboard", icon: LayoutDashboard },
-        { label: "Kurumsal Profil", to: "/corporate/profile", icon: Building2 },
-        { label: "Kurumsal Ayarlar", to: "/corporate/settings", icon: Settings },
-      ];
-    }
-    if (role === "admin") {
-      return [
-        { label: "Admin Panel", to: "/admin/dashboard", icon: LayoutDashboard },
-        { label: "Analitik", to: "/advanced-analytics", icon: Sparkles },
-        { label: "Yönetim", to: "/admin/panel", icon: Settings },
-      ];
-    }
-
-    // Login yoksa (veya user): core ürün menüsü
-    return [
-      { label: "Koç Bul", to: "/coaches", icon: Users },
-      { label: "Şirketler için", to: "/for-companies", icon: Building2 },
-      { label: "Koç olmak istiyorum", to: "/for-coaches", icon: Briefcase },
-      { label: "Nasıl Çalışır?", to: "/how-it-works", icon: Home },
-    ];
+  const profilePath = useMemo(() => {
+    if (role === "coach") return "/coach/profile";
+    if (role === "corporate") return "/corporate/profile";
+    if (role === "admin") return "/admin/profile";
+    return "/user/profile";
   }, [role]);
 
-  const discoverMenu = useMemo(() => {
-    return [
-      { label: "MentorCircle", to: "/mentor-circle", icon: Users },
-      { label: "Webinar", to: "/webinars", icon: Video },
-    ];
-  }, []);
+  const settingsPath = useMemo(() => {
+    if (role === "coach") return "/coach/settings";
+    if (role === "corporate") return "/corporate/settings";
+    if (role === "admin") return "/admin/settings";
+    return "/user/settings";
+  }, [role]);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -113,59 +84,51 @@ export default function Navbar() {
           <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
-        {/* CENTER: Desktop nav */}
+        {/* CENTER: Direct links (no dropdown) */}
         <nav className="hidden md:flex items-center gap-2">
-          {/* Ürün Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="rounded-xl">
-                Ürün <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuLabel>Ürün</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {productMenu.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <DropdownMenuItem
-                    key={item.to}
-                    onClick={() => navigate(item.to)}
-                    className={isActive(item.to) ? "font-semibold" : ""}
-                  >
-                    <Icon className="mr-2 h-4 w-4 text-gray-600" />
-                    {item.label}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link
+            to="/mentor-circle"
+            className={[
+              "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
+              isActive("/mentor-circle")
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "text-gray-700 hover:bg-gray-50",
+            ].join(" ")}
+          >
+            <Sparkles className="h-4 w-4 text-red-600" />
+            MentorCircle
+          </Link>
 
-          {/* Keşfet Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="rounded-xl">
-                Keşfet <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuLabel>Keşfet</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {discoverMenu.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <DropdownMenuItem
-                    key={item.to}
-                    onClick={() => navigate(item.to)}
-                    className={isActive(item.to) ? "font-semibold" : ""}
-                  >
-                    <Icon className="mr-2 h-4 w-4 text-gray-600" />
-                    {item.label}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link
+            to="/webinars"
+            className={[
+              "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
+              isActive("/webinars")
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "text-gray-700 hover:bg-gray-50",
+            ].join(" ")}
+          >
+            <Video className="h-4 w-4 text-red-600" />
+            Webinar
+          </Link>
+
+          {/* Premium (unicorn style) */}
+          <Link to="/pricing">
+            <Button
+              className={[
+                "h-10 rounded-xl px-4",
+                isActive("/pricing")
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white",
+              ].join(" ")}
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              Premium
+              <span className="ml-2 hidden lg:inline text-white/85 font-medium">
+                Zirve
+              </span>
+            </Button>
+          </Link>
         </nav>
 
         {/* RIGHT: actions */}
@@ -175,7 +138,8 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="rounded-xl">
                 <Globe className="h-4 w-4 mr-2" />
-                {language?.toUpperCase?.() || "TR"}
+                {(language?.toUpperCase?.() || "TR") as any}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -191,7 +155,7 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
-          {/* Auth area */}
+          {/* Auth area (desktop) */}
           {!me ? (
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
@@ -218,7 +182,7 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="rounded-xl">
                     <User className="h-4 w-4 mr-2" />
-                    Hesabım <ChevronDown className="ml-1 h-4 w-4" />
+                    Hesabım <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -229,30 +193,12 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
                     <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                   </DropdownMenuItem>
-
-                  {/* Profil / Ayarlar route'larını senin mevcut yapına göre ayarla */}
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (role === "coach") navigate("/coach/profile");
-                      else if (role === "corporate") navigate("/corporate/profile");
-                      else if (role === "admin") navigate("/admin/profile");
-                      else navigate("/user/profile");
-                    }}
-                  >
+                  <DropdownMenuItem onClick={() => navigate(profilePath)}>
                     <User className="mr-2 h-4 w-4" /> Profil
                   </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (role === "coach") navigate("/coach/settings");
-                      else if (role === "corporate") navigate("/corporate/settings");
-                      else if (role === "admin") navigate("/admin/settings");
-                      else navigate("/user/settings");
-                    }}
-                  >
+                  <DropdownMenuItem onClick={() => navigate(settingsPath)}>
                     <Settings className="mr-2 h-4 w-4" /> Ayarlar
                   </DropdownMenuItem>
-
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async () => {
@@ -282,51 +228,44 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Ürün
-            </div>
             <div className="grid gap-2">
-              {productMenu.map((item) => (
-                <button
-                  key={item.to}
-                  onClick={() => navigate(item.to)}
-                  className={[
-                    "w-full text-left px-4 py-3 rounded-xl border",
-                    isActive(item.to)
-                      ? "border-red-200 bg-red-50 font-semibold"
-                      : "border-gray-200 bg-white",
-                  ].join(" ")}
-                >
-                  {item.label}
-                </button>
-              ))}
+              <button
+                onClick={() => navigate("/mentor-circle")}
+                className={[
+                  "w-full text-left px-4 py-3 rounded-xl border font-semibold",
+                  isActive("/mentor-circle")
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-gray-200 bg-white text-gray-800",
+                ].join(" ")}
+              >
+                MentorCircle
+              </button>
+
+              <button
+                onClick={() => navigate("/webinars")}
+                className={[
+                  "w-full text-left px-4 py-3 rounded-xl border font-semibold",
+                  isActive("/webinars")
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-gray-200 bg-white text-gray-800",
+                ].join(" ")}
+              >
+                Webinar
+              </button>
+
+              <button
+                onClick={() => navigate("/pricing")}
+                className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-600 text-white font-semibold"
+              >
+                Premium Zirve
+              </button>
             </div>
 
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4">
-              Keşfet
-            </div>
-            <div className="grid gap-2">
-              {discoverMenu.map((item) => (
-                <button
-                  key={item.to}
-                  onClick={() => navigate(item.to)}
-                  className={[
-                    "w-full text-left px-4 py-3 rounded-xl border",
-                    isActive(item.to)
-                      ? "border-red-200 bg-red-50 font-semibold"
-                      : "border-gray-200 bg-white",
-                  ].join(" ")}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 border-t pt-4">
+            <div className="mt-2 border-t pt-4">
               {!me ? (
                 <div className="grid grid-cols-2 gap-2">
                   <Link to="/login">

@@ -125,7 +125,7 @@ export default function Navbar() {
               <Crown className="h-4 w-4 mr-2" />
               Premium
               <span className="ml-2 hidden lg:inline text-white/85 font-medium">
-                Zirve
+                
               </span>
             </Button>
           </Link>

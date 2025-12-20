@@ -6,16 +6,65 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import {
-  User,
-  Save,
-  ArrowLeft,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  Building2,
-} from "lucide-react";
+import { User, Save, ArrowLeft, Mail, Phone, MapPin, Briefcase, Building2 } from "lucide-react";
+
+const PHONE_COUNTRIES = [
+  { iso: "TR", name: "Turkey", dial: "+90", placeholder: "532 123 45 67" },
+  { iso: "TN", name: "Tunisia", dial: "+216", placeholder: "20 123 456" },
+  { iso: "DE", name: "Germany", dial: "+49", placeholder: "1512 3456789" },
+  { iso: "US", name: "USA", dial: "+1", placeholder: "555 123 4567" },
+  { iso: "GB", name: "UK", dial: "+44", placeholder: "7400 123456" },
+];
+
+const TITLE_OPTIONS = [
+  "CEO / Founder",
+  "HR Manager",
+  "HR Specialist",
+  "Product Manager",
+  "Software Engineer",
+  "Sales Manager",
+  "Marketing Manager",
+  "Operations Manager",
+  "Team Lead",
+  "Student",
+  "Other",
+];
+
+const SECTOR_OPTIONS = [
+  "Yazılım",
+  "Fintech",
+  "E-ticaret",
+  "Sağlık",
+  "Eğitim",
+  "Lojistik",
+  "Üretim",
+  "Danışmanlık",
+  "İnsan Kaynakları",
+  "Perakende",
+  "Other",
+];
+
+function digitsOnly(s: string) {
+  return (s || "").replace(/[^\d]/g, "");
+}
+
+function toE164(dial: string, rawNumber: string) {
+  const d = (dial || "").trim();
+  const n = digitsOnly(rawNumber);
+  if (!d || !n) return "";
+  return `${d}${n}`;
+}
+
+function parsePhone(existing: string) {
+  const v = (existing || "").trim();
+  if (!v.startsWith("+")) return { dial: "+90", number: v }; // default
+  const match = PHONE_COUNTRIES
+    .slice()
+    .sort((a, b) => b.dial.length - a.dial.length)
+    .find((c) => v.startsWith(c.dial));
+  if (!match) return { dial: "+90", number: v.replace("+", "") };
+  return { dial: match.dial, number: v.slice(match.dial.length) };
+}
 
 export default function UserProfileEdit() {
   const navigate = useNavigate();
@@ -26,13 +75,15 @@ export default function UserProfileEdit() {
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
-  // DB kolonların: full_name, title, sector, city, phone
   const [form, setForm] = useState({
     full_name: "",
     title: "",
+    title_other: "",
     sector: "",
+    sector_other: "",
     city: "",
-    phone: "",
+    phone_dial: "+90",
+    phone_number: "",
   });
 
   useEffect(() => {
@@ -64,26 +115,30 @@ export default function UserProfileEdit() {
 
         if (pErr) {
           console.error("profiles select error:", pErr);
-          // tablo var ama RLS/kolon vb. sorun olabilir
-          setProfile(null);
-          setForm({
-            full_name: user?.user_metadata?.full_name || "",
-            title: "",
-            sector: "",
-            city: "",
-            phone: "",
-          });
+          toast.error("Profil okunamadı. RLS/izinleri kontrol et.");
           return;
         }
 
-        setProfile(pData || null);
+        const p = pData || null;
+        setProfile(p);
+
+        const parsed = parsePhone(p?.phone || "");
+
+        const title = p?.title || "";
+        const sector = p?.sector || "";
+
+        const titleIsOther = title && !TITLE_OPTIONS.includes(title);
+        const sectorIsOther = sector && !SECTOR_OPTIONS.includes(sector);
 
         setForm({
-          full_name: pData?.full_name || user?.user_metadata?.full_name || "",
-          title: pData?.title || "",
-          sector: pData?.sector || "",
-          city: pData?.city || "",
-          phone: pData?.phone || "",
+          full_name: p?.full_name || user?.user_metadata?.full_name || "",
+          title: titleIsOther ? "Other" : (title || ""),
+          title_other: titleIsOther ? title : "",
+          sector: sectorIsOther ? "Other" : (sector || ""),
+          sector_other: sectorIsOther ? sector : "",
+          city: p?.city || "",
+          phone_dial: parsed.dial || "+90",
+          phone_number: parsed.number || "",
         });
       } catch (e) {
         console.error(e);
@@ -101,12 +156,16 @@ export default function UserProfileEdit() {
 
   const completion = useMemo(() => {
     if (!me) return 0;
+    const titleVal = form.title === "Other" ? form.title_other : form.title;
+    const sectorVal = form.sector === "Other" ? form.sector_other : form.sector;
+    const phoneE164 = toE164(form.phone_dial, form.phone_number);
+
     const checks = [
-      !!form.full_name,
-      !!form.title,
-      !!form.sector,
-      !!form.city,
-      !!form.phone,
+      !!form.full_name.trim(),
+      !!(titleVal || "").trim(),
+      !!(sectorVal || "").trim(),
+      !!form.city.trim(),
+      !!phoneE164,
     ];
     const filled = checks.filter(Boolean).length;
     return Math.round((filled / checks.length) * 100);
@@ -119,15 +178,27 @@ export default function UserProfileEdit() {
       return;
     }
 
+    const full_name = form.full_name.trim();
+    const title = (form.title === "Other" ? form.title_other : form.title).trim();
+    const sector = (form.sector === "Other" ? form.sector_other : form.sector).trim();
+    const city = form.city.trim();
+    const phone = toE164(form.phone_dial, form.phone_number);
+
+    if (!full_name) return toast.error("Ad Soyad gerekli.");
+    if (!title) return toast.error("Ünvan gerekli.");
+    if (!sector) return toast.error("Sektör gerekli.");
+    if (!city) return toast.error("Şehir gerekli.");
+    if (!phone) return toast.error("Telefon gerekli (ülke kodu + numara).");
+
     setSaving(true);
     try {
       const payload = {
-        id: me.id, // ✅ EN KRİTİK NOKTA
-        full_name: (form.full_name || "").trim(),
-        title: (form.title || "").trim(),
-        sector: (form.sector || "").trim(),
-        city: (form.city || "").trim(),
-        phone: (form.phone || "").trim(),
+        id: me.id, // ✅ auth.uid()
+        full_name,
+        title,
+        sector,
+        city,
+        phone, // ✅ E.164 tek string
         updated_at: new Date().toISOString(),
       };
 
@@ -137,7 +208,7 @@ export default function UserProfileEdit() {
 
       if (error) {
         console.error("profiles upsert error:", error);
-        toast.error("Kaydedilemedi. RLS/policy veya kolonları kontrol et.");
+        toast.error("Kaydedilemedi. RLS veya tablo kolonlarını kontrol et.");
         return;
       }
 
@@ -166,10 +237,10 @@ export default function UserProfileEdit() {
         <div className="max-w-6xl mx-auto px-4 py-10">
           <p className="text-xs text-white/90">User Profile</p>
           <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            Profilini Düzenle
+            Profili Düzenle
           </h1>
           <p className="mt-2 text-sm text-white/90 max-w-2xl">
-            Bu bilgiler koç eşleşmesini ve seans kalitesini doğrudan etkiler.
+            Ünvan, sektör ve telefon dahil net bilgiler eşleşme kalitesini yükseltir.
           </p>
 
           <div className="mt-6 max-w-xl">
@@ -213,47 +284,79 @@ export default function UserProfileEdit() {
                   <Mail className="h-4 w-4" />
                   Email (değiştirilemez)
                 </div>
-                <div className="mt-1 font-semibold text-slate-900">
-                  {me?.email || "-"}
-                </div>
+                <div className="mt-1 font-semibold text-slate-900">{me?.email || "-"}</div>
               </div>
 
+              {/* Full name */}
               <div className="sm:col-span-2">
                 <label className="text-xs text-slate-600">Ad Soyad</label>
                 <input
                   value={form.full_name}
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  placeholder="Örn: Salih Gökalp Büyükçelebi"
+                  placeholder="Örn: Kariyer Sepeti"
                   className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                 />
               </div>
 
+              {/* Title */}
               <div>
                 <label className="text-xs text-slate-600 flex items-center gap-2">
                   <Briefcase className="h-4 w-4 text-slate-500" />
-                  Unvan
+                  Ünvan
                 </label>
-                <input
+                <select
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Örn: Product Manager"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                />
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-200"
+                >
+                  <option value="">Seç</option>
+                  {TITLE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t === "Other" ? "Diğer" : t}
+                    </option>
+                  ))}
+                </select>
+
+                {form.title === "Other" && (
+                  <input
+                    value={form.title_other}
+                    onChange={(e) => setForm({ ...form, title_other: e.target.value })}
+                    placeholder="Ünvanını yaz"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                  />
+                )}
               </div>
 
+              {/* Sector */}
               <div>
                 <label className="text-xs text-slate-600 flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-slate-500" />
                   Sektör
                 </label>
-                <input
+                <select
                   value={form.sector}
                   onChange={(e) => setForm({ ...form, sector: e.target.value })}
-                  placeholder="Örn: Yazılım, Fintech..."
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                />
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-200"
+                >
+                  <option value="">Seç</option>
+                  {SECTOR_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "Other" ? "Diğer" : s}
+                    </option>
+                  ))}
+                </select>
+
+                {form.sector === "Other" && (
+                  <input
+                    value={form.sector_other}
+                    onChange={(e) => setForm({ ...form, sector_other: e.target.value })}
+                    placeholder="Sektörünü yaz"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                  />
+                )}
               </div>
 
+              {/* City */}
               <div>
                 <label className="text-xs text-slate-600 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-slate-500" />
@@ -267,17 +370,41 @@ export default function UserProfileEdit() {
                 />
               </div>
 
+              {/* Phone */}
               <div>
                 <label className="text-xs text-slate-600 flex items-center gap-2">
                   <Phone className="h-4 w-4 text-slate-500" />
                   Telefon
                 </label>
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="Örn: +90 5xx xxx xx xx"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                />
+
+                <div className="mt-1 flex gap-2">
+                  <select
+                    value={form.phone_dial}
+                    onChange={(e) => setForm({ ...form, phone_dial: e.target.value })}
+                    className="w-[140px] rounded-xl border border-slate-200 px-3 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-orange-200"
+                  >
+                    {PHONE_COUNTRIES.map((c) => (
+                      <option key={c.iso} value={c.dial}>
+                        {c.iso} {c.dial}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    value={form.phone_number}
+                    onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                    placeholder={
+                      PHONE_COUNTRIES.find((x) => x.dial === form.phone_dial)?.placeholder ||
+                      "Numara"
+                    }
+                    className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                  />
+                </div>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Kaydedilecek format:{" "}
+                  <span className="font-mono">{toE164(form.phone_dial, form.phone_number) || "-"}</span>
+                </p>
               </div>
             </div>
 
@@ -302,8 +429,8 @@ export default function UserProfileEdit() {
             </div>
 
             <p className="mt-3 text-xs text-slate-500">
-              *Kaydet dediğinde veriler <span className="font-medium">profiles</span>{" "}
-              tablosuna yazılır (id = auth.uid()).
+              *Veriler <span className="font-medium">profiles</span> tablosuna{" "}
+              <span className="font-medium">id = auth.uid()</span> ile yazılır.
             </p>
           </CardContent>
         </Card>

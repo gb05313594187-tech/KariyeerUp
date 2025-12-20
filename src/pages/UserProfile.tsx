@@ -139,7 +139,8 @@ export default function UserProfile() {
 
   const openEdit = () => {
     if (!me) return;
-    setEditOpen(true);
+    // ✅ artık edit sayfasına gidiyoruz
+    navigate("/user/profile/edit");
   };
 
   const closeEdit = () => {
@@ -217,7 +218,7 @@ export default function UserProfile() {
         <div className="max-w-6xl mx-auto px-4 py-10">
           <p className="text-xs text-white/90">User Profile</p>
           <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            {me ? "Kariyer Sepeti" : "Profil"}
+            {me ? displayName : "Profil"}
           </h1>
           <p className="mt-2 text-sm text-white/90 max-w-2xl">
             Profil bilgilerin, koç eşleşmelerini ve seans deneyimini doğrudan etkiler.
@@ -256,7 +257,7 @@ export default function UserProfile() {
               <Button
                 variant="outline"
                 className="rounded-xl border-white/70 text-white hover:bg-white/10"
-                onClick={openEdit}
+                onClick={() => navigate("/user/profile/edit")} // ✅ İSTEDİĞİN EKLENDİ
               >
                 <Pencil className="h-4 w-4 mr-2" />
                 Profili Düzenle
@@ -359,10 +360,19 @@ export default function UserProfile() {
                     <Button className="rounded-xl" onClick={() => navigate("/user/settings")}>
                       Ayarlar
                     </Button>
-                    <Button variant="outline" className="rounded-xl" onClick={() => navigate("/how-it-works")}>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => navigate("/how-it-works")}
+                    >
                       Nasıl çalışır?
                     </Button>
-                    <Button variant="outline" className="rounded-xl" onClick={openEdit}>
+
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => navigate("/user/profile/edit")} // ✅ İSTEDİĞİN EKLENDİ
+                    >
                       <Pencil className="h-4 w-4 mr-2" />
                       Profili Düzenle
                     </Button>
@@ -421,8 +431,23 @@ export default function UserProfile() {
                       <Button className="rounded-xl w-full" onClick={() => navigate("/coaches")}>
                         Koçları İncele <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
-                      <Button variant="outline" className="rounded-xl w-full" onClick={() => navigate("/book-session")}>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl w-full"
+                        onClick={() => navigate("/book-session")}
+                      >
                         Seanslar
+                      </Button>
+                    </div>
+
+                    <div className="mt-3">
+                      <Button
+                        variant="outline"
+                        className="rounded-xl w-full"
+                        onClick={() => navigate("/user/profile/edit")} // ✅ ekstra CTA
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Profili Düzenle
                       </Button>
                     </div>
                   </div>
@@ -440,9 +465,7 @@ export default function UserProfile() {
                         <Calendar className="h-5 w-5 text-slate-900" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          Hızlı akış
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">Hızlı akış</p>
                         <p className="mt-1 text-sm text-slate-600">
                           Hedefini netleştir → koçları filtrele → ilk seansı planla → aksiyon planı oluştur.
                         </p>
@@ -450,10 +473,17 @@ export default function UserProfile() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
-                      <Button className="rounded-xl" onClick={() => navigate("/coach-selection-process")}>
+                      <Button
+                        className="rounded-xl"
+                        onClick={() => navigate("/coach-selection-process")}
+                      >
                         Koç seçimi rehberi
                       </Button>
-                      <Button variant="outline" className="rounded-xl" onClick={() => navigate("/user/dashboard")}>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => navigate("/user/dashboard")}
+                      >
                         Dashboard
                       </Button>
                     </div>
@@ -462,7 +492,7 @@ export default function UserProfile() {
               </Card>
             </div>
 
-            {/* EDIT MODAL */}
+            {/* EDIT MODAL (artık kullanılmıyor ama dosyada kalsın istersen) */}
             {editOpen ? (
               <div className="fixed inset-0 z-50">
                 <div

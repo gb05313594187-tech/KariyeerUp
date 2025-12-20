@@ -26,7 +26,7 @@ import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
 
-// ✅ Nasıl Çalışır sayfan (pages içinden)
+// ✅ Nasıl Çalışır
 import HowItWorks from "@/pages/Howitworks";
 
 // ✅ LEGAL
@@ -44,6 +44,7 @@ import CoachSelfProfile from "@/pages/CoachProfile";
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
 import UserSettings from "@/pages/UserSettings";
+import UserProfileEdit from "@/pages/UserProfileEdit"; // ✅ EKLENDİ
 
 // CORPORATE
 import CorporateDashboard from "@/pages/CorporateDashboard";
@@ -97,7 +98,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
 
-          {/* ✅ How it works */}
+          {/* How it works */}
           <Route path="/nasil-calisir" element={<HowItWorks />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
 
@@ -116,6 +117,7 @@ export default function App() {
           {/* USER */}
           <Route path="/user/dashboard" element={<UserDashboard />} />
           <Route path="/user/profile" element={<UserProfile />} />
+          <Route path="/user/profile/edit" element={<UserProfileEdit />} /> {/* ✅ EKLENDİ */}
           <Route path="/user/settings" element={<UserSettings />} />
 
           {/* CORPORATE */}

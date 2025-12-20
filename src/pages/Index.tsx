@@ -21,8 +21,6 @@ import {
   ShieldCheck,
   Zap,
   Globe,
-  Sparkles,
-  Video,
 } from "lucide-react";
 
 export default function Index() {
@@ -95,7 +93,7 @@ export default function Index() {
   );
 
   // =========================
-  // Live hissi (Supabase'e dokunmaz)
+  // Live hissi (Supa'ya dokunmaz)
   // =========================
   const [live, setLive] = useState({
     onlineCoaches: 27,
@@ -106,7 +104,7 @@ export default function Index() {
   useEffect(() => {
     const t = setInterval(() => {
       setLive((prev) => {
-        const bump = (n, min, max) => {
+        const bump = (n: number, min: number, max: number) => {
           const d = Math.floor(Math.random() * 3) - 1;
           const next = n + d;
           return Math.max(min, Math.min(max, next));
@@ -189,7 +187,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* =========================
-          HERO (pembe/şeftali) — logo kırmızı + turuncu gradient ile premium durur
+          HERO (pembe/şeftali)
          ========================= */}
       <section className="relative overflow-hidden bg-[#FFF5F2]">
         <div className="absolute inset-0 pointer-events-none">
@@ -198,37 +196,8 @@ export default function Index() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-14 pb-12 lg:pt-20 lg:pb-14">
-          {/* Unicorn hissi: keşfet linkleri "pill" olarak (dropdown yok) */}
-          <div className="flex justify-center">
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-red-200/60 bg-white/70 backdrop-blur px-3 py-2 shadow-sm">
-              <Link
-                to="/mentor-circle"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                <Sparkles className="h-4 w-4 text-orange-600" />
-                MentorCircle
-              </Link>
-              <Link
-                to="/webinars"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                <Video className="h-4 w-4 text-red-600" />
-                Webinar
-              </Link>
-
-              <span className="hidden sm:inline h-6 w-px bg-gray-200 mx-1" />
-
-              {/* Premium (pasif gelir) */}
-              <Link to="/pricing">
-                <Button className="h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                  Premium Ol
-                </Button>
-              </Link>
-            </div>
-          </div>
-
           {/* Persona Switch */}
-          <div className="mt-8 flex justify-center">
+          <div className="flex justify-center">
             <div className="inline-flex rounded-2xl border border-red-200/60 bg-white/70 backdrop-blur px-2 py-2 shadow-sm">
               {personas.map((p) => {
                 const Icon = p.icon;
@@ -428,7 +397,7 @@ export default function Index() {
             </Card>
           </div>
 
-          {/* Güvenli sosyal proof (logo iddiası yok) */}
+          {/* Sosyal proof (iddiasız) */}
           <div className="mt-10 text-center">
             <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">
               Profesyonellerin kullandığı hedef odaklı gelişim deneyimi
@@ -448,7 +417,7 @@ export default function Index() {
       </section>
 
       {/* =========================
-          Kısa “Neden Biz?” — unicorn gibi net
+          Kısa “Neden Biz?”
          ========================= */}
       <section className="py-16 px-4 bg-white border-b">
         <div className="max-w-7xl mx-auto">
@@ -548,7 +517,7 @@ export default function Index() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>Doğrulanmış Profil</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 w-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             ))}
@@ -561,65 +530,6 @@ export default function Index() {
               </Button>
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* =========================
-          Premium upsell (pasif gelir)
-         ========================= */}
-      <section className="py-14 px-4 bg-gray-50 border-t">
-        <div className="max-w-7xl mx-auto">
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="p-8 md:p-10">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-                <div className="max-w-2xl">
-                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 mb-3">
-                    Premium
-                  </Badge>
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
-                    Daha hızlı ilerlemek için Premium
-                  </h3>
-                  <p className="mt-2 text-gray-600">
-                    Öncelikli eşleşme, gelişim takibi, kayıtlı planlar ve özel içerikler (MentorCircle + Webinar avantajları).
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {[
-                      "Öncelikli eşleşme",
-                      "Plan & takip",
-                      "Özel içerikler",
-                      "İndirimli webinarlar",
-                    ].map((x) => (
-                      <span
-                        key={x}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-full px-4 py-2"
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        {x}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link to="/pricing">
-                    <Button className="h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white px-7">
-                      Premium’u Gör <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link to="/register">
-                    <Button variant="outline" className="h-12 rounded-xl px-7">
-                      Ücretsiz Başla
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <p className="mt-4 text-xs text-gray-500">
-                Not: Premium butonu sadece yönlendirme yapar; ödeme entegrasyonunu sonradan eklersin.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </section>
     </div>

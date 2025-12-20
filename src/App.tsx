@@ -25,6 +25,7 @@ import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
+import HowItWorks from "@/pages/Howitworks";
 
 // ✅ YENİ EKLENEN LEGAL SAYFALAR
 import About from "@/pages/About";

@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 
 export default function HowItWorks() {
+  // ✅ DEBUG: Bu console log görünmüyorsa, bu dosya render edilmiyor demektir.
+  console.log("HOWITWORKS FULL VERSION LOADED ✅");
+
   const steps = [
     {
       no: "01",
@@ -131,6 +134,12 @@ export default function HowItWorks() {
       <Navbar />
 
       <main className="flex-1 bg-white text-slate-900">
+        {/* ✅ DEBUG BAND: BUNU MUTLAKA GÖRMELİSİN */}
+        <div className="bg-black text-white p-3 text-center text-sm font-semibold">
+          DEBUG: Howitworks FULL PAGE render edildi ✅ (Bunu görmüyorsan route yanlış dosyayı
+          açıyor)
+        </div>
+
         {/* HERO */}
         <section className="border-b bg-gradient-to-b from-red-600 via-orange-500 to-orange-400">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14 sm:pt-24 sm:pb-16">

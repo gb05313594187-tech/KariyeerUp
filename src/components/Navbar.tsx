@@ -84,6 +84,10 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
+  const premiumLabel = useMemo(() => {
+    return role === "corporate" ? "Kurumsal Premium" : "Bireysel Premium";
+  }, [role]);
+
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
@@ -127,12 +131,19 @@ export default function Navbar() {
           </Link>
 
           {/* Premium */}
-          <Link to="/pricing">
+          <button
+            type="button"
+            onClick={() => navigate("/pricing")}
+            className="inline-flex"
+          >
             <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
               <Crown className="h-4 w-4 mr-2" />
               Premium
+              <span className="ml-2 hidden lg:inline text-white/85 font-medium">
+                {premiumLabel}
+              </span>
             </Button>
-          </Link>
+          </button>
         </nav>
 
         {/* RIGHT: actions */}
@@ -147,10 +158,18 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("tr")}>TR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>EN</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>AR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>FR</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("tr")}>
+                TR
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("en")}>
+                EN
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("ar")}>
+                AR
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("fr")}>
+                FR
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -186,11 +205,14 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="rounded-xl">
                     <User className="h-4 w-4 mr-2" />
-                    {roleLabel} <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+                    {roleLabel}
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>{roleLabel.toUpperCase()}</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    {roleLabel.toUpperCase()}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
                     <LayoutDashboard className="mr-2 h-4 w-4" /> {dashboardLabel}
@@ -263,7 +285,7 @@ export default function Navbar() {
                 onClick={() => navigate("/pricing")}
                 className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-600 text-white font-semibold"
               >
-                Premium
+                Premium — {premiumLabel}
               </button>
             </div>
 

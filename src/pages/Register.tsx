@@ -47,14 +47,15 @@ export default function Register() {
     try {
       const role = mapRole(formData.userType);
 
-      // 1) Supabase Auth'a kayıt + metadata
+      // 1) Supabase Auth'a kayıt (metadata)
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            full_name: formData.fullName,
-            role, // ✅ standart: user | coach | corporate
+            display_name: formData.fullName,
+            role, // ✅ user | coach | corporate
+            user_type: formData.userType, // ✅ senin mevcut mantığın (individual/coach/company) kalabilir
           },
         },
       });
@@ -62,39 +63,34 @@ export default function Register() {
       if (error) throw error;
 
       if (data.user) {
-        // Koçlarda farklı statü
-        const initialStatus =
-          role === "coach" ? "pending_application" : "active";
-        const isApprovedInitial = role === "coach" ? false : true;
-
-        // 2) Profiles tablosuna kayıt
+        // 2) profiles tablosuna insert (senin kolonlara göre)
         const { error: profileError } = await supabase.from("profiles").insert([
           {
             id: data.user.id,
-            full_name: formData.fullName,
-            email: formData.email,
-            account_type: role, // ✅ user | coach | corporate
-            status: initialStatus,
-            is_approved: isApprovedInitial,
+            display_name: formData.fullName,
+            role, // ✅ asıl yetki kaynağın bu olsun
+            user_type: formData.userType, // individual/coach/company
+            phone: null,
+            country: null,
           },
         ]);
 
         if (profileError) {
-          console.error("Profil kaydı hatası:", profileError);
+          console.error("Profil insert hatası:", profileError);
+          // auth kaydı var, devam edebiliriz
         }
       }
 
       toast.success("Kayıt başarılı!");
 
-      // 3) Rol'e göre yönlendir
       if (formData.userType === "coach") {
         navigate("/coach-application");
       } else {
         setTimeout(() => navigate("/login"), 300);
       }
-    } catch (error: any) {
-      console.error("Kayıt hatası:", error);
-      toast.error(`Kayıt başarısız: ${error.message}`);
+    } catch (err: any) {
+      console.error("Kayıt hatası:", err);
+      toast.error(`Kayıt başarısız: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -163,10 +159,7 @@ export default function Register() {
                 required
                 value={formData.confirmPassword}
                 onChange={(e: any) =>
-                  setFormData({
-                    ...formData,
-                    confirmPassword: e.target.value,
-                  })
+                  setFormData({ ...formData, confirmPassword: e.target.value })
                 }
               />
             </div>
@@ -208,7 +201,10 @@ export default function Register() {
         <CardFooter className="flex justify-center">
           <div className="text-sm text-gray-500">
             Zaten hesabınız var mı?{" "}
-            <Link to="/login" className="text-[#D32F2F] hover:underline font-semibold">
+            <Link
+              to="/login"
+              className="text-[#D32F2F] hover:underline font-semibold"
+            >
               Giriş Yap
             </Link>
           </div>

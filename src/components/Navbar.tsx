@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth, Role } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 
 export default function Navbar() {
@@ -39,7 +39,7 @@ export default function Navbar() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const role: Role | null = auth?.role ?? auth?.user?.role ?? null;
+  const role = auth?.user?.userType ?? null;
   const me = auth?.user ?? null;
 
   useEffect(() => {
@@ -77,16 +77,11 @@ export default function Navbar() {
     return "/user/profile";
   }, [role]);
 
-  const settingsPath = useMemo(() => {
-    if (role === "coach") return "/coach/settings";
-    if (role === "corporate") return "/corporate/settings";
-    if (role === "admin") return "/admin/settings";
-    return "/user/settings";
-  }, [role]);
-
   const premiumLabel = useMemo(() => {
     return role === "corporate" ? "Kurumsal Premium" : "Bireysel Premium";
   }, [role]);
+
+  const displayName = me?.fullName || me?.email?.split("@")[0] || "Kullanıcı";
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -123,213 +118,4 @@ export default function Navbar() {
               "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
               isActive("/webinars")
                 ? "bg-red-50 text-red-700 border border-red-200"
-                : "text-gray-700 hover:bg-gray-50",
-            ].join(" ")}
-          >
-            <Video className="h-4 w-4 text-red-600" />
-            Webinar
-          </Link>
-
-          {/* Premium */}
-          <button
-            type="button"
-            onClick={() => navigate("/pricing")}
-            className="inline-flex"
-          >
-            <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
-              <Crown className="h-4 w-4 mr-2" />
-              Premium
-              <span className="ml-2 hidden lg:inline text-white/85 font-medium">
-                {premiumLabel}
-              </span>
-            </Button>
-          </button>
-        </nav>
-
-        {/* RIGHT: actions */}
-        <div className="flex items-center gap-2">
-          {/* Language */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl">
-                <Globe className="h-4 w-4 mr-2" />
-                {(language?.toUpperCase?.() || "TR") as any}
-                <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("tr")}>
-                TR
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>
-                EN
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>
-                AR
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>
-                FR
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Notifications */}
-          <div className="hidden sm:block">
-            <NotificationBell />
-          </div>
-
-          {/* Auth area (desktop) */}
-          {!me ? (
-            <div className="hidden md:flex items-center gap-2">
-              <Link to="/login">
-                <Button variant="outline" className="rounded-xl">
-                  Giriş Yap
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                  Kayıt Ol
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="hidden md:flex items-center gap-2">
-              <Link to={dashboardPath}>
-                <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  {dashboardLabel}
-                </Button>
-              </Link>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-xl">
-                    <User className="h-4 w-4 mr-2" />
-                    {roleLabel}
-                    <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    {roleLabel.toUpperCase()}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> {dashboardLabel}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(profilePath)}>
-                    <User className="mr-2 h-4 w-4" /> Profil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(settingsPath)}>
-                    <Settings className="mr-2 h-4 w-4" /> Ayarlar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      try {
-                        await auth.logout();
-                        navigate("/");
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" /> Çıkış
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-
-          {/* Mobile menu button */}
-          <Button
-            variant="outline"
-            className="md:hidden rounded-xl"
-            onClick={() => setMobileOpen((s) => !s)}
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t bg-white">
-          <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <div className="grid gap-2">
-              <button
-                onClick={() => navigate("/mentor-circle")}
-                className={[
-                  "w-full text-left px-4 py-3 rounded-xl border font-semibold",
-                  isActive("/mentor-circle")
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-gray-200 bg-white text-gray-800",
-                ].join(" ")}
-              >
-                MentorCircle
-              </button>
-
-              <button
-                onClick={() => navigate("/webinars")}
-                className={[
-                  "w-full text-left px-4 py-3 rounded-xl border font-semibold",
-                  isActive("/webinars")
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-gray-200 bg-white text-gray-800",
-                ].join(" ")}
-              >
-                Webinar
-              </button>
-
-              <button
-                onClick={() => navigate("/pricing")}
-                className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-600 text-white font-semibold"
-              >
-                Premium — {premiumLabel}
-              </button>
-            </div>
-
-            <div className="mt-2 border-t pt-4">
-              {!me ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Link to="/login">
-                    <Button variant="outline" className="w-full rounded-xl">
-                      Giriş
-                    </Button>
-                  </Link>
-                  <Link to="/register">
-                    <Button className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                      Kayıt Ol
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <Link to={dashboardPath}>
-                    <Button className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                      {dashboardLabel}
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl"
-                    onClick={async () => {
-                      try {
-                        await auth.logout();
-                        navigate("/");
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
-                  >
-                    Çıkış
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </header>
-  );
-}
+                : "text-gray-700 hover:bg-gray-

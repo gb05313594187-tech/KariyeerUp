@@ -2,7 +2,7 @@
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// UI / Icons
+// UI / Icons (kullanılmıyorsa kaldırabilirsin)
 import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 
 // SAYFALAR
 import Home from "@/pages/Index";
+import Pricing from "@/pages/Pricing"; // ✅ EKLENDİ (Premium sayfan)
 import Coaches from "@/pages/Coaches";
 import ForCoaches from "@/pages/ForCoaches";
 import ForCompanies from "@/pages/ForCompanies";
@@ -98,6 +99,9 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
 
+          {/* ✅ PREMIUM / PRICING */}
+          <Route path="/pricing" element={<Pricing />} />
+
           {/* How it works */}
           <Route path="/nasil-calisir" element={<HowItWorks />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
@@ -117,7 +121,7 @@ export default function App() {
           {/* USER */}
           <Route path="/user/dashboard" element={<UserDashboard />} />
           <Route path="/user/profile" element={<UserProfile />} />
-          <Route path="/user/profile/edit" element={<UserProfileEdit />} /> {/* ✅ EKLENDİ */}
+          <Route path="/user/profile/edit" element={<UserProfileEdit />} />
           <Route path="/user/settings" element={<UserSettings />} />
 
           {/* CORPORATE */}

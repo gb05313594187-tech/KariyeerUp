@@ -28,10 +28,8 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Role } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
-
-type Role = "user" | "coach" | "corporate" | "admin" | null;
 
 export default function Navbar() {
   const location = useLocation();
@@ -41,17 +39,33 @@ export default function Navbar() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const role: Role = auth?.role ?? null;
+  const role: Role | null = auth?.role ?? auth?.user?.role ?? null;
   const me = auth?.user ?? null;
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  const roleLabel = useMemo(() => {
+    if (role === "coach") return "Koç";
+    if (role === "corporate") return "Şirket";
+    if (role === "admin") return "Admin";
+    if (role === "user") return "Kullanıcı";
+    return "Hesap";
+  }, [role]);
+
+  const dashboardLabel = useMemo(() => {
+    if (role === "coach") return "Koç Paneli";
+    if (role === "corporate") return "Kurumsal Panel";
+    if (role === "admin") return "Admin Paneli";
+    if (role === "user") return "Kullanıcı Paneli";
+    return "Dashboard";
+  }, [role]);
+
   const dashboardPath = useMemo(() => {
     if (role === "coach") return "/coach/dashboard";
     if (role === "corporate") return "/corporate/dashboard";
-    if (role === "admin") return "/admin/dashboard";
+    if (role === "admin") return "/admin";
     if (role === "user") return "/user/dashboard";
     return "/login";
   }, [role]);
@@ -84,7 +98,7 @@ export default function Navbar() {
           <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
-        {/* CENTER: Direct links (no dropdown) */}
+        {/* CENTER: Direct links */}
         <nav className="hidden md:flex items-center gap-2">
           <Link
             to="/mentor-circle"
@@ -112,21 +126,11 @@ export default function Navbar() {
             Webinar
           </Link>
 
-          {/* Premium (unicorn style) */}
+          {/* Premium */}
           <Link to="/pricing">
-            <Button
-              className={[
-                "h-10 rounded-xl px-4",
-                isActive("/pricing")
-                  ? "bg-red-600 hover:bg-red-700 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white",
-              ].join(" ")}
-            >
+            <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
               <Crown className="h-4 w-4 mr-2" />
               Premium
-              <span className="ml-2 hidden lg:inline text-white/85 font-medium">
-                
-              </span>
             </Button>
           </Link>
         </nav>
@@ -174,7 +178,7 @@ export default function Navbar() {
               <Link to={dashboardPath}>
                 <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
                   <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
+                  {dashboardLabel}
                 </Button>
               </Link>
 
@@ -182,16 +186,14 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="rounded-xl">
                     <User className="h-4 w-4 mr-2" />
-                    Hesabım <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+                    {roleLabel} <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    {role ? role.toUpperCase() : "HESAP"}
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel>{roleLabel.toUpperCase()}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> {dashboardLabel}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(profilePath)}>
                     <User className="mr-2 h-4 w-4" /> Profil
@@ -203,7 +205,7 @@ export default function Navbar() {
                   <DropdownMenuItem
                     onClick={async () => {
                       try {
-                        await auth?.signOut?.();
+                        await auth.logout();
                         navigate("/");
                       } catch (e) {
                         console.error(e);
@@ -261,7 +263,7 @@ export default function Navbar() {
                 onClick={() => navigate("/pricing")}
                 className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-600 text-white font-semibold"
               >
-                Premium Zirve
+                Premium
               </button>
             </div>
 
@@ -283,7 +285,7 @@ export default function Navbar() {
                 <div className="grid grid-cols-2 gap-2">
                   <Link to={dashboardPath}>
                     <Button className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                      Dashboard
+                      {dashboardLabel}
                     </Button>
                   </Link>
                   <Button
@@ -291,7 +293,7 @@ export default function Navbar() {
                     className="w-full rounded-xl"
                     onClick={async () => {
                       try {
-                        await auth?.signOut?.();
+                        await auth.logout();
                         navigate("/");
                       } catch (e) {
                         console.error(e);

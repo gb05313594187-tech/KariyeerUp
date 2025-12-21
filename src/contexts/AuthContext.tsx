@@ -8,8 +8,10 @@ export type Role = "user" | "coach" | "corporate" | "admin";
 interface User {
   id: string;
   email: string;
-  fullName: string;
+  fullName: string; // UI için
   role: Role;
+  phone?: string | null;
+  country?: string | null;
 }
 
 interface AuthContextType {
@@ -21,12 +23,6 @@ interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ success: boolean; message: string }>;
-  register: (
-    email: string,
-    password: string,
-    fullName: string,
-    role: Role
-  ) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<boolean>;
 }
@@ -34,14 +30,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function normalizeRole(v: any): Role {
-  // eski farklı isimleri tek standarda çevir
-  if (v === "client" || v === "individual") return "user";
-  if (v === "company") return "corporate";
-  if (v === "super_admin") return "admin";
-  if (v === "coach") return "coach";
-  if (v === "corporate") return "corporate";
-  if (v === "admin") return "admin";
-  if (v === "user") return "user";
+  // Sende var olan değerleri tek standarda çeviriyoruz
+  if (!v) return "user";
+  const s = String(v).toLowerCase();
+
+  if (s === "company") return "corporate";
+  if (s === "corporate") return "corporate";
+  if (s === "coach") return "coach";
+  if (s === "admin" || s === "super_admin") return "admin";
+  if (s === "client" || s === "individual" || s === "user") return "user";
+
   return "user";
 }
 
@@ -81,8 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data?.session?.user) {
         await loadUserProfile(data.session.user);
       }
-    } catch (error) {
-      console.error("Error checking user:", error);
+    } catch (e) {
+      console.error("Error checking user:", e);
     } finally {
       setLoading(false);
     }
@@ -95,65 +93,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const meta = supabaseUserData.user_metadata || {};
       const metaRole = normalizeRole(meta.role || meta.user_type || meta.userType);
 
-      // ✅ Asıl doğruluk kaynağı: profiles tablosu
+      // ✅ SENİN TABLON: profiles(role, display_name, phone, country, user_type)
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("full_name, account_type, email")
+        .select("display_name, role, phone, country, user_type")
         .eq("id", supabaseUserData.id)
         .maybeSingle();
 
       let finalRole: Role = metaRole;
-      let fullName = meta.full_name || meta.fullName || "User";
-      let email = supabaseUserData.email || "";
+      let fullName =
+        meta.full_name ||
+        meta.fullName ||
+        meta.display_name ||
+        meta.displayName ||
+        "User";
+
+      let phone: string | null = null;
+      let country: string | null = null;
 
       if (!error && profile) {
-        finalRole = normalizeRole(profile.account_type);
-        fullName = profile.full_name || fullName;
-        email = profile.email || email;
+        // role: önce profile.role, yoksa profile.user_type, yoksa metadata
+        finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
+        fullName = profile.display_name || fullName;
+        phone = profile.phone ?? null;
+        country = profile.country ?? null;
       }
 
       setRole(finalRole);
       setUser({
         id: supabaseUserData.id,
-        email,
+        email: supabaseUserData.email || "",
         fullName,
         role: finalRole,
+        phone,
+        country,
       });
       setIsAuthenticated(true);
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-    }
-  };
-
-  const register = async (
-    email: string,
-    password: string,
-    fullName: string,
-    role: Role
-  ): Promise<{ success: boolean; message: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role, // ✅ standart
-          },
-        },
-      });
-
-      if (error) return { success: false, message: error.message };
-
-      if (data.user) {
-        await loadUserProfile(data.user);
-        return { success: true, message: "Kayıt başarılı!" };
-      }
-
-      return { success: false, message: "Kayıt başarısız oldu" };
-    } catch (error) {
-      console.error("Registration error:", error);
-      return { success: false, message: "Bir hata oluştu" };
+    } catch (e) {
+      console.error("Error loading user profile:", e);
     }
   };
 
@@ -175,8 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       return { success: false, message: "Giriş başarısız oldu" };
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (e) {
+      console.error("Login error:", e);
       return { success: false, message: "Bir hata oluştu" };
     }
   };
@@ -188,8 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSupabaseUser(null);
       setRole(null);
       setIsAuthenticated(false);
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch (e) {
+      console.error("Logout error:", e);
     }
   };
 
@@ -197,34 +174,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return false;
 
     try {
-      // ✅ auth metadata
-      const { error } = await supabase.auth.updateUser({
+      const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
+
+      // auth metadata update (opsiyonel)
+      await supabase.auth.updateUser({
         data: {
-          full_name: updates.fullName ?? user.fullName,
-          role: updates.role ?? user.role,
+          role: nextRole,
+          display_name: updates.fullName ?? user.fullName,
         },
       });
 
-      if (error) {
-        console.error("Error updating profile:", error);
-        return false;
-      }
-
-      // ✅ profiles tablosu (varsa)
-      await supabase
+      // ✅ profiles update (senin kolonlar)
+      const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: updates.fullName ?? user.fullName,
-          account_type: updates.role ?? user.role,
+          display_name: updates.fullName ?? user.fullName,
+          role: nextRole,
+          phone: updates.phone ?? user.phone ?? null,
+          country: updates.country ?? user.country ?? null,
         })
         .eq("id", user.id);
 
-      const next = { ...user, ...updates } as User;
+      if (error) {
+        console.error("profiles update error:", error);
+        return false;
+      }
+
+      const next: User = {
+        ...user,
+        ...updates,
+        role: nextRole,
+      };
       setUser(next);
       setRole(next.role);
       return true;
-    } catch (error) {
-      console.error("Error updating profile:", error);
+    } catch (e) {
+      console.error("updateProfile error:", e);
       return false;
     }
   };
@@ -245,7 +230,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         role,
         isAuthenticated,
         login,
-        register,
         logout,
         updateProfile,
       }}
@@ -265,7 +249,6 @@ export const useAuth = () => {
       role: null,
       isAuthenticated: false,
       login: async () => ({ success: false, message: "AuthProvider missing" }),
-      register: async () => ({ success: false, message: "AuthProvider missing" }),
       logout: async () => {},
       updateProfile: async () => false,
     } as AuthContextType;

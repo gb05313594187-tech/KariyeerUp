@@ -118,4 +118,4 @@ export default function Navbar() {
               "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
               isActive("/webinars")
                 ? "bg-red-50 text-red-700 border border-red-200"
-                : "text-gray-700 hover:bg-gray-
+                : "text-gray-700 hover:bg-gray-50",

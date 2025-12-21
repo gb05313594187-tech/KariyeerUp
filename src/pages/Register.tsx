@@ -1,10 +1,10 @@
 // src/pages/Register.tsx
 // @ts-nocheck
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,42 +12,49 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { toast } from 'sonner';
-
-import { supabase } from '@/lib/supabase';
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export default function Register() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    userType: 'individual', // individual | coach | company
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    userType: "individual", // individual | coach | company
   });
+
+  const mapRole = (userType: string) => {
+    if (userType === "coach") return "coach";
+    if (userType === "company") return "corporate";
+    return "user";
+  };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Şifreler eşleşmiyor!');
+      toast.error("Şifreler eşleşmiyor!");
       setIsLoading(false);
       return;
     }
 
     try {
-      // 1) Supabase Auth'a kayıt
+      const role = mapRole(formData.userType);
+
+      // 1) Supabase Auth'a kayıt + metadata
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
-            user_type: formData.userType,
+            role, // ✅ standart: user | coach | corporate
           },
         },
       });
@@ -55,46 +62,38 @@ export default function Register() {
       if (error) throw error;
 
       if (data.user) {
-        const account_type =
-          formData.userType === 'coach' ? 'coach' : 'user';
-
+        // Koçlarda farklı statü
         const initialStatus =
-          formData.userType === 'coach'
-            ? 'pending_application'
-            : 'active';
-
-        const isApprovedInitial = formData.userType === 'coach' ? false : true;
+          role === "coach" ? "pending_application" : "active";
+        const isApprovedInitial = role === "coach" ? false : true;
 
         // 2) Profiles tablosuna kayıt
-        const { error: profileError } = await supabase.from('profiles').insert([
+        const { error: profileError } = await supabase.from("profiles").insert([
           {
             id: data.user.id,
             full_name: formData.fullName,
             email: formData.email,
-            account_type: account_type, // 'coach' veya 'user'
+            account_type: role, // ✅ user | coach | corporate
             status: initialStatus,
             is_approved: isApprovedInitial,
           },
         ]);
 
         if (profileError) {
-          console.error('Profil kaydı hatası:', profileError);
-          // Kullanıcı zaten auth'ta var, devam ediyoruz
+          console.error("Profil kaydı hatası:", profileError);
         }
       }
 
-      toast.success('Kayıt başarılı!');
+      toast.success("Kayıt başarılı!");
 
       // 3) Rol'e göre yönlendir
-      if (formData.userType === 'coach') {
-        // Koçları direkt koç başvuru formuna gönder
-        navigate('/coach-application');
+      if (formData.userType === "coach") {
+        navigate("/coach-application");
       } else {
-        // Bireysel / şirket kullanıcı → login
-        setTimeout(() => navigate('/login'), 500);
+        setTimeout(() => navigate("/login"), 300);
       }
     } catch (error: any) {
-      console.error('Kayıt hatası:', error);
+      console.error("Kayıt hatası:", error);
       toast.error(`Kayıt başarısız: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -111,10 +110,9 @@ export default function Register() {
           <CardTitle className="text-2xl font-bold text-[#D32F2F]">
             Kayıt Ol
           </CardTitle>
-          <CardDescription>
-            Yeni bir Kariyeer hesabı oluşturun
-          </CardDescription>
+          <CardDescription>Yeni bir Kariyeer hesabı oluşturun</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -129,6 +127,7 @@ export default function Register() {
                 }
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">E-posta *</Label>
               <Input
@@ -142,6 +141,7 @@ export default function Register() {
                 }
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Şifre * (En az 6 karakter)</Label>
               <Input
@@ -154,6 +154,7 @@ export default function Register() {
                 }
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Şifre Tekrar *</Label>
               <Input
@@ -199,17 +200,15 @@ export default function Register() {
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
               disabled={isLoading}
             >
-              {isLoading ? 'Kaydediliyor...' : 'Kayıt Ol'}
+              {isLoading ? "Kaydediliyor..." : "Kayıt Ol"}
             </Button>
           </form>
         </CardContent>
+
         <CardFooter className="flex justify-center">
           <div className="text-sm text-gray-500">
-            Zaten hesabınız var mı?{' '}
-            <Link
-              to="/login"
-              className="text-[#D32F2F] hover:underline font-semibold"
-            >
+            Zaten hesabınız var mı?{" "}
+            <Link to="/login" className="text-[#D32F2F] hover:underline font-semibold">
               Giriş Yap
             </Link>
           </div>

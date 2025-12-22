@@ -56,7 +56,6 @@ type CompanyRequestRow = {
   created_at?: string | null;
 };
 
-// ✅ DB ile UYUMLU coach_applications shape
 type CoachAppRow = {
   id: string;
   user_id?: string | null;
@@ -74,9 +73,9 @@ type CoachAppRow = {
   certification?: string | null;
   certification_year?: string | null;
 
-  experience?: string | null; // DB: experience
-  specializations?: string | null; // DB: specializations
-  session_fee?: number | null; // DB: session_fee
+  experience?: string | null;
+  specializations?: string | null;
+  session_fee?: number | null;
 
   cv_path?: string | null;
   certificate_path?: string | null;
@@ -98,7 +97,6 @@ export default function AdminDashboard() {
   const [softNotes, setSoftNotes] = useState<string[]>([]);
   const [q, setQ] = useState("");
 
-  // Coach approval UI states
   const [selectedApp, setSelectedApp] = useState<CoachAppRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -139,7 +137,6 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(30),
 
-      // ✅ Coach applications (DB kolonları ile)
       supabase
         .from("coach_applications")
         .select(
@@ -236,11 +233,12 @@ export default function AdminDashboard() {
     };
   }, [q, premiumRows, companyRows, coachAppRows]);
 
-  // ✅ Pending list for approval flow
+  // ✅ Pending list (pending_review + pending fallback)
   const pendingCoachApps = useMemo(() => {
-    return (filteredRecent.coachApps || []).filter(
-      (a) => (a.status || "").toLowerCase() === "pending_review"
-    );
+    return (filteredRecent.coachApps || []).filter((a) => {
+      const s = (a.status || "").toLowerCase();
+      return s === "pending_review" || s === "pending";
+    });
   }, [filteredRecent.coachApps]);
 
   /* ==============================
@@ -254,13 +252,16 @@ export default function AdminDashboard() {
       const { data, error } = await supabase.storage
         .from("coach_uploads")
         .createSignedUrl(path, 60 * 10);
+
       if (error) throw error;
+
       const url = data?.signedUrl;
       if (!url) throw new Error("Signed URL üretilemedi.");
+
       window.open(url, "_blank", "noopener,noreferrer");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Dosya açılamadı (bucket private olabilir / izin yok).");
+      alert(`Dosya açılamadı: ${e?.message || "izin/bucket hatası"}`);
     } finally {
       setActionLoading(false);
     }
@@ -282,7 +283,7 @@ export default function AdminDashboard() {
 
       if (upErr) throw upErr;
 
-      // 2) profiles -> role = coach (ASIL ÖNEMLİ)
+      // 2) profiles -> role = coach
       const { error: roleErr } = await supabase
         .from("profiles")
         .update({ role: "coach" })
@@ -305,16 +306,20 @@ export default function AdminDashboard() {
     if (!app?.id) return;
     setActionLoading(true);
     try {
-      const { error } = await supabase
+      const { error: upErr } = await supabase
         .from("coach_applications")
         .update({ status: "rejected" })
         .eq("id", app.id);
 
-      if (error) throw error;
+      if (upErr) throw upErr;
 
-      // opsiyonel: role'u user'a geri çek
       if (app.user_id) {
-        await supabase.from("profiles").update({ role: "user" }).eq("id", app.user_id);
+        const { error: roleErr } = await supabase
+          .from("profiles")
+          .update({ role: "user" })
+          .eq("id", app.user_id);
+
+        if (roleErr) throw roleErr;
       }
 
       setSelectedApp(null);
@@ -392,7 +397,7 @@ export default function AdminDashboard() {
       title: "Bekleyen Koç Başvurusu",
       value: data.pending_coach_apps,
       icon: <Hourglass className="h-5 w-5" />,
-      hint: "pending_review başvurular",
+      hint: "pending_review / pending başvurular",
     },
   ];
 
@@ -449,7 +454,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* ✅ COACH APPROVAL CENTER */}
+      {/* COACH APPROVAL CENTER */}
       <div className="rounded-2xl border bg-white p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -458,7 +463,7 @@ export default function AdminDashboard() {
               Koç Onay Merkezi
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              pending_review başvurular • CV/Sertifika aç • Approve/Reject
+              pending_review/pending • CV/Sertifika aç • Approve/Reject
             </div>
           </div>
 
@@ -466,7 +471,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          {/* LEFT: list */}
+          {/* LEFT */}
           <div className="rounded-xl border bg-gray-50 p-4">
             {pendingCoachApps.length === 0 ? (
               <div className="text-sm text-gray-600">Bekleyen başvuru yok.</div>
@@ -499,19 +504,15 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* RIGHT: details */}
+          {/* RIGHT */}
           <div className="rounded-xl border p-4">
             {!selectedApp ? (
-              <div className="text-sm text-gray-600">
-                Soldan bir başvuru seç. Detay + dosyalar burada açılacak.
-              </div>
+              <div className="text-sm text-gray-600">Soldan bir başvuru seç.</div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-lg font-bold truncate">
-                      {selectedApp.full_name || "Koç Adayı"}
-                    </div>
+                    <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
                     <div className="text-sm text-gray-500 mt-1">
                       {selectedApp.email || "—"} • {selectedApp.phone || "—"}
                     </div>
@@ -536,9 +537,7 @@ export default function AdminDashboard() {
 
                 <Detail label="Uzmanlık">
                   {selectedApp.specializations ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {selectedApp.specializations}
-                    </div>
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.specializations}</div>
                   ) : (
                     <span className="text-sm text-gray-500">—</span>
                   )}
@@ -560,7 +559,6 @@ export default function AdminDashboard() {
                     className={`rounded-xl border p-3 flex items-center justify-between ${
                       selectedApp.linkedin ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
                     }`}
-                    title="LinkedIn"
                   >
                     <div className="text-sm font-semibold">LinkedIn</div>
                     <ExternalLink className="h-4 w-4 text-gray-400" />
@@ -571,9 +569,8 @@ export default function AdminDashboard() {
                     target="_blank"
                     rel="noreferrer"
                     className={`rounded-xl border p-3 flex items-center justify-between ${
-                      selectedApp.website ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
+                      selectedApp.website ? "hover:bggray-50" : "opacity-50 pointer-events-none"
                     }`}
-                    title="Website"
                   >
                     <div className="text-sm font-semibold">Website</div>
                     <ExternalLink className="h-4 w-4 text-gray-400" />
@@ -592,11 +589,7 @@ export default function AdminDashboard() {
                       <FileText className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-semibold">CV Aç</span>
                     </div>
-                    {actionLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    )}
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
                   </button>
 
                   <button
@@ -610,11 +603,7 @@ export default function AdminDashboard() {
                       <FileText className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-semibold">Sertifika Aç</span>
                     </div>
-                    {actionLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    )}
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
                   </button>
                 </div>
 
@@ -707,11 +696,7 @@ export default function AdminDashboard() {
             <OpsRow title="Bekleyen koç başvurusu" value={data.pending_coach_apps} sub="Onboarding darboğazı" />
             <OpsRow
               title="Koç oranı"
-              value={
-                data.total_profiles > 0
-                  ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%`
-                  : "0%"
-              }
+              value={data.total_profiles > 0 ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%` : "0%"}
               sub="Koç / toplam kullanıcı"
             />
             <OpsRow title="Aktif premium" value={premiumAgg.activeCount} sub="Gelir üreten üyelik" />
@@ -816,17 +801,7 @@ export default function AdminDashboard() {
    UI PARTS
 ============================== */
 
-function StatCard({
-  title,
-  value,
-  icon,
-  hint,
-}: {
-  title: string;
-  value: number;
-  icon: JSX.Element;
-  hint?: string;
-}) {
+function StatCard({ title, value, icon, hint }: { title: string; value: number; icon: JSX.Element; hint?: string }) {
   return (
     <div className="rounded-2xl border p-4 flex items-center gap-4 bg-white">
       <div className="p-3 rounded-xl bg-gray-50 border">{icon}</div>
@@ -839,15 +814,7 @@ function StatCard({
   );
 }
 
-function MiniKpi({
-  title,
-  value,
-  icon,
-}: {
-  title: string;
-  value: string | number;
-  icon: JSX.Element;
-}) {
+function MiniKpi({ title, value, icon }: { title: string; value: string | number; icon: JSX.Element }) {
   return (
     <div className="rounded-xl border bg-white p-3">
       <div className="flex items-center justify-between">
@@ -859,15 +826,7 @@ function MiniKpi({
   );
 }
 
-function OpsRow({
-  title,
-  value,
-  sub,
-}: {
-  title: string;
-  value: string | number;
-  sub?: string;
-}) {
+function OpsRow({ title, value, sub }: { title: string; value: string | number; sub?: string }) {
   return (
     <div className="rounded-xl border bg-white p-4 flex items-center justify-between">
       <div>

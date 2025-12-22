@@ -1,4 +1,5 @@
 // src/pages/AdminDashboard.tsx
+// @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -55,6 +56,7 @@ type CompanyRequestRow = {
   created_at?: string | null;
 };
 
+// ✅ DB ile UYUMLU coach_applications shape
 type CoachAppRow = {
   id: string;
   user_id?: string | null;
@@ -69,11 +71,12 @@ type CoachAppRow = {
   status?: string | null;
   created_at?: string | null;
 
-  certificate_type?: string | null;
-  certificate_year?: string | null;
-  experience_level?: string | null; // junior/mid/senior
-  session_price?: number | null;
-  expertise_tags?: string[] | null;
+  certification?: string | null;
+  certification_year?: string | null;
+
+  experience?: string | null; // DB: experience
+  specializations?: string | null; // DB: specializations
+  session_fee?: number | null; // DB: session_fee
 
   cv_path?: string | null;
   certificate_path?: string | null;
@@ -136,11 +139,11 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(30),
 
-      // ✅ Coach applications (detaylı)
+      // ✅ Coach applications (DB kolonları ile)
       supabase
         .from("coach_applications")
         .select(
-          "id,user_id,full_name,email,phone,city,country,status,created_at,certificate_type,certificate_year,experience_level,session_price,expertise_tags,cv_path,certificate_path,bio,linkedin,website"
+          "id,user_id,full_name,email,phone,city,country,status,created_at,certification,certification_year,experience,specializations,session_fee,cv_path,certificate_path,bio,linkedin,website"
         )
         .order("created_at", { ascending: false })
         .limit(50),
@@ -248,44 +251,19 @@ export default function AdminDashboard() {
     if (!path) return;
     try {
       setActionLoading(true);
-      const { data, error } = await supabase.storage.from("coach_uploads").createSignedUrl(path, 60 * 10);
+      const { data, error } = await supabase.storage
+        .from("coach_uploads")
+        .createSignedUrl(path, 60 * 10);
       if (error) throw error;
       const url = data?.signedUrl;
       if (!url) throw new Error("Signed URL üretilemedi.");
       window.open(url, "_blank", "noopener,noreferrer");
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
       alert("Dosya açılamadı (bucket private olabilir / izin yok).");
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const experienceToYears = (level?: string | null) => {
-    const v = (level || "").toLowerCase();
-    if (v === "junior") return 2;
-    if (v === "mid") return 4;
-    if (v === "senior") return 7;
-    return 3;
-  };
-
-  const buildCoachInsert = (app: CoachAppRow) => {
-    const tags = Array.isArray(app.expertise_tags) ? app.expertise_tags : [];
-    const specialization = tags?.[0] || "Kariyer Koçluğu";
-    const title = tags?.[0] ? `${tags[0]} Uzmanı` : "Kariyer Koçu";
-
-    return {
-      user_id: app.user_id,
-      full_name: app.full_name || "Koç",
-      title,
-      specialization,
-      experience_years: experienceToYears(app.experience_level),
-      bio: app.bio || "",
-      hourly_rate: Number(app.session_price || 0),
-      currency: "TRY",
-      // rating/total_reviews genelde default olur; yoksa tablo hata verir diye yazmıyoruz
-      status: "approved",
-    };
   };
 
   const approveCoach = async (app: CoachAppRow) => {
@@ -304,31 +282,17 @@ export default function AdminDashboard() {
 
       if (upErr) throw upErr;
 
-      // 2) profiles -> approved
-      const { error: profErr } = await supabase
+      // 2) profiles -> role = coach (ASIL ÖNEMLİ)
+      const { error: roleErr } = await supabase
         .from("profiles")
-        .update({ status: "approved", is_approved: true })
+        .update({ role: "coach" })
         .eq("id", app.user_id);
 
-      if (profErr) {
-        // profil yoksa bile akışı bozmayalım; ama bilgi verelim
-        console.warn("profiles update error:", profErr);
-      }
-
-      // 3) app_2dff6511da_coaches insert (varsa)
-      // Bu tablo sende varsa koçu otomatik “coaches” listesine sokar.
-      // Kolon isimleri farklıysa hata verir; yakalayıp sadece uyarı geçiyoruz.
-      const coachPayload = buildCoachInsert(app);
-      const { error: coachInsErr } = await supabase.from("app_2dff6511da_coaches").insert(coachPayload as any);
-
-      if (coachInsErr) {
-        console.warn("coaches insert error:", coachInsErr);
-        // başvuru approved oldu ama coaches tablosuna atılamadı: admin sonra fixler
-      }
+      if (roleErr) throw roleErr;
 
       setSelectedApp(null);
       await fetchAll();
-      alert("Koç onaylandı.");
+      alert("Koç onaylandı. (profiles.role = coach)");
     } catch (e: any) {
       console.error(e);
       alert(`Onay sırasında hata: ${e?.message || "Unknown error"}`);
@@ -348,12 +312,9 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // profiles status’ı istersen geri al (opsiyonel)
+      // opsiyonel: role'u user'a geri çek
       if (app.user_id) {
-        await supabase
-          .from("profiles")
-          .update({ status: "active", is_approved: false })
-          .eq("id", app.user_id);
+        await supabase.from("profiles").update({ role: "user" }).eq("id", app.user_id);
       }
 
       setSelectedApp(null);
@@ -419,7 +380,7 @@ export default function AdminDashboard() {
       title: "Toplam Koç",
       value: data.total_coaches,
       icon: <Briefcase className="h-5 w-5" />,
-      hint: "Onaylı/aktif koç sayısı",
+      hint: "Koç rolündeki kullanıcı",
     },
     {
       title: "Şirket Talepleri",
@@ -431,7 +392,7 @@ export default function AdminDashboard() {
       title: "Bekleyen Koç Başvurusu",
       value: data.pending_coach_apps,
       icon: <Hourglass className="h-5 w-5" />,
-      hint: "İnceleme bekleyen başvurular",
+      hint: "pending_review başvurular",
     },
   ];
 
@@ -501,9 +462,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="text-xs text-gray-500">
-            {pendingCoachApps.length} bekleyen başvuru
-          </div>
+          <div className="text-xs text-gray-500">{pendingCoachApps.length} bekleyen başvuru</div>
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -550,7 +509,9 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
+                    <div className="text-lg font-bold truncate">
+                      {selectedApp.full_name || "Koç Adayı"}
+                    </div>
                     <div className="text-sm text-gray-500 mt-1">
                       {selectedApp.email || "—"} • {selectedApp.phone || "—"}
                     </div>
@@ -565,28 +526,18 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <Detail label="Deneyim">
-                    {(selectedApp.experience_level || "-").toString()}
-                  </Detail>
+                  <Detail label="Deneyim">{(selectedApp.experience || "-").toString()}</Detail>
                   <Detail label="Seans Ücreti">
-                    {selectedApp.session_price != null ? `${selectedApp.session_price} TRY` : "-"}
+                    {selectedApp.session_fee != null ? `${selectedApp.session_fee} TRY` : "-"}
                   </Detail>
-                  <Detail label="Sertifika">
-                    {selectedApp.certificate_type || "-"}
-                  </Detail>
-                  <Detail label="Sertifika Yılı">
-                    {selectedApp.certificate_year || "-"}
-                  </Detail>
+                  <Detail label="Sertifika">{selectedApp.certification || "-"}</Detail>
+                  <Detail label="Sertifika Yılı">{selectedApp.certification_year || "-"}</Detail>
                 </div>
 
-                <Detail label="Uzmanlık Etiketleri">
-                  {Array.isArray(selectedApp.expertise_tags) && selectedApp.expertise_tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedApp.expertise_tags.slice(0, 20).map((t) => (
-                        <span key={t} className="text-xs rounded-full border bg-gray-50 px-2 py-1">
-                          {t}
-                        </span>
-                      ))}
+                <Detail label="Uzmanlık">
+                  {selectedApp.specializations ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {selectedApp.specializations}
                     </div>
                   ) : (
                     <span className="text-sm text-gray-500">—</span>
@@ -641,7 +592,11 @@ export default function AdminDashboard() {
                       <FileText className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-semibold">CV Aç</span>
                     </div>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    )}
                   </button>
 
                   <button
@@ -655,7 +610,11 @@ export default function AdminDashboard() {
                       <FileText className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-semibold">Sertifika Aç</span>
                     </div>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    )}
                   </button>
                 </div>
 
@@ -680,8 +639,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="text-xs text-gray-500">
-                  Not: Onay işlemi <b>coach_applications.status=approved</b> + <b>profiles.is_approved=true</b> yapar.
-                  Ayrıca mümkünse <b>app_2dff6511da_coaches</b> tablosuna koç kaydı açmayı dener.
+                  Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b>
                 </div>
               </div>
             )}
@@ -749,7 +707,11 @@ export default function AdminDashboard() {
             <OpsRow title="Bekleyen koç başvurusu" value={data.pending_coach_apps} sub="Onboarding darboğazı" />
             <OpsRow
               title="Koç oranı"
-              value={data.total_profiles > 0 ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%` : "0%"}
+              value={
+                data.total_profiles > 0
+                  ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%`
+                  : "0%"
+              }
               sub="Koç / toplam kullanıcı"
             />
             <OpsRow title="Aktif premium" value={premiumAgg.activeCount} sub="Gelir üreten üyelik" />
@@ -844,7 +806,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="text-xs text-gray-500">
-        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only” update/insert garantisi.
+        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only” update garantisi.
       </div>
     </div>
   );

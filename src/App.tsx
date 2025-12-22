@@ -58,14 +58,9 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
 
-// ✅ CHECKOUT / PAYMENT SUCCESS (EKLENDİ)
-// Bu dosyalar yoksa bir sonraki adımda sana tam sayfa üreteceğim.
+// ✅ CHECKOUT / PAYMENT SUCCESS
 import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
-
-// LEGACY
-import Dashboard from "@/pages/Dashboard";
-import ProfilePage from "@/pages/Profile";
 
 /* -------------------------------------------------
    Public Layout
@@ -152,12 +147,10 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* LEGACY */}
+          {/* LEGACY redirects */}
           <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
           <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
           <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
-          <Route path="/legacy-dashboard" element={<Dashboard />} />
-          <Route path="/legacy-profile" element={<ProfilePage />} />
 
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />

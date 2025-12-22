@@ -40,63 +40,75 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const me = auth?.user ?? null;
-  const role = me?.userType ?? null; // client | coach | company | admin | super_admin
+  const role = auth?.role ?? null; // ✅ user | coach | corporate | admin
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
+
   /* ---------------- ROLE LABELS ---------------- */
   const roleLabel = useMemo(() => {
     if (role === "coach") return "Koç";
-    if (role === "company") return "Şirket";
-    if (role === "admin" || role === "super_admin") return "Admin";
-    if (role === "client") return "Kullanıcı";
+    if (role === "corporate") return "Şirket";
+    if (role === "admin") return "Admin";
+    if (role === "user") return "Kullanıcı";
     return "Hesap";
   }, [role]);
 
   const dashboardLabel = useMemo(() => {
     if (role === "coach") return "Koç Paneli";
-    if (role === "company") return "Kurumsal Panel";
-    if (role === "admin" || role === "super_admin") return "Admin Paneli";
-    if (role === "client") return "Kullanıcı Paneli";
+    if (role === "corporate") return "Kurumsal Panel";
+    if (role === "admin") return "Admin Paneli";
+    if (role === "user") return "Kullanıcı Paneli";
     return "Dashboard";
   }, [role]);
 
   const dashboardPath = useMemo(() => {
     if (role === "coach") return "/coach/dashboard";
-    if (role === "company") return "/corporate/dashboard";
-    if (role === "admin" || role === "super_admin") return "/admin";
-    if (role === "client") return "/user/dashboard";
+    if (role === "corporate") return "/corporate/dashboard";
+    if (role === "admin") return "/admin";
+    if (role === "user") return "/user/dashboard";
     return "/login";
   }, [role]);
 
   const profilePath = useMemo(() => {
     if (role === "coach") return "/coach/profile";
-    if (role === "company") return "/corporate/profile";
-    if (role === "admin" || role === "super_admin") return "/admin/profile";
+    if (role === "corporate") return "/corporate/profile";
+    if (role === "admin") return "/admin/profile";
     return "/user/profile";
   }, [role]);
 
   const settingsPath = useMemo(() => {
     if (role === "coach") return "/coach/settings";
-    if (role === "company") return "/corporate/settings";
-    if (role === "admin" || role === "super_admin") return "/admin/settings";
+    if (role === "corporate") return "/corporate/settings";
+    if (role === "admin") return "/admin/settings";
     return "/user/settings";
   }, [role]);
 
-  const premiumLabel = role === "company" ? "Kurumsal Premium" : "Bireysel Premium";
+  // ✅ Premium label + hedef
+  const premiumLabel = useMemo(() => {
+    if (role === "corporate") return "Kurumsal Premium";
+    if (role === "coach") return "Koç Premium";
+    return "Bireysel Premium";
+  }, [role]);
+
+  const premiumTarget = useMemo(() => {
+    // login yoksa pricing (pazarlama)
+    if (!auth?.isAuthenticated) return "/pricing";
+    // admin hepsini görsün
+    if (role === "admin") return "/pricing";
+    // role’e göre direkt checkout
+    if (role === "corporate") return "/checkout?plan=corporate";
+    if (role === "coach") return "/checkout?plan=coach";
+    return "/checkout?plan=individual";
+  }, [auth?.isAuthenticated, role]);
 
   const displayName =
-    me?.fullName ||
-    me?.email?.split("@")?.[0] ||
-    "Kullanıcı";
+    me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
-  const isActive = (path: string) =>
-    location.pathname === path ||
-    location.pathname.startsWith(path + "/");
-
-  /* ---------------- JSX ---------------- */
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -105,9 +117,7 @@ export default function Navbar() {
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
           </div>
-          <span className="font-extrabold text-xl text-red-600">
-            Kariyeer
-          </span>
+          <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
         {/* DESKTOP NAV */}
@@ -139,7 +149,7 @@ export default function Navbar() {
           </Link>
 
           <Button
-            onClick={() => navigate("/pricing")}
+            onClick={() => navigate(premiumTarget)}
             className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white"
           >
             <Crown className="h-4 w-4 mr-2" />
@@ -264,8 +274,9 @@ export default function Navbar() {
             >
               Webinar
             </button>
+
             <button
-              onClick={() => navigate("/pricing")}
+              onClick={() => navigate(premiumTarget)}
               className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left"
             >
               Premium — {premiumLabel}

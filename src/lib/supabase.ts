@@ -17,11 +17,42 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       // ✅ apikey kalsın
       apikey: supabaseAnonKey,
-      // ❌ Authorization: Bearer ANON_KEY KESİNLİKLE YOK
-      // Supabase istemcisi session varsa kendi token'ını otomatik yollar
+      // ❌ Authorization: Bearer ANON_KEY YOK
+      // Supabase session varsa kendi access_token'ını otomatik yollar
     },
   },
 });
+
+/* =========================================================
+   ✅ PREMIUM ENUMS (DB CHECK CONSTRAINT ile UYUMLU TUT)
+   ========================================================= */
+
+export const SUBSCRIPTION_TYPES = {
+  INDIVIDUAL: "individual",
+  CORPORATE: "corporate",
+  COACH: "coach",
+} as const;
+
+export type SubscriptionType =
+  typeof SUBSCRIPTION_TYPES[keyof typeof SUBSCRIPTION_TYPES];
+
+export const SUBSCRIPTION_STATUS = {
+  ACTIVE: "active",
+  CANCELLED: "cancelled",
+  EXPIRED: "expired",
+  PENDING: "pending",
+} as const;
+
+export type SubscriptionStatus =
+  typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
+
+export const BADGE_TYPES = {
+  BLUE: "blue_badge",
+  GOLD: "gold_badge",
+  VERIFIED: "verified_badge",
+} as const;
+
+export type BadgeType = typeof BADGE_TYPES[keyof typeof BADGE_TYPES];
 
 /* ---------------- TYPES ---------------- */
 
@@ -37,14 +68,20 @@ interface AIAnalysis {
 export interface PremiumSubscription {
   id: string;
   user_id: string;
-  subscription_type: string;
-  status: string;
+
+  // ✅ artık string değil: constraint uyumlu enum
+  subscription_type: SubscriptionType;
+
+  status: SubscriptionStatus;
   start_date: string;
   end_date: string;
   price: number;
   currency: string;
   auto_renew: boolean;
-  badge_type: string;
+
+  // ✅ badge type için de enum (DB’in izinli değerleri farklıysa burayı güncelleriz)
+  badge_type: BadgeType | string;
+
   iyzico_subscription_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -77,7 +114,9 @@ export interface Invoice {
   invoice_sent: boolean;
   invoice_sent_at?: string;
   created_at: string;
-  subscription_type?: string;
+
+  // opsiyonel
+  subscription_type?: SubscriptionType | string;
 }
 
 export interface SupportTicket {
@@ -131,10 +170,13 @@ async function getAccessToken(): Promise<string | null> {
   return data?.session?.access_token || null;
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 /* ---------------- PREMIUM SUBSCRIPTION SERVICE ---------------- */
 /**
  * ✅ Tek gerçek kaynak: app_2dff6511da_premium_subscriptions
- * (Senin premium kayıtların burada)
  */
 export const subscriptionService = {
   async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
@@ -143,14 +185,14 @@ export const subscriptionService = {
         .from("app_2dff6511da_premium_subscriptions")
         .select("*")
         .eq("user_id", userId)
-        .eq("status", "active")
-        .gt("end_date", new Date().toISOString())
+        .eq("status", SUBSCRIPTION_STATUS.ACTIVE)
+        .gt("end_date", nowIso())
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) return null;
-      return (data as any) as PremiumSubscription;
+      return data as unknown as PremiumSubscription;
     } catch {
       return null;
     }
@@ -165,13 +207,13 @@ export const subscriptionService = {
         .order("created_at", { ascending: false });
 
       if (error) return [];
-      return ((data || []) as any) as PremiumSubscription[];
+      return (data || []) as unknown as PremiumSubscription[];
     } catch {
       return [];
     }
   },
 
-  // Edge Function (varsa) - “benim aboneliklerim”
+  // Edge Function (varsa)
   async getMySubscriptionsViaEdge(): Promise<PremiumSubscription[]> {
     try {
       const token = await getAccessToken();
@@ -194,9 +236,19 @@ export const subscriptionService = {
     }
   },
 
-  async create(
-    subscription: Omit<PremiumSubscription, "id" | "created_at" | "updated_at">
-  ): Promise<PremiumSubscription | null> {
+  // ✅ create: subscription_type yanlış gönderilemesin diye tip güvenli
+  async create(subscription: {
+    user_id: string;
+    subscription_type: SubscriptionType;
+    status: SubscriptionStatus;
+    start_date: string;
+    end_date: string;
+    price: number;
+    currency: string;
+    auto_renew: boolean;
+    badge_type: string; // DB ne kabul ediyorsa
+    iyzico_subscription_id?: string | null;
+  }): Promise<PremiumSubscription | null> {
     try {
       const { data, error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
@@ -205,7 +257,7 @@ export const subscriptionService = {
         .single();
 
       if (error) return null;
-      return (data as any) as PremiumSubscription;
+      return data as unknown as PremiumSubscription;
     } catch {
       return null;
     }
@@ -215,7 +267,7 @@ export const subscriptionService = {
     try {
       const { error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...updates, updated_at: nowIso() })
         .eq("id", id);
 
       return !error;
@@ -225,7 +277,7 @@ export const subscriptionService = {
   },
 
   async cancel(id: string): Promise<boolean> {
-    return this.update(id, { status: "cancelled" } as any);
+    return this.update(id, { status: SUBSCRIPTION_STATUS.CANCELLED } as any);
   },
 };
 
@@ -234,7 +286,6 @@ export const subscriptionService = {
 export const paymentService = {
   async getByUserId(userId: string): Promise<Payment[]> {
     try {
-      // Eğer edge function varsa onu tercih edebilirsin; yoksa direkt tabloya geç
       const token = await getAccessToken();
       if (token) {
         const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_payments`;
@@ -252,7 +303,6 @@ export const paymentService = {
         }
       }
 
-      // fallback
       const { data, error } = await supabase
         .from("app_2dff6511da_payments")
         .select("*")
@@ -490,7 +540,7 @@ export const coachService = {
         .maybeSingle();
 
       if (error) return null;
-      return (data as any) as Coach;
+      return data as Coach;
     } catch {
       return null;
     }

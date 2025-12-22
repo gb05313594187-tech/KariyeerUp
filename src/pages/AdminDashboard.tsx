@@ -14,14 +14,21 @@ import {
   CalendarClock,
   Sparkles,
   Search,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 
+/* ==============================
+   TYPES
+============================== */
 type AdminMetrics = {
   total_profiles: number;
   total_coaches: number;
   total_company_requests: number;
   pending_coach_apps: number;
-  // varsa ekstra kolonlar (view’e eklemiş olabilirsin)
   total_corporates?: number;
   total_sessions?: number;
   total_revenue_try?: number;
@@ -50,9 +57,30 @@ type CompanyRequestRow = {
 
 type CoachAppRow = {
   id: string;
+  user_id?: string | null;
+
   full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+
+  city?: string | null;
+  country?: string | null;
+
   status?: string | null;
   created_at?: string | null;
+
+  certificate_type?: string | null;
+  certificate_year?: string | null;
+  experience_level?: string | null; // junior/mid/senior
+  session_price?: number | null;
+  expertise_tags?: string[] | null;
+
+  cv_path?: string | null;
+  certificate_path?: string | null;
+
+  bio?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
 };
 
 export default function AdminDashboard() {
@@ -67,12 +95,16 @@ export default function AdminDashboard() {
   const [softNotes, setSoftNotes] = useState<string[]>([]);
   const [q, setQ] = useState("");
 
+  // Coach approval UI states
+  const [selectedApp, setSelectedApp] = useState<CoachAppRow | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const fetchAll = async () => {
     setLoading(true);
     setHardError(null);
     setSoftNotes([]);
 
-    // 1) Ana KPI view (BU ZORUNLU)
+    // 1) KPI view
     const { data: metrics, error: metricsErr } = await supabase
       .from("admin_overview_metrics")
       .select("*")
@@ -86,7 +118,7 @@ export default function AdminDashboard() {
 
     setData(metrics as AdminMetrics);
 
-    // 2) Opsiyonel veri kaynakları (yoksa kırma)
+    // 2) Optional sources
     const notes: string[] = [];
 
     const tasks = await Promise.allSettled([
@@ -104,11 +136,14 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(30),
 
+      // ✅ Coach applications (detaylı)
       supabase
         .from("coach_applications")
-        .select("id,full_name,status,created_at")
+        .select(
+          "id,user_id,full_name,email,phone,city,country,status,created_at,certificate_type,certificate_year,experience_level,session_price,expertise_tags,cv_path,certificate_path,bio,linkedin,website"
+        )
         .order("created_at", { ascending: false })
-        .limit(30),
+        .limit(50),
     ]);
 
     // premium
@@ -152,7 +187,6 @@ export default function AdminDashboard() {
     const active = rows.filter((r) => (r.status || "").toLowerCase() === "active");
     const activeCount = active.length;
 
-    // TRY bazlı basit MRR/ARR hesap (tek para birimi varsayımı; çoklu currency varsa tabloda ayıracağız)
     const activeTry = active.filter((r) => (r.currency || "").toUpperCase() === "TRY");
     const mrrTry = activeTry.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
     const arrTry = mrrTry * 12;
@@ -160,9 +194,7 @@ export default function AdminDashboard() {
     const autoRenewRate =
       activeCount === 0
         ? 0
-        : Math.round(
-            (active.filter((r) => r.auto_renew === true).length / activeCount) * 100
-          );
+        : Math.round((active.filter((r) => r.auto_renew === true).length / activeCount) * 100);
 
     const byType = rows.reduce<Record<string, number>>((acc, r) => {
       const k = (r.subscription_type || "unknown").toString();
@@ -170,14 +202,7 @@ export default function AdminDashboard() {
       return acc;
     }, {});
 
-    return {
-      rows,
-      activeCount,
-      mrrTry,
-      arrTry,
-      autoRenewRate,
-      byType,
-    };
+    return { rows, activeCount, mrrTry, arrTry, autoRenewRate, byType };
   }, [premiumRows]);
 
   const filteredRecent = useMemo(() => {
@@ -195,12 +220,156 @@ export default function AdminDashboard() {
           match(r.badge_type) ||
           match(r.currency)
       ),
-      companies: companyRows.filter(
-        (r) => match(r.company_name) || match(r.status) || match(r.id)
+      companies: companyRows.filter((r) => match(r.company_name) || match(r.status) || match(r.id)),
+      coachApps: coachAppRows.filter(
+        (r) =>
+          match(r.full_name) ||
+          match(r.status) ||
+          match(r.id) ||
+          match(r.user_id) ||
+          match(r.email) ||
+          match(r.phone)
       ),
-      coachApps: coachAppRows.filter((r) => match(r.full_name) || match(r.status) || match(r.id)),
     };
   }, [q, premiumRows, companyRows, coachAppRows]);
+
+  // ✅ Pending list for approval flow
+  const pendingCoachApps = useMemo(() => {
+    return (filteredRecent.coachApps || []).filter(
+      (a) => (a.status || "").toLowerCase() === "pending_review"
+    );
+  }, [filteredRecent.coachApps]);
+
+  /* ==============================
+     COACH APPROVAL ACTIONS
+  ============================== */
+
+  const openSignedFile = async (path?: string | null) => {
+    if (!path) return;
+    try {
+      setActionLoading(true);
+      const { data, error } = await supabase.storage.from("coach_uploads").createSignedUrl(path, 60 * 10);
+      if (error) throw error;
+      const url = data?.signedUrl;
+      if (!url) throw new Error("Signed URL üretilemedi.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      console.error(e);
+      alert("Dosya açılamadı (bucket private olabilir / izin yok).");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const experienceToYears = (level?: string | null) => {
+    const v = (level || "").toLowerCase();
+    if (v === "junior") return 2;
+    if (v === "mid") return 4;
+    if (v === "senior") return 7;
+    return 3;
+  };
+
+  const buildCoachInsert = (app: CoachAppRow) => {
+    const tags = Array.isArray(app.expertise_tags) ? app.expertise_tags : [];
+    const specialization = tags?.[0] || "Kariyer Koçluğu";
+    const title = tags?.[0] ? `${tags[0]} Uzmanı` : "Kariyer Koçu";
+
+    return {
+      user_id: app.user_id,
+      full_name: app.full_name || "Koç",
+      title,
+      specialization,
+      experience_years: experienceToYears(app.experience_level),
+      bio: app.bio || "",
+      hourly_rate: Number(app.session_price || 0),
+      currency: "TRY",
+      // rating/total_reviews genelde default olur; yoksa tablo hata verir diye yazmıyoruz
+      status: "approved",
+    };
+  };
+
+  const approveCoach = async (app: CoachAppRow) => {
+    if (!app?.id || !app?.user_id) {
+      alert("Bu başvuruda user_id yok. coach_applications tablosunda user_id olmalı.");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      // 1) coach_applications -> approved
+      const { error: upErr } = await supabase
+        .from("coach_applications")
+        .update({ status: "approved" })
+        .eq("id", app.id);
+
+      if (upErr) throw upErr;
+
+      // 2) profiles -> approved
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ status: "approved", is_approved: true })
+        .eq("id", app.user_id);
+
+      if (profErr) {
+        // profil yoksa bile akışı bozmayalım; ama bilgi verelim
+        console.warn("profiles update error:", profErr);
+      }
+
+      // 3) app_2dff6511da_coaches insert (varsa)
+      // Bu tablo sende varsa koçu otomatik “coaches” listesine sokar.
+      // Kolon isimleri farklıysa hata verir; yakalayıp sadece uyarı geçiyoruz.
+      const coachPayload = buildCoachInsert(app);
+      const { error: coachInsErr } = await supabase.from("app_2dff6511da_coaches").insert(coachPayload as any);
+
+      if (coachInsErr) {
+        console.warn("coaches insert error:", coachInsErr);
+        // başvuru approved oldu ama coaches tablosuna atılamadı: admin sonra fixler
+      }
+
+      setSelectedApp(null);
+      await fetchAll();
+      alert("Koç onaylandı.");
+    } catch (e: any) {
+      console.error(e);
+      alert(`Onay sırasında hata: ${e?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const rejectCoach = async (app: CoachAppRow) => {
+    if (!app?.id) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from("coach_applications")
+        .update({ status: "rejected" })
+        .eq("id", app.id);
+
+      if (error) throw error;
+
+      // profiles status’ı istersen geri al (opsiyonel)
+      if (app.user_id) {
+        await supabase
+          .from("profiles")
+          .update({ status: "active", is_approved: false })
+          .eq("id", app.user_id);
+      }
+
+      setSelectedApp(null);
+      await fetchAll();
+      alert("Başvuru reddedildi.");
+    } catch (e: any) {
+      console.error(e);
+      alert(`Ret sırasında hata: ${e?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ==============================
+     RENDER
+  ============================== */
 
   if (loading) {
     return (
@@ -222,8 +391,7 @@ export default function AdminDashboard() {
           <div className="font-semibold">Hata</div>
           <div className="text-sm mt-1">{hardError}</div>
           <div className="text-sm mt-2">
-            Bu hata genelde şu yüzden olur: <b>admin_overview_metrics</b> view’ına RLS/izin yok ya
-            da view yok.
+            Bu hata genelde şu yüzden olur: <b>admin_overview_metrics</b> view’ına RLS/izin yok ya da view yok.
           </div>
         </div>
 
@@ -273,9 +441,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="text-sm text-gray-500">
-            KPI • Premium • Operasyon • Kalite/Risk • (AI Insights hazır)
-          </div>
+          <div className="text-sm text-gray-500">KPI • Premium • Operasyon • Koç Onay Merkezi</div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -322,9 +488,210 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* ✅ COACH APPROVAL CENTER */}
+      <div className="rounded-2xl border bg-white p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Koç Onay Merkezi
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              pending_review başvurular • CV/Sertifika aç • Approve/Reject
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500">
+            {pendingCoachApps.length} bekleyen başvuru
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {/* LEFT: list */}
+          <div className="rounded-xl border bg-gray-50 p-4">
+            {pendingCoachApps.length === 0 ? (
+              <div className="text-sm text-gray-600">Bekleyen başvuru yok.</div>
+            ) : (
+              <div className="space-y-2">
+                {pendingCoachApps.slice(0, 30).map((app) => (
+                  <button
+                    key={app.id}
+                    onClick={() => setSelectedApp(app)}
+                    className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
+                      selectedApp?.id === app.id ? "border-red-300 ring-2 ring-red-100" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold truncate">
+                          {app.full_name || "İsimsiz Başvuru"}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 truncate">
+                          {app.email || "—"} • {app.phone || "—"}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 whitespace-nowrap">
+                        {formatDate(app.created_at)}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: details */}
+          <div className="rounded-xl border p-4">
+            {!selectedApp ? (
+              <div className="text-sm text-gray-600">
+                Soldan bir başvuru seç. Detay + dosyalar burada açılacak.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {selectedApp.email || "—"} • {selectedApp.phone || "—"}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {selectedApp.city || "—"} {selectedApp.country ? ` / ${selectedApp.country}` : ""}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-500">
+                    Status: <b>{selectedApp.status || "-"}</b>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Detail label="Deneyim">
+                    {(selectedApp.experience_level || "-").toString()}
+                  </Detail>
+                  <Detail label="Seans Ücreti">
+                    {selectedApp.session_price != null ? `${selectedApp.session_price} TRY` : "-"}
+                  </Detail>
+                  <Detail label="Sertifika">
+                    {selectedApp.certificate_type || "-"}
+                  </Detail>
+                  <Detail label="Sertifika Yılı">
+                    {selectedApp.certificate_year || "-"}
+                  </Detail>
+                </div>
+
+                <Detail label="Uzmanlık Etiketleri">
+                  {Array.isArray(selectedApp.expertise_tags) && selectedApp.expertise_tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedApp.expertise_tags.slice(0, 20).map((t) => (
+                        <span key={t} className="text-xs rounded-full border bg-gray-50 px-2 py-1">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">—</span>
+                  )}
+                </Detail>
+
+                <Detail label="Bio">
+                  {selectedApp.bio ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.bio}</div>
+                  ) : (
+                    <span className="text-sm text-gray-500">—</span>
+                  )}
+                </Detail>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <a
+                    href={selectedApp.linkedin || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`rounded-xl border p-3 flex items-center justify-between ${
+                      selectedApp.linkedin ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
+                    }`}
+                    title="LinkedIn"
+                  >
+                    <div className="text-sm font-semibold">LinkedIn</div>
+                    <ExternalLink className="h-4 w-4 text-gray-400" />
+                  </a>
+
+                  <a
+                    href={selectedApp.website || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`rounded-xl border p-3 flex items-center justify-between ${
+                      selectedApp.website ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
+                    }`}
+                    title="Website"
+                  >
+                    <div className="text-sm font-semibold">Website</div>
+                    <ExternalLink className="h-4 w-4 text-gray-400" />
+                  </a>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => openSignedFile(selectedApp.cv_path)}
+                    disabled={actionLoading || !selectedApp.cv_path}
+                    className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
+                      !selectedApp.cv_path ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-semibold">CV Aç</span>
+                    </div>
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
+                  </button>
+
+                  <button
+                    onClick={() => openSignedFile(selectedApp.certificate_path)}
+                    disabled={actionLoading || !selectedApp.certificate_path}
+                    className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
+                      !selectedApp.certificate_path ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-semibold">Sertifika Aç</span>
+                    </div>
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                  <button
+                    onClick={() => rejectCoach(selectedApp)}
+                    disabled={actionLoading}
+                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
+                  >
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    Reddet
+                  </button>
+
+                  <button
+                    onClick={() => approveCoach(selectedApp)}
+                    disabled={actionLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Onayla
+                  </button>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  Not: Onay işlemi <b>coach_applications.status=approved</b> + <b>profiles.is_approved=true</b> yapar.
+                  Ayrıca mümkünse <b>app_2dff6511da_coaches</b> tablosuna koç kaydı açmayı dener.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Premium + Revenue */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border p-5 space-y-4">
+        <div className="rounded-2xl border p-5 space-y-4 bg-white">
           <div className="flex items-center justify-between">
             <div className="font-semibold flex items-center gap-2">
               <Crown className="h-5 w-5" />
@@ -351,11 +718,7 @@ export default function AdminDashboard() {
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 12)
                   .map(([k, v]) => (
-                    <span
-                      key={k}
-                      className="text-xs rounded-full border bg-white px-2 py-1"
-                      title={k}
-                    >
+                    <span key={k} className="text-xs rounded-full border bg-white px-2 py-1" title={k}>
                       {k}: <b>{v}</b>
                     </span>
                   ))
@@ -375,80 +738,64 @@ export default function AdminDashboard() {
         </div>
 
         {/* Ops KPIs */}
-        <div className="rounded-2xl border p-5 space-y-4">
+        <div className="rounded-2xl border p-5 space-y-4 bg-white">
           <div className="font-semibold flex items-center gap-2">
             <CalendarClock className="h-5 w-5" />
             Operasyon Merkezi
           </div>
 
           <div className="space-y-3">
-            <OpsRow
-              title="Şirket talepleri"
-              value={data.total_company_requests}
-              sub="Pipeline girişi"
-            />
-            <OpsRow
-              title="Bekleyen koç başvurusu"
-              value={data.pending_coach_apps}
-              sub="Onboarding darboğazı"
-            />
+            <OpsRow title="Şirket talepleri" value={data.total_company_requests} sub="Pipeline girişi" />
+            <OpsRow title="Bekleyen koç başvurusu" value={data.pending_coach_apps} sub="Onboarding darboğazı" />
             <OpsRow
               title="Koç oranı"
               value={data.total_profiles > 0 ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%` : "0%"}
               sub="Koç / toplam kullanıcı"
             />
-            <OpsRow
-              title="Aktif premium"
-              value={premiumAgg.activeCount}
-              sub="Gelir üreten üyelik"
-            />
+            <OpsRow title="Aktif premium" value={premiumAgg.activeCount} sub="Gelir üreten üyelik" />
           </div>
 
           <div className="rounded-xl border bg-white p-4">
             <div className="text-sm font-semibold mb-2">Hızlı aksiyon listesi</div>
             <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
-              <li>Bekleyen koçları sıraya al → onay/ret SLA koy</li>
-              <li>Kurumsal talepleri “status” ile pipeline’a bağla</li>
-              <li>Premium dönüşüm hunisi: landing → register → paywall → ödeme</li>
+              <li>Bekleyen koçlara SLA koy (örn. 24-48 saat)</li>
+              <li>Kurumsal talepleri status ile pipeline’a bağla</li>
+              <li>Premium dönüşüm hunisi: landing → register → checkout</li>
             </ul>
           </div>
         </div>
 
         {/* AI Insights */}
-        <div className="rounded-2xl border p-5 space-y-4">
+        <div className="rounded-2xl border p-5 space-y-4 bg-white">
           <div className="font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            AI Insights (Hazır Panel)
+            AI Insights (UI)
           </div>
 
           <div className="rounded-xl border bg-gradient-to-b from-gray-50 to-white p-4">
             <div className="text-sm font-semibold">Bu panel ne yapacak?</div>
             <div className="text-sm text-gray-600 mt-1">
-              Bir sonraki adımda admin için Edge Function / API ile “özet + öneri + anomali”
-              üreteceğiz. Şimdilik UI hazır.
+              Admin için özet + öneri + anomali üretimi (Edge Function) bağlanacak.
             </div>
 
-            <div className="mt-3 text-xs text-gray-500">Örnek çıktılar:</div>
+            <div className="mt-3 text-xs text-gray-500">Örnek:</div>
             <ul className="mt-2 text-sm text-gray-700 space-y-2">
               <li className="rounded-lg border bg-white p-3">
-                <b>Anomali:</b> Premium aktif sayısı ↑ ama şirket talebi ↓ (son 7 gün)
+                <b>Gelir:</b> MRR (TRY) {formatMoneyTRY(premiumAgg.mrrTry)}
               </li>
               <li className="rounded-lg border bg-white p-3">
-                <b>Öneri:</b> Koç onboarding’de “profile completion” %’i ölç → eksikleri otomatik hatırlat
-              </li>
-              <li className="rounded-lg border bg-white p-3">
-                <b>Gelir:</b> MRR (TRY) {formatMoneyTRY(premiumAgg.mrrTry)} → hedef: {formatMoneyTRY(premiumAgg.mrrTry * 2)}
+                <b>Öneri:</b> Koç onboarding’de “profile completion” ölç
               </li>
             </ul>
           </div>
 
           <div className="rounded-xl border bg-white p-4">
-            <div className="text-sm font-semibold mb-2">AI için toplanacak datalar</div>
+            <div className="text-sm font-semibold mb-2">Toplanacak datalar</div>
             <div className="text-sm text-gray-600 space-y-1">
               <div>• DAU/WAU/MAU</div>
-              <div>• Funnel: Register → Coach/Mentor seçimi → Talep → Tamamlanan seans</div>
-              <div>• Premium: dönüşüm, churn, ARPU, LTV</div>
-              <div>• Kurumsal: lead → demo → anlaşma → aktif kullanıcı</div>
+              <div>• Funnel</div>
+              <div>• Premium: churn/ARPU/LTV</div>
+              <div>• Kurumsal: lead → anlaşma</div>
             </div>
           </div>
         </div>
@@ -491,19 +838,21 @@ export default function AdminDashboard() {
             left: r.full_name || r.id,
             mid: r.status || "-",
             right: formatDate(r.created_at),
-            meta: "",
+            meta: r.user_id ? `user: ${shortId(r.user_id)}` : "",
           }))}
         />
       </div>
 
-      {/* Footer note */}
       <div className="text-xs text-gray-500">
-        Not: Bu sayfa “kırılmadan büyüyecek” şekilde yazıldı. Opsiyonel tablolar yoksa sadece
-        uyarı düşer. Bir sonraki adım: <b>Admin analytics view’ları + AI edge function</b>.
+        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only” update/insert garantisi.
       </div>
     </div>
   );
 }
+
+/* ==============================
+   UI PARTS
+============================== */
 
 function StatCard({
   title,
@@ -568,6 +917,15 @@ function OpsRow({
   );
 }
 
+function Detail({ label, children }: { label: string; children: any }) {
+  return (
+    <div className="rounded-xl border bg-white p-3">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
 function PanelTable({
   title,
   subtitle,
@@ -614,6 +972,10 @@ function PanelTable({
   );
 }
 
+/* ==============================
+   HELPERS
+============================== */
+
 function formatMoneyTRY(n: number) {
   const val = Number(n || 0);
   try {
@@ -628,4 +990,9 @@ function formatDate(s?: string | null) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return "-";
   return d.toLocaleString("tr-TR");
+}
+
+function shortId(id?: string | null) {
+  if (!id) return "-";
+  return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }

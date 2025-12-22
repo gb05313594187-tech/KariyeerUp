@@ -10,22 +10,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
-  db: {
-    schema: "public",
-  },
+  db: { schema: "public" },
   global: {
     headers: {
-      // ✅ apikey kalsın
       apikey: supabaseAnonKey,
-      // ❌ Authorization: Bearer ANON_KEY YOK
-      // Supabase client session varsa access_token'ı otomatik yollar
+      // ❌ Authorization yok. Session varsa supabase kendisi yollar.
     },
   },
 });
 
 /* =========================================================
-   ✅ PREMIUM ENUMS (DB CHECK CONSTRAINT ile UYUMLU TUT)
-   subscription_type: 'individual' | 'corporate' | 'coach'
+   ✅ DB CHECK CONSTRAINT ile BİREBİR UYUMLU ENUMS
    ========================================================= */
 
 export const SUBSCRIPTION_TYPES = {
@@ -35,7 +30,7 @@ export const SUBSCRIPTION_TYPES = {
 } as const;
 
 export type SubscriptionType =
-  (typeof SUBSCRIPTION_TYPES)[keyof typeof SUBSCRIPTION_TYPES];
+  typeof SUBSCRIPTION_TYPES[keyof typeof SUBSCRIPTION_TYPES];
 
 export const SUBSCRIPTION_STATUS = {
   ACTIVE: "active",
@@ -45,23 +40,14 @@ export const SUBSCRIPTION_STATUS = {
 } as const;
 
 export type SubscriptionStatus =
-  (typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
+  typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
 
-/**
- * ⚠️ IMPORTANT
- * Premium = Ücretli paket
- * Badge/Rozet = Onay/Statü (premium ile aynı şey değil)
- *
- * Bu yüzden BADGE_TYPES'ı premium akışına bağlamıyoruz.
- * DB’de badge_type alanı varsa opsiyonel tutuyoruz.
- */
 export const BADGE_TYPES = {
-  NONE: "none",
-  VERIFIED: "verified",
-  APPROVED_COACH: "approved_coach",
+  BLUE: "blue_badge",
+  GOLD: "gold_badge",
 } as const;
 
-export type BadgeType = (typeof BADGE_TYPES)[keyof typeof BADGE_TYPES];
+export type BadgeType = typeof BADGE_TYPES[keyof typeof BADGE_TYPES];
 
 /* ---------------- TYPES ---------------- */
 
@@ -77,28 +63,19 @@ interface AIAnalysis {
 export interface PremiumSubscription {
   id: string;
   user_id: string;
-
-  // ✅ DB constraint uyumlu
-  subscription_type: SubscriptionType;
-
-  status: SubscriptionStatus;
-  start_date: string;
-  end_date: string;
+  subscription_type: SubscriptionType; // ✅ individual | corporate | coach
+  status: SubscriptionStatus; // ✅ active | cancelled | expired | pending
   price: number;
-  currency: string;
-  auto_renew: boolean;
-
-  /**
-   * ✅ Opsiyonel.
-   * "Ben blue badge istemiyorum" dediğin için:
-   * - premium oluştururken bunu yazmayacağız
-   * - istersek tamamen ayrı bir tabloda yönetiriz
-   */
-  badge_type?: string | null;
-
+  currency: string; // default TRY
+  start_date: string;
+  end_date: string | null;
+  auto_renew: boolean | null;
   iyzico_subscription_id?: string | null;
   created_at: string;
   updated_at: string;
+
+  // ✅ nullable; doluysa sadece blue_badge | gold_badge
+  badge_type: BadgeType | null;
 }
 
 export interface Payment {
@@ -129,8 +106,8 @@ export interface Invoice {
   invoice_sent_at?: string;
   created_at: string;
 
-  // opsiyonel
-  subscription_type?: SubscriptionType | string;
+  // opsiyonel alan, DB’de varsa
+  subscription_type?: SubscriptionType | null;
 }
 
 export interface SupportTicket {
@@ -160,7 +137,7 @@ export interface Coach {
   currency: string;
   rating: number;
   total_reviews: number;
-  status: string; // pending | approved | rejected (senin tablona göre)
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -184,14 +161,12 @@ async function getAccessToken(): Promise<string | null> {
   return data?.session?.access_token || null;
 }
 
-function nowIso() {
-  return new Date().toISOString();
-}
+const nowIso = () => new Date().toISOString();
 
 /* ---------------- PREMIUM SUBSCRIPTION SERVICE ---------------- */
 /**
- * ✅ Tek gerçek kaynak: app_2dff6511da_premium_subscriptions
- * Premium = paket/ücret
+ * ✅ Tek kaynak: app_2dff6511da_premium_subscriptions
+ * Not: Premium kaydı oluştururken "badge_type" göndermek zorunda değilsin.
  */
 export const subscriptionService = {
   async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
@@ -201,13 +176,14 @@ export const subscriptionService = {
         .select("*")
         .eq("user_id", userId)
         .eq("status", SUBSCRIPTION_STATUS.ACTIVE)
-        .gt("end_date", nowIso())
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) return null;
-      return data as unknown as PremiumSubscription;
+
+      // end_date null ise (süresiz) aktif sayabilirsin; istersen burada kontrol ekleriz.
+      return (data as any) as PremiumSubscription;
     } catch {
       return null;
     }
@@ -222,13 +198,12 @@ export const subscriptionService = {
         .order("created_at", { ascending: false });
 
       if (error) return [];
-      return (data || []) as unknown as PremiumSubscription[];
+      return ((data || []) as any) as PremiumSubscription[];
     } catch {
       return [];
     }
   },
 
-  // Edge Function (varsa)
   async getMySubscriptionsViaEdge(): Promise<PremiumSubscription[]> {
     try {
       const token = await getAccessToken();
@@ -251,47 +226,47 @@ export const subscriptionService = {
     }
   },
 
-  /**
-   * ✅ Premium create
-   * - subscription_type: individual | corporate | coach
-   * - badge_type: gönderme (opsiyonel)
-   */
-  async create(subscription: {
+  async create(payload: {
     user_id: string;
     subscription_type: SubscriptionType;
-    status: SubscriptionStatus;
-    start_date: string;
-    end_date: string;
+    status?: SubscriptionStatus; // default active
     price: number;
-    currency: string;
-    auto_renew: boolean;
-
-    // opsiyonel
-    badge_type?: string | null;
-
+    currency?: string; // default TRY
+    start_date?: string; // default now (DB)
+    end_date?: string | null;
+    auto_renew?: boolean | null;
     iyzico_subscription_id?: string | null;
+
+    // ✅ İSTEMİYORSAN GÖNDERME / NULL GÖNDER
+    badge_type?: BadgeType | null;
   }): Promise<PremiumSubscription | null> {
     try {
-      const payload = {
-        ...subscription,
-        // badge_type hiç verilmezse null bas (DB nullable ise sorun yok)
-        badge_type:
-          subscription.badge_type === undefined ? null : subscription.badge_type,
+      const insertRow: any = {
+        user_id: payload.user_id,
+        subscription_type: payload.subscription_type,
+        status: payload.status ?? SUBSCRIPTION_STATUS.ACTIVE,
+        price: payload.price,
+        currency: payload.currency ?? "TRY",
+        start_date: payload.start_date ?? nowIso(),
+        end_date: payload.end_date ?? null,
+        auto_renew: payload.auto_renew ?? true,
+        iyzico_subscription_id: payload.iyzico_subscription_id ?? null,
       };
+
+      // badge_type opsiyonel: hiç eklemiyoruz veya null ekliyoruz
+      if (payload.badge_type !== undefined) {
+        insertRow.badge_type = payload.badge_type;
+      }
 
       const { data, error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
-        .insert(payload)
-        .select()
+        .insert(insertRow)
+        .select("*")
         .single();
 
-      if (error) {
-        console.error("[subscriptionService.create] error:", error);
-        return null;
-      }
-      return data as unknown as PremiumSubscription;
-    } catch (e) {
-      console.error("[subscriptionService.create] exception:", e);
+      if (error) return null;
+      return (data as any) as PremiumSubscription;
+    } catch {
       return null;
     }
   },
@@ -354,7 +329,7 @@ export const paymentService = {
       const { data, error } = await supabase
         .from("app_2dff6511da_payments")
         .insert(payment)
-        .select()
+        .select("*")
         .single();
 
       if (error) return null;
@@ -450,7 +425,7 @@ export const invoiceService = {
       const { data, error } = await supabase
         .from("app_2dff6511da_invoices")
         .insert(invoice)
-        .select()
+        .select("*")
         .single();
 
       if (error) return null;
@@ -464,9 +439,7 @@ export const invoiceService = {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
-    const random = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, "0");
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
     return `INV-${year}${month}-${random}`;
   },
 };
@@ -501,7 +474,7 @@ export const supportTicketService = {
             category,
             user_metadata: {
               email: user.email,
-              fullName: user.user_metadata?.full_name || user.email,
+              fullName: (user.user_metadata as any)?.full_name || user.email,
             },
           }),
         }
@@ -586,7 +559,7 @@ export const coachService = {
       const { data, error } = await supabase
         .from("app_2dff6511da_coaches")
         .insert(coach)
-        .select()
+        .select("*")
         .single();
 
       if (error) return null;
@@ -635,7 +608,7 @@ export const sessionService = {
       const { data, error } = await supabase
         .from("app_2dff6511da_sessions")
         .insert(session)
-        .select()
+        .select("*")
         .single();
 
       if (error) return null;

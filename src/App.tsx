@@ -2,10 +2,6 @@
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// UI / Icons (kullanılmıyorsa kaldırabilirsin)
-import { CheckCircle2, Globe2, Star, LineChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,7 +11,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 
 // SAYFALAR
 import Home from "@/pages/Index";
-import Pricing from "@/pages/Pricing"; // ✅ EKLENDİ (Premium sayfan)
+import Pricing from "@/pages/Pricing";
 import Coaches from "@/pages/Coaches";
 import ForCoaches from "@/pages/ForCoaches";
 import ForCompanies from "@/pages/ForCompanies";
@@ -45,7 +41,7 @@ import CoachSelfProfile from "@/pages/CoachProfile";
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
 import UserSettings from "@/pages/UserSettings";
-import UserProfileEdit from "@/pages/UserProfileEdit"; // ✅ EKLENDİ
+import UserProfileEdit from "@/pages/UserProfileEdit";
 
 // CORPORATE
 import CorporateDashboard from "@/pages/CorporateDashboard";
@@ -61,6 +57,11 @@ import CoachRequests from "@/pages/CoachRequests";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
+
+// ✅ CHECKOUT / PAYMENT SUCCESS (EKLENDİ)
+// Bu dosyalar yoksa bir sonraki adımda sana tam sayfa üreteceğim.
+import Checkout from "@/pages/Checkout";
+import PaymentSuccess from "@/pages/PaymentSuccess";
 
 // LEGACY
 import Dashboard from "@/pages/Dashboard";
@@ -101,6 +102,10 @@ export default function App() {
 
           {/* ✅ PREMIUM / PRICING */}
           <Route path="/pricing" element={<Pricing />} />
+
+          {/* ✅ CHECKOUT FLOW */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
 
           {/* How it works */}
           <Route path="/nasil-calisir" element={<HowItWorks />} />

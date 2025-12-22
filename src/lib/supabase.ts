@@ -18,13 +18,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       // ✅ apikey kalsın
       apikey: supabaseAnonKey,
       // ❌ Authorization: Bearer ANON_KEY YOK
-      // Supabase session varsa kendi access_token'ını otomatik yollar
+      // Supabase client session varsa access_token'ı otomatik yollar
     },
   },
 });
 
 /* =========================================================
    ✅ PREMIUM ENUMS (DB CHECK CONSTRAINT ile UYUMLU TUT)
+   subscription_type: 'individual' | 'corporate' | 'coach'
    ========================================================= */
 
 export const SUBSCRIPTION_TYPES = {
@@ -34,7 +35,7 @@ export const SUBSCRIPTION_TYPES = {
 } as const;
 
 export type SubscriptionType =
-  typeof SUBSCRIPTION_TYPES[keyof typeof SUBSCRIPTION_TYPES];
+  (typeof SUBSCRIPTION_TYPES)[keyof typeof SUBSCRIPTION_TYPES];
 
 export const SUBSCRIPTION_STATUS = {
   ACTIVE: "active",
@@ -44,15 +45,23 @@ export const SUBSCRIPTION_STATUS = {
 } as const;
 
 export type SubscriptionStatus =
-  typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
+  (typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
 
+/**
+ * ⚠️ IMPORTANT
+ * Premium = Ücretli paket
+ * Badge/Rozet = Onay/Statü (premium ile aynı şey değil)
+ *
+ * Bu yüzden BADGE_TYPES'ı premium akışına bağlamıyoruz.
+ * DB’de badge_type alanı varsa opsiyonel tutuyoruz.
+ */
 export const BADGE_TYPES = {
-  BLUE: "blue_badge",
-  GOLD: "gold_badge",
-  VERIFIED: "verified_badge",
+  NONE: "none",
+  VERIFIED: "verified",
+  APPROVED_COACH: "approved_coach",
 } as const;
 
-export type BadgeType = typeof BADGE_TYPES[keyof typeof BADGE_TYPES];
+export type BadgeType = (typeof BADGE_TYPES)[keyof typeof BADGE_TYPES];
 
 /* ---------------- TYPES ---------------- */
 
@@ -69,7 +78,7 @@ export interface PremiumSubscription {
   id: string;
   user_id: string;
 
-  // ✅ artık string değil: constraint uyumlu enum
+  // ✅ DB constraint uyumlu
   subscription_type: SubscriptionType;
 
   status: SubscriptionStatus;
@@ -79,8 +88,13 @@ export interface PremiumSubscription {
   currency: string;
   auto_renew: boolean;
 
-  // ✅ badge type için de enum (DB’in izinli değerleri farklıysa burayı güncelleriz)
-  badge_type: BadgeType | string;
+  /**
+   * ✅ Opsiyonel.
+   * "Ben blue badge istemiyorum" dediğin için:
+   * - premium oluştururken bunu yazmayacağız
+   * - istersek tamamen ayrı bir tabloda yönetiriz
+   */
+  badge_type?: string | null;
 
   iyzico_subscription_id?: string | null;
   created_at: string;
@@ -146,7 +160,7 @@ export interface Coach {
   currency: string;
   rating: number;
   total_reviews: number;
-  status: string;
+  status: string; // pending | approved | rejected (senin tablona göre)
   created_at: string;
   updated_at: string;
 }
@@ -177,6 +191,7 @@ function nowIso() {
 /* ---------------- PREMIUM SUBSCRIPTION SERVICE ---------------- */
 /**
  * ✅ Tek gerçek kaynak: app_2dff6511da_premium_subscriptions
+ * Premium = paket/ücret
  */
 export const subscriptionService = {
   async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
@@ -236,7 +251,11 @@ export const subscriptionService = {
     }
   },
 
-  // ✅ create: subscription_type yanlış gönderilemesin diye tip güvenli
+  /**
+   * ✅ Premium create
+   * - subscription_type: individual | corporate | coach
+   * - badge_type: gönderme (opsiyonel)
+   */
   async create(subscription: {
     user_id: string;
     subscription_type: SubscriptionType;
@@ -246,19 +265,33 @@ export const subscriptionService = {
     price: number;
     currency: string;
     auto_renew: boolean;
-    badge_type: string; // DB ne kabul ediyorsa
+
+    // opsiyonel
+    badge_type?: string | null;
+
     iyzico_subscription_id?: string | null;
   }): Promise<PremiumSubscription | null> {
     try {
+      const payload = {
+        ...subscription,
+        // badge_type hiç verilmezse null bas (DB nullable ise sorun yok)
+        badge_type:
+          subscription.badge_type === undefined ? null : subscription.badge_type,
+      };
+
       const { data, error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
-        .insert(subscription)
+        .insert(payload)
         .select()
         .single();
 
-      if (error) return null;
+      if (error) {
+        console.error("[subscriptionService.create] error:", error);
+        return null;
+      }
       return data as unknown as PremiumSubscription;
-    } catch {
+    } catch (e) {
+      console.error("[subscriptionService.create] exception:", e);
       return null;
     }
   },

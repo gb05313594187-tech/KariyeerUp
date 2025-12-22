@@ -42,7 +42,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [me, setMe] = useState<any>(null);
 
-  // basit kart UI (mock)
+  // Demo kart UI (mock)
   const [cardData, setCardData] = useState({
     holder: "",
     number: "",
@@ -56,10 +56,10 @@ export default function Checkout() {
     if (plan === SUBSCRIPTION_TYPES.INDIVIDUAL) return SUBSCRIPTION_TYPES.INDIVIDUAL;
     if (plan === SUBSCRIPTION_TYPES.CORPORATE) return SUBSCRIPTION_TYPES.CORPORATE;
     if (plan === SUBSCRIPTION_TYPES.COACH) return SUBSCRIPTION_TYPES.COACH;
-    return SUBSCRIPTION_TYPES.INDIVIDUAL; // default
+    return SUBSCRIPTION_TYPES.INDIVIDUAL;
   }, [plan]);
 
-  // fiyat stratejisi (şimdilik sabit)
+  // Fiyatlar (şimdilik sabit)
   const pricing = useMemo(() => {
     if (selectedType === SUBSCRIPTION_TYPES.CORPORATE) {
       return { price: 2999, currency: "TRY", title: "Kurumsal Premium", periodDays: 30 };
@@ -70,7 +70,7 @@ export default function Checkout() {
     return { price: 299, currency: "TRY", title: "Bireysel Premium", periodDays: 30 };
   }, [selectedType]);
 
-  const vatRate = 0.2; // %20
+  const vatRate = 0.2;
   const vatAmount = useMemo(() => pricing.price * vatRate, [pricing.price]);
   const total = useMemo(() => pricing.price + vatAmount, [pricing.price, vatAmount]);
 
@@ -112,18 +112,20 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // 1) Kullanıcının aktif premium’u var mı?
+      // 1) Aktif premium var mı?
       const active = await subscriptionService.getActiveByUserId(me.id);
-      if (active?.id) {
-        toast.message("Zaten aktif premium görünüyor. Yönlendiriyorum…");
+
+      // end_date null ise “süresiz” kabul edebilirsin; bu ekranda basitçe active varsa engelliyoruz.
+      if (active?.id && active?.status === SUBSCRIPTION_STATUS.ACTIVE) {
+        toast.message("Zaten aktif bir premium üyeliğin var. Yönlendiriyorum…");
         navigate(`/payment-success?existing=1&type=${active.subscription_type}`);
         return;
       }
 
-      // 2) Mock ödeme (2sn)
+      // 2) Mock ödeme
       await new Promise((r) => setTimeout(r, 1500));
 
-      // 3) DB’ye premium subscription kaydı aç
+      // 3) DB’ye subscription aç (✅ badge_type YAZMIYORUZ)
       const created = await subscriptionService.create({
         user_id: me.id,
         subscription_type: selectedType,
@@ -133,8 +135,7 @@ export default function Checkout() {
         start_date: new Date().toISOString(),
         end_date: addDaysISO(pricing.periodDays),
         auto_renew: true,
-        // ✅ badge_type İSTEMİYORSUN: göndermiyoruz (ya da null gönderebilirsin)
-        // badge_type: null,
+        // badge_type: undefined -> insertRow'a hiç girmeyecek (senin istediğin)
       });
 
       if (!created?.id) {
@@ -222,7 +223,10 @@ export default function Checkout() {
                         type="password"
                         value={cardData.cvc}
                         onChange={(e) =>
-                          setCardData((s) => ({ ...s, cvc: (e.target.value || "").replace(/\D/g, "").substring(0, 3) }))
+                          setCardData((s) => ({
+                            ...s,
+                            cvc: (e.target.value || "").replace(/\D/g, "").substring(0, 3),
+                          }))
                         }
                         maxLength={3}
                         className="pl-10"
@@ -281,7 +285,7 @@ export default function Checkout() {
                 </div>
 
                 <div className="text-xs text-gray-500">
-                  Not: Bu işlem premium abonelik kaydı açar. <b>badge_type</b> boş bırakılır.
+                  Not: Bu işlem <b>premium abonelik</b> kaydı açar. Rozet (badge_type) kullanılmaz/boş kalır.
                 </div>
               </CardContent>
             </Card>

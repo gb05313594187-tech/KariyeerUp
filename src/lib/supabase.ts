@@ -1,27 +1,30 @@
-import { createClient } from '@supabase/supabase-js';
+// src/lib/supabase.ts
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-// Create Supabase client with explicit configuration to fix 406 errors
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
   },
   db: {
-    schema: 'public'
+    schema: "public",
   },
   global: {
     headers: {
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`
-    }
-  }
+      // ✅ apikey kalsın
+      apikey: supabaseAnonKey,
+      // ❌ Authorization: Bearer ANON_KEY KESİNLİKLE YOK
+      // Supabase istemcisi session varsa kendi token'ını otomatik yollar
+    },
+  },
 });
 
-// AI Analysis interface
+/* ---------------- TYPES ---------------- */
+
 interface AIAnalysis {
   severity?: string;
   priority?: string;
@@ -31,17 +34,18 @@ interface AIAnalysis {
   raw_response?: string;
 }
 
-// Database types - UPDATED to match actual Supabase schema
-export interface Subscription {
+export interface PremiumSubscription {
   id: string;
   user_id: string;
-  badge_type: string;
+  subscription_type: string;
   status: string;
   start_date: string;
   end_date: string;
   price: number;
   currency: string;
   auto_renew: boolean;
+  badge_type: string;
+  iyzico_subscription_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -120,352 +124,255 @@ export interface Session {
   updated_at: string;
 }
 
-// Helper functions for database operations
+/* ---------------- HELPERS ---------------- */
+
+async function getAccessToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
+/* ---------------- PREMIUM SUBSCRIPTION SERVICE ---------------- */
+/**
+ * ✅ Tek gerçek kaynak: app_2dff6511da_premium_subscriptions
+ * (Senin premium kayıtların burada)
+ */
 export const subscriptionService = {
-  async getActiveByUserId(userId: string): Promise<Subscription | null> {
+  async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
     try {
-      console.log('[SubscriptionService] 🔍 Fetching active subscription for user:', userId);
-      
       const { data, error } = await supabase
-        .from('app_2dff6511da_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
+        .from("app_2dff6511da_premium_subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .gt("end_date", new Date().toISOString())
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
-      if (error) {
-        console.error('[SubscriptionService] ❌ Error fetching active subscription:', error);
-        console.error('[SubscriptionService] Error details:', JSON.stringify(error, null, 2));
-        return null;
-      }
-      
-      console.log('[SubscriptionService] ✅ Active subscription found:', data);
-      return data;
-    } catch (err) {
-      console.error('[SubscriptionService] 💥 Exception in getActiveByUserId:', err);
+
+      if (error) return null;
+      return (data as any) as PremiumSubscription;
+    } catch {
       return null;
     }
   },
 
-  async getAllActiveByUserId(userId: string): Promise<Subscription[]> {
+  async getByUserId(userId: string): Promise<PremiumSubscription[]> {
     try {
-      console.log('[SubscriptionService] 🚀 FORCING EDGE FUNCTION BYPASS - Skipping RLS');
-      console.log('[SubscriptionService] 🔍 Fetching ALL active subscriptions via Edge Function for user:', userId);
-      
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('[SubscriptionService] ❌ No session token available');
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("app_2dff6511da_premium_subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      console.log('[SubscriptionService] 🔑 Session token found, calling edge function...');
+      if (error) return [];
+      return ((data || []) as any) as PremiumSubscription[];
+    } catch {
+      return [];
+    }
+  },
+
+  // Edge Function (varsa) - “benim aboneliklerim”
+  async getMySubscriptionsViaEdge(): Promise<PremiumSubscription[]> {
+    try {
+      const token = await getAccessToken();
+      if (!token) return [];
+
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_subscriptions`;
-      console.log('[SubscriptionService] 🌐 Edge function URL:', edgeUrl);
-
-      const response = await fetch(edgeUrl, {
-        method: 'GET',
+      const res = await fetch(edgeUrl, {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[SubscriptionService] ❌ Edge function failed:', response.status, errorText);
-        return [];
-      }
-
-      const result = await response.json();
-      console.log('[SubscriptionService] ✅ Edge function response:', result);
-      console.log('[SubscriptionService] 📊 Subscriptions count:', result.subscriptions?.length || 0);
-      console.log('[SubscriptionService] 📋 Full subscription data:', JSON.stringify(result.subscriptions, null, 2));
-      
-      return result.subscriptions || [];
-    } catch (err) {
-      console.error('[SubscriptionService] 💥 Exception in getAllActiveByUserId:', err);
-      console.error('[SubscriptionService] Exception stack:', err instanceof Error ? err.stack : 'No stack trace');
+      if (!res.ok) return [];
+      const result = await res.json();
+      return (result.subscriptions || []) as PremiumSubscription[];
+    } catch {
       return [];
     }
   },
 
-  async getByUserId(userId: string): Promise<Subscription[]> {
-    try {
-      console.log('[SubscriptionService] 🔍 Fetching all subscriptions for user:', userId);
-      
-      const { data, error } = await supabase
-        .from('app_2dff6511da_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('[SubscriptionService] ❌ Error fetching subscriptions:', error);
-        return [];
-      }
-      
-      console.log('[SubscriptionService] ✅ Found subscriptions:', data?.length || 0);
-      return data || [];
-    } catch (err) {
-      console.error('[SubscriptionService] 💥 Exception in getByUserId:', err);
-      return [];
-    }
-  },
-
-  async create(subscription: Omit<Subscription, 'id' | 'created_at' | 'updated_at'>): Promise<Subscription | null> {
+  async create(
+    subscription: Omit<PremiumSubscription, "id" | "created_at" | "updated_at">
+  ): Promise<PremiumSubscription | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_subscriptions')
+        .from("app_2dff6511da_premium_subscriptions")
         .insert(subscription)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating subscription:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in create:', err);
+
+      if (error) return null;
+      return (data as any) as PremiumSubscription;
+    } catch {
       return null;
     }
   },
 
-  async update(id: string, updates: Partial<Subscription>): Promise<boolean> {
+  async update(id: string, updates: Partial<PremiumSubscription>): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('app_2dff6511da_subscriptions')
+        .from("app_2dff6511da_premium_subscriptions")
         .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error updating subscription:', error);
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.error('Exception in update:', err);
+        .eq("id", id);
+
+      return !error;
+    } catch {
       return false;
     }
   },
 
   async cancel(id: string): Promise<boolean> {
-    return this.update(id, { status: 'cancelled' });
+    return this.update(id, { status: "cancelled" } as any);
   },
-
-  async renew(id: string): Promise<boolean> {
-    return this.update(id, { 
-      status: 'active'
-    });
-  }
 };
+
+/* ---------------- PAYMENTS ---------------- */
 
 export const paymentService = {
   async getByUserId(userId: string): Promise<Payment[]> {
     try {
-      console.log('[PaymentService] 🚀 FORCING EDGE FUNCTION BYPASS - Skipping RLS');
-      console.log('[PaymentService] 🔍 Fetching payments via Edge Function for user:', userId);
-      
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('[PaymentService] ❌ No session token available');
-        return [];
+      // Eğer edge function varsa onu tercih edebilirsin; yoksa direkt tabloya geç
+      const token = await getAccessToken();
+      if (token) {
+        const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_payments`;
+        const res = await fetch(edgeUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          return (result.payments || []) as Payment[];
+        }
       }
 
-      console.log('[PaymentService] 🔑 Session token found, calling edge function...');
-      const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_payments`;
-      console.log('[PaymentService] 🌐 Edge function URL:', edgeUrl);
+      // fallback
+      const { data, error } = await supabase
+        .from("app_2dff6511da_payments")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      const response = await fetch(edgeUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[PaymentService] ❌ Edge function failed:', response.status, errorText);
-        return [];
-      }
-
-      const result = await response.json();
-      console.log('[PaymentService] ✅ Edge function response:', result);
-      console.log('[PaymentService] 📊 Payments count:', result.payments?.length || 0);
-      console.log('[PaymentService] 📋 Full payment data:', JSON.stringify(result.payments, null, 2));
-      
-      return result.payments || [];
-    } catch (err) {
-      console.error('[PaymentService] 💥 Exception in getByUserId:', err);
-      console.error('[PaymentService] Exception stack:', err instanceof Error ? err.stack : 'No stack trace');
+      if (error) return [];
+      return (data || []) as Payment[];
+    } catch {
       return [];
     }
   },
 
-  async create(payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment | null> {
+  async create(payment: Omit<Payment, "id" | "created_at">): Promise<Payment | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_payments')
+        .from("app_2dff6511da_payments")
         .insert(payment)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating payment:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in create:', err);
+
+      if (error) return null;
+      return data as Payment;
+    } catch {
       return null;
     }
-  }
+  },
 };
+
+/* ---------------- INVOICES ---------------- */
 
 export const invoiceService = {
   async getByUserId(userId: string): Promise<Invoice[]> {
     try {
-      console.log('[InvoiceService] 🚀 FORCING EDGE FUNCTION BYPASS - Skipping RLS');
-      console.log('[InvoiceService] 🔍 Fetching invoices via Edge Function for user:', userId);
-      
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('[InvoiceService] ❌ No session token available');
-        return [];
+      const token = await getAccessToken();
+      if (token) {
+        const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_invoices`;
+        const res = await fetch(edgeUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          return (result.invoices || []) as Invoice[];
+        }
       }
 
-      console.log('[InvoiceService] 🔑 Session token found, calling edge function...');
-      const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_invoices`;
-      console.log('[InvoiceService] 🌐 Edge function URL:', edgeUrl);
+      const { data, error } = await supabase
+        .from("app_2dff6511da_invoices")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      const response = await fetch(edgeUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[InvoiceService] ❌ Edge function failed:', response.status, errorText);
-        return [];
-      }
-
-      const result = await response.json();
-      console.log('[InvoiceService] ✅ Edge function response:', result);
-      console.log('[InvoiceService] 📊 Invoices count:', result.invoices?.length || 0);
-      console.log('[InvoiceService] 📋 Full invoice data:', JSON.stringify(result.invoices, null, 2));
-      
-      return result.invoices || [];
-    } catch (err) {
-      console.error('[InvoiceService] 💥 Exception in getByUserId:', err);
-      console.error('[InvoiceService] Exception stack:', err instanceof Error ? err.stack : 'No stack trace');
+      if (error) return [];
+      return (data || []) as Invoice[];
+    } catch {
       return [];
     }
   },
 
   async generatePDF(invoiceId: string): Promise<{ success: boolean; html?: string; error?: string }> {
     try {
-      console.log('[InvoiceService] 📄 Generating PDF for invoice:', invoiceId);
-      
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('[InvoiceService] ❌ No session token available');
-        return { success: false, error: 'No active session' };
-      }
+      const token = await getAccessToken();
+      if (!token) return { success: false, error: "No active session" };
 
-      console.log('[InvoiceService] 🔑 Session token found, calling PDF generation edge function...');
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_generate_invoice_pdf`;
-      console.log('[InvoiceService] 🌐 Edge function URL:', edgeUrl);
-
       const response = await fetch(edgeUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ invoice_id: invoiceId })
+        body: JSON.stringify({ invoice_id: invoiceId }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[InvoiceService] ❌ PDF generation failed:', response.status, errorText);
-        return { success: false, error: 'Failed to generate PDF' };
-      }
-
+      if (!response.ok) return { success: false, error: "Failed to generate PDF" };
       const result = await response.json();
-      console.log('[InvoiceService] ✅ PDF generated successfully');
-      
       return { success: true, html: result.html };
-    } catch (err) {
-      console.error('[InvoiceService] 💥 Exception in generatePDF:', err);
-      return { success: false, error: 'An error occurred while generating PDF' };
+    } catch {
+      return { success: false, error: "An error occurred while generating PDF" };
     }
   },
 
   async sendEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('[InvoiceService] 📧 Sending invoice email for:', invoiceId);
-      
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('[InvoiceService] ❌ No session token available');
-        return { success: false, error: 'No active session' };
-      }
+      const token = await getAccessToken();
+      if (!token) return { success: false, error: "No active session" };
 
-      console.log('[InvoiceService] 🔑 Session token found, calling email edge function...');
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_send_invoice_email`;
-      console.log('[InvoiceService] 🌐 Edge function URL:', edgeUrl);
-
       const response = await fetch(edgeUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ invoice_id: invoiceId })
+        body: JSON.stringify({ invoice_id: invoiceId }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[InvoiceService] ❌ Email sending failed:', response.status, errorText);
-        return { success: false, error: 'Failed to send email' };
-      }
-
-      const result = await response.json();
-      console.log('[InvoiceService] ✅ Email sent successfully:', result);
-      
+      if (!response.ok) return { success: false, error: "Failed to send email" };
       return { success: true };
-    } catch (err) {
-      console.error('[InvoiceService] 💥 Exception in sendEmail:', err);
-      return { success: false, error: 'An error occurred while sending email' };
+    } catch {
+      return { success: false, error: "An error occurred while sending email" };
     }
   },
 
-  async create(invoice: Omit<Invoice, 'id' | 'created_at'>): Promise<Invoice | null> {
+  async create(invoice: Omit<Invoice, "id" | "created_at">): Promise<Invoice | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_invoices')
+        .from("app_2dff6511da_invoices")
         .insert(invoice)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating invoice:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in create:', err);
+
+      if (error) return null;
+      return data as Invoice;
+    } catch {
       return null;
     }
   },
@@ -473,92 +380,88 @@ export const invoiceService = {
   generateInvoiceNumber(): string {
     const date = new Date();
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
     return `INV-${year}${month}-${random}`;
-  }
+  },
 };
 
+/* ---------------- SUPPORT TICKETS ---------------- */
+
 export const supportTicketService = {
-  async create(subject: string, description: string, category: string = 'badge_issue'): Promise<{ success: boolean; ticket?: SupportTicket; error?: string }> {
+  async create(
+    subject: string,
+    description: string,
+    category: string = "badge_issue"
+  ): Promise<{ success: boolean; ticket?: SupportTicket; error?: string }> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        return { success: false, error: 'No active session' };
-      }
+      const token = await getAccessToken();
+      if (!token) return { success: false, error: "No active session" };
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return { success: false, error: 'User not found' };
-      }
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) return { success: false, error: "User not found" };
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/app_2dff6511da_create_support_ticket`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subject,
-          description,
-          category,
-          user_metadata: {
-            email: user.email,
-            fullName: user.user_metadata?.full_name || user.email
-          }
-        })
-      });
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/app_2dff6511da_create_support_ticket`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subject,
+            description,
+            category,
+            user_metadata: {
+              email: user.email,
+              fullName: user.user_metadata?.full_name || user.email,
+            },
+          }),
+        }
+      );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Support ticket creation failed:', errorText);
-        return { success: false, error: 'Failed to create support ticket' };
-      }
-
+      if (!response.ok) return { success: false, error: "Failed to create support ticket" };
       const result = await response.json();
       return { success: true, ticket: result.ticket };
-    } catch (err) {
-      console.error('Exception in create support ticket:', err);
-      return { success: false, error: 'An error occurred' };
+    } catch {
+      return { success: false, error: "An error occurred" };
     }
   },
 
   async getByUserId(userId: string): Promise<SupportTicket[]> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_support_tickets')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching support tickets:', error);
-        return [];
-      }
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getByUserId:', err);
+        .from("app_2dff6511da_support_tickets")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) return [];
+      return (data || []) as SupportTicket[];
+    } catch {
       return [];
     }
-  }
+  },
 };
+
+/* ---------------- COACHES ---------------- */
 
 export const coachService = {
   async getApproved(): Promise<Coach[]> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_coaches')
-        .select('*')
-        .eq('status', 'approved')
-        .order('rating', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching coaches:', error);
-        return [];
-      }
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getApproved:', err);
+        .from("app_2dff6511da_coaches")
+        .select("*")
+        .eq("status", "approved")
+        .order("rating", { ascending: false });
+
+      if (error) return [];
+      return (data || []) as Coach[];
+    } catch {
       return [];
     }
   },
@@ -566,18 +469,14 @@ export const coachService = {
   async getById(id: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_coaches')
-        .select('*')
-        .eq('id', id)
+        .from("app_2dff6511da_coaches")
+        .select("*")
+        .eq("id", id)
         .single();
-      
-      if (error) {
-        console.error('Error fetching coach:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in getById:', err);
+
+      if (error) return null;
+      return data as Coach;
+    } catch {
       return null;
     }
   },
@@ -585,58 +484,50 @@ export const coachService = {
   async getByUserId(userId: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_coaches')
-        .select('*')
-        .eq('user_id', userId)
+        .from("app_2dff6511da_coaches")
+        .select("*")
+        .eq("user_id", userId)
         .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching coach by user_id:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in getByUserId:', err);
+
+      if (error) return null;
+      return (data as any) as Coach;
+    } catch {
       return null;
     }
   },
 
-  async create(coach: Omit<Coach, 'id' | 'created_at' | 'updated_at' | 'rating' | 'total_reviews'>): Promise<Coach | null> {
+  async create(
+    coach: Omit<Coach, "id" | "created_at" | "updated_at" | "rating" | "total_reviews">
+  ): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_coaches')
+        .from("app_2dff6511da_coaches")
         .insert(coach)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating coach:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in create:', err);
+
+      if (error) return null;
+      return data as Coach;
+    } catch {
       return null;
     }
-  }
+  },
 };
+
+/* ---------------- SESSIONS ---------------- */
 
 export const sessionService = {
   async getByCoachId(coachId: string): Promise<Session[]> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_sessions')
-        .select('*')
-        .eq('coach_id', coachId)
-        .order('session_date', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching coach sessions:', error);
-        return [];
-      }
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getByCoachId:', err);
+        .from("app_2dff6511da_sessions")
+        .select("*")
+        .eq("coach_id", coachId)
+        .order("session_date", { ascending: false });
+
+      if (error) return [];
+      return (data || []) as Session[];
+    } catch {
       return [];
     }
   },
@@ -644,38 +535,30 @@ export const sessionService = {
   async getByClientId(clientId: string): Promise<Session[]> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_sessions')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('session_date', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching client sessions:', error);
-        return [];
-      }
-      return data || [];
-    } catch (err) {
-      console.error('Exception in getByClientId:', err);
+        .from("app_2dff6511da_sessions")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("session_date", { ascending: false });
+
+      if (error) return [];
+      return (data || []) as Session[];
+    } catch {
       return [];
     }
   },
 
-  async create(session: Omit<Session, 'id' | 'created_at' | 'updated_at'>): Promise<Session | null> {
+  async create(session: Omit<Session, "id" | "created_at" | "updated_at">): Promise<Session | null> {
     try {
       const { data, error } = await supabase
-        .from('app_2dff6511da_sessions')
+        .from("app_2dff6511da_sessions")
         .insert(session)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating session:', error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error('Exception in create:', err);
+
+      if (error) return null;
+      return data as Session;
+    } catch {
       return null;
     }
-  }
+  },
 };

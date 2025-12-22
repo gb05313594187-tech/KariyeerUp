@@ -40,7 +40,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const me = auth?.user ?? null;
-  const role = auth?.role ?? null; // ✅ user | coach | corporate | admin
+  const role = auth?.role ?? null; // user | coach | corporate | admin
 
   useEffect(() => {
     setMobileOpen(false);
@@ -88,7 +88,7 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  // ✅ Premium label + hedef
+  // Premium label + hedef
   const premiumLabel = useMemo(() => {
     if (role === "corporate") return "Kurumsal Premium";
     if (role === "coach") return "Koç Premium";
@@ -96,18 +96,19 @@ export default function Navbar() {
   }, [role]);
 
   const premiumTarget = useMemo(() => {
-    // login yoksa pricing (pazarlama)
     if (!auth?.isAuthenticated) return "/pricing";
-    // admin hepsini görsün
     if (role === "admin") return "/pricing";
-    // role’e göre direkt checkout
     if (role === "corporate") return "/checkout?plan=corporate";
     if (role === "coach") return "/checkout?plan=coach";
     return "/checkout?plan=individual";
   }, [auth?.isAuthenticated, role]);
 
-  const displayName =
-    me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+
+  const mobileBtn =
+    "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
+  const mobilePrimary =
+    "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-700 transition";
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
@@ -154,9 +155,7 @@ export default function Navbar() {
           >
             <Crown className="h-4 w-4 mr-2" />
             Premium
-            <span className="ml-2 hidden lg:inline text-white/80">
-              {premiumLabel}
-            </span>
+            <span className="ml-2 hidden lg:inline text-white/80">{premiumLabel}</span>
           </Button>
         </nav>
 
@@ -183,7 +182,7 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
-          {/* AUTH */}
+          {/* AUTH (DESKTOP) */}
           {!me ? (
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
@@ -224,6 +223,15 @@ export default function Navbar() {
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {dashboardLabel}
                   </DropdownMenuItem>
+
+                  {/* ✅ Admin kısayolu (desktop dropdown) */}
+                  {role === "admin" && (
+                    <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Admin Paneli
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem onClick={() => navigate(profilePath)}>
                     <User className="mr-2 h-4 w-4" />
                     Profil
@@ -262,25 +270,57 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <button
-              onClick={() => navigate("/mentor-circle")}
-              className="w-full px-4 py-3 rounded-xl border text-left"
-            >
+            <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
               MentorCircle
             </button>
-            <button
-              onClick={() => navigate("/webinars")}
-              className="w-full px-4 py-3 rounded-xl border text-left"
-            >
+            <button onClick={() => navigate("/webinars")} className={mobileBtn}>
               Webinar
             </button>
 
-            <button
-              onClick={() => navigate(premiumTarget)}
-              className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left"
-            >
+            <button onClick={() => navigate(premiumTarget)} className={mobilePrimary}>
               Premium — {premiumLabel}
             </button>
+
+            <div className="pt-2 border-t space-y-2">
+              {!me ? (
+                <>
+                  <button onClick={() => navigate("/login")} className={mobileBtn}>
+                    Giriş Yap
+                  </button>
+                  <button onClick={() => navigate("/register")} className={mobilePrimary}>
+                    Kayıt Ol
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => navigate(dashboardPath)} className={mobileBtn}>
+                    {dashboardLabel}
+                  </button>
+
+                  {role === "admin" && (
+                    <button onClick={() => navigate("/admin")} className={mobileBtn}>
+                      Admin Paneli
+                    </button>
+                  )}
+
+                  <button onClick={() => navigate(profilePath)} className={mobileBtn}>
+                    Profil
+                  </button>
+                  <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
+                    Ayarlar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await auth.logout();
+                      navigate("/");
+                    }}
+                    className={mobileBtn}
+                  >
+                    Çıkış
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

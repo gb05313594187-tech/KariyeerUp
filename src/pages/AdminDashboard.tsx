@@ -51,7 +51,10 @@ type PremiumRow = {
 
 type CompanyRequestRow = {
   id: string;
+  user_id?: string | null;
   company_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
   status?: string | null;
   created_at?: string | null;
 };
@@ -98,6 +101,7 @@ export default function AdminDashboard() {
   const [q, setQ] = useState("");
 
   const [selectedApp, setSelectedApp] = useState<CoachAppRow | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<CompanyRequestRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchAll = async () => {
@@ -133,9 +137,9 @@ export default function AdminDashboard() {
 
       supabase
         .from("company_requests")
-        .select("id,company_name,status,created_at")
+        .select("id,user_id,company_name,email,phone,status,created_at")
         .order("created_at", { ascending: false })
-        .limit(30),
+        .limit(50),
 
       supabase
         .from("coach_applications")
@@ -220,7 +224,15 @@ export default function AdminDashboard() {
           match(r.badge_type) ||
           match(r.currency)
       ),
-      companies: companyRows.filter((r) => match(r.company_name) || match(r.status) || match(r.id)),
+      companies: companyRows.filter(
+        (r) =>
+          match(r.company_name) ||
+          match(r.status) ||
+          match(r.id) ||
+          match(r.user_id || "") ||
+          match(r.email || "") ||
+          match(r.phone || "")
+      ),
       coachApps: coachAppRows.filter(
         (r) =>
           match(r.full_name) ||
@@ -240,6 +252,13 @@ export default function AdminDashboard() {
       return s === "pending_review" || s === "pending";
     });
   }, [filteredRecent.coachApps]);
+
+  const pendingCompanyRequests = useMemo(() => {
+    return (filteredRecent.companies || []).filter((a) => {
+      const s = (a.status || "").toLowerCase();
+      return s === "new" || s === "pending_review" || s === "pending";
+    });
+  }, [filteredRecent.companies]);
 
   /* ==============================
      COACH APPROVAL ACTIONS
@@ -328,6 +347,77 @@ export default function AdminDashboard() {
     } catch (e: any) {
       console.error(e);
       alert(`Ret sırasında hata: ${e?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ==============================
+     COMPANY APPROVAL ACTIONS
+  ============================== */
+
+  const approveCompany = async (req: CompanyRequestRow) => {
+    if (!req?.id || !req?.user_id) {
+      alert("Bu şirkette user_id yok. company_requests tablosunda user_id olmalı.");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      // 1) company_requests -> approved
+      const { error: upErr } = await supabase
+        .from("company_requests")
+        .update({ status: "approved" })
+        .eq("id", req.id);
+
+      if (upErr) throw upErr;
+
+      // 2) profiles -> role = corporate
+      const { error: roleErr } = await supabase
+        .from("profiles")
+        .update({ role: "corporate" })
+        .eq("id", req.user_id);
+
+      if (roleErr) throw roleErr;
+
+      setSelectedCompany(null);
+      await fetchAll();
+      alert("Şirket onaylandı. (profiles.role = corporate)");
+    } catch (e: any) {
+      console.error(e);
+      alert(`Şirket onayı sırasında hata: ${e?.message || "Unknown error"}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const rejectCompany = async (req: CompanyRequestRow) => {
+    if (!req?.id) return;
+
+    setActionLoading(true);
+    try {
+      const { error: upErr } = await supabase
+        .from("company_requests")
+        .update({ status: "rejected" })
+        .eq("id", req.id);
+
+      if (upErr) throw upErr;
+
+      if (req.user_id) {
+        const { error: roleErr } = await supabase
+          .from("profiles")
+          .update({ role: "user" })
+          .eq("id", req.user_id);
+
+        if (roleErr) throw roleErr;
+      }
+
+      setSelectedCompany(null);
+      await fetchAll();
+      alert("Şirket talebi reddedildi.");
+    } catch (e: any) {
+      console.error(e);
+      alert(`Şirket reddi sırasında hata: ${e?.message || "Unknown error"}`);
     } finally {
       setActionLoading(false);
     }
@@ -454,184 +544,297 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* COACH APPROVAL CENTER */}
-      <div className="rounded-2xl border bg-white p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="font-semibold flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              Koç Onay Merkezi
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              pending_review/pending • CV/Sertifika aç • Approve/Reject
-            </div>
-          </div>
-
-          <div className="text-xs text-gray-500">{pendingCoachApps.length} bekleyen başvuru</div>
-        </div>
-
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          {/* LEFT */}
-          <div className="rounded-xl border bg-gray-50 p-4">
-            {pendingCoachApps.length === 0 ? (
-              <div className="text-sm text-gray-600">Bekleyen başvuru yok.</div>
-            ) : (
-              <div className="space-y-2">
-                {pendingCoachApps.slice(0, 30).map((app) => (
-                  <button
-                    key={app.id}
-                    onClick={() => setSelectedApp(app)}
-                    className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
-                      selectedApp?.id === app.id ? "border-red-300 ring-2 ring-red-100" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate">
-                          {app.full_name || "İsimsiz Başvuru"}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1 truncate">
-                          {app.email || "—"} • {app.phone || "—"}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 whitespace-nowrap">
-                        {formatDate(app.created_at)}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+      {/* APPROVAL CENTERS (COACH + COMPANY) */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* COACH APPROVAL CENTER */}
+        <div className="rounded-2xl border bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-semibold flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Koç Onay Merkezi
               </div>
-            )}
+              <div className="text-xs text-gray-500 mt-1">
+                pending_review/pending • CV/Sertifika aç • Approve/Reject
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500">{pendingCoachApps.length} bekleyen başvuru</div>
           </div>
 
-          {/* RIGHT */}
-          <div className="rounded-xl border p-4">
-            {!selectedApp ? (
-              <div className="text-sm text-gray-600">Soldan bir başvuru seç.</div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {selectedApp.email || "—"} • {selectedApp.phone || "—"}
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {/* LEFT */}
+            <div className="rounded-xl border bg-gray-50 p-4">
+              {pendingCoachApps.length === 0 ? (
+                <div className="text-sm text-gray-600">Bekleyen başvuru yok.</div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingCoachApps.slice(0, 30).map((app) => (
+                    <button
+                      key={app.id}
+                      onClick={() => setSelectedApp(app)}
+                      className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
+                        selectedApp?.id === app.id ? "border-red-300 ring-2 ring-red-100" : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">
+                            {app.full_name || "İsimsiz Başvuru"}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 truncate">
+                            {app.email || "—"} • {app.phone || "—"}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(app.created_at)}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT */}
+            <div className="rounded-xl border p-4">
+              {!selectedApp ? (
+                <div className="text-sm text-gray-600">Soldan bir başvuru seç.</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {selectedApp.email || "—"} • {selectedApp.phone || "—"}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {selectedApp.city || "—"} {selectedApp.country ? ` / ${selectedApp.country}` : ""}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {selectedApp.city || "—"} {selectedApp.country ? ` / ${selectedApp.country}` : ""}
+
+                    <div className="text-xs text-gray-500">
+                      Status: <b>{selectedApp.status || "-"}</b>
                     </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Detail label="Deneyim">{(selectedApp.experience || "-").toString()}</Detail>
+                    <Detail label="Seans Ücreti">
+                      {selectedApp.session_fee != null ? `${selectedApp.session_fee} TRY` : "-"}
+                    </Detail>
+                    <Detail label="Sertifika">{selectedApp.certification || "-"}</Detail>
+                    <Detail label="Sertifika Yılı">{selectedApp.certification_year || "-"}</Detail>
+                  </div>
+
+                  <Detail label="Uzmanlık">
+                    {selectedApp.specializations ? (
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.specializations}</div>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
+                  </Detail>
+
+                  <Detail label="Bio">
+                    {selectedApp.bio ? (
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.bio}</div>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
+                  </Detail>
+
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <a
+                      href={selectedApp.linkedin || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`rounded-xl border p-3 flex items-center justify-between ${
+                        selectedApp.linkedin ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold">LinkedIn</div>
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    </a>
+
+                    <a
+                      href={selectedApp.website || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`rounded-xl border p-3 flex items-center justify-between ${
+                        selectedApp.website ? "hover:bggray-50" : "opacity-50 pointer-events-none"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold">Website</div>
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    </a>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => openSignedFile(selectedApp.cv_path)}
+                      disabled={actionLoading || !selectedApp.cv_path}
+                      className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
+                        !selectedApp.cv_path ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-semibold">CV Aç</span>
+                      </div>
+                      {actionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => openSignedFile(selectedApp.certificate_path)}
+                      disabled={actionLoading || !selectedApp.certificate_path}
+                      className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
+                        !selectedApp.certificate_path ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-semibold">Sertifika Aç</span>
+                      </div>
+                      {actionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                    <button
+                      onClick={() => rejectCoach(selectedApp)}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
+                    >
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      Reddet
+                    </button>
+
+                    <button
+                      onClick={() => approveCoach(selectedApp)}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Onayla
+                    </button>
                   </div>
 
                   <div className="text-xs text-gray-500">
-                    Status: <b>{selectedApp.status || "-"}</b>
+                    Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b>
                   </div>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
 
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <Detail label="Deneyim">{(selectedApp.experience || "-").toString()}</Detail>
-                  <Detail label="Seans Ücreti">
-                    {selectedApp.session_fee != null ? `${selectedApp.session_fee} TRY` : "-"}
-                  </Detail>
-                  <Detail label="Sertifika">{selectedApp.certification || "-"}</Detail>
-                  <Detail label="Sertifika Yılı">{selectedApp.certification_year || "-"}</Detail>
-                </div>
-
-                <Detail label="Uzmanlık">
-                  {selectedApp.specializations ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.specializations}</div>
-                  ) : (
-                    <span className="text-sm text-gray-500">—</span>
-                  )}
-                </Detail>
-
-                <Detail label="Bio">
-                  {selectedApp.bio ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.bio}</div>
-                  ) : (
-                    <span className="text-sm text-gray-500">—</span>
-                  )}
-                </Detail>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <a
-                    href={selectedApp.linkedin || "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`rounded-xl border p-3 flex items-center justify-between ${
-                      selectedApp.linkedin ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
-                    }`}
-                  >
-                    <div className="text-sm font-semibold">LinkedIn</div>
-                    <ExternalLink className="h-4 w-4 text-gray-400" />
-                  </a>
-
-                  <a
-                    href={selectedApp.website || "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`rounded-xl border p-3 flex items-center justify-between ${
-                      selectedApp.website ? "hover:bggray-50" : "opacity-50 pointer-events-none"
-                    }`}
-                  >
-                    <div className="text-sm font-semibold">Website</div>
-                    <ExternalLink className="h-4 w-4 text-gray-400" />
-                  </a>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <button
-                    onClick={() => openSignedFile(selectedApp.cv_path)}
-                    disabled={actionLoading || !selectedApp.cv_path}
-                    className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
-                      !selectedApp.cv_path ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-semibold">CV Aç</span>
-                    </div>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
-                  </button>
-
-                  <button
-                    onClick={() => openSignedFile(selectedApp.certificate_path)}
-                    disabled={actionLoading || !selectedApp.certificate_path}
-                    className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
-                      !selectedApp.certificate_path ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-semibold">Sertifika Aç</span>
-                    </div>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-2 border-t">
-                  <button
-                    onClick={() => rejectCoach(selectedApp)}
-                    disabled={actionLoading}
-                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
-                  >
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    Reddet
-                  </button>
-
-                  <button
-                    onClick={() => approveCoach(selectedApp)}
-                    disabled={actionLoading}
-                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Onayla
-                  </button>
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b>
-                </div>
+        {/* COMPANY APPROVAL CENTER */}
+        <div className="rounded-2xl border bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-semibold flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Şirket Onay Merkezi
               </div>
-            )}
+              <div className="text-xs text-gray-500 mt-1">new/pending_review/pending • Approve/Reject</div>
+            </div>
+
+            <div className="text-xs text-gray-500">{pendingCompanyRequests.length} bekleyen talep</div>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {/* LEFT */}
+            <div className="rounded-xl border bg-gray-50 p-4">
+              {pendingCompanyRequests.length === 0 ? (
+                <div className="text-sm text-gray-600">Bekleyen şirket talebi yok.</div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingCompanyRequests.slice(0, 30).map((req) => (
+                    <button
+                      key={req.id}
+                      onClick={() => setSelectedCompany(req)}
+                      className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
+                        selectedCompany?.id === req.id ? "border-red-300 ring-2 ring-red-100" : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">
+                            {req.company_name || "İsimsiz Şirket"}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 truncate">
+                            {req.email || "—"} • {req.phone || "—"}
+                          </div>
+                          <div className="text-[11px] text-gray-400 mt-1 truncate">
+                            user: {req.user_id ? shortId(req.user_id) : "—"}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 whitespace-nowrap">{formatDate(req.created_at)}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT */}
+            <div className="rounded-xl border p-4">
+              {!selectedCompany ? (
+                <div className="text-sm text-gray-600">Soldan bir şirket talebi seç.</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-lg font-bold truncate">
+                        {selectedCompany.company_name || "Şirket"}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {selectedCompany.email || "—"} • {selectedCompany.phone || "—"}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        user_id: <b>{selectedCompany.user_id ? selectedCompany.user_id : "—"}</b>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-500">
+                      Status: <b>{selectedCompany.status || "-"}</b>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                    <button
+                      onClick={() => rejectCompany(selectedCompany)}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
+                    >
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      Reddet
+                    </button>
+
+                    <button
+                      onClick={() => approveCompany(selectedCompany)}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Onayla
+                    </button>
+                  </div>
+
+                  <div className="text-xs text-gray-500">
+                    Onay = <b>company_requests.status=approved</b> + <b>profiles.role=corporate</b>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -772,7 +975,7 @@ export default function AdminDashboard() {
             left: r.company_name || r.id,
             mid: r.status || "-",
             right: formatDate(r.created_at),
-            meta: "",
+            meta: r.user_id ? `user: ${shortId(r.user_id)}` : "",
           }))}
         />
 

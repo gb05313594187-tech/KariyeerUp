@@ -4,559 +4,805 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Building2,
   Users,
-  Calendar,
-  FileText,
-  CreditCard,
+  Briefcase,
+  CalendarCheck2,
+  TrendingUp,
+  Search,
+  Filter,
+  PlusCircle,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  X,
+  Mail,
+  Phone,
+  Globe,
   BadgeCheck,
-  Inbox,
-  RefreshCcw,
-  AlertTriangle,
+  Star,
+  ChevronRight,
 } from "lucide-react";
-import { toast } from "sonner";
 
-const REQ_STATUS = ["new", "contacted", "closed"] as const;
+type TabKey = "find_coach" | "requests" | "active_sessions";
 
-function money(n: any) {
-  const v = Number(n || 0);
-  return v.toLocaleString(undefined, { style: "currency", currency: "USD" });
-}
+type CoachUI = {
+  id: string;
+  full_name: string;
+  headline: string;
+  specializations: string[];
+  languages: string[];
+  seniority: "Junior" | "Mid" | "Senior" | "Executive";
+  price_try: number;
+  rating: number;
+  verified: boolean;
+  availability: "Bugün" | "Bu hafta" | "Müsait";
+};
+
+type RequestUI = {
+  id: string;
+  created_at: string;
+  coach_id: string;
+  coach_name: string;
+  goal: string;
+  level: string;
+  notes: string;
+  status: "new" | "reviewing" | "approved" | "rejected";
+};
 
 export default function CorporateDashboard() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
-
-  // live data
   const [profile, setProfile] = useState<any>(null);
-  const [ent, setEnt] = useState<any>(null);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
 
-  // ui state
-  const [refreshing, setRefreshing] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tab, setTab] = useState<TabKey>("find_coach");
 
-  const computed = useMemo(() => {
-    const seatsTotal = ent?.seats_total ?? 0;
-    const seatsUsed = ent?.seats_used ?? 0;
-    const seatsLeft = Math.max(0, seatsTotal - seatsUsed);
+  // UI data (demo-first, product-feel)
+  const [coaches, setCoaches] = useState<CoachUI[]>([]);
+  const [requests, setRequests] = useState<RequestUI[]>([]);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]); // later: real sessions table
 
-    const sessionsTotal = ent?.sessions_total ?? 0;
-    const sessionsUsed = ent?.sessions_used ?? 0;
-    const sessionsLeft = Math.max(0, sessionsTotal - sessionsUsed);
+  // Filters
+  const [q, setQ] = useState("");
+  const [goal, setGoal] = useState("Mülakat");
+  const [level, setLevel] = useState("Mid");
+  const [lang, setLang] = useState("TR");
 
-    const reqTotal = requests?.length ?? 0;
-    const reqNew = (requests || []).filter((r) => r.status === "new").length;
-    const reqContacted = (requests || []).filter((r) => r.status === "contacted").length;
-    const reqClosed = (requests || []).filter((r) => r.status === "closed").length;
+  // Modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCoach, setSelectedCoach] = useState<CoachUI | null>(null);
+  const [notes, setNotes] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
-    const upcoming = (bookings || []).filter((b) => b.status === "scheduled").length;
-
-    const start = ent?.period_start ? String(ent.period_start) : "-";
-    const end = ent?.period_end ? String(ent.period_end) : "-";
-
-    const thisMonthSpend = (invoices || [])
-      .filter((inv) => {
-        // basit: period_end bu ay ise say
-        if (!inv?.period_end) return false;
-        const d = new Date(inv.period_end);
-        const now = new Date();
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      })
-      .reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-
-    return {
-      seatsTotal, seatsUsed, seatsLeft,
-      sessionsTotal, sessionsUsed, sessionsLeft,
-      reqTotal, reqNew, reqContacted, reqClosed,
-      upcoming,
-      periodText: `${start} → ${end}`,
-      invoiceCount: invoices?.length ?? 0,
-      thisMonthSpend,
-    };
-  }, [ent, requests, bookings, invoices]);
-
-  const safeSetError = (key: string, message?: string) => {
-    setErrors((p) => {
-      const n = { ...p };
-      if (!message) delete n[key];
-      else n[key] = message;
-      return n;
-    });
-  };
-
-  const fetchAll = async (userId: string) => {
-    setRefreshing(true);
-    setErrors({});
-
-    // 1) Profile
+  // --- Load user/profile (used for role gating + future data)
+  const bootstrap = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("corporate_profiles")
-        .select("user_id, legal_name, brand_name, status, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const { data: auth } = await supabase.auth.getUser();
+      const u = auth?.user;
+      setMe(u || null);
 
-      if (error) throw error;
-      setProfile(data || null);
-      safeSetError("profile", null);
+      if (!u?.id) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: p, error: pErr } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", u.id)
+        .single();
+
+      if (pErr) throw pErr;
+      setProfile(p);
+
+      // Demo coaches (premium feel). Later we replace with DB query.
+      setCoaches(getDemoCoaches());
+
+      // Demo requests from localStorage (persist in browser)
+      const saved = safeJsonParse(localStorage.getItem("corp_requests_v1")) || [];
+      setRequests(Array.isArray(saved) ? saved : []);
+
+      setActiveSessions([]); // later: real table
     } catch (e: any) {
-      setProfile(null);
-      safeSetError("profile", e?.message || "Profil okunamadı.");
-    }
-
-    // 2) Entitlements
-    try {
-      const { data, error } = await supabase
-        .from("corporate_entitlements")
-        .select("user_id, seats_total, seats_used, sessions_total, sessions_used, period_start, period_end, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setEnt(data || null);
-      safeSetError("entitlements", null);
-    } catch (e: any) {
-      setEnt(null);
-      safeSetError("entitlements", e?.message || "Paket/Limit okunamadı.");
-    }
-
-    // 3) Bookings (yaklaşan)
-    try {
-      const { data, error } = await supabase
-        .from("corporate_bookings")
-        .select("id, user_id, coach_id, starts_at, status, created_at")
-        .eq("user_id", userId)
-        .order("starts_at", { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-      setBookings(data || []);
-      safeSetError("bookings", null);
-    } catch (e: any) {
-      setBookings([]);
-      safeSetError("bookings", e?.message || "Planlanan seanslar okunamadı.");
-    }
-
-    // 4) Invoices
-    try {
-      const { data, error } = await supabase
-        .from("corporate_invoices")
-        .select("id, user_id, invoice_no, amount, currency, period_start, period_end, status, file_path, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setInvoices(data || []);
-      safeSetError("invoices", null);
-    } catch (e: any) {
-      setInvoices([]);
-      safeSetError("invoices", e?.message || "Faturalar okunamadı.");
-    }
-
-    // 5) Requests (senin mevcut tablon)
-    try {
-      const { data, error } = await supabase
-        .from("company_requests")
-        .select("id, user_id, company_name, contact_person, email, phone, message, status, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setRequests(data || []);
-      safeSetError("requests", null);
-    } catch (e: any) {
-      setRequests([]);
-      safeSetError("requests", e?.message || "Talepler okunamadı.");
-    }
-
-    setRefreshing(false);
-  };
-
-  const updateRequestStatus = async (id: string, next: (typeof REQ_STATUS)[number]) => {
-    const prev = requests;
-    setRequests((cur) => cur.map((r) => (r.id === id ? { ...r, status: next } : r)));
-
-    const { data, error } = await supabase
-      .from("company_requests")
-      .update({ status: next })
-      .eq("id", id)
-      .select("id,status");
-
-    if (error || !data?.length) {
-      setRequests(prev);
-      toast.error("Status güncellenemedi (RLS/Policy).");
-      return;
-    }
-    toast.success(`Status güncellendi: ${next}`);
-  };
-
-  const downloadInvoice = async (inv: any) => {
-    try {
-      if (!inv?.file_path) return;
-
-      // Bucket adı: invoices
-      const { data, error } = await supabase.storage
-        .from("invoices")
-        .download(inv.file_path);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = inv.invoice_no ? `${inv.invoice_no}.pdf` : "invoice.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      toast.error(e?.message || "Fatura indirilemedi.");
+      console.error(e);
+      toast.error(e?.message || "Kurumsal panel yüklenemedi.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user || null;
-      setMe(user);
-
-      if (user?.id) await fetchAll(user.id);
-
-      setLoading(false);
-    };
-    run();
+    bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // --- Guard (optional): if role isn't corporate, still show but warn
+  const roleWarning = useMemo(() => {
+    const r = (profile?.role || "").toString().toLowerCase();
+    if (!r) return "role boş görünüyor. (profiles.role set edilmemiş olabilir.)";
+    if (r !== "corporate" && r !== "company" && r !== "business") return `role=${profile?.role} (kurumsal bekleniyor)`;
+    return "";
+  }, [profile?.role]);
+
+  // --- KPI (demo now, real later)
+  const kpis = useMemo(() => {
+    const totalCoaches = coaches.length;
+    const openRequests = requests.filter((r) => r.status === "new" || r.status === "reviewing").length;
+    const approved = requests.filter((r) => r.status === "approved").length;
+
+    // “SLA” hissi için: yeni taleplerde ortalama dakika (demo)
+    const slaMinutes =
+      openRequests === 0
+        ? 0
+        : Math.max(
+            12,
+            Math.round(
+              requests
+                .filter((r) => r.status === "new" || r.status === "reviewing")
+                .reduce((sum, r) => sum + minutesSince(r.created_at), 0) / openRequests
+            )
+          );
+
+    // “Impact score” demo
+    const impact = Math.min(92, 48 + approved * 7 + Math.round(totalCoaches / 3));
+
+    return {
+      totalCoaches,
+      openRequests,
+      approved,
+      slaMinutes,
+      impact,
+    };
+  }, [coaches, requests]);
+
+  const filteredCoaches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return coaches
+      .filter((c) => {
+        if (!needle) return true;
+        const hay = `${c.full_name} ${c.headline} ${c.specializations.join(" ")} ${c.languages.join(" ")}`.toLowerCase();
+        return hay.includes(needle);
+      })
+      .filter((c) => (lang ? c.languages.includes(lang) : true));
+  }, [coaches, q, lang]);
+
+  const openRequestModal = (coach: CoachUI) => {
+    setSelectedCoach(coach);
+    setNotes("");
+    setModalOpen(true);
+  };
+
+  const createRequest = async () => {
+    if (!selectedCoach) return;
+
+    setActionLoading(true);
+    try {
+      const r: RequestUI = {
+        id: cryptoRandomId(),
+        created_at: new Date().toISOString(),
+        coach_id: selectedCoach.id,
+        coach_name: selectedCoach.full_name,
+        goal,
+        level,
+        notes: notes.trim(),
+        status: "new",
+      };
+
+      const next = [r, ...requests];
+      setRequests(next);
+      localStorage.setItem("corp_requests_v1", JSON.stringify(next));
+
+      setModalOpen(false);
+      setSelectedCoach(null);
+      toast.success("Talep oluşturuldu. (demo akış)");
+      setTab("requests");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Talep oluşturulamadı.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const updateRequestStatus = (id: string, status: RequestUI["status"]) => {
+    const next = requests.map((r) => (r.id === id ? { ...r, status } : r));
+    setRequests(next);
+    localStorage.setItem("corp_requests_v1", JSON.stringify(next));
+    toast.success("Durum güncellendi.");
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
-        Yükleniyor...
+      <div className="p-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-7 w-64 bg-gray-200 rounded" />
+          <div className="h-28 bg-gray-100 rounded-2xl" />
+          <div className="h-28 bg-gray-100 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   if (!me?.id) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
-        Giriş gerekli.
+      <div className="p-6">
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Kurumsal Panel</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-gray-600 space-y-2">
+            <div>Devam etmek için giriş yapmalısın.</div>
+            <div className="text-xs text-gray-500">Not: Kurumsal panel route’u /corporate/dashboard</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const hasErrors = Object.keys(errors || {}).length > 0;
-
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      {/* HEADER */}
-      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
-        <div className="max-w-6xl mx-auto px-4 py-8 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs text-white/90">Corporate Panel</p>
-            <h1 className="text-2xl font-bold text-white">Şirket Paneli</h1>
-            <p className="text-xs text-white/85 mt-1">
-              Kullanıcı: <span className="text-yellow-200">{me?.email || "-"}</span>
-            </p>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-gray-700" />
+            <h1 className="text-2xl font-bold truncate">Kurumsal Panel</h1>
+            <span className="text-xs px-2 py-1 rounded-full border bg-white text-gray-600">
+              {profile?.company_name || profile?.brand_name || "Şirket"}
+            </span>
           </div>
-
-          <div className="flex gap-2">
-            <Button
-              className="bg-white/15 text-white hover:bg-white/20 border border-white/20"
-              onClick={() => fetchAll(me.id)}
-              disabled={refreshing}
-            >
-              <RefreshCcw className="w-4 h-4 mr-2" />
-              Yenile
-            </Button>
-
-            <Button
-              className="bg-white text-red-600 hover:bg-orange-50"
-              onClick={() => (window.location.href = "/corporate/profile")}
-            >
-              Profil
-            </Button>
-
-            <Button
-              variant="outline"
-              className="border-white/60 text-white hover:bg-white/10"
-              onClick={() => (window.location.href = "/corporate/settings")}
-            >
-              Ayarlar
-            </Button>
+          <div className="text-sm text-gray-500 mt-1">
+            Koç Bul • Seans Talep Et • Taleplerim • Aktif Seanslarım
           </div>
         </div>
-      </section>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-4">
-        {/* ERROR BANNER */}
-        {hasErrors && (
-          <Card className="border-red-200">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2 text-red-700">
-                <AlertTriangle className="w-4 h-4" />
-                Bazı veriler okunamadı
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-slate-700 space-y-1">
-              {errors.profile && <div>Profil: {errors.profile}</div>}
-              {errors.entitlements && <div>Paket/Limit: {errors.entitlements}</div>}
-              {errors.bookings && <div>Planlanan Seanslar: {errors.bookings}</div>}
-              {errors.invoices && <div>Faturalar: {errors.invoices}</div>}
-              {errors.requests && <div>Açık Talepler: {errors.requests}</div>}
-            </CardContent>
-          </Card>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
+            <Mail className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-700">{me?.email}</span>
+          </div>
+          <Button
+            onClick={() => setTab("find_coach")}
+            className="rounded-xl"
+            variant="default"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Yeni Talep
+          </Button>
+        </div>
+      </div>
 
-        {/* KPI CARDS */}
-        <div className="grid md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Inbox className="w-4 h-4 text-orange-600" />
-                Açık Talepler
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <div className="text-2xl font-bold">{computed.reqTotal}</div>
-              <div className="text-xs text-slate-500 mt-1">
-                New: {computed.reqNew} • Contacted: {computed.reqContacted} • Closed: {computed.reqClosed}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Role warning */}
+      {roleWarning ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="text-sm font-semibold flex items-center gap-2">
+            <BadgeCheck className="h-4 w-4" /> Uyarı
+          </div>
+          <div className="text-sm mt-1">{roleWarning}</div>
+        </div>
+      ) : null}
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-orange-600" />
-                Katılımcı Paketi
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <div className="text-2xl font-bold">
-                {computed.seatsUsed}/{computed.seatsTotal}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                Kalan katılımcı hakkı: {computed.seatsLeft}
-              </div>
-              <div className="text-xs text-slate-500">Dönem: {computed.periodText}</div>
-            </CardContent>
-          </Card>
+      {/* Executive KPI Bar */}
+      <div className="grid gap-4 md:grid-cols-5">
+        <KpiCard title="Koç Havuzu" value={kpis.totalCoaches} icon={<Users className="h-5 w-5" />} hint="Ulaşılabilir koç" />
+        <KpiCard title="Açık Talepler" value={kpis.openRequests} icon={<Clock className="h-5 w-5" />} hint="Yanıt bekliyor" />
+        <KpiCard title="Onaylanan" value={kpis.approved} icon={<CheckCircle2 className="h-5 w-5" />} hint="İşleme alınan" />
+        <KpiCard title="Ortalama SLA" value={`${kpis.slaMinutes} dk`} icon={<TrendingUp className="h-5 w-5" />} hint="Yanıt hızı" />
+        <KpiCard title="Impact Score" value={`${kpis.impact}/100`} icon={<Sparkles className="h-5 w-5" />} hint="Demo metrik" />
+      </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-600" />
-                Seans Kredisi
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <div className="text-2xl font-bold">
-                {computed.sessionsUsed}/{computed.sessionsTotal}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">Kalan seans: {computed.sessionsLeft}</div>
-              <div className="text-xs text-slate-500">Planlanan (yaklaşan): {computed.upcoming}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-orange-600" />
-                Bu Ay Harcama
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <div className="text-2xl font-bold">{money(computed.thisMonthSpend)}</div>
-              <div className="text-xs text-slate-500 mt-1">Fatura sayısı: {computed.invoiceCount}</div>
-            </CardContent>
-          </Card>
+      {/* Tabs */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2">
+          <TabButton active={tab === "find_coach"} onClick={() => setTab("find_coach")} icon={<Briefcase className="h-4 w-4" />}>
+            Koç Bul
+          </TabButton>
+          <TabButton active={tab === "requests"} onClick={() => setTab("requests")} icon={<CalendarCheck2 className="h-4 w-4" />}>
+            Taleplerim
+          </TabButton>
+          <TabButton active={tab === "active_sessions"} onClick={() => setTab("active_sessions")} icon={<ChevronRight className="h-4 w-4" />}>
+            Aktif Seanslarım
+          </TabButton>
         </div>
 
-        {/* PROFILE STATUS + CTA */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="md:col-span-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BadgeCheck className="w-4 h-4 text-orange-600" />
-                Profil Durumu
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Durum</span>
-                <span className="font-semibold">{profile?.status || "draft"}</span>
+        {/* Search / Filters (only on coach tab) */}
+        {tab === "find_coach" ? (
+          <div className="flex flex-col md:flex-row gap-2 md:items-center">
+            <div className="relative">
+              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Koç ara (isim / uzmanlık / dil)…"
+                className="pl-9 pr-3 py-2 rounded-xl border w-[320px] max-w-full bg-white"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
+                <Filter className="h-4 w-4 text-gray-400" />
+                <select value={lang} onChange={(e) => setLang(e.target.value)} className="text-sm outline-none bg-transparent">
+                  <option value="TR">TR</option>
+                  <option value="EN">EN</option>
+                  <option value="AR">AR</option>
+                  <option value="FR">FR</option>
+                </select>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Son güncelleme</span>
-                <span className="text-slate-700">
-                  {profile?.updated_at ? new Date(profile.updated_at).toLocaleString() : "-"}
-                </span>
+
+              <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
+                <Globe className="h-4 w-4 text-gray-400" />
+                <select value={goal} onChange={(e) => setGoal(e.target.value)} className="text-sm outline-none bg-transparent">
+                  <option>Mülakat</option>
+                  <option>Kariyer Planı</option>
+                  <option>Liderlik</option>
+                  <option>Performans</option>
+                  <option>CV / LinkedIn</option>
+                </select>
               </div>
 
-              <Button className="w-full bg-orange-600 hover:bg-orange-500" onClick={() => (window.location.href = "/corporate/profile")}>
-                Profili Güncelle
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-orange-600" />
-                Yeni Talep Aç
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div className="text-slate-600">
-                Kurumsal koçluk / demo / teklif için talep oluştur.
+              <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
+                <Star className="h-4 w-4 text-gray-400" />
+                <select value={level} onChange={(e) => setLevel(e.target.value)} className="text-sm outline-none bg-transparent">
+                  <option>Junior</option>
+                  <option>Mid</option>
+                  <option>Senior</option>
+                  <option>Executive</option>
+                </select>
               </div>
-              <Button variant="outline" className="w-full" onClick={() => (window.location.href = "/for-companies")}>
-                Talep Formuna Git
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        ) : null}
+      </div>
 
-          <Card className="md:col-span-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <FileText className="w-4 h-4 text-orange-600" />
-                Faturalar
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div className="text-slate-600">
-                PDF indirilebilir. Dosya yoksa buton pasif olur.
-              </div>
-              <Button variant="outline" className="w-full" onClick={() => (window.location.href = "/corporate/invoices")}>
-                Fatura Listesine Git
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Content */}
+      {tab === "find_coach" ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Left: Coach list */}
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Koç Havuzu</CardTitle>
+                <div className="text-sm text-gray-500">
+                  Kurumsal akış: Koçu seç → Talep oluştur → Pipeline’a girsin
+                </div>
+              </CardHeader>
+              <CardContent>
+                {filteredCoaches.length === 0 ? (
+                  <div className="text-sm text-gray-600">Sonuç yok.</div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {filteredCoaches.map((c) => (
+                      <div key={c.id} className="rounded-2xl border bg-white p-4 hover:shadow-sm transition">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="text-base font-bold truncate">{c.full_name}</div>
+                              {c.verified ? (
+                                <span className="text-xs px-2 py-1 rounded-full border bg-gray-50 inline-flex items-center gap-1">
+                                  <BadgeCheck className="h-3.5 w-3.5 text-green-600" /> Verified
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1 line-clamp-2">{c.headline}</div>
+                          </div>
+                          <div className="text-right whitespace-nowrap">
+                            <div className="text-sm font-semibold">{c.price_try} TRY</div>
+                            <div className="text-xs text-gray-500">{c.availability}</div>
+                          </div>
+                        </div>
 
-        {/* REQUESTS LIST */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Inbox className="w-4 h-4 text-orange-600" />
-              Taleplerim (Son 50)
-            </CardTitle>
-            <div className="text-xs text-slate-500">{requests.length} kayıt</div>
-          </CardHeader>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {c.specializations.slice(0, 4).map((s) => (
+                            <span key={s} className="text-xs rounded-full border bg-gray-50 px-2 py-1">
+                              {s}
+                            </span>
+                          ))}
+                          <span className="text-xs rounded-full border bg-white px-2 py-1 text-gray-600">
+                            {c.languages.join(" • ")}
+                          </span>
+                        </div>
 
-          <CardContent className="text-sm">
-            {requests.length === 0 && <div className="py-4 text-slate-500">Henüz talep yok. (0 gösterilir, mock yok)</div>}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            ⭐ {c.rating.toFixed(1)} • {c.seniority}
+                          </div>
+                          <Button onClick={() => openRequestModal(c)} className="rounded-xl">
+                            Seans Talep Et
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-            {requests.map((r) => (
-              <div key={r.id} className="border rounded-xl p-4 mb-3 bg-white">
-                <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <div className="font-semibold">{r.company_name || "-"}</div>
-                    <div className="text-xs text-slate-600 mt-1">
-                      {r.contact_person || "-"} • {r.email || "-"} • {r.phone || "-"}
+          {/* Right: Quick panel */}
+          <div className="space-y-4">
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Hızlı Aksiyon</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-2xl border bg-gray-50 p-4">
+                  <div className="text-sm font-semibold">Bugün öneri</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    En hızlı dönüşüm: <b>Koç seç</b> → <b>tek tık talep</b> → <b>48 saat SLA</b>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border p-4">
+                  <div className="text-sm font-semibold">Talep şablonu</div>
+                  <div className="text-xs text-gray-500 mt-1">Hedef: {goal} • Seviye: {level} • Dil: {lang}</div>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl mt-3 w-full"
+                    onClick={() => toast.message("Şablon kopyalama (sonraki adım)")}
+                  >
+                    Şablonu Kaydet (sonra)
+                  </Button>
+                </div>
+
+                <div className="rounded-2xl border p-4">
+                  <div className="text-sm font-semibold">Pipeline</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    new → reviewing → approved → session
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                    <div className="rounded-xl border bg-gray-50 p-2 text-center">
+                      new<br /><b>{requests.filter((r) => r.status === "new").length}</b>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-2 text-center">
+                      reviewing<br /><b>{requests.filter((r) => r.status === "reviewing").length}</b>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-2 text-center">
+                      approved<br /><b>{requests.filter((r) => r.status === "approved").length}</b>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {r.created_at ? new Date(r.created_at).toLocaleString() : "-"}
-                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                {r.message && <div className="mt-2 text-sm">{r.message}</div>}
-
-                <div className="mt-3 flex gap-2 flex-wrap">
-                  {REQ_STATUS.map((s) => (
-                    <Button
-                      key={s}
-                      size="sm"
-                      variant={r.status === s ? "default" : "outline"}
-                      onClick={() => updateRequestStatus(r.id, s)}
-                    >
-                      {s}
-                    </Button>
-                  ))}
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Destek</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <span>Kurumsal SLA: 24-48 saat</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <span>Onboarding: şirket profili tamamla</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "requests" ? (
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Taleplerim</CardTitle>
+            <div className="text-sm text-gray-500">Demo akış: talepler tarayıcıda saklanır. Sonraki adım DB.</div>
+          </CardHeader>
+          <CardContent>
+            {requests.length === 0 ? (
+              <div className="text-sm text-gray-600">
+                Henüz talep yok. <Button className="ml-2 rounded-xl" onClick={() => setTab("find_coach")}>Koç Bul</Button>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {requests.map((r) => (
+                  <div key={r.id} className="rounded-2xl border bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold truncate">{r.coach_name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {r.goal} • {r.level} • {formatDate(r.created_at)}
+                        </div>
+                        {r.notes ? <div className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{r.notes}</div> : null}
+                      </div>
+                      <div className="text-right whitespace-nowrap">
+                        <StatusPill status={r.status} />
+                        <div className="mt-2 flex items-center gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => updateRequestStatus(r.id, "reviewing")}
+                          >
+                            Reviewing
+                          </Button>
+                          <Button
+                            className="rounded-xl"
+                            onClick={() => updateRequestStatus(r.id, "approved")}
+                          >
+                            Approve
+                          </Button>
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            variant="ghost"
+                            className="rounded-xl text-red-600 hover:text-red-700"
+                            onClick={() => updateRequestStatus(r.id, "rejected")}
+                          >
+                            Reddet
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+      ) : null}
 
-        {/* BOOKINGS */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-orange-600" />
-              Planlanan Seanslar (Yaklaşan)
-            </CardTitle>
-            <div className="text-xs text-slate-500">{bookings.length} kayıt</div>
+      {tab === "active_sessions" ? (
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Aktif Seanslarım</CardTitle>
+            <div className="text-sm text-gray-500">Bir sonraki adım: sessions tablosu + takvim + faturalama</div>
           </CardHeader>
-
-          <CardContent className="text-sm">
-            {bookings.length === 0 && <div className="py-4 text-slate-500">Henüz planlanan seans yok. (0 gösterilir, mock yok)</div>}
-
-            {bookings.map((b) => (
-              <div key={b.id} className="border rounded-xl p-4 mb-3 bg-white flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">{b.status || "scheduled"}</div>
-                  <div className="text-xs text-slate-600 mt-1">
-                    {b.starts_at ? new Date(b.starts_at).toLocaleString() : "-"}
-                    {b.coach_id ? ` • coach: ${b.coach_id}` : ""}
-                  </div>
-                </div>
+          <CardContent>
+            <div className="rounded-2xl border bg-gray-50 p-5">
+              <div className="text-sm font-semibold">Şu an boş (normal)</div>
+              <div className="text-sm text-gray-600 mt-1">
+                Önce “Talep → Onay → Seans” akışını DB’ye bağlayacağız. UI hazır.
               </div>
-            ))}
-
-            <Button variant="outline" disabled className="mt-2">
-              Takvime Git (yakında)
-            </Button>
-         ς
+              <Button className="rounded-xl mt-4" onClick={() => setTab("find_coach")}>
+                Koç Bul
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
+      ) : null}
 
-        {/* INVOICES */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <FileText className="w-4 h-4 text-orange-600" />
-              Faturalar (İndirilebilir)
-            </CardTitle>
-            <div className="text-xs text-slate-500">{invoices.length} kayıt</div>
-          </CardHeader>
+      {/* Modal */}
+      {modalOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white border shadow-xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="min-w-0">
+                <div className="text-lg font-bold truncate">Seans Talebi Oluştur</div>
+                <div className="text-sm text-gray-500 truncate">
+                  {selectedCoach ? `${selectedCoach.full_name} • ${selectedCoach.headline}` : ""}
+                </div>
+              </div>
+              <button
+                className="p-2 rounded-xl hover:bg-gray-100"
+                onClick={() => {
+                  setModalOpen(false);
+                  setSelectedCoach(null);
+                }}
+                aria-label="Kapat"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
 
-          <CardContent className="text-sm">
-            {invoices.length === 0 && <div className="py-4 text-slate-500">Henüz fatura yok. (0 gösterilir, mock yok)</div>}
+            <div className="p-4 space-y-4">
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="rounded-xl border p-3">
+                  <div className="text-xs text-gray-500">Hedef</div>
+                  <select value={goal} onChange={(e) => setGoal(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                    <option>Mülakat</option>
+                    <option>Kariyer Planı</option>
+                    <option>Liderlik</option>
+                    <option>Performans</option>
+                    <option>CV / LinkedIn</option>
+                  </select>
+                </div>
 
-            {invoices.map((inv) => (
-              <div key={inv.id} className="border rounded-xl p-4 mb-3 bg-white flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold">{inv.invoice_no || "-"}</div>
-                  <div className="text-xs text-slate-600 mt-1">
-                    {inv.period_start || "-"} → {inv.period_end || "-"} • {inv.status || "-"}
-                  </div>
-                  <div className="text-sm mt-1">{money(inv.amount || 0)}</div>
+                <div className="rounded-xl border p-3">
+                  <div className="text-xs text-gray-500">Seviye</div>
+                  <select value={level} onChange={(e) => setLevel(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                    <option>Junior</option>
+                    <option>Mid</option>
+                    <option>Senior</option>
+                    <option>Executive</option>
+                  </select>
+                </div>
+
+                <div className="rounded-xl border p-3">
+                  <div className="text-xs text-gray-500">Dil</div>
+                  <select value={lang} onChange={(e) => setLang(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                    <option value="TR">TR</option>
+                    <option value="EN">EN</option>
+                    <option value="AR">AR</option>
+                    <option value="FR">FR</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="rounded-xl border p-3">
+                <div className="text-xs text-gray-500">Not (opsiyonel)</div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Kısa brief: hangi rol, hedef, problem, deadline..."
+                  className="mt-2 w-full min-h-[120px] outline-none text-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <div className="text-xs text-gray-500">
+                  Bu adım demo: sonra DB’ye bağlayıp “company_requests / sessions” pipeline’ına aktaracağız.
                 </div>
 
                 <Button
-                  variant={inv.file_path ? "default" : "outline"}
-                  disabled={!inv.file_path}
-                  onClick={() => downloadInvoice(inv)}
+                  disabled={actionLoading || !selectedCoach}
+                  onClick={createRequest}
+                  className="rounded-xl"
                 >
-                  PDF İndir
+                  {actionLoading ? "Oluşturuluyor..." : "Talebi Oluştur"}
+                  <CheckCircle2 className="h-4 w-4 ml-2" />
                 </Button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <div className="text-xs text-slate-500">
-          Bu panel enterprise mantığında: veriler Supabase’ten okunur; veri yoksa 0 görünür. “Okunamadı” hatası çıkarsa sorun %99: tablo yok / kolon adı farklı / RLS policy eksik.
+            </div>
+          </div>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* =======================
+   UI Helpers
+======================= */
+
+function KpiCard({
+  title,
+  value,
+  icon,
+  hint,
+}: {
+  title: string;
+  value: any;
+  icon: JSX.Element;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border bg-white p-4 flex items-center gap-4">
+      <div className="p-3 rounded-xl bg-gray-50 border">{icon}</div>
+      <div className="min-w-0">
+        <div className="text-sm text-gray-500">{title}</div>
+        <div className="text-2xl font-bold">{value}</div>
+        {hint ? <div className="text-xs text-gray-400 mt-1">{hint}</div> : null}
       </div>
     </div>
   );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: JSX.Element;
+  children: any;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition ${
+        active ? "bg-red-600 text-white border-red-600" : "bg-white hover:bg-gray-50"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const s = (status || "").toLowerCase();
+  const map: any = {
+    new: "bg-blue-50 text-blue-700 border-blue-200",
+    reviewing: "bg-amber-50 text-amber-800 border-amber-200",
+    approved: "bg-green-50 text-green-700 border-green-200",
+    rejected: "bg-red-50 text-red-700 border-red-200",
+  };
+  const cls = map[s] || "bg-gray-50 text-gray-700 border-gray-200";
+  return <span className={`text-xs px-2 py-1 rounded-full border ${cls}`}>{s || "-"}</span>;
+}
+
+/* =======================
+   Logic Helpers
+======================= */
+
+function formatDate(s?: string) {
+  if (!s) return "-";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleString("tr-TR");
+}
+
+function minutesSince(iso: string) {
+  const t = new Date(iso).getTime();
+  if (!t) return 0;
+  return Math.max(1, Math.round((Date.now() - t) / 60000));
+}
+
+function cryptoRandomId() {
+  try {
+    // @ts-ignore
+    return crypto.randomUUID();
+  } catch {
+    return `req_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+  }
+}
+
+function safeJsonParse(v: any) {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+}
+
+function getDemoCoaches(): CoachUI[] {
+  return [
+    {
+      id: "c_001",
+      full_name: "Çağatay Koç",
+      headline: "Senior Product Leader • Kurumsal kariyer planı • Mülakat & terfi stratejisi",
+      specializations: ["Mülakat", "Liderlik", "Performans", "Kariyer Planı"],
+      languages: ["TR", "EN"],
+      seniority: "Senior",
+      price_try: 2500,
+      rating: 4.8,
+      verified: true,
+      availability: "Bu hafta",
+    },
+    {
+      id: "c_002",
+      full_name: "Yağız Sabuncuoğlu",
+      headline: "Engineering Manager • Teknik mülakat • Takım yönetimi • OKR & hedef sistemi",
+      specializations: ["Mülakat", "Liderlik", "OKR", "Takım Yönetimi"],
+      languages: ["TR", "EN"],
+      seniority: "Senior",
+      price_try: 2200,
+      rating: 4.7,
+      verified: true,
+      availability: "Bugün",
+    },
+    {
+      id: "c_003",
+      full_name: "Souha Ben Salem",
+      headline: "HRBP • Kurumsal yetenek gelişimi • 360 performans • Eğitim programı tasarımı",
+      specializations: ["Performans", "İK", "Yetkinlik", "Eğitim Programı"],
+      languages: ["TR", "AR", "FR"],
+      seniority: "Executive",
+      price_try: 3000,
+      rating: 4.9,
+      verified: true,
+      availability: "Müsait",
+    },
+    {
+      id: "c_004",
+      full_name: "Ayşe Yılmaz",
+      headline: "Career Coach • CV/LinkedIn • Mülakat simülasyonu • Rol geçişi",
+      specializations: ["CV / LinkedIn", "Mülakat", "Rol Geçişi"],
+      languages: ["TR"],
+      seniority: "Mid",
+      price_try: 1500,
+      rating: 4.6,
+      verified: false,
+      availability: "Bu hafta",
+    },
+  ];
 }

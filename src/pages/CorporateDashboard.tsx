@@ -60,10 +60,10 @@ export default function CorporateDashboard() {
 
   const [tab, setTab] = useState<TabKey>("find_coach");
 
-  // UI data (demo-first, product-feel)
+  // UI data
   const [coaches, setCoaches] = useState<CoachUI[]>([]);
   const [requests, setRequests] = useState<RequestUI[]>([]);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]); // later: real sessions table
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
   // Filters
   const [q, setQ] = useState("");
@@ -77,7 +77,47 @@ export default function CorporateDashboard() {
   const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  // --- Load user/profile (used for role gating + future data)
+  /* =========================
+     DB WIRING (CORPORATE)
+  ========================== */
+
+  const isCorporateRole = (role?: any) => {
+    const r = (role || "").toString().toLowerCase();
+    return r === "corporate" || r === "company" || r === "business";
+  };
+
+  const fetchRequestsFromDB = async (uid: string) => {
+    // ✅ table: public.corporate_session_requests
+    // columns assumed (based on your SQL screenshots):
+    // id, corporate_user_id, coach_user_id, language, notes, status, created_at, updated_at
+    // if you added others (goal/level), we also try to read them safely.
+
+    const { data, error } = await supabase
+      .from("corporate_session_requests")
+      .select("*")
+      .eq("corporate_user_id", uid)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      toast.error("Talepler DB’den okunamadı: " + error.message);
+      return;
+    }
+
+    const mapped: RequestUI[] = (data || []).map((r: any) => ({
+      id: r.id,
+      created_at: r.created_at || new Date().toISOString(),
+      coach_id: r.coach_user_id || r.coach_id || "—",
+      coach_name: r.coach_name || r.coach_full_name || "Koç",
+      goal: r.goal || goal,
+      level: r.level || level,
+      notes: r.notes || "",
+      status: (r.status || "new") as any,
+    }));
+
+    setRequests(mapped);
+  };
+
   const bootstrap = async () => {
     setLoading(true);
     try {
@@ -99,14 +139,21 @@ export default function CorporateDashboard() {
       if (pErr) throw pErr;
       setProfile(p);
 
-      // Demo coaches (premium feel). Later we replace with DB query.
+      // ✅ HARD GUARD: corporate değilse çık
+      if (!isCorporateRole(p?.role)) {
+        toast.error("Bu sayfa sadece kurumsal hesaplar içindir.");
+        window.location.href = "/";
+        return;
+      }
+
+      // Coaches: demo (sonra DB)
       setCoaches(getDemoCoaches());
 
-      // Demo requests from localStorage (persist in browser)
-      const saved = safeJsonParse(localStorage.getItem("corp_requests_v1")) || [];
-      setRequests(Array.isArray(saved) ? saved : []);
+      // ✅ Requests: DB
+      await fetchRequestsFromDB(u.id);
 
-      setActiveSessions([]); // later: real table
+      // sessions: later
+      setActiveSessions([]);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Kurumsal panel yüklenemedi.");
@@ -120,21 +167,12 @@ export default function CorporateDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Guard (optional): if role isn't corporate, still show but warn
-  const roleWarning = useMemo(() => {
-    const r = (profile?.role || "").toString().toLowerCase();
-    if (!r) return "role boş görünüyor. (profiles.role set edilmemiş olabilir.)";
-    if (r !== "corporate" && r !== "company" && r !== "business") return `role=${profile?.role} (kurumsal bekleniyor)`;
-    return "";
-  }, [profile?.role]);
-
-  // --- KPI (demo now, real later)
+  // KPI (DB-driven now)
   const kpis = useMemo(() => {
     const totalCoaches = coaches.length;
     const openRequests = requests.filter((r) => r.status === "new" || r.status === "reviewing").length;
     const approved = requests.filter((r) => r.status === "approved").length;
 
-    // “SLA” hissi için: yeni taleplerde ortalama dakika (demo)
     const slaMinutes =
       openRequests === 0
         ? 0
@@ -147,16 +185,9 @@ export default function CorporateDashboard() {
             )
           );
 
-    // “Impact score” demo
     const impact = Math.min(92, 48 + approved * 7 + Math.round(totalCoaches / 3));
 
-    return {
-      totalCoaches,
-      openRequests,
-      approved,
-      slaMinutes,
-      impact,
-    };
+    return { totalCoaches, openRequests, approved, slaMinutes, impact };
   }, [coaches, requests]);
 
   const filteredCoaches = useMemo(() => {
@@ -181,25 +212,38 @@ export default function CorporateDashboard() {
 
     setActionLoading(true);
     try {
-      const r: RequestUI = {
-        id: cryptoRandomId(),
-        created_at: new Date().toISOString(),
-        coach_id: selectedCoach.id,
-        coach_name: selectedCoach.full_name,
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id;
+      if (!uid) {
+        toast.error("Giriş bulunamadı.");
+        setActionLoading(false);
+        return;
+      }
+
+      // ✅ INSERT to DB
+      const payload: any = {
+        corporate_user_id: uid,
+        coach_user_id: selectedCoach.id, // demo coach id (later: real coach user_id)
+        language: lang,
+        notes: notes.trim() || null,
+        status: "new",
+        // If your table has these columns, they will be saved; if not, harmless to remove:
         goal,
         level,
-        notes: notes.trim(),
-        status: "new",
+        coach_name: selectedCoach.full_name, // if column exists
       };
 
-      const next = [r, ...requests];
-      setRequests(next);
-      localStorage.setItem("corp_requests_v1", JSON.stringify(next));
+      const { error } = await supabase.from("corporate_session_requests").insert(payload);
 
+      if (error) throw error;
+
+      toast.success("Talep oluşturuldu.");
       setModalOpen(false);
       setSelectedCoach(null);
-      toast.success("Talep oluşturuldu. (demo akış)");
       setTab("requests");
+
+      // ✅ refresh list from DB
+      await fetchRequestsFromDB(uid);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Talep oluşturulamadı.");
@@ -208,11 +252,26 @@ export default function CorporateDashboard() {
     }
   };
 
-  const updateRequestStatus = (id: string, status: RequestUI["status"]) => {
-    const next = requests.map((r) => (r.id === id ? { ...r, status } : r));
-    setRequests(next);
-    localStorage.setItem("corp_requests_v1", JSON.stringify(next));
-    toast.success("Durum güncellendi.");
+  const updateRequestStatus = async (id: string, status: RequestUI["status"]) => {
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id;
+      if (!uid) return toast.error("Giriş yok.");
+
+      const { error } = await supabase
+        .from("corporate_session_requests")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("corporate_user_id", uid);
+
+      if (error) throw error;
+
+      toast.success("Durum güncellendi.");
+      await fetchRequestsFromDB(uid);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Durum güncellenemedi.");
+    }
   };
 
   if (loading) {
@@ -255,9 +314,7 @@ export default function CorporateDashboard() {
               {profile?.company_name || profile?.brand_name || "Şirket"}
             </span>
           </div>
-          <div className="text-sm text-gray-500 mt-1">
-            Koç Bul • Seans Talep Et • Taleplerim • Aktif Seanslarım
-          </div>
+          <div className="text-sm text-gray-500 mt-1">Koç Bul • Seans Talep Et • Taleplerim • Aktif Seanslarım</div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -265,26 +322,12 @@ export default function CorporateDashboard() {
             <Mail className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-700">{me?.email}</span>
           </div>
-          <Button
-            onClick={() => setTab("find_coach")}
-            className="rounded-xl"
-            variant="default"
-          >
+          <Button onClick={() => setTab("find_coach")} className="rounded-xl" variant="default">
             <PlusCircle className="h-4 w-4 mr-2" />
             Yeni Talep
           </Button>
         </div>
       </div>
-
-      {/* Role warning */}
-      {roleWarning ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-          <div className="text-sm font-semibold flex items-center gap-2">
-            <BadgeCheck className="h-4 w-4" /> Uyarı
-          </div>
-          <div className="text-sm mt-1">{roleWarning}</div>
-        </div>
-      ) : null}
 
       {/* Executive KPI Bar */}
       <div className="grid gap-4 md:grid-cols-5">
@@ -309,7 +352,7 @@ export default function CorporateDashboard() {
           </TabButton>
         </div>
 
-        {/* Search / Filters (only on coach tab) */}
+        {/* Search / Filters */}
         {tab === "find_coach" ? (
           <div className="flex flex-col md:flex-row gap-2 md:items-center">
             <div className="relative">
@@ -366,9 +409,7 @@ export default function CorporateDashboard() {
             <Card className="rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Koç Havuzu</CardTitle>
-                <div className="text-sm text-gray-500">
-                  Kurumsal akış: Koçu seç → Talep oluştur → Pipeline’a girsin
-                </div>
+                <div className="text-sm text-gray-500">Kurumsal akış: Koçu seç → Talep oluştur → Pipeline’a girsin</div>
               </CardHeader>
               <CardContent>
                 {filteredCoaches.length === 0 ? (
@@ -407,9 +448,7 @@ export default function CorporateDashboard() {
                         </div>
 
                         <div className="mt-3 flex items-center justify-between">
-                          <div className="text-xs text-gray-500">
-                            ⭐ {c.rating.toFixed(1)} • {c.seniority}
-                          </div>
+                          <div className="text-xs text-gray-500">⭐ {c.rating.toFixed(1)} • {c.seniority}</div>
                           <Button onClick={() => openRequestModal(c)} className="rounded-xl">
                             Seans Talep Et
                             <ArrowRight className="h-4 w-4 ml-2" />
@@ -451,9 +490,7 @@ export default function CorporateDashboard() {
 
                 <div className="rounded-2xl border p-4">
                   <div className="text-sm font-semibold">Pipeline</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    new → reviewing → approved → session
-                  </div>
+                  <div className="text-sm text-gray-600 mt-1">new → reviewing → approved → session</div>
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-xl border bg-gray-50 p-2 text-center">
                       new<br /><b>{requests.filter((r) => r.status === "new").length}</b>
@@ -492,7 +529,7 @@ export default function CorporateDashboard() {
         <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Taleplerim</CardTitle>
-            <div className="text-sm text-gray-500">Demo akış: talepler tarayıcıda saklanır. Sonraki adım DB.</div>
+            <div className="text-sm text-gray-500">DB akış: corporate_session_requests tablosundan okunur / güncellenir.</div>
           </CardHeader>
           <CardContent>
             {requests.length === 0 ? (
@@ -514,17 +551,10 @@ export default function CorporateDashboard() {
                       <div className="text-right whitespace-nowrap">
                         <StatusPill status={r.status} />
                         <div className="mt-2 flex items-center gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => updateRequestStatus(r.id, "reviewing")}
-                          >
+                          <Button variant="outline" className="rounded-xl" onClick={() => updateRequestStatus(r.id, "reviewing")}>
                             Reviewing
                           </Button>
-                          <Button
-                            className="rounded-xl"
-                            onClick={() => updateRequestStatus(r.id, "approved")}
-                          >
+                          <Button className="rounded-xl" onClick={() => updateRequestStatus(r.id, "approved")}>
                             Approve
                           </Button>
                         </div>
@@ -556,9 +586,7 @@ export default function CorporateDashboard() {
           <CardContent>
             <div className="rounded-2xl border bg-gray-50 p-5">
               <div className="text-sm font-semibold">Şu an boş (normal)</div>
-              <div className="text-sm text-gray-600 mt-1">
-                Önce “Talep → Onay → Seans” akışını DB’ye bağlayacağız. UI hazır.
-              </div>
+              <div className="text-sm text-gray-600 mt-1">Önce “Talep → Onay → Seans” akışını DB’ye bağladık. UI hazır.</div>
               <Button className="rounded-xl mt-4" onClick={() => setTab("find_coach")}>
                 Koç Bul
                 <ArrowRight className="h-4 w-4 ml-2" />
@@ -636,15 +664,9 @@ export default function CorporateDashboard() {
               </div>
 
               <div className="flex items-center justify-between gap-3 pt-2">
-                <div className="text-xs text-gray-500">
-                  Bu adım demo: sonra DB’ye bağlayıp “company_requests / sessions” pipeline’ına aktaracağız.
-                </div>
+                <div className="text-xs text-gray-500">Bu adım artık DB: corporate_session_requests</div>
 
-                <Button
-                  disabled={actionLoading || !selectedCoach}
-                  onClick={createRequest}
-                  className="rounded-xl"
-                >
+                <Button disabled={actionLoading || !selectedCoach} onClick={createRequest} className="rounded-xl">
                   {actionLoading ? "Oluşturuluyor..." : "Talebi Oluştur"}
                   <CheckCircle2 className="h-4 w-4 ml-2" />
                 </Button>
@@ -661,17 +683,7 @@ export default function CorporateDashboard() {
    UI Helpers
 ======================= */
 
-function KpiCard({
-  title,
-  value,
-  icon,
-  hint,
-}: {
-  title: string;
-  value: any;
-  icon: JSX.Element;
-  hint?: string;
-}) {
+function KpiCard({ title, value, icon, hint }: { title: string; value: any; icon: JSX.Element; hint?: string }) {
   return (
     <div className="rounded-2xl border bg-white p-4 flex items-center gap-4">
       <div className="p-3 rounded-xl bg-gray-50 border">{icon}</div>
@@ -684,17 +696,7 @@ function KpiCard({
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: JSX.Element;
-  children: any;
-}) {
+function TabButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: JSX.Element; children: any }) {
   return (
     <button
       onClick={onClick}
@@ -735,23 +737,6 @@ function minutesSince(iso: string) {
   const t = new Date(iso).getTime();
   if (!t) return 0;
   return Math.max(1, Math.round((Date.now() - t) / 60000));
-}
-
-function cryptoRandomId() {
-  try {
-    // @ts-ignore
-    return crypto.randomUUID();
-  } catch {
-    return `req_${Math.random().toString(16).slice(2)}_${Date.now()}`;
-  }
-}
-
-function safeJsonParse(v: any) {
-  try {
-    return JSON.parse(v);
-  } catch {
-    return null;
-  }
 }
 
 function getDemoCoaches(): CoachUI[] {

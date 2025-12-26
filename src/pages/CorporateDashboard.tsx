@@ -30,7 +30,7 @@ import {
 type TabKey = "find_coach" | "requests" | "active_sessions";
 
 type CoachUI = {
-  id: string;
+  id: string; // ✅ uuid (profiles.id)
   full_name: string;
   headline: string;
   specializations: string[];
@@ -57,7 +57,6 @@ export default function CorporateDashboard() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-
   const [tab, setTab] = useState<TabKey>("find_coach");
 
   // UI data
@@ -77,21 +76,54 @@ export default function CorporateDashboard() {
   const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  /* =========================
-     DB WIRING (CORPORATE)
-  ========================== */
-
+  /* ========================= DB WIRING (CORPORATE) ========================== */
   const isCorporateRole = (role?: any) => {
     const r = (role || "").toString().toLowerCase();
     return r === "corporate" || r === "company" || r === "business";
   };
 
-  const fetchRequestsFromDB = async (uid: string) => {
-    // ✅ table: public.corporate_session_requests
-    // columns assumed (based on your SQL screenshots):
-    // id, corporate_user_id, coach_user_id, language, notes, status, created_at, updated_at
-    // if you added others (goal/level), we also try to read them safely.
+  // ✅ KOÇLARI DB'DEN ÇEK (profiles.role='coach')
+  const fetchCoachesFromDB = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      // ✅ sende kesin olan kolonlar:
+      .select("id, email, role, full_name")
+      .ilike("role", "coach")
+      .order("created_at", { ascending: false });
 
+    if (error) {
+      console.error(error);
+      toast.error("Koçlar DB’den okunamadı: " + error.message);
+      return;
+    }
+
+    const mapped: CoachUI[] = (data || []).map((c: any, idx: number) => {
+      const name =
+        (c?.full_name && c.full_name.trim()) ||
+        (c?.email ? c.email.split("@")[0] : "") ||
+        "Koç";
+
+      // DB’de henüz bu alanlar yoksa default veriyoruz:
+      const defaults = defaultCoachMeta(idx, name);
+
+      return {
+        id: c.id, // ✅ uuid
+        full_name: name,
+        headline: defaults.headline,
+        specializations: defaults.specializations,
+        languages: defaults.languages,
+        seniority: defaults.seniority,
+        price_try: defaults.price_try,
+        rating: defaults.rating,
+        verified: defaults.verified,
+        availability: defaults.availability,
+      };
+    });
+
+    setCoaches(mapped);
+  };
+
+  const fetchRequestsFromDB = async (uid: string) => {
     const { data, error } = await supabase
       .from("corporate_session_requests")
       .select("*")
@@ -104,16 +136,21 @@ export default function CorporateDashboard() {
       return;
     }
 
-    const mapped: RequestUI[] = (data || []).map((r: any) => ({
-      id: r.id,
-      created_at: r.created_at || new Date().toISOString(),
-      coach_id: r.coach_user_id || r.coach_id || "—",
-      coach_name: r.coach_name || r.coach_full_name || "Koç",
-      goal: r.goal || goal,
-      level: r.level || level,
-      notes: r.notes || "",
-      status: (r.status || "new") as any,
-    }));
+    const mapped: RequestUI[] = (data || []).map((r: any) => {
+      const coachId = r.coach_user_id || r.coach_id || r.coach_ref || "—";
+      const coachName =
+        r.coach_name || r.coach_full_name || r.coach_display_name || "Koç";
+      return {
+        id: r.id,
+        created_at: r.created_at || new Date().toISOString(),
+        coach_id: coachId,
+        coach_name: coachName,
+        goal: r.goal || "Mülakat",
+        level: r.level || "Mid",
+        notes: r.notes || "",
+        status: (r.status || "new") as any,
+      };
+    });
 
     setRequests(mapped);
   };
@@ -137,17 +174,17 @@ export default function CorporateDashboard() {
         .single();
 
       if (pErr) throw pErr;
+
       setProfile(p);
 
-      // ✅ HARD GUARD: corporate değilse çık
       if (!isCorporateRole(p?.role)) {
         toast.error("Bu sayfa sadece kurumsal hesaplar içindir.");
-        window.location.href = "/";
+        setLoading(false);
         return;
       }
 
-      // Coaches: demo (sonra DB)
-      setCoaches(getDemoCoaches());
+      // ✅ Coaches: DB
+      await fetchCoachesFromDB();
 
       // ✅ Requests: DB
       await fetchRequestsFromDB(u.id);
@@ -167,10 +204,12 @@ export default function CorporateDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // KPI (DB-driven now)
+  // KPI (DB-driven)
   const kpis = useMemo(() => {
     const totalCoaches = coaches.length;
-    const openRequests = requests.filter((r) => r.status === "new" || r.status === "reviewing").length;
+    const openRequests = requests.filter(
+      (r) => r.status === "new" || r.status === "reviewing"
+    ).length;
     const approved = requests.filter((r) => r.status === "approved").length;
 
     const slaMinutes =
@@ -181,7 +220,8 @@ export default function CorporateDashboard() {
             Math.round(
               requests
                 .filter((r) => r.status === "new" || r.status === "reviewing")
-                .reduce((sum, r) => sum + minutesSince(r.created_at), 0) / openRequests
+                .reduce((sum, r) => sum + minutesSince(r.created_at), 0) /
+                openRequests
             )
           );
 
@@ -195,7 +235,9 @@ export default function CorporateDashboard() {
     return coaches
       .filter((c) => {
         if (!needle) return true;
-        const hay = `${c.full_name} ${c.headline} ${c.specializations.join(" ")} ${c.languages.join(" ")}`.toLowerCase();
+        const hay = `${c.full_name} ${c.headline} ${c.specializations.join(
+          " "
+        )} ${c.languages.join(" ")}`.toLowerCase();
         return hay.includes(needle);
       })
       .filter((c) => (lang ? c.languages.includes(lang) : true));
@@ -209,31 +251,30 @@ export default function CorporateDashboard() {
 
   const createRequest = async () => {
     if (!selectedCoach) return;
-
     setActionLoading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth?.user?.id;
       if (!uid) {
         toast.error("Giriş bulunamadı.");
-        setActionLoading(false);
         return;
       }
 
-      // ✅ INSERT to DB
       const payload: any = {
         corporate_user_id: uid,
-        coach_user_id: selectedCoach.id, // demo coach id (later: real coach user_id)
+        // ✅ artık uuid geliyor (profiles.id)
+        coach_user_id: selectedCoach.id,
         language: lang,
-        notes: notes.trim() || null,
-        status: "new",
-        // If your table has these columns, they will be saved; if not, harmless to remove:
         goal,
         level,
-        coach_name: selectedCoach.full_name, // if column exists
+        notes: notes.trim() || null,
+        status: "new",
+        coach_name: selectedCoach.full_name,
       };
 
-      const { error } = await supabase.from("corporate_session_requests").insert(payload);
+      const { error } = await supabase
+        .from("corporate_session_requests")
+        .insert(payload);
 
       if (error) throw error;
 
@@ -241,8 +282,6 @@ export default function CorporateDashboard() {
       setModalOpen(false);
       setSelectedCoach(null);
       setTab("requests");
-
-      // ✅ refresh list from DB
       await fetchRequestsFromDB(uid);
     } catch (e: any) {
       console.error(e);
@@ -260,7 +299,10 @@ export default function CorporateDashboard() {
 
       const { error } = await supabase
         .from("corporate_session_requests")
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", id)
         .eq("corporate_user_id", uid);
 
@@ -295,7 +337,9 @@ export default function CorporateDashboard() {
           </CardHeader>
           <CardContent className="text-sm text-gray-600 space-y-2">
             <div>Devam etmek için giriş yapmalısın.</div>
-            <div className="text-xs text-gray-500">Not: Kurumsal panel route’u /corporate/dashboard</div>
+            <div className="text-xs text-gray-500">
+              Not: Kurumsal panel route’u /corporate/dashboard
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -314,15 +358,20 @@ export default function CorporateDashboard() {
               {profile?.company_name || profile?.brand_name || "Şirket"}
             </span>
           </div>
-          <div className="text-sm text-gray-500 mt-1">Koç Bul • Seans Talep Et • Taleplerim • Aktif Seanslarım</div>
+          <div className="text-sm text-gray-500 mt-1">
+            Koç Bul • Seans Talep Et • Taleplerim • Aktif Seanslarım
+          </div>
         </div>
-
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
             <Mail className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-700">{me?.email}</span>
           </div>
-          <Button onClick={() => setTab("find_coach")} className="rounded-xl" variant="default">
+          <Button
+            onClick={() => setTab("find_coach")}
+            className="rounded-xl"
+            variant="default"
+          >
             <PlusCircle className="h-4 w-4 mr-2" />
             Yeni Talep
           </Button>
@@ -331,23 +380,60 @@ export default function CorporateDashboard() {
 
       {/* Executive KPI Bar */}
       <div className="grid gap-4 md:grid-cols-5">
-        <KpiCard title="Koç Havuzu" value={kpis.totalCoaches} icon={<Users className="h-5 w-5" />} hint="Ulaşılabilir koç" />
-        <KpiCard title="Açık Talepler" value={kpis.openRequests} icon={<Clock className="h-5 w-5" />} hint="Yanıt bekliyor" />
-        <KpiCard title="Onaylanan" value={kpis.approved} icon={<CheckCircle2 className="h-5 w-5" />} hint="İşleme alınan" />
-        <KpiCard title="Ortalama SLA" value={`${kpis.slaMinutes} dk`} icon={<TrendingUp className="h-5 w-5" />} hint="Yanıt hızı" />
-        <KpiCard title="Impact Score" value={`${kpis.impact}/100`} icon={<Sparkles className="h-5 w-5" />} hint="Demo metrik" />
+        <KpiCard
+          title="Koç Havuzu"
+          value={kpis.totalCoaches}
+          icon={<Users className="h-5 w-5" />}
+          hint="Ulaşılabilir koç"
+        />
+        <KpiCard
+          title="Açık Talepler"
+          value={kpis.openRequests}
+          icon={<Clock className="h-5 w-5" />}
+          hint="Yanıt bekliyor"
+        />
+        <KpiCard
+          title="Onaylanan"
+          value={kpis.approved}
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          hint="İşleme alınan"
+        />
+        <KpiCard
+          title="Ortalama SLA"
+          value={`${kpis.slaMinutes} dk`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          hint="Yanıt hızı"
+        />
+        <KpiCard
+          title="Impact Score"
+          value={`${kpis.impact}/100`}
+          icon={<Sparkles className="h-5 w-5" />}
+          hint="Demo metrik"
+        />
       </div>
 
       {/* Tabs */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
-          <TabButton active={tab === "find_coach"} onClick={() => setTab("find_coach")} icon={<Briefcase className="h-4 w-4" />}>
+          <TabButton
+            active={tab === "find_coach"}
+            onClick={() => setTab("find_coach")}
+            icon={<Briefcase className="h-4 w-4" />}
+          >
             Koç Bul
           </TabButton>
-          <TabButton active={tab === "requests"} onClick={() => setTab("requests")} icon={<CalendarCheck2 className="h-4 w-4" />}>
+          <TabButton
+            active={tab === "requests"}
+            onClick={() => setTab("requests")}
+            icon={<CalendarCheck2 className="h-4 w-4" />}
+          >
             Taleplerim
           </TabButton>
-          <TabButton active={tab === "active_sessions"} onClick={() => setTab("active_sessions")} icon={<ChevronRight className="h-4 w-4" />}>
+          <TabButton
+            active={tab === "active_sessions"}
+            onClick={() => setTab("active_sessions")}
+            icon={<ChevronRight className="h-4 w-4" />}
+          >
             Aktif Seanslarım
           </TabButton>
         </div>
@@ -364,11 +450,14 @@ export default function CorporateDashboard() {
                 className="pl-9 pr-3 py-2 rounded-xl border w-[320px] max-w-full bg-white"
               />
             </div>
-
             <div className="flex items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
                 <Filter className="h-4 w-4 text-gray-400" />
-                <select value={lang} onChange={(e) => setLang(e.target.value)} className="text-sm outline-none bg-transparent">
+                <select
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value)}
+                  className="text-sm outline-none bg-transparent"
+                >
                   <option value="TR">TR</option>
                   <option value="EN">EN</option>
                   <option value="AR">AR</option>
@@ -378,7 +467,11 @@ export default function CorporateDashboard() {
 
               <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
                 <Globe className="h-4 w-4 text-gray-400" />
-                <select value={goal} onChange={(e) => setGoal(e.target.value)} className="text-sm outline-none bg-transparent">
+                <select
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  className="text-sm outline-none bg-transparent"
+                >
                   <option>Mülakat</option>
                   <option>Kariyer Planı</option>
                   <option>Liderlik</option>
@@ -389,7 +482,11 @@ export default function CorporateDashboard() {
 
               <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
                 <Star className="h-4 w-4 text-gray-400" />
-                <select value={level} onChange={(e) => setLevel(e.target.value)} className="text-sm outline-none bg-transparent">
+                <select
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  className="text-sm outline-none bg-transparent"
+                >
                   <option>Junior</option>
                   <option>Mid</option>
                   <option>Senior</option>
@@ -404,12 +501,14 @@ export default function CorporateDashboard() {
       {/* Content */}
       {tab === "find_coach" ? (
         <div className="grid gap-4 lg:grid-cols-3">
-          {/* Left: Coach list */}
+          {/* Left */}
           <div className="lg:col-span-2 space-y-4">
             <Card className="rounded-2xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Koç Havuzu</CardTitle>
-                <div className="text-sm text-gray-500">Kurumsal akış: Koçu seç → Talep oluştur → Pipeline’a girsin</div>
+                <div className="text-sm text-gray-500">
+                  Kurumsal akış: Koçu seç → Talep oluştur → Pipeline’a girsin
+                </div>
               </CardHeader>
               <CardContent>
                 {filteredCoaches.length === 0 ? (
@@ -417,28 +516,43 @@ export default function CorporateDashboard() {
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {filteredCoaches.map((c) => (
-                      <div key={c.id} className="rounded-2xl border bg-white p-4 hover:shadow-sm transition">
+                      <div
+                        key={c.id}
+                        className="rounded-2xl border bg-white p-4 hover:shadow-sm transition"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <div className="text-base font-bold truncate">{c.full_name}</div>
+                              <div className="text-base font-bold truncate">
+                                {c.full_name}
+                              </div>
                               {c.verified ? (
                                 <span className="text-xs px-2 py-1 rounded-full border bg-gray-50 inline-flex items-center gap-1">
-                                  <BadgeCheck className="h-3.5 w-3.5 text-green-600" /> Verified
+                                  <BadgeCheck className="h-3.5 w-3.5 text-green-600" />
+                                  Verified
                                 </span>
                               ) : null}
                             </div>
-                            <div className="text-sm text-gray-600 mt-1 line-clamp-2">{c.headline}</div>
+                            <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {c.headline}
+                            </div>
                           </div>
                           <div className="text-right whitespace-nowrap">
-                            <div className="text-sm font-semibold">{c.price_try} TRY</div>
-                            <div className="text-xs text-gray-500">{c.availability}</div>
+                            <div className="text-sm font-semibold">
+                              {c.price_try} TRY
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {c.availability}
+                            </div>
                           </div>
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2">
                           {c.specializations.slice(0, 4).map((s) => (
-                            <span key={s} className="text-xs rounded-full border bg-gray-50 px-2 py-1">
+                            <span
+                              key={s}
+                              className="text-xs rounded-full border bg-gray-50 px-2 py-1"
+                            >
                               {s}
                             </span>
                           ))}
@@ -448,10 +562,14 @@ export default function CorporateDashboard() {
                         </div>
 
                         <div className="mt-3 flex items-center justify-between">
-                          <div className="text-xs text-gray-500">⭐ {c.rating.toFixed(1)} • {c.seniority}</div>
-                          <Button onClick={() => openRequestModal(c)} className="rounded-xl">
-                            Seans Talep Et
-                            <ArrowRight className="h-4 w-4 ml-2" />
+                          <div className="text-xs text-gray-500">
+                            ⭐ {c.rating.toFixed(1)} • {c.seniority}
+                          </div>
+                          <Button
+                            onClick={() => openRequestModal(c)}
+                            className="rounded-xl"
+                          >
+                            Seans Talep Et <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
                         </div>
                       </div>
@@ -462,7 +580,7 @@ export default function CorporateDashboard() {
             </Card>
           </div>
 
-          {/* Right: Quick panel */}
+          {/* Right */}
           <div className="space-y-4">
             <Card className="rounded-2xl">
               <CardHeader className="pb-2">
@@ -472,17 +590,20 @@ export default function CorporateDashboard() {
                 <div className="rounded-2xl border bg-gray-50 p-4">
                   <div className="text-sm font-semibold">Bugün öneri</div>
                   <div className="text-sm text-gray-600 mt-1">
-                    En hızlı dönüşüm: <b>Koç seç</b> → <b>tek tık talep</b> → <b>48 saat SLA</b>
+                    En hızlı dönüşüm: <b>Koç seç</b> → <b>tek tık talep</b> →{" "}
+                    <b>24-48 saat SLA</b>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border p-4">
                   <div className="text-sm font-semibold">Talep şablonu</div>
-                  <div className="text-xs text-gray-500 mt-1">Hedef: {goal} • Seviye: {level} • Dil: {lang}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Hedef: {goal} • Seviye: {level} • Dil: {lang}
+                  </div>
                   <Button
                     variant="outline"
                     className="rounded-xl mt-3 w-full"
-                    onClick={() => toast.message("Şablon kopyalama (sonraki adım)")}
+                    onClick={() => toast.message("Şablon (sonraki adım)")}
                   >
                     Şablonu Kaydet (sonra)
                   </Button>
@@ -490,16 +611,25 @@ export default function CorporateDashboard() {
 
                 <div className="rounded-2xl border p-4">
                   <div className="text-sm font-semibold">Pipeline</div>
-                  <div className="text-sm text-gray-600 mt-1">new → reviewing → approved → session</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    new → reviewing → approved → session
+                  </div>
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-xl border bg-gray-50 p-2 text-center">
-                      new<br /><b>{requests.filter((r) => r.status === "new").length}</b>
+                      new<br />
+                      <b>{requests.filter((r) => r.status === "new").length}</b>
                     </div>
                     <div className="rounded-xl border bg-gray-50 p-2 text-center">
-                      reviewing<br /><b>{requests.filter((r) => r.status === "reviewing").length}</b>
+                      reviewing<br />
+                      <b>
+                        {requests.filter((r) => r.status === "reviewing").length}
+                      </b>
                     </div>
                     <div className="rounded-xl border bg-gray-50 p-2 text-center">
-                      approved<br /><b>{requests.filter((r) => r.status === "approved").length}</b>
+                      approved<br />
+                      <b>
+                        {requests.filter((r) => r.status === "approved").length}
+                      </b>
                     </div>
                   </div>
                 </div>
@@ -529,12 +659,17 @@ export default function CorporateDashboard() {
         <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Taleplerim</CardTitle>
-            <div className="text-sm text-gray-500">DB akış: corporate_session_requests tablosundan okunur / güncellenir.</div>
+            <div className="text-sm text-gray-500">
+              DB akış: corporate_session_requests tablosundan okunur / güncellenir.
+            </div>
           </CardHeader>
           <CardContent>
             {requests.length === 0 ? (
               <div className="text-sm text-gray-600">
-                Henüz talep yok. <Button className="ml-2 rounded-xl" onClick={() => setTab("find_coach")}>Koç Bul</Button>
+                Henüz talep yok.{" "}
+                <Button className="ml-2 rounded-xl" onClick={() => setTab("find_coach")}>
+                  Koç Bul
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -542,19 +677,33 @@ export default function CorporateDashboard() {
                   <div key={r.id} className="rounded-2xl border bg-white p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate">{r.coach_name}</div>
+                        <div className="text-sm font-semibold truncate">
+                          {r.coach_name}
+                        </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {r.goal} • {r.level} • {formatDate(r.created_at)}
                         </div>
-                        {r.notes ? <div className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{r.notes}</div> : null}
+                        {r.notes ? (
+                          <div className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">
+                            {r.notes}
+                          </div>
+                        ) : null}
                       </div>
+
                       <div className="text-right whitespace-nowrap">
                         <StatusPill status={r.status} />
                         <div className="mt-2 flex items-center gap-2 justify-end">
-                          <Button variant="outline" className="rounded-xl" onClick={() => updateRequestStatus(r.id, "reviewing")}>
+                          <Button
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => updateRequestStatus(r.id, "reviewing")}
+                          >
                             Reviewing
                           </Button>
-                          <Button className="rounded-xl" onClick={() => updateRequestStatus(r.id, "approved")}>
+                          <Button
+                            className="rounded-xl"
+                            onClick={() => updateRequestStatus(r.id, "approved")}
+                          >
                             Approve
                           </Button>
                         </div>
@@ -581,15 +730,18 @@ export default function CorporateDashboard() {
         <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Aktif Seanslarım</CardTitle>
-            <div className="text-sm text-gray-500">Bir sonraki adım: sessions tablosu + takvim + faturalama</div>
+            <div className="text-sm text-gray-500">
+              Bir sonraki adım: sessions tablosu + takvim + faturalama
+            </div>
           </CardHeader>
           <CardContent>
             <div className="rounded-2xl border bg-gray-50 p-5">
               <div className="text-sm font-semibold">Şu an boş (normal)</div>
-              <div className="text-sm text-gray-600 mt-1">Önce “Talep → Onay → Seans” akışını DB’ye bağladık. UI hazır.</div>
+              <div className="text-sm text-gray-600 mt-1">
+                Önce “Talep → Onay → Seans” akışını DB’ye bağladık. UI hazır.
+              </div>
               <Button className="rounded-xl mt-4" onClick={() => setTab("find_coach")}>
-                Koç Bul
-                <ArrowRight className="h-4 w-4 ml-2" />
+                Koç Bul <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
           </CardContent>
@@ -604,7 +756,9 @@ export default function CorporateDashboard() {
               <div className="min-w-0">
                 <div className="text-lg font-bold truncate">Seans Talebi Oluştur</div>
                 <div className="text-sm text-gray-500 truncate">
-                  {selectedCoach ? `${selectedCoach.full_name} • ${selectedCoach.headline}` : ""}
+                  {selectedCoach
+                    ? `${selectedCoach.full_name} • ${selectedCoach.headline}`
+                    : ""}
                 </div>
               </div>
               <button
@@ -623,7 +777,11 @@ export default function CorporateDashboard() {
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="rounded-xl border p-3">
                   <div className="text-xs text-gray-500">Hedef</div>
-                  <select value={goal} onChange={(e) => setGoal(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                  <select
+                    value={goal}
+                    onChange={(e) => setGoal(e.target.value)}
+                    className="mt-1 w-full outline-none text-sm"
+                  >
                     <option>Mülakat</option>
                     <option>Kariyer Planı</option>
                     <option>Liderlik</option>
@@ -634,7 +792,11 @@ export default function CorporateDashboard() {
 
                 <div className="rounded-xl border p-3">
                   <div className="text-xs text-gray-500">Seviye</div>
-                  <select value={level} onChange={(e) => setLevel(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                  <select
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value)}
+                    className="mt-1 w-full outline-none text-sm"
+                  >
                     <option>Junior</option>
                     <option>Mid</option>
                     <option>Senior</option>
@@ -644,7 +806,11 @@ export default function CorporateDashboard() {
 
                 <div className="rounded-xl border p-3">
                   <div className="text-xs text-gray-500">Dil</div>
-                  <select value={lang} onChange={(e) => setLang(e.target.value)} className="mt-1 w-full outline-none text-sm">
+                  <select
+                    value={lang}
+                    onChange={(e) => setLang(e.target.value)}
+                    className="mt-1 w-full outline-none text-sm"
+                  >
                     <option value="TR">TR</option>
                     <option value="EN">EN</option>
                     <option value="AR">AR</option>
@@ -664,9 +830,14 @@ export default function CorporateDashboard() {
               </div>
 
               <div className="flex items-center justify-between gap-3 pt-2">
-                <div className="text-xs text-gray-500">Bu adım artık DB: corporate_session_requests</div>
-
-                <Button disabled={actionLoading || !selectedCoach} onClick={createRequest} className="rounded-xl">
+                <div className="text-xs text-gray-500">
+                  Bu adım DB: corporate_session_requests
+                </div>
+                <Button
+                  disabled={actionLoading || !selectedCoach}
+                  onClick={createRequest}
+                  className="rounded-xl"
+                >
                   {actionLoading ? "Oluşturuluyor..." : "Talebi Oluştur"}
                   <CheckCircle2 className="h-4 w-4 ml-2" />
                 </Button>
@@ -679,11 +850,18 @@ export default function CorporateDashboard() {
   );
 }
 
-/* =======================
-   UI Helpers
-======================= */
-
-function KpiCard({ title, value, icon, hint }: { title: string; value: any; icon: JSX.Element; hint?: string }) {
+/* ======================= UI Helpers ======================= */
+function KpiCard({
+  title,
+  value,
+  icon,
+  hint,
+}: {
+  title: string;
+  value: any;
+  icon: JSX.Element;
+  hint?: string;
+}) {
   return (
     <div className="rounded-2xl border bg-white p-4 flex items-center gap-4">
       <div className="p-3 rounded-xl bg-gray-50 border">{icon}</div>
@@ -696,7 +874,17 @@ function KpiCard({ title, value, icon, hint }: { title: string; value: any; icon
   );
 }
 
-function TabButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: JSX.Element; children: any }) {
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: JSX.Element;
+  children: any;
+}) {
   return (
     <button
       onClick={onClick}
@@ -722,10 +910,7 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`text-xs px-2 py-1 rounded-full border ${cls}`}>{s || "-"}</span>;
 }
 
-/* =======================
-   Logic Helpers
-======================= */
-
+/* ======================= Logic Helpers ======================= */
 function formatDate(s?: string) {
   if (!s) return "-";
   const d = new Date(s);
@@ -739,36 +924,31 @@ function minutesSince(iso: string) {
   return Math.max(1, Math.round((Date.now() - t) / 60000));
 }
 
-function getDemoCoaches(): CoachUI[] {
-  return [
+// DB’de henüz headline/fee/rating yok → stabil default meta
+function defaultCoachMeta(idx: number, name: string) {
+  const presets = [
     {
-      id: "c_001",
-      full_name: "Çağatay Koç",
-      headline: "Senior Product Leader • Kurumsal kariyer planı • Mülakat & terfi stratejisi",
-      specializations: ["Mülakat", "Liderlik", "Performans", "Kariyer Planı"],
+      headline: "Senior Coach • Mülakat hazırlığı • Kariyer planı",
+      specializations: ["Mülakat", "Kariyer Planı", "CV / LinkedIn", "Performans"],
       languages: ["TR", "EN"],
       seniority: "Senior",
-      price_try: 2500,
+      price_try: 2200,
       rating: 4.8,
       verified: true,
       availability: "Bu hafta",
     },
     {
-      id: "c_002",
-      full_name: "Yağız Sabuncuoğlu",
-      headline: "Engineering Manager • Teknik mülakat • Takım yönetimi • OKR & hedef sistemi",
+      headline: "Engineering Coach • Teknik mülakat • Takım yönetimi",
       specializations: ["Mülakat", "Liderlik", "OKR", "Takım Yönetimi"],
       languages: ["TR", "EN"],
       seniority: "Senior",
-      price_try: 2200,
+      price_try: 2500,
       rating: 4.7,
       verified: true,
       availability: "Bugün",
     },
     {
-      id: "c_003",
-      full_name: "Souha Ben Salem",
-      headline: "HRBP • Kurumsal yetenek gelişimi • 360 performans • Eğitim programı tasarımı",
+      headline: "HR Coach • Performans • Yetkinlik • Kurumsal gelişim",
       specializations: ["Performans", "İK", "Yetkinlik", "Eğitim Programı"],
       languages: ["TR", "AR", "FR"],
       seniority: "Executive",
@@ -778,10 +958,8 @@ function getDemoCoaches(): CoachUI[] {
       availability: "Müsait",
     },
     {
-      id: "c_004",
-      full_name: "Ayşe Yılmaz",
-      headline: "Career Coach • CV/LinkedIn • Mülakat simülasyonu • Rol geçişi",
-      specializations: ["CV / LinkedIn", "Mülakat", "Rol Geçişi"],
+      headline: "Career Coach • Rol geçişi • CV/LinkedIn • Mülakat simülasyonu",
+      specializations: ["CV / LinkedIn", "Mülakat", "Rol Geçişi", "Kariyer Planı"],
       languages: ["TR"],
       seniority: "Mid",
       price_try: 1500,
@@ -790,4 +968,12 @@ function getDemoCoaches(): CoachUI[] {
       availability: "Bu hafta",
     },
   ];
+
+  const p = presets[idx % presets.length];
+
+  // isim boşsa fallback:
+  return {
+    ...p,
+    headline: p.headline || `${name} • Kariyer Koçu`,
+  };
 }

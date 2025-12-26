@@ -77,7 +77,7 @@ type CoachAppRow = {
   certification_year?: string | null;
 
   experience?: string | null;
-  specializations?: string | null;
+  specializations?: any;
   session_fee?: number | null;
 
   cv_path?: string | null;
@@ -104,6 +104,9 @@ export default function AdminDashboard() {
   const [selectedCompany, setSelectedCompany] = useState<CompanyRequestRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  /* ==============================
+     DATA LOAD
+  ============================== */
   const fetchAll = async () => {
     setLoading(true);
     setHardError(null);
@@ -186,6 +189,9 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* ==============================
+     DERIVED
+  ============================== */
   const premiumAgg = useMemo(() => {
     const rows = premiumRows || [];
     const active = rows.filter((r) => (r.status || "").toLowerCase() === "active");
@@ -245,11 +251,11 @@ export default function AdminDashboard() {
     };
   }, [q, premiumRows, companyRows, coachAppRows]);
 
-  // ✅ Pending list (pending_review + pending fallback)
+  // ✅ Pending list (pending_review + pending + new fallback)
   const pendingCoachApps = useMemo(() => {
     return (filteredRecent.coachApps || []).filter((a) => {
       const s = (a.status || "").toLowerCase();
-      return s === "pending_review" || s === "pending";
+      return s === "pending_review" || s === "pending" || s === "new";
     });
   }, [filteredRecent.coachApps]);
 
@@ -261,17 +267,13 @@ export default function AdminDashboard() {
   }, [filteredRecent.companies]);
 
   /* ==============================
-     COACH APPROVAL ACTIONS
+     FILE OPEN (SIGNED URL)
   ============================== */
-
   const openSignedFile = async (path?: string | null) => {
     if (!path) return;
     try {
       setActionLoading(true);
-      const { data, error } = await supabase.storage
-        .from("coach_uploads")
-        .createSignedUrl(path, 60 * 10);
-
+      const { data, error } = await supabase.storage.from("coach_uploads").createSignedUrl(path, 60 * 10);
       if (error) throw error;
 
       const url = data?.signedUrl;
@@ -286,15 +288,75 @@ export default function AdminDashboard() {
     }
   };
 
+  /* ==============================
+     FIX: ENSURE USER_ID BY EMAIL
+  ============================== */
+
+  // Coach: user_id yoksa email -> profiles.id bul, coach_applications.user_id yaz
+  const ensureCoachApplicationUserId = async (app: CoachAppRow) => {
+    if (app?.user_id) return app.user_id;
+
+    const email = (app?.email || "").toString().trim().toLowerCase();
+    if (!email) throw new Error("Bu başvuruda email yok.");
+
+    const { data: p, error: pErr } = await supabase
+      .from("profiles")
+      .select("id,email")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (pErr) throw pErr;
+    if (!p?.id) throw new Error("Bu email ile profiles kaydı yok. Kullanıcı önce kayıt olmalı.");
+
+    const { error: upErr } = await supabase
+      .from("coach_applications")
+      .update({ user_id: p.id })
+      .eq("id", app.id);
+
+    if (upErr) throw upErr;
+
+    return p.id as string;
+  };
+
+  // Company: user_id yoksa email -> profiles.id bul, company_requests.user_id yaz
+  const ensureCompanyUserId = async (req: CompanyRequestRow) => {
+    if (req?.user_id) return req.user_id;
+
+    const email = (req?.email || "").toString().trim().toLowerCase();
+    if (!email) throw new Error("Bu şirkette email yok.");
+
+    const { data: p, error: pErr } = await supabase
+      .from("profiles")
+      .select("id,email")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (pErr) throw pErr;
+    if (!p?.id) throw new Error("Bu email ile profiles kaydı yok. Kullanıcı önce kayıt olmalı.");
+
+    const { error: upErr } = await supabase
+      .from("company_requests")
+      .update({ user_id: p.id })
+      .eq("id", req.id);
+
+    if (upErr) throw upErr;
+
+    return p.id as string;
+  };
+
+  /* ==============================
+     COACH APPROVAL ACTIONS
+  ============================== */
+
   const approveCoach = async (app: CoachAppRow) => {
-    if (!app?.id || !app?.user_id) {
-      alert("Bu başvuruda user_id yok. coach_applications tablosunda user_id olmalı.");
-      return;
-    }
+    if (!app?.id) return;
 
     setActionLoading(true);
     try {
-      // 1) coach_applications -> approved
+      // ✅ 1) user_id garanti et (email -> profiles.id)
+      const uid = await ensureCoachApplicationUserId(app);
+
+      // ✅ 2) coach_applications -> approved
       const { error: upErr } = await supabase
         .from("coach_applications")
         .update({ status: "approved" })
@@ -302,11 +364,11 @@ export default function AdminDashboard() {
 
       if (upErr) throw upErr;
 
-      // 2) profiles -> role = coach
+      // ✅ 3) profiles -> role = coach
       const { error: roleErr } = await supabase
         .from("profiles")
         .update({ role: "coach" })
-        .eq("id", app.user_id);
+        .eq("id", uid);
 
       if (roleErr) throw roleErr;
 
@@ -323,6 +385,7 @@ export default function AdminDashboard() {
 
   const rejectCoach = async (app: CoachAppRow) => {
     if (!app?.id) return;
+
     setActionLoading(true);
     try {
       const { error: upErr } = await supabase
@@ -332,6 +395,7 @@ export default function AdminDashboard() {
 
       if (upErr) throw upErr;
 
+      // user_id varsa role'i user'a çek
       if (app.user_id) {
         const { error: roleErr } = await supabase
           .from("profiles")
@@ -357,14 +421,14 @@ export default function AdminDashboard() {
   ============================== */
 
   const approveCompany = async (req: CompanyRequestRow) => {
-    if (!req?.id || !req?.user_id) {
-      alert("Bu şirkette user_id yok. company_requests tablosunda user_id olmalı.");
-      return;
-    }
+    if (!req?.id) return;
 
     setActionLoading(true);
     try {
-      // 1) company_requests -> approved
+      // ✅ 1) user_id garanti et (email -> profiles.id)
+      const uid = await ensureCompanyUserId(req);
+
+      // ✅ 2) company_requests -> approved
       const { error: upErr } = await supabase
         .from("company_requests")
         .update({ status: "approved" })
@@ -372,11 +436,11 @@ export default function AdminDashboard() {
 
       if (upErr) throw upErr;
 
-      // 2) profiles -> role = corporate
+      // ✅ 3) profiles -> role = corporate
       const { error: roleErr } = await supabase
         .from("profiles")
         .update({ role: "corporate" })
-        .eq("id", req.user_id);
+        .eq("id", uid);
 
       if (roleErr) throw roleErr;
 
@@ -447,7 +511,7 @@ export default function AdminDashboard() {
           <div className="font-semibold">Hata</div>
           <div className="text-sm mt-1">{hardError}</div>
           <div className="text-sm mt-2">
-            Bu hata genelde şu yüzden olur: <b>admin_overview_metrics</b> view’ına RLS/izin yok ya da view yok.
+            Bu hata genelde: <b>admin_overview_metrics</b> view yok / RLS izin yok.
           </div>
         </div>
 
@@ -487,7 +551,7 @@ export default function AdminDashboard() {
       title: "Bekleyen Koç Başvurusu",
       value: data.pending_coach_apps,
       icon: <Hourglass className="h-5 w-5" />,
-      hint: "pending_review / pending başvurular",
+      hint: "pending_review / pending / new",
     },
   ];
 
@@ -497,7 +561,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="text-sm text-gray-500">KPI • Premium • Operasyon • Koç Onay Merkezi</div>
+          <div className="text-sm text-gray-500">KPI • Premium • Operasyon • Koç/Şirket Onay Merkezi</div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -555,7 +619,7 @@ export default function AdminDashboard() {
                 Koç Onay Merkezi
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                pending_review/pending • CV/Sertifika aç • Approve/Reject
+                pending_review/pending/new • CV/Sertifika aç • Approve/Reject
               </div>
             </div>
 
@@ -584,6 +648,9 @@ export default function AdminDashboard() {
                           </div>
                           <div className="text-xs text-gray-500 mt-1 truncate">
                             {app.email || "—"} • {app.phone || "—"}
+                          </div>
+                          <div className="text-[11px] text-gray-400 mt-1 truncate">
+                            user: {app.user_id ? shortId(app.user_id) : "— (email ile bağlanır)"}
                           </div>
                         </div>
                         <div className="text-xs text-gray-500 whitespace-nowrap">
@@ -629,7 +696,9 @@ export default function AdminDashboard() {
 
                   <Detail label="Uzmanlık">
                     {selectedApp.specializations ? (
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.specializations}</div>
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {stringifyAny(selectedApp.specializations)}
+                      </div>
                     ) : (
                       <span className="text-sm text-gray-500">—</span>
                     )}
@@ -661,7 +730,7 @@ export default function AdminDashboard() {
                       target="_blank"
                       rel="noreferrer"
                       className={`rounded-xl border p-3 flex items-center justify-between ${
-                        selectedApp.website ? "hover:bggray-50" : "opacity-50 pointer-events-none"
+                        selectedApp.website ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
                       }`}
                     >
                       <div className="text-sm font-semibold">Website</div>
@@ -681,11 +750,7 @@ export default function AdminDashboard() {
                         <FileText className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-semibold">CV Aç</span>
                       </div>
-                      {actionLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-gray-400" />
-                      )}
+                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
                     </button>
 
                     <button
@@ -699,11 +764,7 @@ export default function AdminDashboard() {
                         <FileText className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-semibold">Sertifika Aç</span>
                       </div>
-                      {actionLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-gray-400" />
-                      )}
+                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
                     </button>
                   </div>
 
@@ -728,7 +789,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="text-xs text-gray-500">
-                    Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b>
+                    Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b> (user_id yoksa email ile bağlar)
                   </div>
                 </div>
               )}
@@ -767,14 +828,12 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate">
-                            {req.company_name || "İsimsiz Şirket"}
-                          </div>
+                          <div className="text-sm font-semibold truncate">{req.company_name || "İsimsiz Şirket"}</div>
                           <div className="text-xs text-gray-500 mt-1 truncate">
                             {req.email || "—"} • {req.phone || "—"}
                           </div>
                           <div className="text-[11px] text-gray-400 mt-1 truncate">
-                            user: {req.user_id ? shortId(req.user_id) : "—"}
+                            user: {req.user_id ? shortId(req.user_id) : "— (email ile bağlanır)"}
                           </div>
                         </div>
                         <div className="text-xs text-gray-500 whitespace-nowrap">{formatDate(req.created_at)}</div>
@@ -793,14 +852,12 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-lg font-bold truncate">
-                        {selectedCompany.company_name || "Şirket"}
-                      </div>
+                      <div className="text-lg font-bold truncate">{selectedCompany.company_name || "Şirket"}</div>
                       <div className="text-sm text-gray-500 mt-1">
                         {selectedCompany.email || "—"} • {selectedCompany.phone || "—"}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        user_id: <b>{selectedCompany.user_id ? selectedCompany.user_id : "—"}</b>
+                        user_id: <b>{selectedCompany.user_id ? selectedCompany.user_id : "— (email ile bağlanır)"}</b>
                       </div>
                     </div>
 
@@ -830,7 +887,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="text-xs text-gray-500">
-                    Onay = <b>company_requests.status=approved</b> + <b>profiles.role=corporate</b>
+                    Onay = <b>company_requests.status=approved</b> + <b>profiles.role=corporate</b> (user_id yoksa email ile bağlar)
                   </div>
                 </div>
               )}
@@ -994,7 +1051,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="text-xs text-gray-500">
-        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only” update garantisi.
+        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only update” garantisi.
       </div>
     </div>
   );
@@ -1119,4 +1176,15 @@ function formatDate(s?: string | null) {
 function shortId(id?: string | null) {
   if (!id) return "-";
   return `${id.slice(0, 6)}…${id.slice(-4)}`;
+}
+
+function stringifyAny(v: any) {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.join(", ");
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
 }

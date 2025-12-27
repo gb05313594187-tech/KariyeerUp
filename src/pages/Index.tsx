@@ -208,6 +208,13 @@ export default function Index() {
                   <option value="interview">Mülakat</option>
                   <option value="career">Kariyer Planı</option>
                   <option value="promotion">Terfi</option>
+                  <option value="job_change">İş Değiştirme</option>
+                  <option value="salary">Maaş Pazarlığı</option>
+                  <option value="cv">CV / LinkedIn</option>
+                  <option value="performance">Performans Gelişimi</option>
+                  <option value="leadership">Liderlik</option>
+                  <option value="confidence">Özgüven & İletişim</option>
+
                 </select>
               </div>
 

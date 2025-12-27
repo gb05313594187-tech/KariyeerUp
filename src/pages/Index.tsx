@@ -472,6 +472,28 @@ export default function Index() {
         </section>
       ) : null}
 
+      {/* ✅ SADECE ŞİRKETTE: İKİ BLOK ARASINA SADECE METİN (AÇIKLAMA) */}
+      {persona === "company" ? (
+        <section className="py-6 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="text-gray-600 leading-relaxed">
+              <p className="text-sm md:text-base">
+                Şirketler için koçluk “tekil seans” değil, ölçülebilir bir gelişim
+                sistemidir. Kariyeer; hedef, rol ve seviye bazlı ihtiyaçları
+                netleştirir, doğrulanmış koç havuzundan en uygun eşleşmeyi çıkarır
+                ve süreci raporlanabilir şekilde yönetir.
+              </p>
+              <p className="mt-3 text-sm md:text-base">
+                Sonuç: İnsan & Kültür ekibi için görünür ilerleme, yöneticiler için
+                takip edilebilir gelişim, çalışanlar için net hedef ve düzenli
+                koçluk akışı. Demo talebinden sonra; ihtiyaç haritası → eşleşme →
+                pilot → ilk ölçüm raporu akışıyla ilerler.
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) — BUTONLAR KALDIRILDI, ZAMAN PLANI EKLENDİ */}
       {persona === "company" ? (
         <section className="py-10 bg-white">

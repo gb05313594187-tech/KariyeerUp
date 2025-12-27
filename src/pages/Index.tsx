@@ -458,13 +458,22 @@ export default function Index() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
-                    SLA: 24 saat içinde dönüş
-                  </span>
-                  <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
-                    Pilot: 2 haftada ilk ölçüm raporu
-                  </span>
+                <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                      SLA: 24 saat içinde dönüş
+                    </span>
+                    <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                      Pilot: 2 haftada ilk ölçüm raporu
+                    </span>
+                  </div>
+
+                  {/* ✅ Kurumsal Çözümler butonu bu kutunun içine taşındı */}
+                  <Link to="/for-companies">
+                    <Button variant="outline" className="rounded-xl border-orange-200">
+                      Kurumsal Çözümler
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -759,16 +768,20 @@ export default function Index() {
           </div>
 
           <div className="mt-10 flex justify-center gap-4 flex-wrap">
-            <Link to="/coaches">
-              <Button className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110">
-                Koçları İncele
-              </Button>
-            </Link>
-            <Link to="/for-companies">
-              <Button variant="outline" className="rounded-xl">
-                Kurumsal Çözümler
-              </Button>
-            </Link>
+            {persona !== "company" ? (
+              <>
+                <Link to="/coaches">
+                  <Button className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110">
+                    Koçları İncele
+                  </Button>
+                </Link>
+                <Link to="/for-companies">
+                  <Button variant="outline" className="rounded-xl">
+                    Kurumsal Çözümler
+                  </Button>
+                </Link>
+              </>
+            ) : null}
           </div>
         </div>
       </section>

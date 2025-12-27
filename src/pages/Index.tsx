@@ -64,6 +64,7 @@ export default function Index() {
   const [demoPhone, setDemoPhone] = useState("");
   const [demoTeamSize, setDemoTeamSize] = useState("1-10");
   const [demoNeed, setDemoNeed] = useState("Mülakat");
+  const [demoStartPlan, setDemoStartPlan] = useState("Bu ay"); // ✅ yeni
   const [demoNote, setDemoNote] = useState("");
 
   const onDemoSubmit = (e: any) => {
@@ -259,70 +260,49 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (EKLENDİ) */}
+      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (BUTONLAR KALDIRILDI) */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                <div className="min-w-0">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
-                    <Sparkles className="h-4 w-4" />
-                    Kurumsal Program Mantığı
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                  <Sparkles className="h-4 w-4" />
+                  Kurumsal Program Mantığı
+                </div>
+
+                <h3 className="mt-3 text-2xl font-black text-gray-900">
+                  Koçluk, ekip performansına dönüşsün
+                </h3>
+
+                <p className="mt-2 text-gray-600 max-w-3xl">
+                  Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini doğru koçlarla eşleştirip,
+                  ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı →
+                  takip/raporlama şeklinde ilerler.
+                </p>
+
+                <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
+                  <div className="rounded-xl border bg-gray-50 p-4">
+                    <div className="font-semibold text-gray-900">Hedef & kapsam</div>
+                    <div className="mt-1 text-gray-600">Rol/level bazlı program planı</div>
                   </div>
-
-                  <h3 className="mt-3 text-2xl font-black text-gray-900">
-                    Koçluk, ekip performansına dönüşsün
-                  </h3>
-
-                  <p className="mt-2 text-gray-600 max-w-3xl">
-                    Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini
-                    doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek.
-                    Kariyeer Kurumsal; ihtiyaç tanımı → koç eşleşmesi → seans akışı →
-                    takip/raporlama şeklinde ilerler.
-                  </p>
-
-                  <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
-                    <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Hedef & kapsam</div>
-                      <div className="mt-1 text-gray-600">
-                        Rol/level bazlı program kurulur
-                      </div>
-                    </div>
-                    <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Doğru koç havuzu</div>
-                      <div className="mt-1 text-gray-600">
-                        Uzmanlık ve doğrulama katmanı
-                      </div>
-                    </div>
-                    <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Takip & görünürlük</div>
-                      <div className="mt-1 text-gray-600">
-                        Talep/pipeline ve raporlanabilir çıktı
-                      </div>
-                    </div>
+                  <div className="rounded-xl border bg-gray-50 p-4">
+                    <div className="font-semibold text-gray-900">Doğru koç havuzu</div>
+                    <div className="mt-1 text-gray-600">Uzmanlık + doğrulama katmanı</div>
                   </div>
-
-                  <div className="mt-4 text-xs text-gray-500">
-                    Not: Form bir “demo talebi”dir. Kurulum sonrası kurumsal panelde
-                    koç seçimi ve talep akışı aktif olur.
+                  <div className="rounded-xl border bg-gray-50 p-4">
+                    <div className="font-semibold text-gray-900">Takip & görünürlük</div>
+                    <div className="mt-1 text-gray-600">Raporlanabilir çıktı (mail / PDF)</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 shrink-0">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl border-orange-200"
-                    onClick={() => navigate("/how-it-works")}
-                  >
-                    Nasıl Çalışır?
-                  </Button>
-                  <Button
-                    className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110"
-                    onClick={() => navigate("/corporate/dashboard")}
-                  >
-                    Kurumsal Panel <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                    SLA: 24 saat içinde dönüş
+                  </span>
+                  <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                    Pilot: 2 haftada ilk ölçüm raporu
+                  </span>
                 </div>
               </div>
             </div>
@@ -330,39 +310,30 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) */}
+      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) — BUTONLAR KALDIRILDI, ZAMAN PLANI EKLENDİ */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
-                    <Building2 className="h-4 w-4" />
-                    Kurumsal Demo Talebi
-                  </div>
-                  <h3 className="mt-3 text-2xl font-black text-gray-900">
-                    Ekibin için koçluk programını başlatalım
-                  </h3>
-                  <p className="mt-2 text-gray-600">
-                    Formu doldur, kurumsal panel akışını açalım. (Demo)
-                  </p>
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                  <Building2 className="h-4 w-4" />
+                  Kurumsal Demo Talebi
                 </div>
+                <h3 className="mt-3 text-2xl font-black text-gray-900">
+                  Ekibin için koçluk programını başlatalım
+                </h3>
+                <p className="mt-2 text-gray-600">
+                  Formu doldur, hedeflerine uygun planı çıkaralım ve ilk raporu paylaşalım.
+                </p>
 
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl border-orange-200"
-                    onClick={() => navigate("/how-it-works")}
-                  >
-                    Nasıl Çalışır?
-                  </Button>
-                  <Button
-                    className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110"
-                    onClick={() => navigate("/corporate/dashboard")}
-                  >
-                    Kurumsal Panel <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="text-xs rounded-full border bg-gray-50 px-3 py-1 text-gray-700">
+                    SLA: 24 saat içinde dönüş
+                  </span>
+                  <span className="text-xs rounded-full border bg-gray-50 px-3 py-1 text-gray-700">
+                    Pilot: 2 haftada ilk ölçüm raporu
+                  </span>
                 </div>
               </div>
 
@@ -454,6 +425,25 @@ export default function Index() {
                     </select>
                   </div>
 
+                  {/* ✅ Başlangıç hedefi (zaman planı) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Başlangıç hedefi
+                    </label>
+                    <select
+                      value={demoStartPlan}
+                      onChange={(e) => setDemoStartPlan(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                    >
+                      <option value="Bu hafta">Bu hafta</option>
+                      <option value="Bu ay">Bu ay</option>
+                      <option value="Q1">Q1</option>
+                    </select>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Gönderince 24 saat içinde dönüş yapıp planı netleştiririz.
+                    </div>
+                  </div>
+
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       Not (opsiyonel)
@@ -469,7 +459,7 @@ export default function Index() {
 
                 <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                   <div className="text-xs text-gray-500">
-                    Bu form demo amaçlıdır. İstersen bunu DB insert akışına bağlarız.
+                    Gönderim sonrası: ihtiyaç haritası → koç eşleşmesi → pilot → mail/PDF raporu (isteğe bağlı sunum).
                   </div>
 
                   <Button

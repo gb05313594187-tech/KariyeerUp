@@ -150,6 +150,19 @@ export default function Index() {
               {personaCopy.subtitle}
             </p>
 
+            {/* ✅ SADECE KOÇTA: HERO ALTINA GELİR / ÖLÇEK / KURUMSAL X2-X3 PARAGRAFI (EKLENDİ) */}
+            {persona === "coach" ? (
+              <p className="mt-4 text-sm md:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Kariyeer, koçlar için zamandan bağımsız ve ölçeklenebilir bir
+                gelir modeli sunar. Programlar esnek ilerler; ana işinle paralel
+                yürütülebilir veya tamamen profesyonel bir kanala
+                dönüştürülebilir. Bireysel seanslar düzenli kazanç sağlarken,
+                kurumsal iş birlikleriyle gelir 2–3 katına çıkabilir. Talep,
+                eşleşme ve seans yönetimi tek panelden ilerler. Sen yalnızca
+                uzmanlığına odaklanırsın.
+              </p>
+            ) : null}
+
             {/* CTA */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
@@ -289,19 +302,25 @@ export default function Index() {
 
                   <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                     <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Daha çok görünürlük</div>
+                      <div className="font-semibold text-gray-900">
+                        Daha çok görünürlük
+                      </div>
                       <div className="mt-1 text-gray-600">
                         Hedef/rol bazlı aramalarda listelenme + doğrulama rozeti
                       </div>
                     </div>
                     <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Tek panel yönetim</div>
+                      <div className="font-semibold text-gray-900">
+                        Tek panel yönetim
+                      </div>
                       <div className="mt-1 text-gray-600">
                         Seanslar, takvim, talepler, gelir ve performans takibi
                       </div>
                     </div>
                     <div className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">Global ölçek</div>
+                      <div className="font-semibold text-gray-900">
+                        Global ölçek
+                      </div>
                       <div className="mt-1 text-gray-600">
                         Dil/ülke kırılımı ile uluslararası danışan akışı
                       </div>
@@ -321,7 +340,8 @@ export default function Index() {
                   </div>
 
                   <div className="mt-4 text-xs text-gray-500">
-                    Not: “Öne Çıkan Koçlar” alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.
+                    Not: “Öne Çıkan Koçlar” alanı sponsorlu vitrindir. İsteyen
+                    koçlar ek ücret ile ana sayfada daha görünür olur.
                   </div>
                 </div>
 
@@ -330,7 +350,8 @@ export default function Index() {
                     className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
                     onClick={() => navigate("/coach/application")}
                   >
-                    Koç Olarak Başvur <ArrowRight className="ml-2 h-4 w-4" />
+                    Koç Olarak Başvur{" "}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
@@ -362,23 +383,34 @@ export default function Index() {
                 </h3>
 
                 <p className="mt-2 text-gray-600 max-w-3xl">
-                  Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini doğru koçlarla eşleştirip,
-                  ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı →
+                  Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini
+                  doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek.
+                  Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı →
                   takip/raporlama şeklinde ilerler.
                 </p>
 
                 <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                   <div className="rounded-xl border bg-gray-50 p-4">
                     <div className="font-semibold text-gray-900">Hedef & kapsam</div>
-                    <div className="mt-1 text-gray-600">Rol/level bazlı program planı</div>
+                    <div className="mt-1 text-gray-600">
+                      Rol/level bazlı program planı
+                    </div>
                   </div>
                   <div className="rounded-xl border bg-gray-50 p-4">
-                    <div className="font-semibold text-gray-900">Doğru koç havuzu</div>
-                    <div className="mt-1 text-gray-600">Uzmanlık + doğrulama katmanı</div>
+                    <div className="font-semibold text-gray-900">
+                      Doğru koç havuzu
+                    </div>
+                    <div className="mt-1 text-gray-600">
+                      Uzmanlık + doğrulama katmanı
+                    </div>
                   </div>
                   <div className="rounded-xl border bg-gray-50 p-4">
-                    <div className="font-semibold text-gray-900">Takip & görünürlük</div>
-                    <div className="mt-1 text-gray-600">Raporlanabilir çıktı (mail / PDF)</div>
+                    <div className="font-semibold text-gray-900">
+                      Takip & görünürlük
+                    </div>
+                    <div className="mt-1 text-gray-600">
+                      Raporlanabilir çıktı (mail / PDF)
+                    </div>
                   </div>
                 </div>
 
@@ -410,7 +442,8 @@ export default function Index() {
                   Ekibin için koçluk programını başlatalım
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  Formu doldur, hedeflerine uygun planı çıkaralım ve ilk raporu paylaşalım.
+                  Formu doldur, hedeflerine uygun planı çıkaralım ve ilk raporu
+                  paylaşalım.
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -545,7 +578,8 @@ export default function Index() {
 
                 <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                   <div className="text-xs text-gray-500">
-                    Gönderim sonrası: ihtiyaç haritası → koç eşleşmesi → pilot → mail/PDF raporu (isteğe bağlı sunum).
+                    Gönderim sonrası: ihtiyaç haritası → koç eşleşmesi → pilot →
+                    mail/PDF raporu (isteğe bağlı sunum).
                   </div>
 
                   <Button
@@ -598,17 +632,13 @@ export default function Index() {
                 key={i}
                 className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition"
               >
-                <h3 className="text-lg font-bold text-gray-900">
-                  {coach.name}
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900">{coach.name}</h3>
                 <p className="text-sm text-gray-500">{coach.title}</p>
 
                 <div className="flex items-center gap-2 mt-3 text-sm">
                   <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                   <span className="font-semibold">{coach.rating}</span>
-                  <span className="text-gray-400">
-                    ({coach.reviews} yorum)
-                  </span>
+                  <span className="text-gray-400">({coach.reviews} yorum)</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-4">

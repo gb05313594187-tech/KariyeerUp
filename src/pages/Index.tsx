@@ -150,19 +150,6 @@ export default function Index() {
               {personaCopy.subtitle}
             </p>
 
-            {/* ✅ SADECE KOÇTA: HERO ALTINA GELİR / ÖLÇEK / KURUMSAL X2-X3 PARAGRAFI (EKLENDİ) */}
-            {persona === "coach" ? (
-              <p className="mt-4 text-sm md:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Kariyeer, koçlar için zamandan bağımsız ve ölçeklenebilir bir
-                gelir modeli sunar. Programlar esnek ilerler; ana işinle paralel
-                yürütülebilir veya tamamen profesyonel bir kanala
-                dönüştürülebilir. Bireysel seanslar düzenli kazanç sağlarken,
-                kurumsal iş birlikleriyle gelir 2–3 katına çıkabilir. Talep,
-                eşleşme ve seans yönetimi tek panelden ilerler. Sen yalnızca
-                uzmanlığına odaklanırsın.
-              </p>
-            ) : null}
-
             {/* CTA */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
@@ -339,7 +326,18 @@ export default function Index() {
                     Danışan bul, seanslarını yönet, geliri büyüt
                   </h3>
 
-                  <p className="mt-2 text-gray-600 max-w-3xl">
+                  {/* ✅ PARAGRAF BURAYA TAŞINDI (TAM OLARAK İKİSİNİN ARASINA) */}
+                  <p className="mt-3 text-sm md:text-base text-gray-600 max-w-3xl leading-relaxed">
+                    Kariyeer, koçlar için zamandan bağımsız ve ölçeklenebilir bir
+                    gelir modeli sunar. Programlar esnek ilerler; ana işinle paralel
+                    yürütülebilir veya tamamen profesyonel bir kanala
+                    dönüştürülebilir. Bireysel seanslar düzenli kazanç sağlarken,
+                    kurumsal iş birlikleriyle gelir 2–3 katına çıkabilir. Talep,
+                    eşleşme ve seans yönetimi tek panelden ilerler. Sen yalnızca
+                    uzmanlığına odaklanırsın.
+                  </p>
+
+                  <p className="mt-3 text-gray-600 max-w-3xl">
                     Kariyeer; koçların doğru hedefte, doğru danışanla eşleşmesini
                     ve tüm süreci tek yerden yönetmesini sağlar: profil
                     görünürlüğü → talep/eşleşme → seans → takip/rapor → gelir.

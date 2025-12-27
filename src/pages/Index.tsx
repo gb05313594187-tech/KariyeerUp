@@ -266,6 +266,86 @@ export default function Index() {
         </div>
       </section>
 
+      {/* ✅ SADECE KOÇTA: GLOBAL DEĞER ÖNERİSİ + KOMİSYON + ÖNE ÇIKMA (EKLENDİ) */}
+      {persona === "coach" ? (
+        <section className="py-10 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                    <Briefcase className="h-4 w-4" />
+                    Koçlar için Global Sistem
+                  </div>
+
+                  <h3 className="mt-3 text-2xl font-black text-gray-900">
+                    Danışan bul, seanslarını yönet, geliri büyüt
+                  </h3>
+
+                  <p className="mt-2 text-gray-600 max-w-3xl">
+                    Kariyeer; koçların doğru hedefte, doğru danışanla eşleşmesini ve tüm süreci tek yerden yönetmesini sağlar:
+                    profil görünürlüğü → talep/eşleşme → seans → takip/rapor → gelir.
+                  </p>
+
+                  <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Daha çok görünürlük</div>
+                      <div className="mt-1 text-gray-600">
+                        Hedef/rol bazlı aramalarda listelenme + doğrulama rozeti
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Tek panel yönetim</div>
+                      <div className="mt-1 text-gray-600">
+                        Seanslar, takvim, talepler, gelir ve performans takibi
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Global ölçek</div>
+                      <div className="mt-1 text-gray-600">
+                        Dil/ülke kırılımı ile uluslararası danışan akışı
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                      Komisyon: İlk 50 koç için %10 (ilk 6 ay)
+                    </span>
+                    <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                      Sonrasında standart komisyon: %20
+                    </span>
+                    <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                      Öne Çıkan Koçlar: ana sayfa görünürlüğü (ekstra ücretli)
+                    </span>
+                  </div>
+
+                  <div className="mt-4 text-xs text-gray-500">
+                    Not: “Öne Çıkan Koçlar” alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
+                  <Button
+                    className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
+                    onClick={() => navigate("/coach/application")}
+                  >
+                    Koç Olarak Başvur <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 rounded-xl border-orange-200"
+                    onClick={() => navigate("/coaches")}
+                  >
+                    Koçları Görüntüle
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (BUTONLAR KALDIRILDI) */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
@@ -494,7 +574,7 @@ export default function Index() {
                 Öne Çıkan Koçlar
               </h2>
               <p className="mt-2 text-gray-600">
-                Öne çıkan koçlar, ana sayfada daha görünür olur. Bu alanda yer almak ek ücretli bir tanıtım seçeneği olabilir.
+                En çok tercih edilen uzmanlar. (Bu alana girmek ücretli olabilir.)
               </p>
             </div>
 
@@ -551,11 +631,6 @@ export default function Index() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* ✅ Ekstra açıklama (yalnızca metin, ücret ekranı sonra) */}
-          <div className="mt-6 text-xs text-gray-500">
-            Not: “Öne Çıkan Koçlar” alanı, koçların ana sayfada görünürlüğünü artıran isteğe bağlı bir tanıtım alanıdır. Ücretlendirme ve başvuru akışı daha sonra eklenecektir.
           </div>
         </div>
       </section>

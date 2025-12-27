@@ -271,17 +271,23 @@ export default function Index() {
         <div className="max-w-5xl mx-auto px-4">
           <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
             <div className="text-center">
-              <h3 className="text-2xl md:text-3xl font-black text-gray-900">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                Hedef · Plan · İlerleme Takibi
+              </div>
+
+              <h3 className="mt-4 text-2xl md:text-3xl font-black text-gray-900">
                 Kariyerini şansa bırakma. Süreci yönet.
               </h3>
 
               <p className="mt-3 text-sm md:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil; kariyer
-                hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi ölçen bir
-                sistemdir. İş bulma, terfi veya kariyer değişimi sürecinde ne yapman
-                gerektiğini tahmin etmene gerek kalmaz. Hedefin netleşir, sana uygun koç
-                önerilir ve ilerleme somut çıktılarla takip edilir. Bu yüzden Kariyeer,
-                ihtiyaç anında girilen bir site değil; süreç boyunca kullanılan bir araçtır.
+                Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil;
+                kariyer hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi
+                ölçen bir sistemdir. İş bulma, terfi veya kariyer değişimi
+                sürecinde ne yapman gerektiğini tahmin etmene gerek kalmaz.
+                Hedefin netleşir, sana uygun koç önerilir ve ilerleme somut
+                çıktılarla takip edilir. Bu yüzden Kariyeer, ihtiyaç anında girilen
+                bir site değil; süreç boyunca kullanılan bir araçtır.
               </p>
 
               <div className="mt-6 grid md:grid-cols-3 gap-3 text-sm">
@@ -309,6 +315,21 @@ export default function Index() {
                     Seans sonrası çıktı + takip düzeni
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2 justify-center">
+                <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                  CV + LinkedIn paketi
+                </span>
+                <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                  Mülakat simülasyonu + geri bildirim
+                </span>
+                <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                  Kariyer planı + 30/60/90 gün hedefleri
+                </span>
+                <span className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">
+                  Terfi & liderlik gelişim programı
+                </span>
               </div>
 
               <div className="mt-5 text-sm font-semibold text-gray-700">
@@ -523,7 +544,10 @@ export default function Index() {
 
                   {/* ✅ Kurumsal Çözümler butonu bu kutunun içine taşındı */}
                   <Link to="/for-companies">
-                    <Button variant="outline" className="rounded-xl border-orange-200">
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-orange-200"
+                    >
                       Kurumsal Çözümler
                     </Button>
                   </Link>

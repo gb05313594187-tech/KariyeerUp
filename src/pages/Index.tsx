@@ -57,6 +57,22 @@ export default function Index() {
     navigate(`/coaches?${qs.toString()}`);
   };
 
+  // ✅ DEMO FORM (Şirket seçilince gösterilecek)
+  const [demoCompanyName, setDemoCompanyName] = useState("");
+  const [demoName, setDemoName] = useState("");
+  const [demoEmail, setDemoEmail] = useState("");
+  const [demoPhone, setDemoPhone] = useState("");
+  const [demoTeamSize, setDemoTeamSize] = useState("1-10");
+  const [demoNeed, setDemoNeed] = useState("Mülakat");
+  const [demoNote, setDemoNote] = useState("");
+
+  const onDemoSubmit = (e: any) => {
+    e.preventDefault();
+    // Demo amaçlı: şu an sadece kurumsal panele yönlendiriyoruz.
+    // Sen DB’ye yazmak istersen burayı kendi mevcut insert akışına bağlarsın.
+    navigate("/corporate/dashboard");
+  };
+
   // Featured coaches (statik vitrin)
   const featuredCoaches = [
     {
@@ -242,6 +258,161 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) */}
+      {persona === "company" ? (
+        <section className="py-10 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                    <Building2 className="h-4 w-4" />
+                    Kurumsal Demo Talebi
+                  </div>
+                  <h3 className="mt-3 text-2xl font-black text-gray-900">
+                    Ekibin için koçluk programını başlatalım
+                  </h3>
+                  <p className="mt-2 text-gray-600">
+                    Formu doldur, kurumsal panel akışını açalım. (Demo)
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-orange-200"
+                    onClick={() => navigate("/how-it-works")}
+                  >
+                    Nasıl Çalışır?
+                  </Button>
+                  <Button
+                    className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110"
+                    onClick={() => navigate("/corporate/dashboard")}
+                  >
+                    Kurumsal Panel <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <form onSubmit={onDemoSubmit} className="mt-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Şirket Adı
+                    </label>
+                    <input
+                      value={demoCompanyName}
+                      onChange={(e) => setDemoCompanyName(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                      placeholder="Örn: ABC Teknoloji"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Yetkili Ad Soyad
+                    </label>
+                    <input
+                      value={demoName}
+                      onChange={(e) => setDemoName(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                      placeholder="Örn: Ayşe Yılmaz"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      E-posta
+                    </label>
+                    <input
+                      value={demoEmail}
+                      onChange={(e) => setDemoEmail(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                      placeholder="ornek@firma.com"
+                      type="email"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Telefon
+                    </label>
+                    <input
+                      value={demoPhone}
+                      onChange={(e) => setDemoPhone(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                      placeholder="05xx xxx xx xx"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Ekip Büyüklüğü
+                    </label>
+                    <select
+                      value={demoTeamSize}
+                      onChange={(e) => setDemoTeamSize(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                    >
+                      <option value="1-10">1-10</option>
+                      <option value="11-50">11-50</option>
+                      <option value="51-200">51-200</option>
+                      <option value="200+">200+</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Öncelikli İhtiyaç
+                    </label>
+                    <select
+                      value={demoNeed}
+                      onChange={(e) => setDemoNeed(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
+                    >
+                      <option value="Mülakat">Mülakat</option>
+                      <option value="Kariyer Planı">Kariyer Planı</option>
+                      <option value="Liderlik">Liderlik</option>
+                      <option value="Performans">Performans</option>
+                      <option value="CV / LinkedIn">CV / LinkedIn</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Not (opsiyonel)
+                    </label>
+                    <textarea
+                      value={demoNote}
+                      onChange={(e) => setDemoNote(e.target.value)}
+                      className="w-full min-h-[110px] rounded-xl border border-orange-200 px-4 py-3"
+                      placeholder="Kısa bilgi: ekip hedefi, rol dağılımı, tarih aralığı..."
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <div className="text-xs text-gray-500">
+                    Bu form demo amaçlıdır. İstersen bunu DB insert akışına bağlarız.
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
+                  >
+                    Demo Talebi Gönder <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* ✅ ÖNE ÇIKAN KOÇLAR (EKLENDİ / KORUNDU) */}
       <section className="py-18 bg-gray-50">

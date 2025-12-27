@@ -150,7 +150,7 @@ export default function Index() {
               {personaCopy.subtitle}
             </p>
 
-            {/* ✅ SADECE KOÇTA: HERO ALTINA GELİR / ÖLÇEK / KURUMSAL X2-X3 PARAGRAFI */}
+            {/* ✅ SADECE KOÇTA: HERO ALTINA GELİR / ÖLÇEK / KURUMSAL X2-X3 PARAGRAFI (EKLENDİ) */}
             {persona === "coach" ? (
               <p className="mt-4 text-sm md:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 Kariyeer, koçlar için zamandan bağımsız ve ölçeklenebilir bir
@@ -184,47 +184,6 @@ export default function Index() {
                 </Button>
               </Link>
             </div>
-
-            {/* ✅ SADECE KOÇTA: CTA ALTINA NET SÜREÇ BLOĞU */}
-            {persona === "coach" ? (
-              <div className="mt-8 max-w-4xl mx-auto">
-                <div className="rounded-2xl border border-orange-200 bg-white shadow-sm px-5 py-4">
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-gray-800">
-                    <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
-                      Başvur
-                    </span>
-                    <span className="text-gray-400">→</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
-                      Doğrulama
-                    </span>
-                    <span className="text-gray-400">→</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
-                      Profil yayında
-                    </span>
-                    <span className="text-gray-400">→</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
-                      İlk talep
-                    </span>
-                    <span className="text-gray-400">→</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200">
-                      İlk seans
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid sm:grid-cols-3 gap-3 text-sm text-gray-700">
-                    <div className="rounded-xl border bg-gray-50 px-4 py-3">
-                      Ödeme güvencesi platform üzerinden sağlanır.
-                    </div>
-                    <div className="rounded-xl border bg-gray-50 px-4 py-3">
-                      Doğrulama rozetiyle görünürlüğün artar.
-                    </div>
-                    <div className="rounded-xl border bg-gray-50 px-4 py-3">
-                      Talep, eşleşme ve seans süreci tek panelden yönetilir.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
 
             {/* Inline stats */}
             <div className="mt-10 flex flex-wrap justify-center gap-8 text-sm font-semibold text-gray-700">
@@ -320,7 +279,51 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ✅ SADECE KOÇTA: GLOBAL DEĞER ÖNERİSİ + KOMİSYON + ÖNE ÇIKMA */}
+      {/* ✅ SADECE KOÇTA: EŞLEŞ ile KOÇ BLOĞU ARASINA (SÜREÇ + GÜVENCE) */}
+      {persona === "coach" ? (
+        <section className="pb-10 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+              {/* Steps */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {["Başvur", "Doğrulama", "Profil yayında", "İlk talep", "İlk seans"].map(
+                  (s, idx, arr) => (
+                    <div key={s} className="flex items-center gap-2">
+                      <span className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 text-gray-900 text-sm font-bold">
+                        {s}
+                      </span>
+                      {idx !== arr.length - 1 ? (
+                        <span className="text-orange-300 font-black">→</span>
+                      ) : null}
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* 3 value cards */}
+              <div className="mt-5 grid md:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Ödeme güvencesi platform üzerinden sağlanır.
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Doğrulama rozetiyle görünürlüğün artar.
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Talep, eşleşme ve seans süreci tek panelden yönetilir.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ✅ SADECE KOÇTA: GLOBAL DEĞER ÖNERİSİ + KOMİSYON + ÖNE ÇIKMA (EKLENDİ) */}
       {persona === "coach" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -408,7 +411,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU */}
+      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (BUTONLAR KALDIRILDI) */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -471,7 +474,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM */}
+      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) — BUTONLAR KALDIRILDI, ZAMAN PLANI EKLENDİ */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -638,7 +641,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ÖNE ÇIKAN KOÇLAR */}
+      {/* ✅ ÖNE ÇIKAN KOÇLAR (EKLENDİ / KORUNDU) */}
       <section className="py-18 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
@@ -708,7 +711,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* 2025 BLOĞU */}
+      {/* 2025 BLOĞU (BURADA) */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-gray-900">

@@ -266,6 +266,59 @@ export default function Index() {
         </div>
       </section>
 
+      {/* ✅ YENİ: ARAMA/EŞLEŞME MOTORU İLE ÖNE ÇIKAN KOÇLAR ARASINA (GLOBAL DEĞER + GÜVENCE) */}
+      <section className="pb-10 bg-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+            <div className="text-center">
+              <h3 className="text-2xl md:text-3xl font-black text-gray-900">
+                Kariyerini şansa bırakma. Süreci yönet.
+              </h3>
+
+              <p className="mt-3 text-sm md:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil; kariyer
+                hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi ölçen bir
+                sistemdir. İş bulma, terfi veya kariyer değişimi sürecinde ne yapman
+                gerektiğini tahmin etmene gerek kalmaz. Hedefin netleşir, sana uygun koç
+                önerilir ve ilerleme somut çıktılarla takip edilir. Bu yüzden Kariyeer,
+                ihtiyaç anında girilen bir site değil; süreç boyunca kullanılan bir araçtır.
+              </p>
+
+              <div className="mt-6 grid md:grid-cols-3 gap-3 text-sm">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="font-semibold text-gray-900">
+                    🎯 Hedef bazlı eşleşme
+                  </div>
+                  <div className="mt-1 text-gray-600">
+                    Rastgele değil; hedef/rol/level üzerinden
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="font-semibold text-gray-900">
+                    ✅ Doğrulanmış koçlar
+                  </div>
+                  <div className="mt-1 text-gray-600">
+                    Profil doğrulama + görünür kalite katmanı
+                  </div>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="font-semibold text-gray-900">
+                    📊 Görünür ilerleme
+                  </div>
+                  <div className="mt-1 text-gray-600">
+                    Seans sonrası çıktı + takip düzeni
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 text-sm font-semibold text-gray-700">
+                Koç aramazsın. Sistem seni doğru sonuca götürür.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ✅ SADECE KOÇTA: EŞLEŞ ile KOÇ BLOĞU ARASINA (SÜREÇ + GÜVENCE) */}
       {persona === "coach" ? (
         <section className="pb-10 bg-white">

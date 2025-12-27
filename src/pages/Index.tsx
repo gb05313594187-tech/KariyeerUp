@@ -259,6 +259,77 @@ export default function Index() {
         </div>
       </section>
 
+      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (EKLENDİ) */}
+      {persona === "company" ? (
+        <section className="py-10 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
+                    <Sparkles className="h-4 w-4" />
+                    Kurumsal Program Mantığı
+                  </div>
+
+                  <h3 className="mt-3 text-2xl font-black text-gray-900">
+                    Koçluk, ekip performansına dönüşsün
+                  </h3>
+
+                  <p className="mt-2 text-gray-600 max-w-3xl">
+                    Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini
+                    doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek.
+                    Kariyeer Kurumsal; ihtiyaç tanımı → koç eşleşmesi → seans akışı →
+                    takip/raporlama şeklinde ilerler.
+                  </p>
+
+                  <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Hedef & kapsam</div>
+                      <div className="mt-1 text-gray-600">
+                        Rol/level bazlı program kurulur
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Doğru koç havuzu</div>
+                      <div className="mt-1 text-gray-600">
+                        Uzmanlık ve doğrulama katmanı
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">Takip & görünürlük</div>
+                      <div className="mt-1 text-gray-600">
+                        Talep/pipeline ve raporlanabilir çıktı
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 text-xs text-gray-500">
+                    Not: Form bir “demo talebi”dir. Kurulum sonrası kurumsal panelde
+                    koç seçimi ve talep akışı aktif olur.
+                  </div>
+                </div>
+
+                <div className="flex gap-3 shrink-0">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-orange-200"
+                    onClick={() => navigate("/how-it-works")}
+                  >
+                    Nasıl Çalışır?
+                  </Button>
+                  <Button
+                    className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:brightness-110"
+                    onClick={() => navigate("/corporate/dashboard")}
+                  >
+                    Kurumsal Panel <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) */}
       {persona === "company" ? (
         <section className="py-10 bg-white">

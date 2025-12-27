@@ -214,7 +214,6 @@ export default function Index() {
                   <option value="performance">Performans Gelişimi</option>
                   <option value="leadership">Liderlik</option>
                   <option value="confidence">Özgüven & İletişim</option>
-
                 </select>
               </div>
 
@@ -495,7 +494,7 @@ export default function Index() {
                 Öne Çıkan Koçlar
               </h2>
               <p className="mt-2 text-gray-600">
-                En çok tercih edilen uzmanlar. (Bu alana girmek ücretli olabilir.)
+                Öne çıkan koçlar, ana sayfada daha görünür olur. Bu alanda yer almak ek ücretli bir tanıtım seçeneği olabilir.
               </p>
             </div>
 
@@ -552,6 +551,11 @@ export default function Index() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* ✅ Ekstra açıklama (yalnızca metin, ücret ekranı sonra) */}
+          <div className="mt-6 text-xs text-gray-500">
+            Not: “Öne Çıkan Koçlar” alanı, koçların ana sayfada görünürlüğünü artıran isteğe bağlı bir tanıtım alanıdır. Ücretlendirme ve başvuru akışı daha sonra eklenecektir.
           </div>
         </div>
       </section>

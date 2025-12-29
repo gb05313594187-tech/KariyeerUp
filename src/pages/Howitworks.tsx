@@ -1,4 +1,3 @@
-aşağıdaki metinde hatayı bul düzelt bana tam sayfa olarak gönder 
 export const translations = {
   tr: {
     // Navigation

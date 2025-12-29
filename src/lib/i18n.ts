@@ -1,5 +1,7 @@
+// src/lib/i18n.ts
+export type Language = "tr" | "en" | "fr" | "ar";
 
-export const translations = {
+export const translations: Record<Language, Record<string, string>> = {
   tr: {
     // Navigation
     home: "Ana Sayfa",
@@ -268,7 +270,8 @@ export const translations = {
     index_coach_card1_desc:
       "Hedef/rol bazlı aramalarda listelenme + doğrulama rozeti",
     index_coach_card2_title: "Tek panel yönetim",
-    index_coach_card2_desc: "Seanslar, takvim, talepler, gelir ve performans takibi",
+    index_coach_card2_desc:
+      "Seanslar, takvim, talepler, gelir ve performans takibi",
     index_coach_card3_title: "Global ölçek",
     index_coach_card3_desc: "Dil/ülke kırılımı ile uluslararası danışan akışı",
 
@@ -320,9 +323,11 @@ export const translations = {
     index_demo_team: "Ekip Büyüklüğü",
     index_demo_need: "Öncelikli İhtiyaç",
     index_demo_start: "Başlangıç hedefi",
-    index_demo_start_help: "Gönderince 24 saat içinde dönüş yapıp planı netleştiririz.",
+    index_demo_start_help:
+      "Gönderince 24 saat içinde dönüş yapıp planı netleştiririz.",
     index_demo_note: "Not (opsiyonel)",
-    index_demo_note_ph: "Kısa bilgi: ekip hedefi, rol dağılımı, tarih aralığı...",
+    index_demo_note_ph:
+      "Kısa bilgi: ekip hedefi, rol dağılımı, tarih aralığı...",
     index_demo_footer:
       "Gönderim sonrası: ihtiyaç haritası → koç eşleşmesi → pilot → mail/PDF raporu (isteğe bağlı sunum).",
     index_demo_submit: "Demo Talebi Gönder",
@@ -362,6 +367,52 @@ export const translations = {
     index_2025_metric3: "İş değiştirmede başarı",
     index_2025_cta_coaches: "Koçları İncele",
     index_2025_cta_corporate: "Kurumsal Çözümler",
+
+    // =========================
+    // HOW IT WORKS PAGE (NEW) - ADDED
+    // =========================
+    howItWorks_badge: "Nasıl Çalışır?",
+    howItWorks_title: "3 adımda doğru koçla ilerle",
+    howItWorks_subtitle:
+      "Hedefini seç, koçla eşleş, seans sonrası çıktılarla gelişimini görünür şekilde takip et.",
+
+    howItWorks_step1_title: "Hedefini seç",
+    howItWorks_step1_desc:
+      "Mülakat, terfi, iş değişimi, liderlik veya CV/LinkedIn gibi hedefini belirle. Sistem seni doğru uzman profillerine yönlendirir.",
+    howItWorks_step2_title: "Doğru koçla eşleş",
+    howItWorks_step2_desc:
+      "Uzmanlık, seviye ve dil filtreleriyle en uygun koçu bul. Profil detaylarını incele, seans ücretini gör ve talep oluştur.",
+    howItWorks_step3_title: "Seans planla ve başla",
+    howItWorks_step3_desc:
+      "Uygun zamanı seç, seansı planla. Görüşme sonrası aksiyon maddeleri ve çıktılarla sürecini netleştir.",
+    howItWorks_step4_title: "İlerlemeyi takip et",
+    howItWorks_step4_desc:
+      "Hedef bazlı takip akışıyla ilerlemeni ölç. Notlar, özetler ve çıktılarla gelişimini görünür hale getir.",
+    howItWorks_step5_title: "Sonuç al ve ölçekle",
+    howItWorks_step5_desc:
+      "Yeni rol, daha iyi maaş pazarlığı veya daha güçlü liderlik. Süreci tekrarla, düzenli koçlukla etkiyi büyüt.",
+
+    howItWorks_trust_title: "Güvenli ve ölçülebilir süreç",
+    howItWorks_trust_item1_title: "Doğrulama katmanı",
+    howItWorks_trust_item1_desc:
+      "Koç profilleri doğrulama rozetleriyle kaliteyi görünür kılar.",
+    howItWorks_trust_item2_title: "Şeffaf ücret ve süreç",
+    howItWorks_trust_item2_desc:
+      "Seans ücretleri, süreç adımları ve beklentiler nettir.",
+    howItWorks_trust_item3_title: "Çıktı odaklı takip",
+    howItWorks_trust_item3_desc:
+      "Her seans sonrası somut aksiyonlar ve takip düzeniyle ilerleme ölçülür.",
+
+    howItWorks_cta_title: "Hedefin için bugün başla",
+    howItWorks_cta_subtitle:
+      "Doğru koçla eşleş, ilk seansını planla ve hedefini ölçülebilir bir sürece çevir.",
+    howItWorks_cta_primary: "Koçları İncele",
+    howItWorks_cta_secondary: "Demo Talep Et",
+
+    // Extra labels (if page uses them)
+    howItWorks_for_users: "Kullanıcılar için",
+    howItWorks_for_coaches: "Koçlar için",
+    howItWorks_for_companies: "Şirketler için",
   },
 
   en: {
@@ -405,16 +456,19 @@ export const translations = {
     comingSoon: "Coming Soon",
     featureComingSoon: "This feature is coming soon!",
     thankYou: "Thank You!",
-    requestReceived: "Your request has been received. We will contact you shortly.",
+    requestReceived:
+      "Your request has been received. We will contact you shortly.",
     demoMode: "Demo Mode",
-    demoModeDescription: "This is a demo payment system. No real payment will be processed.",
+    demoModeDescription:
+      "This is a demo payment system. No real payment will be processed.",
 
     // Auth (existing)
     loginRequired: "Login Required",
     pleaseLogin: "Please login",
     pleaseLoginToContinue: "Please login to continue",
     quickDemoLogin: "Quick Demo Login",
-    clickBelowForQuickLogin: "Click below for quick login with demo account",
+    clickBelowForQuickLogin:
+      "Click below for quick login with demo account",
     goToHomepage: "Go to Homepage",
 
     // Dashboard (existing)
@@ -458,7 +512,8 @@ export const translations = {
     cancelSubscription: "Cancel Subscription",
     renewSubscription: "Renew Subscription",
     upgradeToGold: "Upgrade to Gold",
-    confirmCancelSubscription: "Are you sure you want to cancel your subscription?",
+    confirmCancelSubscription:
+      "Are you sure you want to cancel your subscription?",
     subscriptionCancelled: "Your subscription has been cancelled",
     subscriptionRenewed: "Your subscription has been renewed",
     alreadyHaveSubscription: "You already have an active subscription",
@@ -546,15 +601,18 @@ export const translations = {
     index_persona_company_subtitle:
       "Measure, report, and scale team development with goal-based coaching programs.",
 
+    // Hero
     index_hero_title_prefix: "Take your potential",
     index_hero_title_highlight: "to the top",
     index_cta_match: "Match",
     index_cta_howItWorks: "How it works?",
 
+    // Inline stats
     index_stat_onlineCoach: "Online Coaches",
     index_stat_todayMatch: "Matches Today",
     index_stat_lastHour: "Last 1 Hour",
 
+    // Quick match box
     index_qm_goal: "Goal",
     index_qm_level: "Level",
     index_qm_language: "Language",
@@ -562,6 +620,7 @@ export const translations = {
     index_tip_premiumslot:
       "Tip: “Featured Coaches” can be sold as a premium slot.",
 
+    // Goal options
     index_goal_interview: "Interview",
     index_goal_career: "Career Plan",
     index_goal_promotion: "Promotion",
@@ -572,12 +631,14 @@ export const translations = {
     index_goal_leadership: "Leadership",
     index_goal_confidence: "Confidence & Communication",
 
+    // Level options
     index_level_student: "Student / New Graduate",
     index_level_junior: "Junior",
     index_level_mid: "Mid",
     index_level_senior: "Senior",
     index_level_manager: "Manager",
 
+    // System value section
     index_value_badge: "Goal · Plan · Progress Tracking",
     index_value_title: "Don't leave your career to chance. Manage the process.",
     index_value_body:
@@ -597,6 +658,7 @@ export const translations = {
 
     index_value_footer: "You don't search for a coach. The system leads you.",
 
+    // Coach-only (mini steps section)
     index_coach_steps_1: "Apply",
     index_coach_steps_2: "Verification",
     index_coach_steps_3: "Profile live",
@@ -607,6 +669,7 @@ export const translations = {
     index_coach_mini_2: "Your visibility increases with a verification badge.",
     index_coach_mini_3: "Requests, matches, and sessions are managed in one panel.",
 
+    // Coach-only (global system section)
     index_coach_global_badge: "Global System for Coaches",
     index_coach_global_title: "Find clients, manage sessions, grow revenue",
     index_coach_global_p1:
@@ -615,20 +678,26 @@ export const translations = {
       "Kariyeer enables coaches to match with the right clients for the right goals and manage everything in one place: visibility → request/match → session → follow-up/report → revenue.",
 
     index_coach_card1_title: "More visibility",
-    index_coach_card1_desc: "Listed in goal/role searches + verification badge",
+    index_coach_card1_desc:
+      "Listed in goal/role searches + verification badge",
     index_coach_card2_title: "One-panel management",
-    index_coach_card2_desc: "Sessions, calendar, requests, revenue, performance tracking",
+    index_coach_card2_desc:
+      "Sessions, calendar, requests, revenue, performance tracking",
     index_coach_card3_title: "Global scale",
-    index_coach_card3_desc: "International client flow via language/country segmentation",
+    index_coach_card3_desc:
+      "International client flow via language/country segmentation",
 
-    index_coach_chip1: "Commission: 10% for first 50 coaches (first 6 months)",
+    index_coach_chip1:
+      "Commission: 10% for first 50 coaches (first 6 months)",
     index_coach_chip2: "After that: standard commission 20%",
-    index_coach_chip3: "Featured Coaches: homepage visibility (paid add-on)",
+    index_coach_chip3:
+      "Featured Coaches: homepage visibility (paid add-on)",
     index_coach_note:
       "Note: “Featured Coaches” is a sponsored showcase. Coaches can pay extra to be more visible on the homepage.",
     index_coach_apply_btn: "Apply as Coach",
     index_coach_view_btn: "View Coaches",
 
+    // Company-only (program logic)
     index_company_badge: "Corporate Program Logic",
     index_company_title: "Turn coaching into team performance",
     index_company_p1:
@@ -650,6 +719,7 @@ export const translations = {
     index_company_text_2:
       "Outcome: visible progress for People & Culture teams, trackable development for managers, clear goals and a consistent coaching flow for employees. After a demo request: needs map → matching → pilot → first measurement report.",
 
+    // Company demo form
     index_demo_badge: "Corporate Demo Request",
     index_demo_title: "Let's start a coaching program for your team",
     index_demo_subtitle:
@@ -666,13 +736,16 @@ export const translations = {
     index_demo_team: "Team Size",
     index_demo_need: "Primary Need",
     index_demo_start: "Target start",
-    index_demo_start_help: "After submission, we'll reply within 24 hours to finalize the plan.",
+    index_demo_start_help:
+      "After submission, we'll reply within 24 hours to finalize the plan.",
     index_demo_note: "Note (optional)",
-    index_demo_note_ph: "Short info: team goals, roles, date range...",
+    index_demo_note_ph:
+      "Short info: team goals, roles, date range...",
     index_demo_footer:
       "After submission: needs map → coach matching → pilot → email/PDF report (optional presentation).",
     index_demo_submit: "Submit Demo Request",
 
+    // Demo select options
     index_team_1_10: "1-10",
     index_team_11_50: "11-50",
     index_team_51_200: "51-200",
@@ -688,6 +761,7 @@ export const translations = {
     index_start_this_month: "This month",
     index_start_q1: "Q1",
 
+    // Featured coaches
     index_featured_badge: "Sponsored Area / Premium Slot",
     index_featured_title: "Featured Coaches",
     index_featured_subtitle:
@@ -697,6 +771,7 @@ export const translations = {
     index_featured_verified: "Verified",
     index_featured_reviews_suffix: "reviews",
 
+    // 2025 section
     index_2025_title: "What problem are we solving in 2025?",
     index_2025_body:
       "Career uncertainty, interview performance, and the “which path should I take?” problem. Kariyeer makes this measurable with goal-based matching and tracking.",
@@ -705,6 +780,51 @@ export const translations = {
     index_2025_metric3: "Success in job changes",
     index_2025_cta_coaches: "Explore Coaches",
     index_2025_cta_corporate: "Corporate Solutions",
+
+    // =========================
+    // HOW IT WORKS PAGE (NEW) - ADDED
+    // =========================
+    howItWorks_badge: "How it works?",
+    howItWorks_title: "Move forward with the right coach in 3 steps",
+    howItWorks_subtitle:
+      "Pick your goal, match with a coach, and track progress with concrete outputs after each session.",
+
+    howItWorks_step1_title: "Choose your goal",
+    howItWorks_step1_desc:
+      "Pick your target—interview, promotion, job change, leadership, or CV/LinkedIn. The system routes you to the right experts.",
+    howItWorks_step2_title: "Match with the right coach",
+    howItWorks_step2_desc:
+      "Filter by expertise, level, and language. Review profiles, see pricing, and submit a request.",
+    howItWorks_step3_title: "Schedule and start",
+    howItWorks_step3_desc:
+      "Choose a time and schedule your session. After the session, get action items and outputs to clarify next steps.",
+    howItWorks_step4_title: "Track your progress",
+    howItWorks_step4_desc:
+      "Measure progress with goal-based tracking. Notes, summaries, and outputs make growth visible.",
+    howItWorks_step5_title: "Get results and scale",
+    howItWorks_step5_desc:
+      "New role, stronger negotiation, or better leadership. Repeat the process and grow impact with consistent coaching.",
+
+    howItWorks_trust_title: "Secure and measurable process",
+    howItWorks_trust_item1_title: "Verification layer",
+    howItWorks_trust_item1_desc:
+      "Coach profiles include verification badges to make quality visible.",
+    howItWorks_trust_item2_title: "Transparent pricing and flow",
+    howItWorks_trust_item2_desc:
+      "Pricing, steps, and expectations are clear from the start.",
+    howItWorks_trust_item3_title: "Output-driven follow-up",
+    howItWorks_trust_item3_desc:
+      "Every session results in tangible actions and a follow-up routine.",
+
+    howItWorks_cta_title: "Start today for your goal",
+    howItWorks_cta_subtitle:
+      "Match with the right coach, schedule your first session, and turn your goal into a measurable plan.",
+    howItWorks_cta_primary: "Explore Coaches",
+    howItWorks_cta_secondary: "Request Demo",
+
+    howItWorks_for_users: "For users",
+    howItWorks_for_coaches: "For coaches",
+    howItWorks_for_companies: "For companies",
   },
 
   fr: {
@@ -723,7 +843,8 @@ export const translations = {
 
     // Homepage (existing)
     heroTitle: "Faites Passer Votre Carrière au Niveau Supérieur",
-    heroSubtitle: "Atteignez vos objectifs avec des coachs professionnels certifiés ICF",
+    heroSubtitle:
+      "Atteignez vos objectifs avec des coachs professionnels certifiés ICF",
     bookNow: "Réserver Maintenant",
     careerTransition: "Transition de Carrière",
     interviewPrep: "Préparation aux Entretiens",
@@ -748,16 +869,19 @@ export const translations = {
     comingSoon: "Bientôt Disponible",
     featureComingSoon: "Cette fonctionnalité arrive bientôt!",
     thankYou: "Merci!",
-    requestReceived: "Votre demande a été reçue. Nous vous contacterons sous peu.",
+    requestReceived:
+      "Votre demande a été reçue. Nous vous contacterons sous peu.",
     demoMode: "Mode Démo",
-    demoModeDescription: "Ceci est un système de paiement de démonstration. Aucun paiement réel ne sera traité.",
+    demoModeDescription:
+      "Ceci est un système de paiement de démonstration. Aucun paiement réel ne sera traité.",
 
     // Auth (existing)
     loginRequired: "Connexion Requise",
     pleaseLogin: "Veuillez vous connecter",
     pleaseLoginToContinue: "Veuillez vous connecter pour continuer",
     quickDemoLogin: "Connexion Démo Rapide",
-    clickBelowForQuickLogin: "Cliquez ci-dessous pour une connexion rapide avec un compte démo",
+    clickBelowForQuickLogin:
+      "Cliquez ci-dessous pour une connexion rapide avec un compte démo",
     goToHomepage: "Aller à l'Accueil",
 
     // Dashboard (existing)
@@ -801,7 +925,8 @@ export const translations = {
     cancelSubscription: "Annuler l'Abonnement",
     renewSubscription: "Renouveler l'Abonnement",
     upgradeToGold: "Passer à l'Or",
-    confirmCancelSubscription: "Êtes-vous sûr de vouloir annuler votre abonnement?",
+    confirmCancelSubscription:
+      "Êtes-vous sûr de vouloir annuler votre abonnement?",
     subscriptionCancelled: "Votre abonnement a été annulé",
     subscriptionRenewed: "Votre abonnement a été renouvelé",
     alreadyHaveSubscription: "Vous avez déjà un abonnement actif",
@@ -889,6 +1014,7 @@ export const translations = {
     index_persona_company_subtitle:
       "Mesurez, reportez et faites évoluer le développement des équipes via des programmes de coaching orientés objectifs.",
 
+    // Hero
     index_hero_title_prefix: "Portez votre potentiel",
     index_hero_title_highlight: "au sommet",
     index_cta_match: "Matcher",
@@ -905,6 +1031,7 @@ export const translations = {
     index_tip_premiumslot:
       "Astuce : « Coachs mis en avant » peut être vendu comme un slot premium.",
 
+    // Goal options
     index_goal_interview: "Entretien",
     index_goal_career: "Plan de carrière",
     index_goal_promotion: "Promotion",
@@ -915,6 +1042,7 @@ export const translations = {
     index_goal_leadership: "Leadership",
     index_goal_confidence: "Confiance & communication",
 
+    // Level options
     index_level_student: "Étudiant / Nouveau diplômé",
     index_level_junior: "Junior",
     index_level_mid: "Confirmé",
@@ -930,7 +1058,8 @@ export const translations = {
     index_value_card1_title: "🎯 Matching par objectif",
     index_value_card1_desc: "Pas au hasard ; basé sur objectif/rôle/niveau",
     index_value_card2_title: "✅ Coachs vérifiés",
-    index_value_card2_desc: "Vérification du profil + couche de qualité visible",
+    index_value_card2_desc:
+      "Vérification du profil + couche de qualité visible",
     index_value_card3_title: "📊 Progrès visibles",
     index_value_card3_desc: "Résultat après séance + routine de suivi",
 
@@ -947,9 +1076,12 @@ export const translations = {
     index_coach_steps_4: "Première demande",
     index_coach_steps_5: "Première séance",
 
-    index_coach_mini_1: "La garantie de paiement est gérée via la plateforme.",
-    index_coach_mini_2: "Votre visibilité augmente avec un badge de vérification.",
-    index_coach_mini_3: "Demandes, matching et séances gérés depuis un seul panel.",
+    index_coach_mini_1:
+      "La garantie de paiement est gérée via la plateforme.",
+    index_coach_mini_2:
+      "Votre visibilité augmente avec un badge de vérification.",
+    index_coach_mini_3:
+      "Demandes, matching et séances gérés depuis un seul panel.",
 
     index_coach_global_badge: "Système global pour les coachs",
     index_coach_global_title:
@@ -980,7 +1112,8 @@ export const translations = {
     index_coach_view_btn: "Voir les coachs",
 
     index_company_badge: "Logique du programme corporate",
-    index_company_title: "Transformer le coaching en performance d'équipe",
+    index_company_title:
+      "Transformer le coaching en performance d'équipe",
     index_company_p1:
       "Côté entreprise, l'objectif n'est pas de « vendre des séances » ; c'est d'aligner les objectifs d'équipe avec les bons coachs et rendre les progrès visibles. Flux : définition des besoins → matching → séances → suivi/rapports.",
 
@@ -992,7 +1125,8 @@ export const translations = {
     index_company_box3_desc: "Résultat reportable (email / PDF)",
 
     index_company_sla: "SLA : réponse sous 24h",
-    index_company_pilot: "Pilote : 1er rapport de mesure en 2 semaines",
+    index_company_pilot:
+      "Pilote : 1er rapport de mesure en 2 semaines",
     index_company_solutions_btn: "Solutions corporate",
 
     index_company_text_1:
@@ -1001,7 +1135,8 @@ export const translations = {
       "Résultat : progrès visibles pour People & Culture, développement traçable pour les managers, objectifs clairs et flux régulier pour les employés. Après une demande de démo : carte des besoins → matching → pilote → 1er rapport.",
 
     index_demo_badge: "Demande de démo corporate",
-    index_demo_title: "Lançons un programme de coaching pour votre équipe",
+    index_demo_title:
+      "Lançons un programme de coaching pour votre équipe",
     index_demo_subtitle:
       "Remplissez le formulaire. Nous créons un plan aligné sur vos objectifs et partageons le premier rapport.",
 
@@ -1019,7 +1154,8 @@ export const translations = {
     index_demo_start_help:
       "Après l'envoi, nous répondons sous 24h pour finaliser le plan.",
     index_demo_note: "Note (optionnel)",
-    index_demo_note_ph: "Infos courtes : objectifs, rôles, dates...",
+    index_demo_note_ph:
+      "Infos courtes : objectifs, rôles, dates...",
     index_demo_footer:
       "Après l'envoi : carte des besoins → matching → pilote → rapport email/PDF (présentation optionnelle).",
     index_demo_submit: "Envoyer la demande de démo",
@@ -1052,10 +1188,57 @@ export const translations = {
     index_2025_body:
       "Incertitude de carrière, performance en entretien et la question « quel chemin choisir ? ». Kariyeer rend cela mesurable via matching et suivi basés sur des objectifs.",
     index_2025_metric1: "Impact sur une promotion plus rapide",
-    index_2025_metric2: "Avantage d'augmentation salariale",
-    index_2025_metric3: "Succès lors d'un changement de poste",
+    index_2025_metric2:
+      "Avantage d'augmentation salariale",
+    index_2025_metric3:
+      "Succès lors d'un changement de poste",
     index_2025_cta_coaches: "Découvrir les coachs",
     index_2025_cta_corporate: "Solutions corporate",
+
+    // =========================
+    // HOW IT WORKS PAGE (NEW) - ADDED
+    // =========================
+    howItWorks_badge: "Comment ça marche ?",
+    howItWorks_title: "Avancez avec le bon coach en 3 étapes",
+    howItWorks_subtitle:
+      "Choisissez votre objectif, matchez avec un coach et suivez vos progrès grâce à des résultats concrets après chaque séance.",
+
+    howItWorks_step1_title: "Choisissez votre objectif",
+    howItWorks_step1_desc:
+      "Entretien, promotion, changement de poste, leadership ou CV/LinkedIn. Le système vous oriente vers les bons experts.",
+    howItWorks_step2_title: "Matchez avec le bon coach",
+    howItWorks_step2_desc:
+      "Filtrez par expertise, niveau et langue. Consultez les profils, voyez les tarifs et envoyez une demande.",
+    howItWorks_step3_title: "Planifiez et démarrez",
+    howItWorks_step3_desc:
+      "Choisissez un créneau et planifiez la séance. Après, recevez des actions et livrables pour clarifier la suite.",
+    howItWorks_step4_title: "Suivez vos progrès",
+    howItWorks_step4_desc:
+      "Mesurez l'évolution avec un suivi basé sur l'objectif. Notes, résumés et livrables rendent la progression visible.",
+    howItWorks_step5_title: "Obtenez des résultats",
+    howItWorks_step5_desc:
+      "Nouveau rôle, meilleure négociation ou leadership plus fort. Répétez et augmentez l'impact avec un coaching régulier.",
+
+    howItWorks_trust_title: "Processus sûr et mesurable",
+    howItWorks_trust_item1_title: "Couche de vérification",
+    howItWorks_trust_item1_desc:
+      "Les profils coach incluent des badges pour rendre la qualité visible.",
+    howItWorks_trust_item2_title: "Tarifs et étapes clairs",
+    howItWorks_trust_item2_desc:
+      "Tarifs, étapes et attentes sont transparents dès le départ.",
+    howItWorks_trust_item3_title: "Suivi orienté résultats",
+    howItWorks_trust_item3_desc:
+      "Chaque séance produit des actions concrètes et une routine de suivi.",
+
+    howItWorks_cta_title: "Commencez aujourd'hui",
+    howItWorks_cta_subtitle:
+      "Matchez avec le bon coach, planifiez votre première séance et transformez votre objectif en plan mesurable.",
+    howItWorks_cta_primary: "Découvrir les coachs",
+    howItWorks_cta_secondary: "Demander une démo",
+
+    howItWorks_for_users: "Pour les utilisateurs",
+    howItWorks_for_coaches: "Pour les coachs",
+    howItWorks_for_companies: "Pour les entreprises",
   },
 
   ar: {
@@ -1101,14 +1284,16 @@ export const translations = {
     thankYou: "شكرًا لك!",
     requestReceived: "تم استلام طلبك. سنتواصل معك قريبًا.",
     demoMode: "وضع تجريبي",
-    demoModeDescription: "هذا نظام دفع تجريبي. لن يتم تنفيذ أي دفع حقيقي.",
+    demoModeDescription:
+      "هذا نظام دفع تجريبي. لن يتم تنفيذ أي دفع حقيقي.",
 
     // Auth (existing)
     loginRequired: "يلزم تسجيل الدخول",
     pleaseLogin: "يرجى تسجيل الدخول",
     pleaseLoginToContinue: "يرجى تسجيل الدخول للمتابعة",
     quickDemoLogin: "تسجيل دخول تجريبي سريع",
-    clickBelowForQuickLogin: "انقر أدناه لتسجيل الدخول سريعًا بحساب تجريبي",
+    clickBelowForQuickLogin:
+      "انقر أدناه لتسجيل الدخول سريعًا بحساب تجريبي",
     goToHomepage: "الذهاب إلى الرئيسية",
 
     // Dashboard (existing)
@@ -1152,7 +1337,8 @@ export const translations = {
     cancelSubscription: "إلغاء الاشتراك",
     renewSubscription: "تجديد الاشتراك",
     upgradeToGold: "الترقية إلى الذهبي",
-    confirmCancelSubscription: "هل أنت متأكد أنك تريد إلغاء الاشتراك؟",
+    confirmCancelSubscription:
+      "هل أنت متأكد أنك تريد إلغاء الاشتراك؟",
     subscriptionCancelled: "تم إلغاء اشتراكك",
     subscriptionRenewed: "تم تجديد اشتراكك",
     alreadyHaveSubscription: "لديك اشتراك نشط بالفعل",
@@ -1240,6 +1426,7 @@ export const translations = {
     index_persona_company_subtitle:
       "قِس وبلّغ ووسّع تطوير الفريق عبر برامج تدريب قائمة على الأهداف.",
 
+    // Hero
     index_hero_title_prefix: "ارفع",
     index_hero_title_highlight: "إمكاناتك إلى القمة",
     index_cta_match: "مطابقة",
@@ -1256,6 +1443,7 @@ export const translations = {
     index_tip_premiumslot:
       "معلومة: يمكن بيع «المدربون المميّزون» كمساحة بريميوم.",
 
+    // Goal options
     index_goal_interview: "مقابلة",
     index_goal_career: "خطة مهنية",
     index_goal_promotion: "ترقية",
@@ -1266,12 +1454,14 @@ export const translations = {
     index_goal_leadership: "القيادة",
     index_goal_confidence: "الثقة والتواصل",
 
+    // Level options
     index_level_student: "طالب / خريج جديد",
     index_level_junior: "مبتدئ",
     index_level_mid: "متوسط",
     index_level_senior: "متقدم",
     index_level_manager: "مدير",
 
+    // System value section
     index_value_badge: "هدف · خطة · تتبع التقدم",
     index_value_title: "لا تترك مسارك للصدفة. أدر العملية.",
     index_value_body:
@@ -1291,6 +1481,7 @@ export const translations = {
 
     index_value_footer: "لن تبحث عن مدرب. النظام يقودك للنتيجة.",
 
+    // Coach-only (mini steps section)
     index_coach_steps_1: "قدّم",
     index_coach_steps_2: "توثيق",
     index_coach_steps_3: "الملف جاهز",
@@ -1301,6 +1492,7 @@ export const translations = {
     index_coach_mini_2: "يزداد ظهورك بشارة التوثيق.",
     index_coach_mini_3: "إدارة الطلبات والمطابقة والجلسات من لوحة واحدة.",
 
+    // Coach-only (global system section)
     index_coach_global_badge: "نظام عالمي للمدربين",
     index_coach_global_title: "اعثر على عملاء، أدر جلساتك، نمِّ دخلك",
     index_coach_global_p1:
@@ -1309,34 +1501,43 @@ export const translations = {
       "Kariyeer يمكّن المدربين من مطابقة العميل الصحيح مع الهدف الصحيح وإدارة كامل المسار: الظهور → الطلب/المطابقة → الجلسة → المتابعة/التقرير → الإيراد.",
 
     index_coach_card1_title: "ظهور أكبر",
-    index_coach_card1_desc: "الظهور في بحث الهدف/الدور + شارة توثيق",
+    index_coach_card1_desc:
+      "الظهور في بحث الهدف/الدور + شارة توثيق",
     index_coach_card2_title: "إدارة من لوحة واحدة",
-    index_coach_card2_desc: "الجلسات، التقويم، الطلبات، الإيراد، تتبع الأداء",
+    index_coach_card2_desc:
+      "الجلسات، التقويم، الطلبات، الإيراد، تتبع الأداء",
     index_coach_card3_title: "توسع عالمي",
-    index_coach_card3_desc: "تدفّق عملاء دولي عبر تقسيم اللغة/الدولة",
+    index_coach_card3_desc:
+      "تدفّق عملاء دولي عبر تقسيم اللغة/الدولة",
 
-    index_coach_chip1: "العمولة: 10% لأول 50 مدربًا (أول 6 أشهر)",
+    index_coach_chip1:
+      "العمولة: 10% لأول 50 مدربًا (أول 6 أشهر)",
     index_coach_chip2: "بعد ذلك: العمولة القياسية 20%",
-    index_coach_chip3: "مدربون مميّزون: ظهور في الصفحة الرئيسية (مدفوع)",
+    index_coach_chip3:
+      "مدربون مميّزون: ظهور في الصفحة الرئيسية (مدفوع)",
     index_coach_note:
       "ملاحظة: «المدربون المميّزون» مساحة دعائية. يمكن للمدربين الدفع لزيادة الظهور.",
     index_coach_apply_btn: "قدّم كمدرب",
     index_coach_view_btn: "عرض المدربين",
 
+    // Company-only (program logic)
     index_company_badge: "منطق البرنامج المؤسسي",
     index_company_title: "حوّل التدريب إلى أداء فريق",
     index_company_p1:
       "في الشركات، الهدف ليس «بيع جلسات» بل مواءمة أهداف الفريق مع المدربين المناسبين وجعل التقدم مرئيًا. المسار: تحديد الاحتياج → المطابقة → الجلسات → المتابعة/التقارير.",
 
     index_company_box1_title: "الهدف والنطاق",
-    index_company_box1_desc: "خطة برنامج حسب الدور/المستوى",
+    index_company_box1_desc:
+      "خطة برنامج حسب الدور/المستوى",
     index_company_box2_title: "مجموعة مدربين مناسبة",
     index_company_box2_desc: "خبرة + طبقة توثيق",
     index_company_box3_title: "متابعة ووضوح",
-    index_company_box3_desc: "مخرجات قابلة للتقرير (بريد / PDF)",
+    index_company_box3_desc:
+      "مخرجات قابلة للتقرير (بريد / PDF)",
 
     index_company_sla: "SLA: رد خلال 24 ساعة",
-    index_company_pilot: "تجربة: أول تقرير قياس خلال أسبوعين",
+    index_company_pilot:
+      "تجربة: أول تقرير قياس خلال أسبوعين",
     index_company_solutions_btn: "حلول الشركات",
 
     index_company_text_1:
@@ -1344,6 +1545,7 @@ export const translations = {
     index_company_text_2:
       "النتيجة: تقدم مرئي لفِرق الموارد والثقافة، تطوير قابل للتتبع للمدراء، أهداف واضحة وتدفق تدريب منتظم للموظفين. بعد طلب الديمو: خريطة احتياج → مطابقة → تجربة → أول تقرير قياس.",
 
+    // Company demo form
     index_demo_badge: "طلب عرض تجريبي للشركات",
     index_demo_title: "لنبدأ برنامج تدريب لفريقك",
     index_demo_subtitle:
@@ -1351,7 +1553,8 @@ export const translations = {
 
     index_demo_company_name: "اسم الشركة",
     index_demo_company_name_ph: "مثال: ABC Tech",
-    index_demo_contact_name: "الاسم الكامل للمسؤول",
+    index_demo_contact_name:
+      "الاسم الكامل للمسؤول",
     index_demo_contact_name_ph: "مثال: أحمد علي",
     index_demo_email: "البريد الإلكتروني",
     index_demo_email_ph: "example@company.com",
@@ -1359,11 +1562,13 @@ export const translations = {
     index_demo_phone_ph: "+216 / +90 ...",
     index_demo_team: "حجم الفريق",
     index_demo_need: "الاحتياج الأساسي",
-    index_demo_start: "موعد البدء المستهدف",
+    index_demo_start:
+      "موعد البدء المستهدف",
     index_demo_start_help:
       "بعد الإرسال سنرد خلال 24 ساعة لتثبيت الخطة.",
     index_demo_note: "ملاحظة (اختياري)",
-    index_demo_note_ph: "معلومات قصيرة: أهداف الفريق، الأدوار، المدة...",
+    index_demo_note_ph:
+      "معلومات قصيرة: أهداف الفريق، الأدوار، المدة...",
     index_demo_footer:
       "بعد الإرسال: خريطة احتياج → مطابقة المدرب → تجربة → تقرير بريد/PDF (عرض اختياري).",
     index_demo_submit: "إرسال طلب الديمو",
@@ -1400,10 +1605,53 @@ export const translations = {
     index_2025_metric3: "نجاح تغيير الوظيفة",
     index_2025_cta_coaches: "استكشف المدربين",
     index_2025_cta_corporate: "حلول الشركات",
+
+    // =========================
+    // HOW IT WORKS PAGE (NEW) - ADDED
+    // =========================
+    howItWorks_badge: "كيف يعمل؟",
+    howItWorks_title: "تقدّم مع المدرب المناسب في 3 خطوات",
+    howItWorks_subtitle:
+      "اختر هدفك، طابِق مع مدرب، وتتبع التقدم عبر مخرجات واضحة بعد كل جلسة.",
+
+    howItWorks_step1_title: "اختر هدفك",
+    howItWorks_step1_desc:
+      "مقابلة، ترقية، تغيير وظيفة، قيادة، أو سيرة/لينكدإن. النظام يوجهك للخبراء المناسبين.",
+    howItWorks_step2_title: "طابِق مع المدرب المناسب",
+    howItWorks_step2_desc:
+      "فلتر حسب الخبرة والمستوى واللغة. راجع الملفات، شاهد الأسعار، وقدّم طلبًا.",
+    howItWorks_step3_title: "حدّد موعدًا وابدأ",
+    howItWorks_step3_desc:
+      "اختر وقتًا مناسبًا وحدد الجلسة. بعد الجلسة ستحصل على خطوات عملية ومخرجات تساعدك على التقدم.",
+    howItWorks_step4_title: "تتبّع تقدمك",
+    howItWorks_step4_desc:
+      "قِس التطور عبر تتبع قائم على الهدف. الملاحظات والملخصات والمخرجات تجعل النمو واضحًا.",
+    howItWorks_step5_title: "احصل على نتائج",
+    howItWorks_step5_desc:
+      "دور جديد، تفاوض أقوى، أو قيادة أفضل. كرر العملية ووسّع الأثر عبر تدريب منتظم.",
+
+    howItWorks_trust_title: "مسار آمن وقابل للقياس",
+    howItWorks_trust_item1_title: "طبقة توثيق",
+    howItWorks_trust_item1_desc:
+      "ملفات المدربين تحتوي شارات توثيق لإظهار الجودة.",
+    howItWorks_trust_item2_title: "سعر ومسار واضحان",
+    howItWorks_trust_item2_desc:
+      "الأسعار والخطوات والتوقعات واضحة من البداية.",
+    howItWorks_trust_item3_title: "متابعة قائمة على المخرجات",
+    howItWorks_trust_item3_desc:
+      "كل جلسة تنتج أفعالًا ملموسة وروتين متابعة.",
+
+    howItWorks_cta_title: "ابدأ اليوم",
+    howItWorks_cta_subtitle:
+      "طابِق مع المدرب المناسب، حدّد جلستك الأولى، وحوّل هدفك إلى خطة قابلة للقياس.",
+    howItWorks_cta_primary: "استكشف المدربين",
+    howItWorks_cta_secondary: "طلب عرض تجريبي",
+
+    howItWorks_for_users: "للمستخدمين",
+    howItWorks_for_coaches: "للمدربين",
+    howItWorks_for_companies: "للشركات",
   },
 };
-
-export type Language = "tr" | "en" | "fr" | "ar";
 
 export function getTranslation(language: Language, key: string): string {
   const langTable = translations[language] || translations.tr;

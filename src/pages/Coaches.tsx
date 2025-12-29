@@ -21,11 +21,31 @@ function toYears(v: any): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : 0;
   const s = String(v).trim();
   if (!s) return 0;
-  // "5+ Yıl", "5+ Years", "10+"
   const m = s.match(/(\d+(\.\d+)?)/);
   if (!m) return 0;
   const n = Number(m[1]);
   return Number.isFinite(n) ? n : 0;
+}
+
+// ✅ SEO slug üretimi (Türkçe karakter + boşluk + noktalama temizler)
+function slugify(input: any) {
+  const s = String(input || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // aksanları kaldır
+    .replace(/[^a-z0-9\u0600-\u06FF\s-]/g, " ") // arapça harfleri tut, diğerlerini boşluk
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return s || "coach";
+}
+
+function pickPrimarySpecialization(coach: any) {
+  const specs = (coach?.specializations || []) as string[];
+  if (Array.isArray(specs) && specs.length > 0) return specs[0];
+  // fallback: title -> "Career Coach" vs
+  return coach?.title || "coach";
 }
 
 export default function Coaches() {
@@ -37,7 +57,11 @@ export default function Coaches() {
   const urlLang = (searchParams.get("lang") || "").toLowerCase();
 
   useEffect(() => {
-    if (urlLang && ["tr", "en", "ar", "fr"].includes(urlLang) && urlLang !== language) {
+    if (
+      urlLang &&
+      ["tr", "en", "ar", "fr"].includes(urlLang) &&
+      urlLang !== language
+    ) {
       setLanguage(urlLang as any);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,11 +250,15 @@ export default function Coaches() {
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedCategory, setSelectedCategory] = useState<string>(t.categories?.[0] || "Tümü");
-  const [experienceFilter, setExperienceFilter] = useState<string>(t.experiences?.[0] || "Tümü");
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    t.categories?.[0] || "Tümü"
+  );
+  const [experienceFilter, setExperienceFilter] = useState<string>(
+    t.experiences?.[0] || "Tümü"
+  );
   const [sortOption, setSortOption] = useState<string>("recommended");
 
-  // ✅ Dil değişince: filtreleri resetle (koçlar “kaybolmasın”)
+  // ✅ Dil değişince: filtreleri resetle
   useEffect(() => {
     const tt = i18n[lang] || i18n.tr;
     setSelectedCategory(tt.categories?.[0] || "Tümü");
@@ -330,7 +358,9 @@ export default function Coaches() {
     } else if (sortOption === "price_desc") {
       list.sort((a, b) => (b.hourly_rate || 0) - (a.hourly_rate || 0));
     } else if (sortOption === "exp_desc") {
-      list.sort((a, b) => toYears(b.experience_years) - toYears(a.experience_years));
+      list.sort(
+        (a, b) => toYears(b.experience_years) - toYears(a.experience_years)
+      );
     } else {
       // recommended: rating yüksek + review fazla
       list.sort((a, b) => {
@@ -382,7 +412,6 @@ export default function Coaches() {
 
       {/* İÇERİK */}
       <div className="max-w-7xl mx-auto px-4 py-16 -mt-8 relative z-20">
-        {/* ANA LAYOUT: SOL FİLTRE + SAĞ LİSTE */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* SOL: FİLTRELER */}
           <div className="hidden lg:block space-y-6">
@@ -479,7 +508,7 @@ export default function Coaches() {
 
           {/* SAĞ: LİSTE */}
           <div className="lg:col-span-3">
-            {/* ÜST BAR: SAYI + SIRALAMA + GÖRÜNÜM */}
+            {/* ÜST BAR */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200 gap-4">
               <p className="text-gray-600 font-medium">
                 {loading ? (
@@ -561,6 +590,10 @@ export default function Coaches() {
                     (coach.total_reviews || 0) >= 20;
                   const price = coach.hourly_rate || 0;
                   const currency = coach.currency || "₺";
+
+                  // ✅ SEO slug: "ayse-yilmaz-mulakat-hazirligi"
+                  const primarySpec = pickPrimarySpecialization(coach);
+                  const slug = `${slugify(coach.full_name)}-${slugify(primarySpec)}`;
 
                   return (
                     <div
@@ -688,11 +721,18 @@ export default function Coaches() {
                               {price} {currency}
                             </span>
                           </div>
+
                           <button
                             onClick={() => {
                               const qs = new URLSearchParams(searchParams);
                               if (!qs.get("lang")) qs.set("lang", lang);
-                              navigate(`/coach/${coach.id}?${qs.toString()}`);
+
+                              // ✅ eski: /coach/:id
+                              // ✅ yeni: /coach/:slug (SEO)
+                              // id’yi de query'e koyuyoruz ki profile sayfası DB’den çekebilsin
+                              qs.set("id", coach.id);
+
+                              navigate(`/coach/${slug}?${qs.toString()}`);
                             }}
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm"
                           >

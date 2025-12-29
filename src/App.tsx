@@ -44,6 +44,9 @@ import Ethics from "@/pages/Ethics";
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
 
+// ✅ SITEMAP
+import Sitemap from "@/pages/Sitemap";
+
 // USER
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
@@ -102,6 +105,9 @@ export default function App() {
         {/* PUBLIC */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
+
+          {/* ✅ SITEMAP */}
+          <Route path="/sitemap.xml" element={<Sitemap />} />
 
           {/* ✅ PREMIUM / PRICING */}
           <Route path="/pricing" element={<Pricing />} />

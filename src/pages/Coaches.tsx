@@ -16,6 +16,18 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+function toYears(v: any): number {
+  if (v == null) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  // "5+ Yıl", "5+ Years", "10+"
+  const m = s.match(/(\d+(\.\d+)?)/);
+  if (!m) return 0;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export default function Coaches() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,7 +85,7 @@ export default function Coaches() {
         "Yöneticiler için Koçluk",
         "Mülakat Hazırlığı",
       ],
-      experiences: ["0-5 Yıl", "5-10 Yıl", "10+ Yıl"],
+      experiences: ["Tümü", "0-5 Yıl", "5-10 Yıl", "10+ Yıl"],
     },
     en: {
       heroTitle1: "Find the",
@@ -115,7 +127,7 @@ export default function Coaches() {
         "Coaching for Managers",
         "Interview Prep",
       ],
-      experiences: ["0-5 Years", "5-10 Years", "10+ Years"],
+      experiences: ["All", "0-5 Years", "5-10 Years", "10+ Years"],
     },
     ar: {
       heroTitle1: "اعثر على",
@@ -157,7 +169,7 @@ export default function Coaches() {
         "تدريب للمديرين",
         "التحضير للمقابلة",
       ],
-      experiences: ["0-5 سنوات", "5-10 سنوات", "10+ سنوات"],
+      experiences: ["الكل", "0-5 سنوات", "5-10 سنوات", "10+ سنوات"],
     },
     fr: {
       heroTitle1: "Trouvez le",
@@ -199,7 +211,7 @@ export default function Coaches() {
         "Coaching managers",
         "Préparation entretien",
       ],
-      experiences: ["0-5 ans", "5-10 ans", "10+ ans"],
+      experiences: ["Tous", "0-5 ans", "5-10 ans", "10+ ans"],
     },
   };
 
@@ -215,10 +227,20 @@ export default function Coaches() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState<string>(t.categories?.[0] || "Tümü");
-  const [experienceFilter, setExperienceFilter] = useState<string>(t.experiences?.[1] || "5-10 Yıl");
+  const [experienceFilter, setExperienceFilter] = useState<string>(t.experiences?.[0] || "Tümü");
   const [sortOption, setSortOption] = useState<string>("recommended");
 
-  // URL lang paramını garanti altına al (Index’ten geldiğinde zaten var, yoksa ekler)
+  // ✅ Dil değişince: filtreleri resetle (koçlar “kaybolmasın”)
+  useEffect(() => {
+    const tt = i18n[lang] || i18n.tr;
+    setSelectedCategory(tt.categories?.[0] || "Tümü");
+    setExperienceFilter(tt.experiences?.[0] || "Tümü");
+    setSortOption("recommended");
+    setSearchTerm("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  // URL lang paramını garanti altına al
   useEffect(() => {
     const current = searchParams.get("lang");
     if (!current && lang) {
@@ -229,7 +251,7 @@ export default function Coaches() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // ------- Supabase'ten koçları çek -------
+  // ------- Supabase'ten koçları çek (dilden bağımsız, 1 kere) -------
   useEffect(() => {
     const fetchCoaches = async () => {
       setLoading(true);
@@ -252,7 +274,7 @@ export default function Coaches() {
 
     fetchCoaches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, []);
 
   // ---- Filtreleme & Sıralama ----
   const filteredCoaches = useMemo(() => {
@@ -267,7 +289,7 @@ export default function Coaches() {
           c.full_name?.toLowerCase().includes(q) ||
           c.title?.toLowerCase().includes(q) ||
           c.bio?.toLowerCase().includes(q) ||
-          specs.some((s) => s.toLowerCase().includes(q))
+          specs.some((s) => String(s).toLowerCase().includes(q))
         );
       });
     }
@@ -281,20 +303,23 @@ export default function Coaches() {
       });
     }
 
-    // 3) Deneyim filtresi (yaklaşık)
-    const exp0 = t.experiences?.[0] || "0-5 Yıl";
-    const exp1 = t.experiences?.[1] || "5-10 Yıl";
-    const exp2 = t.experiences?.[2] || "10+ Yıl";
+    // 3) Deneyim filtresi
+    const allExpLabel = (t.experiences?.[0] || "Tümü") as string;
+    const exp0 = t.experiences?.[1] || "0-5 Yıl";
+    const exp1 = t.experiences?.[2] || "5-10 Yıl";
+    const exp2 = t.experiences?.[3] || "10+ Yıl";
 
-    if (experienceFilter === exp0) {
-      list = list.filter((c) => (c.experience_years || 0) <= 5);
-    } else if (experienceFilter === exp1) {
-      list = list.filter(
-        (c) =>
-          (c.experience_years || 0) >= 5 && (c.experience_years || 0) <= 10
-      );
-    } else if (experienceFilter === exp2) {
-      list = list.filter((c) => (c.experience_years || 0) >= 10);
+    if (experienceFilter !== allExpLabel) {
+      if (experienceFilter === exp0) {
+        list = list.filter((c) => toYears(c.experience_years) <= 5);
+      } else if (experienceFilter === exp1) {
+        list = list.filter((c) => {
+          const y = toYears(c.experience_years);
+          return y >= 5 && y <= 10;
+        });
+      } else if (experienceFilter === exp2) {
+        list = list.filter((c) => toYears(c.experience_years) >= 10);
+      }
     }
 
     // 4) Sıralama
@@ -305,9 +330,7 @@ export default function Coaches() {
     } else if (sortOption === "price_desc") {
       list.sort((a, b) => (b.hourly_rate || 0) - (a.hourly_rate || 0));
     } else if (sortOption === "exp_desc") {
-      list.sort(
-        (a, b) => (b.experience_years || 0) - (a.experience_years || 0)
-      );
+      list.sort((a, b) => toYears(b.experience_years) - toYears(a.experience_years));
     } else {
       // recommended: rating yüksek + review fazla
       list.sort((a, b) => {
@@ -372,7 +395,7 @@ export default function Coaches() {
                   className="text-xs text-red-600 font-semibold hover:underline"
                   onClick={() => {
                     setSelectedCategory(t.categories?.[0] || "Tümü");
-                    setExperienceFilter(t.experiences?.[1] || "5-10 Yıl");
+                    setExperienceFilter(t.experiences?.[0] || "Tümü");
                     setSortOption("recommended");
                     setSearchTerm("");
                   }}
@@ -601,7 +624,15 @@ export default function Coaches() {
                               {coach.rating?.toFixed(1) || "5.0"}
                             </div>
                             <span className="text-xs text-gray-400 mt-1">
-                              ({coach.total_reviews || 0} {lang === "en" ? "reviews" : lang === "fr" ? "avis" : lang === "ar" ? "تقييم" : "yorum"})
+                              ({coach.total_reviews || 0}{" "}
+                              {lang === "en"
+                                ? "reviews"
+                                : lang === "fr"
+                                ? "avis"
+                                : lang === "ar"
+                                ? "تقييم"
+                                : "yorum"}
+                              )
                             </span>
                           </div>
                         </div>
@@ -611,7 +642,7 @@ export default function Coaches() {
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-4 h-4 text-blue-500" />
                             <span>
-                              {(coach.experience_years || 0).toString()}{" "}
+                              {toYears(coach.experience_years).toString()}{" "}
                               {t.expLabelSuffix}
                             </span>
                           </div>

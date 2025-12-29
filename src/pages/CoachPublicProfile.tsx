@@ -1,7 +1,7 @@
 // src/pages/CoachPublicProfile.tsx
 // @ts-nocheck
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,94 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   return fallback;
 };
 
+// UUID kontrol
+const isUuid = (s: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(s || "").trim()
+  );
+
+// slug -> okunabilir uzmanlık (mülakat-koclugu -> Mülakat, liderlik-kocu -> Liderlik)
+const extractSpecialtyFromSlug = (slug: string) => {
+  const raw = String(slug || "")
+    .toLowerCase()
+    .replace(/[_]+/g, "-")
+    .replace(/[^a-z0-9ğüşöçı\-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  // "ayse-yilmaz-mulakat-koclugu" gibi ise en sondaki parçalardan yakala
+  const parts = raw.split("-").filter(Boolean);
+
+  // en sondan anahtar kelimeler
+  const keywords = [
+    "mulakat",
+    "liderlik",
+    "kariyer",
+    "cv",
+    "linkedin",
+    "performans",
+    "terfi",
+    "iletisim",
+    "ozguven",
+    "job",
+    "career",
+    "leadership",
+    "interview",
+  ];
+
+  // sondan başlayarak anlamlı bir kelime bul
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (
+      p === "koc" ||
+      p === "kocu" ||
+      p === "koclugu" ||
+      p === "coach" ||
+      p === "coaching"
+    )
+      continue;
+
+    if (keywords.includes(p)) return p;
+  }
+
+  // hiç bulamazsa boş dön
+  return "";
+};
+
+const capitalizeTr = (s: string) => {
+  const x = String(s || "").trim();
+  if (!x) return "";
+  // TR için basit büyük harf
+  return x.charAt(0).toLocaleUpperCase("tr-TR") + x.slice(1);
+};
+
+const specialtyLabelFromToken = (token: string) => {
+  const t = String(token || "").toLowerCase().trim();
+  if (!t) return "";
+  const map: any = {
+    mulakat: "Mülakat",
+    liderlik: "Liderlik",
+    kariyer: "Kariyer",
+    cv: "CV",
+    linkedin: "LinkedIn",
+    performans: "Performans",
+    terfi: "Terfi",
+    iletisim: "İletişim",
+    ozguven: "Özgüven",
+    interview: "Interview",
+    leadership: "Leadership",
+    career: "Career",
+    job: "Job",
+  };
+  return map[t] || capitalizeTr(t);
+};
+
+const buildMetaDescription = (coachName: string, coachTitle: string, tags: string[]) => {
+  const t = (tags || []).slice(0, 4).join(", ");
+  const base = `${coachName} – ${coachTitle}. Online koçluk seansı planla.`;
+  return t ? `${base} Uzmanlık: ${t}.` : base;
+};
+
 // Önümüzdeki X günü üret (Bugün, Yarın, vs) → default 14 gün
 const getNextDays = (count = 14) => {
   const days = [];
@@ -101,11 +189,7 @@ const getNextDays = (count = 14) => {
 };
 
 // Belirli saat aralığında 30 dk'lık slotlar üret
-const generateTimeSlots = (
-  startHour = 10,
-  endHour = 22,
-  intervalMinutes = 30
-) => {
+const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
   const slots: string[] = [];
   for (let h = startHour; h < endHour; h++) {
     for (let m = 0; m < 60; m += intervalMinutes) {
@@ -118,8 +202,22 @@ const generateTimeSlots = (
 };
 
 export default function CoachPublicProfile() {
-  const { id } = useParams(); // /coach/:id
+  // ✅ /coach/:slug  (ama legacy /coach/:id de buraya düşebilir)
+  const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const qs = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const qsId = qs.get("id") || ""; // SEO url'de ?id=UUID bekleniyor
+
+  // ✅ Koç ID çözümlemesi:
+  // 1) query id varsa onu kullan
+  // 2) yoksa slug uuid ise onu id kabul et
+  const resolvedCoachId = useMemo(() => {
+    if (qsId && isUuid(qsId)) return qsId;
+    if (slug && isUuid(slug)) return slug;
+    return ""; // slug seo ise DB için id yok (şimdilik)
+  }, [qsId, slug]);
 
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -133,19 +231,22 @@ export default function CoachPublicProfile() {
 
   // 1) Supabase'ten tek koçu çek
   useEffect(() => {
-    if (!id) return;
-
     const fetchCoach = async () => {
       try {
         setLoading(true);
 
+        if (!resolvedCoachId) {
+          setCoachRow(null);
+          return;
+        }
+
         const { data, error } = await supabase
           .from("app_2dff6511da_coaches")
           .select("*")
-          .eq("id", id)
+          .eq("id", resolvedCoachId)
           .single();
 
-        console.log("CoachPublicProfile Supabase:", { id, data, error });
+        console.log("CoachPublicProfile Supabase:", { resolvedCoachId, data, error });
 
         if (error) {
           console.error("Coach fetch error:", error);
@@ -162,7 +263,7 @@ export default function CoachPublicProfile() {
     };
 
     fetchCoach();
-  }, [id]);
+  }, [resolvedCoachId]);
 
   // 2) Tablo alanlarını UI formatına çevir
   const c = (() => {
@@ -199,8 +300,98 @@ export default function CoachPublicProfile() {
           },
         ],
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
+      id: coach.id,
     };
   })();
+
+  // ✅ SEO: uzmanlık + başlıklar
+  const primarySpecialty = useMemo(() => {
+    const fromSlugToken = specialtyLabelFromToken(extractSpecialtyFromSlug(slug || ""));
+    if (fromSlugToken) return fromSlugToken;
+
+    const firstTag = (c.tags || [])[0] || "";
+    // "Mülakat Hazırlığı" gibi gelebilir -> ilk kelimeyi al
+    const normalized = String(firstTag || "").trim();
+    if (!normalized) return "";
+    // "CV / LinkedIn" gibi ise CV de olur
+    if (normalized.toLowerCase().includes("mülakat")) return "Mülakat";
+    if (normalized.toLowerCase().includes("liderlik")) return "Liderlik";
+    if (normalized.toLowerCase().includes("kariyer")) return "Kariyer";
+    if (normalized.toLowerCase().includes("cv")) return "CV";
+    if (normalized.toLowerCase().includes("linkedin")) return "LinkedIn";
+    return normalized.split(" ")[0];
+  }, [slug, c.tags]);
+
+  const seoTitle = useMemo(() => {
+    if (!primarySpecialty) return `${c.name} | ${c.title} | Kariyeer`;
+    // TR odaklı format
+    return `${c.name} | ${primarySpecialty} Koçu | Kariyeer`;
+  }, [c.name, c.title, primarySpecialty]);
+
+  const h1Text = useMemo(() => {
+    if (!primarySpecialty) return c.name;
+    // "Mülakat Koçluğu – Ayşe Yılmaz"
+    return `${primarySpecialty} Koçluğu – ${c.name}`;
+  }, [primarySpecialty, c.name]);
+
+  const metaDesc = useMemo(
+    () => buildMetaDescription(c.name, c.title, c.tags || []),
+    [c.name, c.title, c.tags]
+  );
+
+  const canonicalUrl = useMemo(() => {
+    // canonical: seo slug + id paramı (varsa)
+    const origin =
+      (typeof window !== "undefined" && window.location?.origin) || "";
+    const path = `/coach/${encodeURIComponent(slug || "")}`;
+    const idPart = resolvedCoachId ? `?id=${encodeURIComponent(resolvedCoachId)}` : "";
+    return origin ? `${origin}${path}${idPart}` : `${path}${idPart}`;
+  }, [slug, resolvedCoachId]);
+
+  // ✅ HEAD güncelle (title/meta/canonical)
+  useEffect(() => {
+    try {
+      document.title = seoTitle;
+
+      const ensureMeta = (name: string, attr: "name" | "property" = "name") => {
+        const selector =
+          attr === "name" ? `meta[name="${name}"]` : `meta[property="${name}"]`;
+        let el = document.querySelector(selector) as HTMLMetaElement | null;
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute(attr, name);
+          document.head.appendChild(el);
+        }
+        return el;
+      };
+
+      const descEl = ensureMeta("description", "name");
+      descEl.setAttribute("content", metaDesc);
+
+      // Open Graph (opsiyonel ama faydalı)
+      const ogTitle = ensureMeta("og:title", "property");
+      ogTitle.setAttribute("content", seoTitle);
+      const ogDesc = ensureMeta("og:description", "property");
+      ogDesc.setAttribute("content", metaDesc);
+      const ogType = ensureMeta("og:type", "property");
+      ogType.setAttribute("content", "profile");
+      const ogUrl = ensureMeta("og:url", "property");
+      ogUrl.setAttribute("content", canonicalUrl);
+      const ogImage = ensureMeta("og:image", "property");
+      ogImage.setAttribute("content", c.photo_url || "");
+
+      // canonical
+      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.setAttribute("rel", "canonical");
+        document.head.appendChild(link);
+      }
+      link.setAttribute("href", canonicalUrl);
+    } catch (e) {
+      // no-op
+    }
+  }, [seoTitle, metaDesc, canonicalUrl, c.photo_url]);
 
   // ✅ seans talebi oluştur
   const handleRequestSession = async () => {
@@ -219,15 +410,20 @@ export default function CoachPublicProfile() {
     }
 
     try {
-      const { error } = await supabase
-        .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachRow?.id || id,
-          user_id: userId,
-          selected_date: selectedDate,
-          selected_time: selectedSlot,
-          status: "pending",
-        });
+      const coachIdToUse = c?.id || resolvedCoachId || "";
+
+      if (!coachIdToUse) {
+        toast.error("Koç bulunamadı. Lütfen geri gidip yeniden deneyin.");
+        return;
+      }
+
+      const { error } = await supabase.from("app_2dff6511da_session_requests").insert({
+        coach_id: coachIdToUse,
+        user_id: userId,
+        selected_date: selectedDate,
+        selected_time: selectedSlot,
+        status: "pending",
+      });
 
       if (error) {
         console.error("Seans talebi hatası:", error);
@@ -280,7 +476,8 @@ export default function CoachPublicProfile() {
           {/* Koç Bilgisi */}
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{c.name}</h1>
+              {/* ✅ SEO H1 */}
+              <h1 className="text-3xl font-bold text-gray-900">{h1Text}</h1>
               <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
                 Öne Çıkan Koç
               </Badge>
@@ -552,7 +749,11 @@ export default function CoachPublicProfile() {
                   ({c.reviewCount || 0} değerlendirme)
                 </span>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 text-xs"
+              >
                 Filtrele
               </Button>
             </div>
@@ -573,7 +774,11 @@ export default function CoachPublicProfile() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-800">{rev.text}</p>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-gray-500"
+                    >
                       <MessageCircle className="w-3 h-3 mr-1" />
                       Koç Yanıtı Yaz (yakında)
                     </Button>

@@ -1796,20 +1796,23 @@ export const translations = {
 
     howItWorks_persona_individual_title: "الأفراد",
     howItWorks_persona_individual_subtitle:
-      "وضّح هدفك المهني، اعمل مع المدرب المناسب، واجعل التقدم واضحًا.",
-    howItWorks_persona_individual_bullet1: "مطابقة حسب الهدف",
-    howItWorks_persona_individual_bullet2: "مخرجات بعد الجلسة + متابعة",
-    howItWorks_persona_individual_bullet3: "CV/LinkedIn، محاكاة مقابلة، خطة",
-    howItWorks_persona_individual_bullet4: "تطور مستمر وتقدم قابل للقياس",
-    howItWorks_persona_individual_cta: "استعرض المدربين",
+   howItWorks_persona_individual_subtitle:
+  "وضّح هدفك المهني، اعمل مع المدرب المناسب، واجعل التقدم واضحًا.",
+howItWorks_persona_individual_bullet1: "مطابقة حسب الهدف",
+howItWorks_persona_individual_bullet2: "مخرجات بعد الجلسة + متابعة",
+howItWorks_persona_individual_bullet3: "CV / LinkedIn، محاكاة مقابلة، خطة",
+howItWorks_persona_individual_bullet4: "تطور مستمر وتقدم قابل للقياس",
+howItWorks_persona_individual_cta: "استعرض المدربين",
 
-    howItWorks_persona_coach_title: "المدربون",
-    howItWorks_persona_ 
-        howItWorks_persona_coach_title: "المدربون",
-    howItWorks_persona_coach_subtitle:
-      "طوّر ملفك، طابِق مع العملاء المناسبين، وادِر جلساتك من لوحة تحكم واحدة.",
-    howItWorks_persona_coach_bullet1: "ملف شخصي + شارة توثيق",
-    howItWorks_persona_coach_bullet2: "إدارة الطلب/المطابقة/الجلسات في مكان واحد",
+howItWorks_persona_coach_title: "المدربون",
+howItWorks_persona_coach_subtitle:
+  "طوّر ملفك، طابِق مع العملاء المناسبين، وادِر جلساتك من لوحة تحكم واحدة.",
+howItWorks_persona_coach_bullet1: "ملف شخصي + شارة توثيق",
+howItWorks_persona_coach_bullet2: "إدارة الطلب والمطابقة والجلسات في مكان واحد",
+howItWorks_persona_coach_bullet3: "زيادة الظهور عبر مساحات مميّزة",
+howItWorks_persona_coach_bullet4: "تتبع الإيرادات والأداء",
+howItWorks_persona_coach_cta: "للمدربين",
+
     howItWorks_persona_coach_bullet3: "ظهور أعلى عبر مساحات «مميّز»",
     howItWorks_persona_coach_bullet4: "تتبع الإيراد والأداء",
     howItWorks_persona_coach_cta: "للمدربين",

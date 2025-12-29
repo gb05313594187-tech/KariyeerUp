@@ -18,109 +18,115 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getTranslation } from "@/lib/i18n";
+
 export default function HowItWorks() {
+  const { language } = useLanguage();
+  const t = (key: string) => getTranslation((language || "en") as any, key);
+
   const steps = [
     {
       no: "01",
-      title: "Hedefini belirle",
-      desc: "Kısa bir onboarding ile hedefini, sektörünü ve deneyim seviyeni seç. Sistem sana uygun koçları öne çıkarır.",
+      title: t("howItWorks_step1_title"),
+      desc: t("howItWorks_step1_desc"),
       icon: UserCircle2,
     },
     {
       no: "02",
-      title: "Koçunu seç & seans planla",
-      desc: "Uzmanlık, ücret ve değerlendirmelere göre filtrele. Uygun saatleri gör ve tek tıkla talep gönder.",
+      title: t("howItWorks_step2_title"),
+      desc: t("howItWorks_step2_desc"),
       icon: CalendarCheck2,
     },
     {
       no: "03",
-      title: "Gelişimini takip et",
-      desc: "Seans notları, aksiyon planı ve hedef takibiyle ilerlemeni net biçimde gör. Geri bildirim döngüsü oluşur.",
+      title: t("howItWorks_step3_title"),
+      desc: t("howItWorks_step3_desc"),
       icon: LineChart,
     },
   ];
 
   const personas = [
     {
-      title: "Bireyler için",
-      subtitle: "Kariyerini hızlandır",
+      title: t("howItWorks_persona_individual_title"),
+      subtitle: t("howItWorks_persona_individual_subtitle"),
       icon: Users,
       bullets: [
-        "Doğru koç eşleşmesi (hedef + sektör + seviye)",
-        "Şeffaf fiyat / değerlendirme / uzmanlık",
-        "Seans sonrası net aksiyon listesi",
-        "İlerlemeni takip eden sade panel",
+        t("howItWorks_persona_individual_bullet1"),
+        t("howItWorks_persona_individual_bullet2"),
+        t("howItWorks_persona_individual_bullet3"),
+        t("howItWorks_persona_individual_bullet4"),
       ],
-      ctaText: "Koçları incele",
+      ctaText: t("howItWorks_persona_individual_cta"),
       ctaHref: "/coaches",
     },
     {
-      title: "Koçlar için",
-      subtitle: "Görünürlüğünü artır",
+      title: t("howItWorks_persona_coach_title"),
+      subtitle: t("howItWorks_persona_coach_subtitle"),
       icon: BadgeCheck,
       bullets: [
-        "Profil + uzmanlık alanı ile öne çıkma",
-        "Seans taleplerini tek yerden yönetme",
-        "Değerlendirmelerle güven inşa etme",
-        "Premium / doğrulama rozetleri (opsiyonel)",
+        t("howItWorks_persona_coach_bullet1"),
+        t("howItWorks_persona_coach_bullet2"),
+        t("howItWorks_persona_coach_bullet3"),
+        t("howItWorks_persona_coach_bullet4"),
       ],
-      ctaText: "Koç olarak başvur",
+      ctaText: t("howItWorks_persona_coach_cta"),
       ctaHref: "/for-coaches",
     },
     {
-      title: "Şirketler için",
-      subtitle: "Takım gelişimini ölç",
+      title: t("howItWorks_persona_company_title"),
+      subtitle: t("howItWorks_persona_company_subtitle"),
       icon: Building2,
       bullets: [
-        "Kurumsal talep & koç havuzuna erişim",
-        "Demo / tanışma görüşmeleri",
-        "Koçluk programı tasarlama desteği",
-        "Kurumsal panelde takip (kapsam genişletilebilir)",
+        t("howItWorks_persona_company_bullet1"),
+        t("howItWorks_persona_company_bullet2"),
+        t("howItWorks_persona_company_bullet3"),
+        t("howItWorks_persona_company_bullet4"),
       ],
-      ctaText: "Kurumsal çözümler",
+      ctaText: t("howItWorks_persona_company_cta"),
       ctaHref: "/for-companies",
     },
   ];
 
   const trust = [
     {
-      title: "Doğrulama & kalite",
-      desc: "Koç profilleri başvuru sürecinden geçer. Rozetler ve değerlendirmeler şeffaf şekilde görünür.",
+      title: t("howItWorks_trust1_title"),
+      desc: t("howItWorks_trust1_desc"),
       icon: BadgeCheck,
     },
     {
-      title: "Gizlilik",
-      desc: "Kullanıcı verileri güvenlik prensiplerine uygun şekilde işlenir. İletişim ve süreçler kayıt altında ilerler.",
+      title: t("howItWorks_trust2_title"),
+      desc: t("howItWorks_trust2_desc"),
       icon: Lock,
     },
     {
-      title: "Güvenli ödeme",
-      desc: "Ödemeler lisanslı ödeme kuruluşları üzerinden alınır. Kart bilgileri platformda saklanmaz.",
+      title: t("howItWorks_trust3_title"),
+      desc: t("howItWorks_trust3_desc"),
       icon: CreditCard,
     },
     {
-      title: "Destek",
-      desc: "Sorun yaşarsan hızlı destek kanalıyla çözüm üretiriz. Süreçlerin görünür olması önceliğimiz.",
+      title: t("howItWorks_trust4_title"),
+      desc: t("howItWorks_trust4_desc"),
       icon: MessageSquare,
     },
   ];
 
   const faqs = [
     {
-      q: "Koç seçerken nelere bakmalıyım?",
-      a: "Uzmanlık alanı, deneyim, değerlendirme puanı ve yaklaşımına bak. Hedefin netse filtrelerle doğru koçu hızlıca bulursun.",
+      q: t("howItWorks_faq1_q"),
+      a: t("howItWorks_faq1_a"),
     },
     {
-      q: "Koçlar nasıl listeleniyor?",
-      a: "Profil bilgileri, onay durumu, uzmanlık alanı ve kullanıcı değerlendirmeleri gibi sinyallerle sıralama yapılır.",
+      q: t("howItWorks_faq2_q"),
+      a: t("howItWorks_faq2_a"),
     },
     {
-      q: "İptal / iade nasıl işliyor?",
-      a: "Koşullar “İptal ve İade Koşulları” sayfasında belirtilir. Zamanlamaya göre iade politikası değişebilir.",
+      q: t("howItWorks_faq3_q"),
+      a: t("howItWorks_faq3_a"),
     },
     {
-      q: "Şirket olarak nasıl başlarız?",
-      a: "Kurumsal formu doldurursun; ihtiyaç, kapsam ve hedeflere göre koç havuzu ve program seçenekleriyle ilerleriz.",
+      q: t("howItWorks_faq4_q"),
+      a: t("howItWorks_faq4_a"),
     },
   ];
 
@@ -132,13 +138,13 @@ export default function HowItWorks() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-14 sm:pt-24 sm:pb-16">
             <div className="text-center">
               <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-                Kariyer Koçuna Ulaşmanın
+                {t("howItWorks_hero_title_line1")}
                 <br />
-                <span className="text-yellow-300">En Kolay Yolu</span>
+                <span className="text-yellow-300">{t("howItWorks_hero_title_highlight")}</span>
               </h1>
 
               <p className="mt-4 text-white/90 text-base sm:text-lg">
-                3 basit adımda koçunu bul, seansını planla ve gelişimini ölç.
+                {t("howItWorks_hero_subtitle")}
               </p>
 
               <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
@@ -146,13 +152,13 @@ export default function HowItWorks() {
                   to="/register"
                   className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100 transition"
                 >
-                  Hemen Başla
+                  {t("howItWorks_hero_cta_start")}
                 </Link>
                 <Link
                   to="/coaches"
                   className="inline-flex items-center justify-center rounded-full border border-white/60 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition"
                 >
-                  Koçları İncele
+                  {t("howItWorks_hero_cta_browse")}
                 </Link>
               </div>
             </div>
@@ -166,18 +172,17 @@ export default function HowItWorks() {
               <div className="lg:col-span-7">
                 <p className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-700">
                   <Sparkles className="h-4 w-4 text-red-600" />
-                  Net, hızlı, ölçülebilir gelişim
+                  {t("howItWorks_value_pill")}
                 </p>
 
                 <h2 className="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">
-                  Kariyeer’de süreç karmaşık değil.
+                  {t("howItWorks_value_title_line1")}
                   <br className="hidden sm:block" />
-                  <span className="text-gray-900">3 adım, tek akış.</span>
+                  <span className="text-gray-900">{t("howItWorks_value_title_line2")}</span>
                 </h2>
 
                 <p className="mt-3 text-gray-600 leading-relaxed">
-                  Doğru koçu bul, seansı planla, aksiyon planınla ilerle. Her adım şeffaf,
-                  sade ve ölçülebilir.
+                  {t("howItWorks_value_desc")}
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -185,13 +190,13 @@ export default function HowItWorks() {
                     to="/coaches"
                     className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
                   >
-                    Koçları incele <ArrowRight className="h-4 w-4 ml-2" />
+                    {t("howItWorks_value_cta_browse")} <ArrowRight className="h-4 w-4 ml-2" />
                   </Link>
                   <Link
                     to="/register"
                     className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
                   >
-                    Hemen başla
+                    {t("howItWorks_value_cta_start")}
                   </Link>
                 </div>
               </div>
@@ -203,19 +208,19 @@ export default function HowItWorks() {
                       <ShieldCheck className="h-5 w-5 text-gray-900" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Güven odaklı deneyim</h3>
+                      <h3 className="font-semibold text-gray-900">{t("howItWorks_value_card_title")}</h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Profil doğrulama, değerlendirmeler, şeffaf fiyat ve güvenli ödeme ile uçtan uca kontrollü süreç.
+                        {t("howItWorks_value_card_desc")}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     {[
-                      { label: "Ortalama memnuniyet", value: "4.8/5" },
-                      { label: "Aktif koç havuzu", value: "120+" },
-                      { label: "Tamamlanan seans", value: "15.000+" },
-                      { label: "Sektör çeşitliliği", value: "30+" },
+                      { label: t("howItWorks_metric1_label"), value: t("howItWorks_metric1_value") },
+                      { label: t("howItWorks_metric2_label"), value: t("howItWorks_metric2_value") },
+                      { label: t("howItWorks_metric3_label"), value: t("howItWorks_metric3_value") },
+                      { label: t("howItWorks_metric4_label"), value: t("howItWorks_metric4_value") },
                     ].map((m, i) => (
                       <div key={i} className="rounded-xl bg-white border p-4">
                         <p className="text-xs text-gray-500">{m.label}</p>
@@ -224,9 +229,7 @@ export default function HowItWorks() {
                     ))}
                   </div>
 
-                  <p className="mt-4 text-xs text-gray-500">
-                    *Rakamlar örnektir; gerçek metrikler canlı olarak panelden yönetilebilir.
-                  </p>
+                  <p className="mt-4 text-xs text-gray-500">{t("howItWorks_metrics_note")}</p>
                 </div>
               </div>
             </div>
@@ -238,9 +241,11 @@ export default function HowItWorks() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
               <div className="max-w-2xl">
-                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Nasıl çalışır?</h2>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                  {t("howItWorks_steps_title")}
+                </h2>
                 <p className="mt-3 text-gray-600 leading-relaxed">
-                  Her adımın amacı net: doğru eşleşme, doğru planlama, doğru takip.
+                  {t("howItWorks_steps_subtitle")}
                 </p>
               </div>
 
@@ -249,13 +254,13 @@ export default function HowItWorks() {
                   to="/coaches"
                   className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
                 >
-                  Koçları incele
+                  {t("howItWorks_steps_cta_browse")}
                 </Link>
                 <Link
                   to="/register"
                   className="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-black transition"
                 >
-                  Ücretsiz kayıt ol
+                  {t("howItWorks_steps_cta_register")}
                 </Link>
               </div>
             </div>
@@ -277,7 +282,7 @@ export default function HowItWorks() {
 
                     <div className="mt-4 flex items-center gap-2 text-sm text-gray-700">
                       <CheckCircle2 className="h-4 w-4 text-red-600" />
-                      Şeffaf ve ölçülebilir akış
+                      {t("howItWorks_steps_footer")}
                     </div>
                   </div>
                 );
@@ -290,9 +295,11 @@ export default function HowItWorks() {
         <section className="border-t bg-gray-50 py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Kimler için?</h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                {t("howItWorks_personas_title")}
+              </h2>
               <p className="mt-3 text-gray-600 leading-relaxed">
-                Platformu üç ayrı ihtiyaç için tasarladık: birey, koç ve şirket.
+                {t("howItWorks_personas_subtitle")}
               </p>
             </div>
 
@@ -339,20 +346,22 @@ export default function HowItWorks() {
         <section className="py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Güven, kalite ve şeffaflık</h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                {t("howItWorks_trust_title")}
+              </h2>
               <p className="mt-3 text-gray-600 leading-relaxed">
-                Süreç, sadece “koç bul” değil; doğru deneyim için kontrol noktalarıyla tasarlandı.
+                {t("howItWorks_trust_subtitle")}
               </p>
             </div>
 
             <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {trust.map((t, idx) => {
-                const Icon = t.icon;
+              {trust.map((tItem, idx) => {
+                const Icon = tItem.icon;
                 return (
                   <div key={idx} className="rounded-2xl border bg-white p-6">
                     {Icon ? <Icon className="h-6 w-6 text-gray-900" /> : null}
-                    <h3 className="mt-4 font-semibold text-gray-900">{t.title}</h3>
-                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
+                    <h3 className="mt-4 font-semibold text-gray-900">{tItem.title}</h3>
+                    <p className="mt-2 text-sm text-gray-600 leading-relaxed">{tItem.desc}</p>
                   </div>
                 );
               })}
@@ -361,23 +370,21 @@ export default function HowItWorks() {
             <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Hızlı başlamak ister misin?</p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Koçları incele veya doğrudan kayıt olup hedefini seç.
-                  </p>
+                  <p className="text-sm font-semibold text-gray-900">{t("howItWorks_trust_cta_title")}</p>
+                  <p className="mt-1 text-sm text-gray-600">{t("howItWorks_trust_cta_desc")}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/coaches"
                     className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
                   >
-                    Koçları incele
+                    {t("howItWorks_trust_cta_browse")}
                   </Link>
                   <Link
                     to="/register"
                     className="inline-flex items-center justify-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
                   >
-                    Ücretsiz kayıt ol
+                    {t("howItWorks_trust_cta_register")}
                   </Link>
                 </div>
               </div>
@@ -389,8 +396,10 @@ export default function HowItWorks() {
         <section className="border-t bg-white py-12 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Sık sorulan sorular</h2>
-              <p className="mt-3 text-gray-600 leading-relaxed">En çok gelen soruları burada yanıtladık.</p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                {t("howItWorks_faq_title")}
+              </h2>
+              <p className="mt-3 text-gray-600 leading-relaxed">{t("howItWorks_faq_subtitle")}</p>
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -408,24 +417,22 @@ export default function HowItWorks() {
             <div className="mt-10 rounded-2xl bg-gray-900 p-8 text-white">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
-                  <p className="text-sm text-white/80">Son adım</p>
-                  <h3 className="mt-1 text-2xl font-semibold">Bugün başla, 30 gün sonra farkı gör.</h3>
-                  <p className="mt-2 text-sm text-white/80">
-                    Hedef → Koç → Seans → Aksiyon planı. Bu kadar net.
-                  </p>
+                  <p className="text-sm text-white/80">{t("howItWorks_final_pill")}</p>
+                  <h3 className="mt-1 text-2xl font-semibold">{t("howItWorks_final_title")}</h3>
+                  <p className="mt-2 text-sm text-white/80">{t("howItWorks_final_desc")}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/register"
                     className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition"
                   >
-                    Ücretsiz kayıt ol <ArrowRight className="h-4 w-4 ml-2" />
+                    {t("howItWorks_final_cta_register")} <ArrowRight className="h-4 w-4 ml-2" />
                   </Link>
                   <Link
                     to="/coaches"
                     className="inline-flex items-center justify-center rounded-full border border-white/30 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10 transition"
                   >
-                    Koçları incele
+                    {t("howItWorks_final_cta_browse")}
                   </Link>
                 </div>
               </div>

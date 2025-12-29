@@ -6,31 +6,40 @@ import { supabase } from "@/lib/supabase";
 export default function Sitemap() {
   useEffect(() => {
     const run = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("app_2dff6511da_coaches")
         .select("slug, updated_at")
         .eq("status", "active");
 
-      const base = window.location.origin;
+      const baseUrl = window.location.origin;
 
-      let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
-      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<!-- SITEMAP_V2 -->\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
-      data?.forEach((c) => {
-        if (!c.slug) return;
-        xml += `
+      if (!error && Array.isArray(data)) {
+        data.forEach((coach) => {
+          if (!coach?.slug) return;
+
+          const lastmod = coach.updated_at
+            ? new Date(coach.updated_at).toISOString()
+            : new Date().toISOString();
+
+          xml += `
   <url>
-    <loc>${base}/coach/${c.slug}</loc>
-    <lastmod>${new Date(c.updated_at).toISOString()}</lastmod>
+    <loc>${baseUrl}/coach/${coach.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
-      });
+        });
+      }
 
-      xml += `</urlset>`;
+      xml += `\n</urlset>`;
 
-      document.body.innerHTML = "";
+      // Sayfayı tamamen XML ile değiştir
+      document.open();
       document.write(xml);
+      document.close();
     };
 
     run();

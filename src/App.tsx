@@ -116,11 +116,11 @@ export default function App() {
 
           <Route path="/coaches" element={<Coaches />} />
 
-          {/* ✅ COACH PUBLIC PROFILE (SEO) */}
-          <Route path="/coach/:slug" element={<CoachPublicProfile />} />
-
-          {/* ✅ Legacy (eski linkler bozulmasın) */}
-          <Route path="/coach/:id" element={<CoachPublicProfile />} />
+          {/* ✅ COACH PUBLIC PROFILE (SEO + Legacy aynı route)
+              Not: /coach/:slug ve /coach/:id aynı pattern olduğu için iki route çalışmaz.
+              Bu yüzden tek route kullandık: slug da gelir, uuid (eski link) de gelir.
+          */}
+          <Route path="/coach/:slugOrId" element={<CoachPublicProfile />} />
 
           <Route path="/for-coaches" element={<ForCoaches />} />
           <Route path="/for-companies" element={<ForCompanies />} />

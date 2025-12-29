@@ -1,7 +1,7 @@
 // src/pages/Coaches.tsx
 // @ts-nocheck
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   Star,
@@ -14,9 +14,197 @@ import {
   List,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Coaches() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ Dil: Context + URL senkron
+  const { language, setLanguage } = useLanguage();
+  const urlLang = (searchParams.get("lang") || "").toLowerCase();
+
+  useEffect(() => {
+    if (urlLang && ["tr", "en", "ar", "fr"].includes(urlLang) && urlLang !== language) {
+      setLanguage(urlLang as any);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlLang]);
+
+  // ✅ Lokal i18n (sayfayı tek başına çeviri yapar)
+  const i18n: any = {
+    tr: {
+      heroTitle1: "Potansiyelinizi Keşfedecek",
+      heroTitle2: "Uzman Koçu",
+      heroTitle3: "Bulun",
+      heroSubtitle:
+        "ICF sertifikalı, deneyimli ve alanında uzman profesyoneller arasından hedeflerinize en uygun yol arkadaşını seçin.",
+      searchPlaceholder: "İsim, uzmanlık alanı veya anahtar kelime ile ara...",
+      searchBtn: "Ara",
+      filterTitle: "Filtrele",
+      clear: "Temizle",
+      categoryTitle: "Uzmanlık Alanı",
+      experienceTitle: "Deneyim",
+      priceInfoTitle: "Seans Ücreti (Bilgilendirme)",
+      priceInfoDesc: "Çoğu koçun 45 dk seans ücreti 750 ₺ - 5000 ₺ aralığındadır.",
+      loading: "Koçlar yükleniyor...",
+      listed: "koç listeleniyor",
+      sortRecommended: "Önerilen Sıralama",
+      sortRating: "Puana Göre (Yüksek → Düşük)",
+      sortPriceAsc: "Fiyata Göre (Artan)",
+      sortPriceDesc: "Fiyata Göre (Azalan)",
+      sortExp: "Deneyime Göre (Yüksek)",
+      errorText: "Koç listesi yüklenirken bir hata oluştu.",
+      emptyText:
+        "Filtrelere uygun koç bulunamadı. Filtreleri gevşetmeyi veya arama terimini değiştirmeyi deneyin.",
+      premium: "Premium Koç",
+      online: "Online görüntülü seans",
+      earliest: "En erken müsaitlik:",
+      earliestValue: "Online planlanır",
+      expLabelSuffix: "Yıl Profesyonel Deneyim",
+      noSpecs: "Uzmanlık alanları ekleniyor",
+      priceLabel: "45 Dk. Seans Ücreti",
+      viewProfile: "Profili İncele",
+      categories: [
+        "Tümü",
+        "Kariyer Geçişi",
+        "Liderlik Koçluğu",
+        "Yeni Mezun Koçluğu",
+        "Yöneticiler için Koçluk",
+        "Mülakat Hazırlığı",
+      ],
+      experiences: ["0-5 Yıl", "5-10 Yıl", "10+ Yıl"],
+    },
+    en: {
+      heroTitle1: "Find the",
+      heroTitle2: "Expert Coach",
+      heroTitle3: "for You",
+      heroSubtitle:
+        "Choose the best companion for your goals from experienced, certified professionals.",
+      searchPlaceholder: "Search by name, specialty, or keyword...",
+      searchBtn: "Search",
+      filterTitle: "Filter",
+      clear: "Clear",
+      categoryTitle: "Specialty",
+      experienceTitle: "Experience",
+      priceInfoTitle: "Session Fee (Info)",
+      priceInfoDesc: "Most 45-min sessions range between 750 ₺ and 5000 ₺.",
+      loading: "Loading coaches...",
+      listed: "coaches listed",
+      sortRecommended: "Recommended",
+      sortRating: "By Rating (High → Low)",
+      sortPriceAsc: "By Price (Low → High)",
+      sortPriceDesc: "By Price (High → Low)",
+      sortExp: "By Experience (High)",
+      errorText: "An error occurred while loading the coach list.",
+      emptyText:
+        "No coaches match your filters. Try loosening filters or changing your search term.",
+      premium: "Premium Coach",
+      online: "Online video session",
+      earliest: "Earliest availability:",
+      earliestValue: "Planned online",
+      expLabelSuffix: "Years of Professional Experience",
+      noSpecs: "Specialties coming soon",
+      priceLabel: "45-min Session Fee",
+      viewProfile: "View Profile",
+      categories: [
+        "All",
+        "Career Transition",
+        "Leadership Coaching",
+        "New Grad Coaching",
+        "Coaching for Managers",
+        "Interview Prep",
+      ],
+      experiences: ["0-5 Years", "5-10 Years", "10+ Years"],
+    },
+    ar: {
+      heroTitle1: "اعثر على",
+      heroTitle2: "المدرّب الخبير",
+      heroTitle3: "المناسب لك",
+      heroSubtitle:
+        "اختر أفضل خبير يناسب أهدافك من بين محترفين ذوي خبرة وشهادات.",
+      searchPlaceholder: "ابحث بالاسم أو التخصص أو كلمة مفتاحية...",
+      searchBtn: "بحث",
+      filterTitle: "تصفية",
+      clear: "مسح",
+      categoryTitle: "التخصص",
+      experienceTitle: "الخبرة",
+      priceInfoTitle: "سعر الجلسة (معلومات)",
+      priceInfoDesc: "معظم جلسات 45 دقيقة بين 750 ₺ و 5000 ₺.",
+      loading: "جاري تحميل المدربين...",
+      listed: "مدربًا معروضًا",
+      sortRecommended: "مقترح",
+      sortRating: "حسب التقييم (مرتفع → منخفض)",
+      sortPriceAsc: "حسب السعر (منخفض → مرتفع)",
+      sortPriceDesc: "حسب السعر (مرتفع → منخفض)",
+      sortExp: "حسب الخبرة (الأعلى)",
+      errorText: "حدث خطأ أثناء تحميل قائمة المدربين.",
+      emptyText:
+        "لا يوجد مدربون مطابقون للتصفية. جرّب تخفيف التصفية أو تغيير البحث.",
+      premium: "مدرّب بريميوم",
+      online: "جلسة فيديو أونلاين",
+      earliest: "أقرب توفر:",
+      earliestValue: "يتم التخطيط أونلاين",
+      expLabelSuffix: "سنوات خبرة مهنية",
+      noSpecs: "التخصصات قيد الإضافة",
+      priceLabel: "سعر جلسة 45 دقيقة",
+      viewProfile: "عرض الملف",
+      categories: [
+        "الكل",
+        "تغيير المسار",
+        "تدريب القيادة",
+        "تدريب الخريجين الجدد",
+        "تدريب للمديرين",
+        "التحضير للمقابلة",
+      ],
+      experiences: ["0-5 سنوات", "5-10 سنوات", "10+ سنوات"],
+    },
+    fr: {
+      heroTitle1: "Trouvez le",
+      heroTitle2: "Coach Expert",
+      heroTitle3: "idéal",
+      heroSubtitle:
+        "Choisissez le meilleur coach pour vos objectifs parmi des professionnels certifiés et expérimentés.",
+      searchPlaceholder: "Recherchez par nom, spécialité ou mot-clé...",
+      searchBtn: "Rechercher",
+      filterTitle: "Filtrer",
+      clear: "Réinitialiser",
+      categoryTitle: "Spécialité",
+      experienceTitle: "Expérience",
+      priceInfoTitle: "Tarif séance (Info)",
+      priceInfoDesc: "La plupart des séances de 45 min sont entre 750 ₺ et 5000 ₺.",
+      loading: "Chargement des coachs...",
+      listed: "coachs affichés",
+      sortRecommended: "Recommandé",
+      sortRating: "Par note (Haut → Bas)",
+      sortPriceAsc: "Par prix (Croissant)",
+      sortPriceDesc: "Par prix (Décroissant)",
+      sortExp: "Par expérience (Haut)",
+      errorText: "Une erreur est survenue lors du chargement de la liste.",
+      emptyText:
+        "Aucun coach ne correspond à vos filtres. Essayez d’ajuster les filtres ou la recherche.",
+      premium: "Coach Premium",
+      online: "Séance vidéo en ligne",
+      earliest: "Disponibilité:",
+      earliestValue: "Planifié en ligne",
+      expLabelSuffix: "Années d’expérience professionnelle",
+      noSpecs: "Spécialités à venir",
+      priceLabel: "Tarif séance 45 min",
+      viewProfile: "Voir le profil",
+      categories: [
+        "Tous",
+        "Transition de carrière",
+        "Coaching leadership",
+        "Jeunes diplômés",
+        "Coaching managers",
+        "Préparation entretien",
+      ],
+      experiences: ["0-5 ans", "5-10 ans", "10+ ans"],
+    },
+  };
+
+  const lang = (language || "tr") as any;
+  const t = i18n[lang] || i18n.tr;
 
   // Veriler
   const [coaches, setCoaches] = useState<any[]>([]);
@@ -26,15 +214,27 @@ export default function Coaches() {
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedCategory, setSelectedCategory] = useState<string>("Tümü");
-  const [experienceFilter, setExperienceFilter] = useState<string>("5-10 Yıl");
+  const [selectedCategory, setSelectedCategory] = useState<string>(t.categories?.[0] || "Tümü");
+  const [experienceFilter, setExperienceFilter] = useState<string>(t.experiences?.[1] || "5-10 Yıl");
   const [sortOption, setSortOption] = useState<string>("recommended");
+
+  // URL lang paramını garanti altına al (Index’ten geldiğinde zaten var, yoksa ekler)
+  useEffect(() => {
+    const current = searchParams.get("lang");
+    if (!current && lang) {
+      const next = new URLSearchParams(searchParams);
+      next.set("lang", lang);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   // ------- Supabase'ten koçları çek -------
   useEffect(() => {
     const fetchCoaches = async () => {
       setLoading(true);
       setError(null);
+
       const { data, error } = await supabase
         .from("app_2dff6511da_coaches")
         .select("*")
@@ -43,7 +243,7 @@ export default function Coaches() {
 
       if (error) {
         console.error("Coaches fetch error:", error);
-        setError("Koç listesi yüklenirken bir hata oluştu.");
+        setError(t.errorText);
       } else {
         setCoaches(data || []);
       }
@@ -51,7 +251,8 @@ export default function Coaches() {
     };
 
     fetchCoaches();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   // ---- Filtreleme & Sıralama ----
   const filteredCoaches = useMemo(() => {
@@ -72,7 +273,8 @@ export default function Coaches() {
     }
 
     // 2) Uzmanlık kategorisi
-    if (selectedCategory !== "Tümü") {
+    const allLabel = (t.categories?.[0] || "Tümü") as string;
+    if (selectedCategory !== allLabel) {
       list = list.filter((c) => {
         const specs = (c.specializations || []) as string[];
         return specs.includes(selectedCategory);
@@ -80,14 +282,18 @@ export default function Coaches() {
     }
 
     // 3) Deneyim filtresi (yaklaşık)
-    if (experienceFilter === "0-5 Yıl") {
+    const exp0 = t.experiences?.[0] || "0-5 Yıl";
+    const exp1 = t.experiences?.[1] || "5-10 Yıl";
+    const exp2 = t.experiences?.[2] || "10+ Yıl";
+
+    if (experienceFilter === exp0) {
       list = list.filter((c) => (c.experience_years || 0) <= 5);
-    } else if (experienceFilter === "5-10 Yıl") {
+    } else if (experienceFilter === exp1) {
       list = list.filter(
         (c) =>
           (c.experience_years || 0) >= 5 && (c.experience_years || 0) <= 10
       );
-    } else if (experienceFilter === "10+ Yıl") {
+    } else if (experienceFilter === exp2) {
       list = list.filter((c) => (c.experience_years || 0) >= 10);
     }
 
@@ -112,7 +318,7 @@ export default function Coaches() {
     }
 
     return list;
-  }, [coaches, searchTerm, selectedCategory, experienceFilter, sortOption]);
+  }, [coaches, searchTerm, selectedCategory, experienceFilter, sortOption, t]);
 
   // ---------- UI ----------
   return (
@@ -123,12 +329,11 @@ export default function Coaches() {
 
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
-            Potansiyelinizi Keşfedecek <br />{" "}
-            <span className="text-yellow-300">Uzman Koçu</span> Bulun
+            {t.heroTitle1} <br />{" "}
+            <span className="text-yellow-300">{t.heroTitle2}</span> {t.heroTitle3}
           </h1>
           <p className="text-lg text-red-50 max-w-2xl mx-auto mb-10">
-            ICF sertifikalı, deneyimli ve alanında uzman profesyoneller
-            arasından hedeflerinize en uygun yol arkadaşını seçin.
+            {t.heroSubtitle}
           </p>
 
           {/* ARAMA KUTUSU */}
@@ -138,14 +343,14 @@ export default function Coaches() {
                 <Search className="text-gray-400 w-6 h-6 mr-4" />
                 <input
                   type="text"
-                  placeholder="İsim, uzmanlık alanı veya anahtar kelime ile ara..."
+                  placeholder={t.searchPlaceholder}
                   className="w-full h-full outline-none text-gray-700 text-lg font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <button className="bg-gray-900 hover:bg-black text-white font-bold px-10 transition-colors text-lg">
-                Ara
+                {t.searchBtn}
               </button>
             </div>
           </div>
@@ -161,35 +366,28 @@ export default function Coaches() {
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-lg flex items-center gap-2 text-gray-900">
-                  <SlidersHorizontal className="w-5 h-5" /> Filtrele
+                  <SlidersHorizontal className="w-5 h-5" /> {t.filterTitle}
                 </h3>
                 <button
                   className="text-xs text-red-600 font-semibold hover:underline"
                   onClick={() => {
-                    setSelectedCategory("Tümü");
-                    setExperienceFilter("5-10 Yıl");
+                    setSelectedCategory(t.categories?.[0] || "Tümü");
+                    setExperienceFilter(t.experiences?.[1] || "5-10 Yıl");
                     setSortOption("recommended");
                     setSearchTerm("");
                   }}
                 >
-                  Temizle
+                  {t.clear}
                 </button>
               </div>
 
               {/* UZMANLIK ALANI */}
               <div className="mb-8 pb-6 border-b border-gray-100">
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
-                  Uzmanlık Alanı
+                  {t.categoryTitle}
                 </h4>
                 <div className="space-y-3">
-                  {[
-                    "Tümü",
-                    "Kariyer Geçişi",
-                    "Liderlik Koçluğu",
-                    "Yeni Mezun Koçluğu",
-                    "Yöneticiler için Koçluk",
-                    "Mülakat Hazırlığı",
-                  ].map((cat) => (
+                  {(t.categories || []).map((cat: string) => (
                     <label
                       key={cat}
                       className="flex items-center gap-3 cursor-pointer group"
@@ -211,10 +409,10 @@ export default function Coaches() {
               {/* DENEYİM */}
               <div className="mb-8 pb-6 border-b border-gray-100">
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
-                  Deneyim
+                  {t.experienceTitle}
                 </h4>
                 <div className="space-y-3">
-                  {["0-5 Yıl", "5-10 Yıl", "10+ Yıl"].map((exp) => (
+                  {(t.experiences || []).map((exp: string) => (
                     <label
                       key={exp}
                       className="flex items-center gap-3 cursor-pointer group"
@@ -236,11 +434,9 @@ export default function Coaches() {
               {/* FİYAT BİLGİLENDİRME */}
               <div>
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
-                  Seans Ücreti (Bilgilendirme)
+                  {t.priceInfoTitle}
                 </h4>
-                <p className="text-xs text-gray-500 mb-2">
-                  Çoğu koçun 45 dk seans ücreti 750 ₺ - 5000 ₺ aralığındadır.
-                </p>
+                <p className="text-xs text-gray-500 mb-2">{t.priceInfoDesc}</p>
                 <div className="px-2">
                   <input
                     type="range"
@@ -264,13 +460,13 @@ export default function Coaches() {
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200 gap-4">
               <p className="text-gray-600 font-medium">
                 {loading ? (
-                  <span>Koçlar yükleniyor...</span>
+                  <span>{t.loading}</span>
                 ) : (
                   <>
                     <span className="font-bold text-gray-900 text-lg">
                       {filteredCoaches.length}
                     </span>{" "}
-                    koç listeleniyor
+                    {t.listed}
                   </>
                 )}
               </p>
@@ -281,13 +477,11 @@ export default function Coaches() {
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
                 >
-                  <option value="recommended">Önerilen Sıralama</option>
-                  <option value="rating_desc">
-                    Puana Göre (Yüksek → Düşük)
-                  </option>
-                  <option value="price_asc">Fiyata Göre (Artan)</option>
-                  <option value="price_desc">Fiyata Göre (Azalan)</option>
-                  <option value="exp_desc">Deneyime Göre (Yüksek)</option>
+                  <option value="recommended">{t.sortRecommended}</option>
+                  <option value="rating_desc">{t.sortRating}</option>
+                  <option value="price_asc">{t.sortPriceAsc}</option>
+                  <option value="price_desc">{t.sortPriceDesc}</option>
+                  <option value="exp_desc">{t.sortExp}</option>
                 </select>
 
                 <div className="flex border rounded-lg overflow-hidden">
@@ -324,8 +518,7 @@ export default function Coaches() {
 
             {!loading && !error && filteredCoaches.length === 0 && (
               <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-500">
-                Filtrelere uygun koç bulunamadı. Filtreleri gevşetmeyi veya
-                arama terimini değiştirmeyi deneyin.
+                {t.emptyText}
               </div>
             )}
 
@@ -364,8 +557,7 @@ export default function Coaches() {
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                         {isPremium && (
                           <span className="absolute top-3 right-3 bg-white/90 text-red-600 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm backdrop-blur-sm">
-                            <Star className="w-3 h-3 fill-current" /> Premium
-                            Koç
+                            <Star className="w-3 h-3 fill-current" /> {t.premium}
                           </span>
                         )}
                       </div>
@@ -409,7 +601,7 @@ export default function Coaches() {
                               {coach.rating?.toFixed(1) || "5.0"}
                             </div>
                             <span className="text-xs text-gray-400 mt-1">
-                              ({coach.total_reviews || 0} yorum)
+                              ({coach.total_reviews || 0} {lang === "en" ? "reviews" : lang === "fr" ? "avis" : lang === "ar" ? "تقييم" : "yorum"})
                             </span>
                           </div>
                         </div>
@@ -419,22 +611,22 @@ export default function Coaches() {
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-4 h-4 text-blue-500" />
                             <span>
-                              {(coach.experience_years || 0).toString()} Yıl
-                              Profesyonel Deneyim
+                              {(coach.experience_years || 0).toString()}{" "}
+                              {t.expLabelSuffix}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
                             <Clock className="w-4 h-4 text-green-500" />
                             <span>
-                              En erken müsaitlik:{" "}
+                              {t.earliest}{" "}
                               <span className="text-green-600 font-semibold">
-                                Online planlanır
+                                {t.earliestValue}
                               </span>
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
                             <MapPin className="w-4 h-4 text-purple-500" />
-                            <span>Online görüntülü seans</span>
+                            <span>{t.online}</span>
                           </div>
                         </div>
 
@@ -442,7 +634,7 @@ export default function Coaches() {
                         <div className="mt-3 flex flex-wrap gap-2">
                           {specs.length === 0 && (
                             <span className="bg-white border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
-                              Uzmanlık alanları ekleniyor
+                              {t.noSpecs}
                             </span>
                           )}
                           {specs.map((tag: string) => (
@@ -459,17 +651,21 @@ export default function Coaches() {
                         <div className="mt-5 pt-3 border-t flex items-center justify-between mt-auto">
                           <div>
                             <span className="text-[11px] text-gray-500 block font-medium mb-1">
-                              45 Dk. Seans Ücreti
+                              {t.priceLabel}
                             </span>
                             <span className="text-lg font-extrabold text-gray-900">
                               {price} {currency}
                             </span>
                           </div>
                           <button
-                            onClick={() => navigate(`/coach/${coach.id}`)}
+                            onClick={() => {
+                              const qs = new URLSearchParams(searchParams);
+                              if (!qs.get("lang")) qs.set("lang", lang);
+                              navigate(`/coach/${coach.id}?${qs.toString()}`);
+                            }}
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm"
                           >
-                            Profili İncele
+                            {t.viewProfile}
                             <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>

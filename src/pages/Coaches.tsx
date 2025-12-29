@@ -378,7 +378,7 @@ export default function Coaches() {
     } else if (sortOption === "price_asc") {
       list.sort((a, b) => (a.hourly_rate || 0) - (b.hourly_rate || 0));
     } else if (sortOption === "price_desc") {
-      list.sort((a, b) => (b.hourly_rate || 0) - (a.hourly_rate || 0));
+      list.sort((a, b) => (b.hourly_rate || 0) - (b.hourly_rate || 0));
     } else if (sortOption === "exp_desc") {
       list.sort(
         (a, b) => toYears(b.experience_years) - toYears(a.experience_years)
@@ -613,9 +613,12 @@ export default function Coaches() {
                   const price = coach.hourly_rate || 0;
                   const currency = coach.currency || "₺";
 
-                  // ✅ SEO slug: "ayse-yilmaz-mulakat-hazirligi"
+                  // ✅ Artık DB slug varsa onu kullan, yoksa fallback üret
                   const primarySpec = pickPrimarySpecialization(coach);
-                  const slug = `${slugify(coach.full_name)}-${slugify(primarySpec)}`;
+                  const fallbackSlug = `${slugify(coach.full_name)}-${slugify(
+                    primarySpec
+                  )}`;
+                  const slug = (coach.slug && String(coach.slug).trim()) || fallbackSlug;
 
                   return (
                     <div
@@ -749,10 +752,9 @@ export default function Coaches() {
                               const qs = new URLSearchParams(searchParams);
                               if (!qs.get("lang")) qs.set("lang", lang);
 
-                              // ✅ profile sayfası DB’den çekebilsin diye id query'de
-                              qs.set("id", coach.id);
+                              // ✅ Yeni: artık id query koymaya gerek yok (profile slug ile DB’den çekiyor)
+                              // qs.set("id", coach.id);
 
-                              // ✅ yeni: /coach/:slug
                               navigate(`/coach/${slug}?${qs.toString()}`);
                             }}
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm"

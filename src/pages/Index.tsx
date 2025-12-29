@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 import {
   ArrowRight,
   PlayCircle,
@@ -382,7 +383,7 @@ export default function Index() {
           { title: "Career & Leadership Coach", tags: ["Leadership", "Career"] },
           { title: "Tech & Startup Mentor", tags: ["Technology", "Startup"] },
           { title: "Interview & CV Specialist", tags: ["Interview", "CV"] },
-          ],
+        ],
       },
       y2025: {
         title: "What problem are we solving in 2025?",
@@ -804,11 +805,34 @@ export default function Index() {
   const [demoStartPlan, setDemoStartPlan] = useState("Bu ay"); // ✅ yeni
   const [demoNote, setDemoNote] = useState("");
 
-  const onDemoSubmit = (e: any) => {
+  const onDemoSubmit = async (e: any) => {
     e.preventDefault();
-    // Demo amaçlı: şu an sadece kurumsal panele yönlendiriyoruz.
-    // Sen DB’ye yazmak istersen burayı kendi mevcut insert akışına bağlarsın.
-    navigate("/corporate/dashboard");
+
+    const payload = {
+      company_name: demoCompanyName,
+      contact_name: demoName,
+      email: demoEmail,
+      phone: demoPhone,
+      team_size: demoTeamSize,
+      primary_need: demoNeed,
+      start_plan: demoStartPlan,
+      note: demoNote,
+      lang,
+    };
+
+    const { data, error } = await supabase
+      .from("corporate_demo_requests")
+      .insert(payload)
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error(error);
+      alert("Gönderimde hata oldu. Lütfen tekrar deneyin.");
+      return;
+    }
+
+    navigate(`/demo/thanks?id=${data?.id}`);
   };
 
   // Featured coaches (statik vitrin)

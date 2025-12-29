@@ -1,6 +1,12 @@
 // src/App.tsx
 // @ts-nocheck
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import { Toaster } from "sonner";
 
 // LAYOUT (Public)
@@ -110,12 +116,10 @@ export default function App() {
 
           <Route path="/coaches" element={<Coaches />} />
           <Route path="/coach/:id" element={<CoachPublicProfile />} />
-
           <Route path="/for-coaches" element={<ForCoaches />} />
           <Route path="/for-companies" element={<ForCompanies />} />
           <Route path="/mentor-circle" element={<MentorCircle />} />
           <Route path="/webinars" element={<Webinars />} />
-
           <Route path="/coach-selection-process" element={<CoachSelection />} />
           <Route path="/book-session" element={<BookSession />} />
           <Route path="/coach-application" element={<CoachApplication />} />

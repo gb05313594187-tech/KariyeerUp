@@ -44,7 +44,6 @@ function slugify(input: any) {
 function pickPrimarySpecialization(coach: any) {
   const specs = (coach?.specializations || []) as string[];
   if (Array.isArray(specs) && specs.length > 0) return specs[0];
-  // fallback: title -> "Career Coach" vs
   return coach?.title || "coach";
 }
 
@@ -57,11 +56,7 @@ export default function Coaches() {
   const urlLang = (searchParams.get("lang") || "").toLowerCase();
 
   useEffect(() => {
-    if (
-      urlLang &&
-      ["tr", "en", "ar", "fr"].includes(urlLang) &&
-      urlLang !== language
-    ) {
+    if (urlLang && ["tr", "en", "ar", "fr"].includes(urlLang) && urlLang !== language) {
       setLanguage(urlLang as any);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,12 +245,8 @@ export default function Coaches() {
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    t.categories?.[0] || "Tümü"
-  );
-  const [experienceFilter, setExperienceFilter] = useState<string>(
-    t.experiences?.[0] || "Tümü"
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string>(t.categories?.[0] || "Tümü");
+  const [experienceFilter, setExperienceFilter] = useState<string>(t.experiences?.[0] || "Tümü");
   const [sortOption, setSortOption] = useState<string>("recommended");
 
   // ✅ Dil değişince: filtreleri resetle
@@ -358,9 +349,7 @@ export default function Coaches() {
     } else if (sortOption === "price_desc") {
       list.sort((a, b) => (b.hourly_rate || 0) - (a.hourly_rate || 0));
     } else if (sortOption === "exp_desc") {
-      list.sort(
-        (a, b) => toYears(b.experience_years) - toYears(a.experience_years)
-      );
+      list.sort((a, b) => toYears(b.experience_years) - toYears(a.experience_years));
     } else {
       // recommended: rating yüksek + review fazla
       list.sort((a, b) => {
@@ -385,9 +374,7 @@ export default function Coaches() {
             {t.heroTitle1} <br />{" "}
             <span className="text-yellow-300">{t.heroTitle2}</span> {t.heroTitle3}
           </h1>
-          <p className="text-lg text-red-50 max-w-2xl mx-auto mb-10">
-            {t.heroSubtitle}
-          </p>
+          <p className="text-lg text-red-50 max-w-2xl mx-auto mb-10">{t.heroSubtitle}</p>
 
           {/* ARAMA KUTUSU */}
           <div className="max-w-3xl mx-auto relative shadow-2xl rounded-2xl overflow-hidden border-4 border-white/20">
@@ -540,9 +527,7 @@ export default function Coaches() {
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-2 ${
-                      viewMode === "grid"
-                        ? "bg-red-50 text-red-600"
-                        : "bg-white text-gray-500"
+                      viewMode === "grid" ? "bg-red-50 text-red-600" : "bg-white text-gray-500"
                     } hover:bg-red-50 transition-colors`}
                   >
                     <LayoutGrid className="w-5 h-5" />
@@ -550,9 +535,7 @@ export default function Coaches() {
                   <button
                     onClick={() => setViewMode("list")}
                     className={`p-2 ${
-                      viewMode === "list"
-                        ? "bg-red-50 text-red-600"
-                        : "bg-white text-gray-500"
+                      viewMode === "list" ? "bg-red-50 text-red-600" : "bg-white text-gray-500"
                     } hover:bg-red-50 transition-colors`}
                   >
                     <List className="w-5 h-5" />
@@ -585,9 +568,7 @@ export default function Coaches() {
               >
                 {filteredCoaches.map((coach) => {
                   const specs = (coach.specializations || []) as string[];
-                  const isPremium =
-                    (coach.rating || 0) >= 4.8 &&
-                    (coach.total_reviews || 0) >= 20;
+                  const isPremium = (coach.rating || 0) >= 4.8 && (coach.total_reviews || 0) >= 20;
                   const price = coach.hourly_rate || 0;
                   const currency = coach.currency || "₺";
 
@@ -622,9 +603,7 @@ export default function Coaches() {
                         {/* Avatar */}
                         <div
                           className={`absolute ${
-                            viewMode === "list"
-                              ? "-top-7 left-4"
-                              : "-top-9 left-4"
+                            viewMode === "list" ? "-top-7 left-4" : "-top-9 left-4"
                           } p-[4px] bg-white rounded-2xl shadow-md`}
                         >
                           <img
@@ -638,11 +617,7 @@ export default function Coaches() {
                         </div>
 
                         {/* İsim & Puan */}
-                        <div
-                          className={`${
-                            viewMode === "list" ? "mt-10" : "mt-14"
-                          } flex justify-between items-start`}
-                        >
+                        <div className={`${viewMode === "list" ? "mt-10" : "mt-14"} flex justify-between items-start`}>
                           <div>
                             <h3 className="font-bold text-lg text-gray-900 group-hover:text-red-600 transition-colors leading-tight">
                               {coach.full_name}
@@ -658,14 +633,7 @@ export default function Coaches() {
                             </div>
                             <span className="text-xs text-gray-400 mt-1">
                               ({coach.total_reviews || 0}{" "}
-                              {lang === "en"
-                                ? "reviews"
-                                : lang === "fr"
-                                ? "avis"
-                                : lang === "ar"
-                                ? "تقييم"
-                                : "yorum"}
-                              )
+                              {lang === "en" ? "reviews" : lang === "fr" ? "avis" : lang === "ar" ? "تقييم" : "yorum"})
                             </span>
                           </div>
                         </div>
@@ -675,17 +643,14 @@ export default function Coaches() {
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-4 h-4 text-blue-500" />
                             <span>
-                              {toYears(coach.experience_years).toString()}{" "}
-                              {t.expLabelSuffix}
+                              {toYears(coach.experience_years).toString()} {t.expLabelSuffix}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
                             <Clock className="w-4 h-4 text-green-500" />
                             <span>
                               {t.earliest}{" "}
-                              <span className="text-green-600 font-semibold">
-                                {t.earliestValue}
-                              </span>
+                              <span className="text-green-600 font-semibold">{t.earliestValue}</span>
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
@@ -727,9 +692,8 @@ export default function Coaches() {
                               const qs = new URLSearchParams(searchParams);
                               if (!qs.get("lang")) qs.set("lang", lang);
 
-                              // ✅ eski: /coach/:id
-                              // ✅ yeni: /coach/:slug (SEO)
-                              // id’yi de query'e koyuyoruz ki profile sayfası DB’den çekebilsin
+                              // ✅ SEO route: /coach/:slug
+                              // ✅ DB çekebilmesi için id query'ye koy
                               qs.set("id", coach.id);
 
                               navigate(`/coach/${slug}?${qs.toString()}`);

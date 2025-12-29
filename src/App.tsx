@@ -115,7 +115,13 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
 
           <Route path="/coaches" element={<Coaches />} />
+
+          {/* ✅ COACH PUBLIC PROFILE (SEO) */}
+          <Route path="/coach/:slug" element={<CoachPublicProfile />} />
+
+          {/* ✅ Legacy (eski linkler bozulmasın) */}
           <Route path="/coach/:id" element={<CoachPublicProfile />} />
+
           <Route path="/for-coaches" element={<ForCoaches />} />
           <Route path="/for-companies" element={<ForCompanies />} />
           <Route path="/mentor-circle" element={<MentorCircle />} />
@@ -154,9 +160,18 @@ export default function App() {
           <Route path="/register" element={<Register />} />
 
           {/* LEGACY redirects */}
-          <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
-          <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
-          <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+          <Route
+            path="/dashboard"
+            element={<Navigate to="/user/dashboard" replace />}
+          />
+          <Route
+            path="/profile"
+            element={<Navigate to="/user/profile" replace />}
+          />
+          <Route
+            path="/coach-dashboard"
+            element={<Navigate to="/coach/dashboard" replace />}
+          />
 
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockReviews = [
   {
@@ -75,24 +76,43 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   return fallback;
 };
 
+const localeByLang = (lang: string) => {
+  const l = (lang || "tr").toLowerCase();
+  if (l === "tr") return "tr-TR";
+  if (l === "en") return "en-US";
+  if (l === "fr") return "fr-FR";
+  if (l === "ar") return "ar-TN";
+  return "tr-TR";
+};
+
+const dayLabelsByLang = (lang: string) => {
+  const l = (lang || "tr").toLowerCase();
+  if (l === "en") return { today: "Today", tomorrow: "Tomorrow" };
+  if (l === "fr") return { today: "Aujourd’hui", tomorrow: "Demain" };
+  if (l === "ar") return { today: "اليوم", tomorrow: "غدًا" };
+  return { today: "Bugün", tomorrow: "Yarın" };
+};
+
 // Önümüzdeki X günü üret (Bugün, Yarın, vs) → default 14 gün
-const getNextDays = (count = 14) => {
-  const days = [];
+const getNextDays = (count = 14, lang = "tr") => {
+  const days: any[] = [];
   const today = new Date();
+  const locale = localeByLang(lang);
+  const labels = dayLabelsByLang(lang);
 
   for (let i = 0; i < count; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
 
     const value = d.toISOString().slice(0, 10); // YYYY-MM-DD
-    let label = d.toLocaleDateString("tr-TR", {
+    let label = d.toLocaleDateString(locale, {
       weekday: "short",
       day: "numeric",
       month: "short",
     });
 
-    if (i === 0) label = "Bugün";
-    if (i === 1) label = "Yarın";
+    if (i === 0) label = labels.today;
+    if (i === 1) label = labels.tomorrow;
 
     days.push({ date: d, value, label });
   }
@@ -120,6 +140,7 @@ const generateTimeSlots = (
 export default function CoachProfile() {
   const { id } = useParams(); // /coach/:id
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -363,7 +384,7 @@ export default function CoachProfile() {
               <CardContent className="space-y-3 text-xs">
                 {/* Gün seçimi */}
                 <div className="flex gap-2 mb-2 overflow-x-auto pb-1 no-scrollbar">
-                  {getNextDays(14).map((day) => (
+                  {getNextDays(14, language || "tr").map((day) => (
                     <Button
                       key={day.value}
                       variant={day.value === selectedDate ? "default" : "outline"}

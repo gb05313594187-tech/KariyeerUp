@@ -5,36 +5,35 @@ import { supabase } from "@/lib/supabase";
 
 export default function Sitemap() {
   useEffect(() => {
-    const generate = async () => {
+    const run = async () => {
       const { data } = await supabase
         .from("app_2dff6511da_coaches")
         .select("slug, updated_at")
         .eq("status", "active");
 
-      const baseUrl = window.location.origin;
+      const base = window.location.origin;
 
-      const urls =
-        data?.map(
-          (c) => `
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+      data?.forEach((c) => {
+        if (!c.slug) return;
+        xml += `
   <url>
-    <loc>${baseUrl}/coach/${c.slug}</loc>
+    <loc>${base}/coach/${c.slug}</loc>
     <lastmod>${new Date(c.updated_at).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>`
-        ) || [];
+  </url>`;
+      });
 
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join("\n")}
-</urlset>`;
+      xml += `</urlset>`;
 
-      document.open();
+      document.body.innerHTML = "";
       document.write(xml);
-      document.close();
     };
 
-    generate();
+    run();
   }, []);
 
   return null;

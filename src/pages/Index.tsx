@@ -85,8 +85,14 @@ export default function Index() {
         desc:
           "Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil; kariyer hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi ölçen bir sistemdir. İş bulma, terfi veya kariyer değişimi sürecinde ne yapman gerektiğini tahmin etmene gerek kalmaz. Hedefin netleşir, sana uygun koç önerilir ve ilerleme somut çıktılarla takip edilir. Bu yüzden Kariyeer, ihtiyaç anında girilen bir site değil; süreç boyunca kullanılan bir araçtır.",
         cards: [
-          { title: "🎯 Hedef bazlı eşleşme", desc: "Rastgele değil; hedef/rol/level üzerinden" },
-          { title: "✅ Doğrulanmış koçlar", desc: "Profil doğrulama + görünür kalite katmanı" },
+          {
+            title: "🎯 Hedef bazlı eşleşme",
+            desc: "Rastgele değil; hedef/rol/level üzerinden",
+          },
+          {
+            title: "✅ Doğrulanmış koçlar",
+            desc: "Profil doğrulama + görünür kalite katmanı",
+          },
           { title: "📊 Görünür ilerleme", desc: "Seans sonrası çıktı + takip düzeni" },
         ],
         chips: [
@@ -117,7 +123,10 @@ export default function Index() {
             title: "Daha çok görünürlük",
             desc: "Hedef/rol bazlı aramalarda listelenme + doğrulama rozeti",
           },
-          { title: "Tek panel yönetim", desc: "Seanslar, takvim, talepler, gelir ve performans takibi" },
+          {
+            title: "Tek panel yönetim",
+            desc: "Seanslar, takvim, talepler, gelir ve performans takibi",
+          },
           { title: "Global ölçek", desc: "Dil/ülke kırılımı ile uluslararası danışan akışı" },
         ],
         chips: [
@@ -373,7 +382,7 @@ export default function Index() {
           { title: "Career & Leadership Coach", tags: ["Leadership", "Career"] },
           { title: "Tech & Startup Mentor", tags: ["Technology", "Startup"] },
           { title: "Interview & CV Specialist", tags: ["Interview", "CV"] },
-        ],
+          ],
       },
       y2025: {
         title: "What problem are we solving in 2025?",
@@ -998,51 +1007,56 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ✅ YENİ: ARAMA/EŞLEŞME MOTORU İLE ÖNE ÇIKAN KOÇLAR ARASINA (GLOBAL DEĞER + GÜVENCE) */}
-      <section className="pb-10 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                {t.systemValue.badge}
-              </div>
+      {/* ✅ ARAMA/EŞLEŞME MOTORU İLE ÖNE ÇIKAN KOÇLAR ARASINA (GLOBAL DEĞER + GÜVENCE) — SADECE USER */}
+      {persona === "user" ? (
+        <section className="pb-10 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  {t.systemValue.badge}
+                </div>
 
-              <h3 className="mt-4 text-2xl md:text-3xl font-black text-gray-900">
-                {t.systemValue.title}
-              </h3>
+                <h3 className="mt-4 text-2xl md:text-3xl font-black text-gray-900">
+                  {t.systemValue.title}
+                </h3>
 
-              <p className="mt-3 text-sm md:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                {t.systemValue.desc}
-              </p>
+                <p className="mt-3 text-sm md:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                  {t.systemValue.desc}
+                </p>
 
-              <div className="mt-6 grid md:grid-cols-3 gap-3 text-sm">
-                {t.systemValue.cards.map((c: any) => (
-                  <div key={c.title} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="font-semibold text-gray-900">{c.title}</div>
-                    <div className="mt-1 text-gray-600">{c.desc}</div>
-                  </div>
-                ))}
-              </div>
+                <div className="mt-6 grid md:grid-cols-3 gap-3 text-sm">
+                  {t.systemValue.cards.map((c: any) => (
+                    <div
+                      key={c.title}
+                      className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                    >
+                      <div className="font-semibold text-gray-900">{c.title}</div>
+                      <div className="mt-1 text-gray-600">{c.desc}</div>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="mt-5 flex flex-wrap gap-2 justify-center">
-                {t.systemValue.chips.map((x: string) => (
-                  <span
-                    key={x}
-                    className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700"
-                  >
-                    {x}
-                  </span>
-                ))}
-              </div>
+                <div className="mt-5 flex flex-wrap gap-2 justify-center">
+                  {t.systemValue.chips.map((x: string) => (
+                    <span
+                      key={x}
+                      className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700"
+                    >
+                      {x}
+                    </span>
+                  ))}
+                </div>
 
-              <div className="mt-5 text-sm font-semibold text-gray-700">
-                {t.systemValue.bottom}
+                <div className="mt-5 text-sm font-semibold text-gray-700">
+                  {t.systemValue.bottom}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* ✅ SADECE KOÇTA: EŞLEŞ ile KOÇ BLOĞU ARASINA (SÜREÇ + GÜVENCE) */}
       {persona === "coach" ? (
@@ -1095,7 +1109,6 @@ export default function Index() {
                     {t.coachGlobal.title}
                   </h3>
 
-                  {/* ✅ PARAGRAF BURAYA TAŞINDI (TAM OLARAK İKİSİNİN ARASINA) */}
                   <p className="mt-3 text-sm md:text-base text-gray-600 max-w-3xl leading-relaxed">
                     {t.coachGlobal.p1}
                   </p>
@@ -1184,7 +1197,6 @@ export default function Index() {
                     ))}
                   </div>
 
-                  {/* ✅ Kurumsal Çözümler butonu bu kutunun içine taşındı */}
                   <Link to="/for-companies">
                     <Button variant="outline" className="rounded-xl border-orange-200">
                       {t.company.solutions}
@@ -1209,7 +1221,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM (ÖNE ÇIKAN KOÇLAR'DAN ÖNCE) — BUTONLAR KALDIRILDI, ZAMAN PLANI EKLENDİ */}
+      {/* ✅ ŞİRKET SEÇİLİNCE: DEMO FORM */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1324,7 +1336,6 @@ export default function Index() {
                     </select>
                   </div>
 
-                  {/* ✅ Başlangıç hedefi (zaman planı) */}
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.startPlan}
@@ -1372,7 +1383,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ÖNE ÇIKAN KOÇLAR (EKLENDİ / KORUNDU) */}
+      {/* ✅ ÖNE ÇIKAN KOÇLAR */}
       <section className="py-18 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
@@ -1442,7 +1453,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* 2025 BLOĞU (BURADA) */}
+      {/* 2025 BLOĞU */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-gray-900">

@@ -1,6 +1,7 @@
 // src/App.tsx
 // @ts-nocheck
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Toaster } from "sonner";
 
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
@@ -83,6 +84,7 @@ function PublicLayout() {
 export default function App() {
   return (
     <Router>
+      <Toaster richColors position="top-right" />
       <Routes>
         {/* ADMIN */}
         <Route path="/admin" element={<AdminLayout />}>

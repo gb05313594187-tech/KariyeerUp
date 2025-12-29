@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
   Menu,
   X,
@@ -26,7 +24,6 @@ import {
   Video,
   Crown,
 } from "lucide-react";
-
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -36,7 +33,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const auth = useAuth();
-
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const me = auth?.user ?? null;
@@ -154,8 +150,10 @@ export default function Navbar() {
             className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white"
           >
             <Crown className="h-4 w-4 mr-2" />
-            Premium
-            <span className="ml-2 hidden lg:inline text-white/80">{premiumLabel}</span>
+            Premium{" "}
+            <span className="ml-2 hidden lg:inline text-white/80">
+              {premiumLabel}
+            </span>
           </Button>
         </nav>
 
@@ -170,11 +168,20 @@ export default function Navbar() {
                 <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("tr")}>TR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>EN</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>AR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>FR</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("tr")}>
+                TR
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("en")}>
+                EN
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("ar")}>
+                AR
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("fr")}>
+                FR
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -213,12 +220,15 @@ export default function Navbar() {
                     <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="text-xs text-gray-500">{roleLabel}</div>
                     <div className="text-sm font-semibold">{displayName}</div>
                   </DropdownMenuLabel>
+
                   <DropdownMenuSeparator />
+
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {dashboardLabel}
@@ -236,11 +246,14 @@ export default function Navbar() {
                     <User className="mr-2 h-4 w-4" />
                     Profil
                   </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => navigate(settingsPath)}>
                     <Settings className="mr-2 h-4 w-4" />
                     Ayarlar
                   </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
+
                   <DropdownMenuItem
                     onClick={async () => {
                       await auth.logout();
@@ -270,14 +283,21 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
+            <button
+              onClick={() => navigate("/mentor-circle")}
+              className={mobileBtn}
+            >
               MentorCircle
             </button>
+
             <button onClick={() => navigate("/webinars")} className={mobileBtn}>
               Webinar
             </button>
 
-            <button onClick={() => navigate(premiumTarget)} className={mobilePrimary}>
+            <button
+              onClick={() => navigate(premiumTarget)}
+              className={mobilePrimary}
+            >
               Premium — {premiumLabel}
             </button>
 
@@ -287,28 +307,45 @@ export default function Navbar() {
                   <button onClick={() => navigate("/login")} className={mobileBtn}>
                     Giriş Yap
                   </button>
-                  <button onClick={() => navigate("/register")} className={mobilePrimary}>
+                  <button
+                    onClick={() => navigate("/register")}
+                    className={mobilePrimary}
+                  >
                     Kayıt Ol
                   </button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => navigate(dashboardPath)} className={mobileBtn}>
+                  <button
+                    onClick={() => navigate(dashboardPath)}
+                    className={mobileBtn}
+                  >
                     {dashboardLabel}
                   </button>
 
                   {role === "admin" && (
-                    <button onClick={() => navigate("/admin")} className={mobileBtn}>
+                    <button
+                      onClick={() => navigate("/admin")}
+                      className={mobileBtn}
+                    >
                       Admin Paneli
                     </button>
                   )}
 
-                  <button onClick={() => navigate(profilePath)} className={mobileBtn}>
+                  <button
+                    onClick={() => navigate(profilePath)}
+                    className={mobileBtn}
+                  >
                     Profil
                   </button>
-                  <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
+
+                  <button
+                    onClick={() => navigate(settingsPath)}
+                    className={mobileBtn}
+                  >
                     Ayarlar
                   </button>
+
                   <button
                     onClick={async () => {
                       await auth.logout();

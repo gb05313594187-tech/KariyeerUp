@@ -862,12 +862,7 @@ export default function Index() {
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           {/* Trust */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              {t.trustBadge}
-            </div>
-          </div>
+          
 
           {/* Persona */}
           <div className="mt-8 flex justify-center">

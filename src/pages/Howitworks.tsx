@@ -1,5 +1,4 @@
-export const translations = {
-  tr: {
+ tr: {
     // Navigation
     home: "Ana Sayfa",
     forCoaches: "Koçlar İçin",

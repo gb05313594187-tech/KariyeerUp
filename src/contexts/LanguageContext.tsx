@@ -1,3 +1,4 @@
+// src/contexts/LanguageContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { translations, Language } from "@/lib/i18n";
 
@@ -9,28 +10,45 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+function detectLanguage(): Language {
+  try {
+    const nav = (navigator?.language || "").toLowerCase(); // örn: "tr-tr", "en-us", "fr-fr", "ar-tn"
+    if (nav.startsWith("tr")) return "tr";
+    if (nav.startsWith("ar")) return "ar";
+    if (nav.startsWith("fr")) return "fr";
+    return "en";
+  } catch {
+    return "tr";
+  }
+}
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem("kariyeer_language");
-      const candidate = (saved as Language) || "tr";
-      // translations yoksa da güvenli olsun
-      if (!translations?.[candidate]) return "tr";
-      return candidate;
+      const candidate = (saved as Language) || null;
+
+      // 1) Kullanıcı daha önce seçtiyse onu kullan
+      if (candidate && translations?.[candidate]) return candidate;
+
+      // 2) İlk açılış: tarayıcı diline göre seç
+      const detected = detectLanguage();
+      if (!translations?.[detected]) return "tr";
+      return detected;
     } catch (e) {
-      // localStorage erişimi kapalıysa fallback
-      return "tr";
+      // localStorage erişimi kapalıysa fallback + detect
+      const detected = detectLanguage();
+      if (!translations?.[detected]) return "tr";
+      return detected;
     }
   });
 
   useEffect(() => {
     try {
       localStorage.setItem("kariyeer_language", language);
-    } catch (e) {
-      // localStorage erişimi kapalıysa sessiz geç
-    }
+    } catch (e) {}
   }, [language]);
 
   const t = (key: string): string => {

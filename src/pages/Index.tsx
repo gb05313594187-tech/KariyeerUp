@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import {
   ArrowRight,
   PlayCircle,
@@ -27,7 +28,7 @@ export default function Index() {
 
   const i18n: any = {
     tr: {
-      trustBadge: "Doğrulanmış Platform · Hedef Bazlı Takip",
+      trustBadge: "", // ✅ İSTEDİĞİN GİBİ: "Doğrulanmış Platform · Hedef Bazlı Takip" kaldırıldı
       personas: {
         user: {
           label: "Kullanıcı",
@@ -767,24 +768,9 @@ export default function Index() {
 
   // Persona: Kullanıcı / Koç / Şirket
   const personas = [
-    {
-      key: "user",
-      label: t.personas.user.label,
-      icon: Users,
-      subtitle: t.personas.user.subtitle,
-    },
-    {
-      key: "coach",
-      label: t.personas.coach.label,
-      icon: Briefcase,
-      subtitle: t.personas.coach.subtitle,
-    },
-    {
-      key: "company",
-      label: t.personas.company.label,
-      icon: Building2,
-      subtitle: t.personas.company.subtitle,
-    },
+    { key: "user", label: t.personas.user.label, icon: Users, subtitle: t.personas.user.subtitle },
+    { key: "coach", label: t.personas.coach.label, icon: Briefcase, subtitle: t.personas.coach.subtitle },
+    { key: "company", label: t.personas.company.label, icon: Building2, subtitle: t.personas.company.subtitle },
   ];
 
   const [persona, setPersona] = useState("user");
@@ -802,7 +788,7 @@ export default function Index() {
   const [demoPhone, setDemoPhone] = useState("");
   const [demoTeamSize, setDemoTeamSize] = useState("1-10");
   const [demoNeed, setDemoNeed] = useState("Mülakat");
-  const [demoStartPlan, setDemoStartPlan] = useState("Bu ay"); // ✅ yeni
+  const [demoStartPlan, setDemoStartPlan] = useState("Bu ay");
   const [demoNote, setDemoNote] = useState("");
 
   const onDemoSubmit = async (e: any) => {
@@ -828,11 +814,20 @@ export default function Index() {
 
     if (error) {
       console.error(error);
-      alert("Gönderimde hata oldu. Lütfen tekrar deneyin.");
+      toast.error("Demo talebi gönderilemedi. Lütfen tekrar deneyin.");
       return;
     }
 
-    navigate(`/demo/thanks?id=${data?.id}`);
+    toast.success("Demo talebiniz alındı. 24 saat içinde sizinle iletişime geçeceğiz.");
+
+    setDemoCompanyName("");
+    setDemoName("");
+    setDemoEmail("");
+    setDemoPhone("");
+    setDemoTeamSize("1-10");
+    setDemoNeed("Mülakat");
+    setDemoStartPlan("Bu ay");
+    setDemoNote("");
   };
 
   // Featured coaches (statik vitrin)
@@ -1117,7 +1112,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ SADECE KOÇTA: GLOBAL DEĞER ÖNERİSİ + KOMİSYON + ÖNE ÇIKMA (EKLENDİ) */}
+      {/* ✅ SADECE KOÇTA: GLOBAL DEĞER ÖNERİSİ + KOMİSYON + ÖNE ÇIKMA */}
       {persona === "coach" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1183,7 +1178,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU (BUTONLAR KALDIRILDI) */}
+      {/* ✅ SADECE ŞİRKETTE: DEMO FORM'DAN ÖNCE KURUMSAL AÇIKLAMA BLOĞU */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1233,7 +1228,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ SADECE ŞİRKETTE: İKİ BLOK ARASINA SADECE METİN (AÇIKLAMA) */}
+      {/* ✅ SADECE ŞİRKETTE: METİN (AÇIKLAMA) */}
       {persona === "company" ? (
         <section className="py-6 bg-white">
           <div className="max-w-5xl mx-auto px-4">

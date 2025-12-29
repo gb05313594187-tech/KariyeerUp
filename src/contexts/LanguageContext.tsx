@@ -12,7 +12,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 function detectLanguage(): Language {
   try {
-    const nav = (navigator?.language || "").toLowerCase(); // örn: "tr-tr", "en-us", "fr-fr", "ar-tn"
+    const nav = (navigator?.language || "").toLowerCase(); // "tr-tr", "en-us", "fr-fr", "ar-tn"
     if (nav.startsWith("tr")) return "tr";
     if (nav.startsWith("ar")) return "ar";
     if (nav.startsWith("fr")) return "fr";

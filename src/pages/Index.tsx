@@ -861,9 +861,6 @@ export default function Index() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          {/* Trust */}
-          
-
           {/* Persona */}
           <div className="mt-8 flex justify-center">
             <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-sm">

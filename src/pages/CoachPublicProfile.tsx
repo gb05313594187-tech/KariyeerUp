@@ -188,7 +188,11 @@ const getNextDays = (count = 14) => {
 };
 
 // Belirli saat aralığında 30 dk'lık slotlar üret
-const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
+const generateTimeSlots = (
+  startHour = 10,
+  endHour = 22,
+  intervalMinutes = 30
+) => {
   const slots: string[] = [];
   for (let h = startHour; h < endHour; h++) {
     for (let m = 0; m < 60; m += intervalMinutes) {
@@ -207,7 +211,10 @@ export default function CoachPublicProfile() {
   const location = useLocation();
 
   // ✅ Query paramları tek kaynaktan oku (kaybetme)
-  const qs = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const qs = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
   const qsId = qs.get("id") || ""; // legacy
 
   // ✅ Koç ID çözümlemesi:
@@ -427,7 +434,9 @@ export default function CoachPublicProfile() {
       const ogImage = ensureMeta("og:image", "property");
       ogImage.setAttribute("content", c.photo_url || "");
 
-      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      let link = document.querySelector(
+        'link[rel="canonical"]'
+      ) as HTMLLinkElement | null;
       if (!link) {
         link = document.createElement("link");
         link.setAttribute("rel", "canonical");
@@ -483,7 +492,9 @@ export default function CoachPublicProfile() {
       );
 
       const nextQs = new URLSearchParams(location.search);
-      navigate(`/user/dashboard${nextQs.toString() ? `?${nextQs.toString()}` : ""}`);
+      navigate(
+        `/user/dashboard${nextQs.toString() ? `?${nextQs.toString()}` : ""}`
+      );
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("Beklenmeyen bir hata oluştu.");
@@ -506,4 +517,403 @@ export default function CoachPublicProfile() {
           {/* Profil Fotoğrafı */}
           <div className="flex flex-col items-center">
             <div className="relative">
-             
+              <img
+                src={c.photo_url}
+                alt={c.name}
+                className="w-36 h-36 rounded-2xl object-cover shadow-md border border-gray-200"
+              />
+              {c.isOnline && (
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-white" />
+                </span>
+              )}
+            </div>
+
+            <button className="mt-4 px-4 py-1.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">
+              {c.isOnline ? "• Şu An Uygun" : "• Şu An Meşgul"}
+            </button>
+          </div>
+
+          {/* Koç Bilgisi */}
+          <div className="flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* ✅ SEO H1 */}
+              <h1 className="text-3xl font-bold text-gray-900">{h1Text}</h1>
+              <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
+                Öne Çıkan Koç
+              </Badge>
+            </div>
+
+            <p className="text-lg text-gray-700 flex items-center gap-2">
+              {c.title}
+              <span className="w-1 h-1 rounded-full bg-gray-300" />
+              <Globe2 className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-500">{c.location}</span>
+            </p>
+
+            {/* Etiketler */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {c.tags?.map((tag: string) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-xs rounded-full bg-orange-50 text-orange-700 border border-orange-200"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* İstatistikler */}
+            <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span className="font-semibold">
+                  {Number(c.rating || 0).toFixed(1)}
+                </span>
+                <span className="text-gray-500">
+                  ({c.reviewCount || 0} değerlendirme)
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4 text-orange-500" />
+                <span className="font-semibold">{c.totalSessions || 0}</span>
+                <span className="text-gray-500">seans</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="w-4 h-4 text-red-500" />
+                <span className="font-semibold">{c.favoritesCount || 0}</span>
+                <span className="text-gray-500">favori</span>
+              </div>
+            </div>
+
+            {/* CTA Butonlar */}
+            <div className="flex flex-wrap gap-3 mt-5">
+              <Button
+                className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
+                onClick={handleRequestSession}
+                disabled={!selectedSlot}
+              >
+                Hemen Seans Al
+              </Button>
+              <Button
+                variant="outline"
+                className="px-6 py-3 rounded-xl border-gray-300 text-gray-800 hover:bg-gray-50"
+              >
+                <Heart className="w-4 h-4 mr-2 text-red-500" />
+                Favorilere Ekle
+              </Button>
+            </div>
+          </div>
+
+          {/* Sağ Özet Kartı – Uygun Saatler */}
+          <div className="w-full md:w-72">
+            <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-orange-500" />
+                  Uygun Saat Seç
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                {/* Gün seçimi */}
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-1 no-scrollbar">
+                  {getNextDays(14).map((day) => (
+                    <Button
+                      key={day.value}
+                      variant={day.value === selectedDate ? "default" : "outline"}
+                      size="sm"
+                      className={`rounded-full h-8 text-[11px] whitespace-nowrap ${
+                        day.value === selectedDate
+                          ? "bg-red-600 text-white"
+                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                      }`}
+                      onClick={() => {
+                        setSelectedDate(day.value);
+                        setSelectedSlot(null);
+                      }}
+                    >
+                      {day.label}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Saat slotları */}
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                  {generateTimeSlots(10, 22, 30).map((slot) => (
+                    <Button
+                      key={slot}
+                      variant={selectedSlot === slot ? "default" : "outline"}
+                      size="sm"
+                      className={`rounded-full h-8 text-[11px] ${
+                        selectedSlot === slot
+                          ? "bg-red-600 text-white"
+                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                      }`}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      <Clock className="w-3 h-3 mr-1" />
+                      {slot}
+                    </Button>
+                  ))}
+                </div>
+
+                {selectedSlot && (
+                  <p className="text-[11px] text-gray-600 mt-2">
+                    Seçilen saat:{" "}
+                    <span className="font-semibold">
+                      {selectedSlot} ({selectedDate})
+                    </span>
+                  </p>
+                )}
+                {!selectedSlot && (
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Bir gün ve saat seç; seçimin otomatik olarak koça iletilen
+                    seans talebi olarak kaydedilecek.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* ALT İÇERİK – TABS */}
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <Tabs defaultValue="about" className="space-y-6">
+          <TabsList className="bg-white border border-orange-100 rounded-full p-1">
+            <TabsTrigger value="about">Hakkında</TabsTrigger>
+            <TabsTrigger value="cv">Özgeçmiş</TabsTrigger>
+            <TabsTrigger value="programs">Program Paketleri</TabsTrigger>
+            <TabsTrigger value="reviews">Yorumlar</TabsTrigger>
+            <TabsTrigger value="content">İçerikler</TabsTrigger>
+            <TabsTrigger value="faq">SSS</TabsTrigger>
+          </TabsList>
+
+          {/* HAKKINDA */}
+          <TabsContent value="about" className="space-y-6">
+            <Card className="bg-white border border-orange-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-gray-900">
+                  Koç Hakkında
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-gray-800">
+                <p className="whitespace-pre-line">{c.bio}</p>
+              </CardContent>
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="bg-white border border-orange-100 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+                    <Award className="w-4 h-4 text-orange-500" />
+                    Eğitim & Sertifikalar
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-800">
+                  {(c.education || []).map((item: string) => (
+                    <div
+                      key={item}
+                      className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"
+                    >
+                      <span className="mt-1 w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-orange-100 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+                    <Users className="w-4 h-4 text-red-500" />
+                    Tecrübe & Geçmiş
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-800">
+                  {(c.experience || []).map((item: string) => (
+                    <div
+                      key={item}
+                      className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"
+                    >
+                      <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-white border border-orange-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-gray-900">
+                  Koçluk Metodolojisi
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-800 whitespace-pre-line">
+                {c.methodology}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ÖZGEÇMİŞ */}
+          <TabsContent value="cv">
+            <div className="space-y-4">
+              {c.cv_url ? (
+                <Card className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        Koçun Özgeçmişi (CV)
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PDF formatında detaylı eğitim ve iş deneyimlerini
+                        inceleyebilirsiniz.
+                      </p>
+                    </div>
+                    <a
+                      href={c.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">
+                        Özgeçmişi Görüntüle / İndir
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4">
+                    <p className="text-sm text-gray-600">
+                      Bu koç henüz özgeçmişini eklemedi. Yakında burada
+                      görüntüleyebiliyor olacaksınız.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* PROGRAM PAKETLERİ */}
+          <TabsContent value="programs">
+            <div className="grid md:grid-cols-2 gap-4">
+              {(c.programs || []).length === 0 && (
+                <p className="text-sm text-gray-500">
+                  Bu koç henüz program paketi eklemedi.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* YORUMLAR */}
+          <TabsContent value="reviews">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm">
+                <Star className="w-5 h-5 text-yellow-400" />
+                <span className="font-medium text-gray-900">
+                  {Number(c.rating || 0).toFixed(1)} / 5
+                </span>
+                <span className="text-gray-500">
+                  ({c.reviewCount || 0} değerlendirme)
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 text-xs"
+              >
+                Filtrele
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {mockReviews.map((rev, idx) => (
+                <Card
+                  key={idx}
+                  className="bg-white border border-orange-100 shadow-sm"
+                >
+                  <CardContent className="py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {rev.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{rev.role}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Star className="w-4 h-4 text-yellow-400" />
+                        <span className="text-gray-900">{rev.rating}.0</span>
+                        <span className="text-gray-400">· {rev.date}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-800">{rev.text}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-gray-500"
+                    >
+                      <MessageCircle className="w-3 h-3 mr-1" />
+                      Koç Yanıtı Yaz (yakında)
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* İÇERİKLER */}
+          <TabsContent value="content">
+            <div className="grid md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card
+                  key={i}
+                  className="bg-white border border-orange-100 shadow-sm flex flex-col"
+                >
+                  <div className="h-32 rounded-t-xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                    <PlayCircle className="w-10 h-10 text-red-500" />
+                  </div>
+                  <CardContent className="py-3 space-y-1 text-sm">
+                    <p className="font-semibold text-gray-900">
+                      Kariyer Yönünü Bulmak İçin 3 Ana Soru
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      8 dk · Video · 1.2K görüntülenme
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-0 h-7 text-xs text-red-600"
+                    >
+                      İçeriği Görüntüle
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* SSS */}
+          <TabsContent value="faq">
+            <div className="space-y-3">
+              {(c.faqs || []).map((item: any, idx: number) => (
+                <Card
+                  key={idx}
+                  className="bg-white border border-orange-100 shadow-sm"
+                >
+                  <CardContent className="py-3">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">
+                      {item.q}
+                    </p>
+                    <p className="text-xs text-gray-600">{item.a}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

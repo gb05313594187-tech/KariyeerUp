@@ -11,6 +11,11 @@ import { toast } from "sonner";
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
+// ✅ PayTR Init Edge Function (iframe_token alma)
+// Supabase Dashboard → Edge Functions → paytr-init → Details → Function URL
+const PAYTR_INIT_URL =
+  "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-init";
+
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -64,7 +69,34 @@ export default function BookSession() {
     "20:00",
   ];
 
-  // 🔥 Seans talebini session_requests tablosuna yaz
+  // utils
+  const makeMerchantOid = () => {
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
+      return `kry_${Date.now()}_${a[0].toString(16)}${a[1].toString(16)}`;
+    } catch {
+      return `kry_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    }
+  };
+
+  const toStartsAtISO = (date: string, timeSlot: string) => {
+    // date: YYYY-MM-DD, timeSlot: HH:mm (local)
+    // ISO string üret (local -> ISO)
+    const [y, m, d] = (date || "").split("-").map((x) => Number(x));
+    const [hh, mm] = (timeSlot || "").split(":").map((x) => Number(x));
+    if (!y || !m || !d) return null;
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const dt = new Date(y, m - 1, d, hh, mm, 0, 0);
+    if (isNaN(dt.getTime())) return null;
+    return dt.toISOString();
+  };
+
+  // 🔥 PayTR akışı:
+  // 1) sessions tablosuna "pending_payment" seans aç
+  // 2) payments tablosuna "initiated" ödeme kaydı aç (merchant_oid)
+  // 3) paytr-init function -> iframe_token al
+  // 4) Payment sayfasına yönlendir (iframe ile ödeme)
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -96,28 +128,158 @@ export default function BookSession() {
         return;
       }
 
-      // 1) Seans talebini session_requests tablosuna kaydet
-      const { error } = await supabase
-        .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachId,
-          user_id: userId, // ✅ artık NULL olmayacak
-          full_name: form.fullName,
-          email: form.email,
-          selected_date: form.date, // YYYY-MM-DD
-          selected_time: form.timeSlot,
-          note: form.note || null,
-          status: "pending",
-          created_at: new Date().toISOString(),
-        });
+      // Seans zamanı ISO
+      const startsAt = toStartsAtISO(form.date, form.timeSlot);
 
-      if (error) {
-        console.error("Insert error:", error);
-        toast.error("Seans talebi oluşturulamadı.");
+      // Ücret (koç datasından)
+      const fee =
+        Number(
+          coach?.session_fee ??
+            coach?.sessionPrice ??
+            coach?.price ??
+            coach?.fee ??
+            0
+        ) || 0;
+
+      // 1) sessions tablosuna seans aç
+      const { data: createdSession, error: sessionErr } = await supabase
+        .from("sessions")
+        .insert({
+          user_id: userId,
+          coach_id: coachId,
+          status: "pending_payment",
+          session_minutes: 45,
+          starts_at: startsAt,
+          price_amount: fee,
+          currency: "TRY",
+          notes: form.note || null,
+        })
+        .select("*")
+        .single();
+
+      if (sessionErr || !createdSession?.id) {
+        console.error("Session insert error:", sessionErr);
+        toast.error("Seans kaydı oluşturulamadı.");
         return;
       }
 
-      // 2) Edge Function ile mail gönder (isteğe bağlı)
+      const sessionId = createdSession.id;
+      const merchantOid = makeMerchantOid();
+
+      // PayTR payment_amount: kuruş (örn 199.90 TRY => 19990)
+      // PayTR genelde integer kuruş ister.
+      const paytrPaymentAmount = Math.round((Number(fee || 0) * 100) || 0);
+
+      // 2) payments tablosuna ödeme kaydı aç
+      const { data: createdPayment, error: payErr } = await supabase
+        .from("payments")
+        .insert({
+          session_id: sessionId,
+          user_id: userId,
+          amount: Number(fee || 0),
+          currency: "TRY",
+          provider: "paytr",
+          status: "initiated",
+          merchant_oid: merchantOid,
+          paytr_payment_amount: paytrPaymentAmount,
+          raw: {
+            coach_id: coachId,
+            user_email: form.email,
+            user_full_name: form.fullName,
+            selected_date: form.date,
+            selected_time: form.timeSlot,
+          },
+        })
+        .select("*")
+        .single();
+
+      if (payErr || !createdPayment?.id) {
+        console.error("Payment insert error:", payErr);
+        toast.error("Ödeme kaydı oluşturulamadı.");
+        return;
+      }
+
+      const paymentId = createdPayment.id;
+
+      // 3) PayTR iframe_token al (Edge Function)
+      // paytr-init function içinde PayTR merchant bilgilerin (merchant_id / merchant_key / merchant_salt)
+      // environment variable olarak durmalı.
+      let iframeToken: string | null = null;
+
+      try {
+        const res = await fetch(PAYTR_INIT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            // bizim internal
+            payment_id: paymentId,
+            session_id: sessionId,
+
+            // PayTR için gerekli temel alanlar (function içinde hash üretilir)
+            merchant_oid: merchantOid,
+            user_name: form.fullName,
+            user_email: form.email,
+            payment_amount: paytrPaymentAmount, // kuruş
+            currency: "TL",
+            user_ip: null, // function içinde req headers'dan yakalayabilir veya null kalır
+            no_installment: 0,
+            max_installment: 0,
+
+            // sayfada göstermek için
+            coach_name: coach?.full_name || "",
+            coach_title: coach?.title || "Kariyer Koçu",
+            date: form.date,
+            time: form.timeSlot,
+            note: form.note || "",
+          }),
+        });
+
+        const json = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          console.error("paytr-init error:", res.status, json);
+          toast.error("PayTR ödeme başlatılamadı (init).");
+          return;
+        }
+
+        iframeToken =
+          json?.iframe_token ||
+          json?.token ||
+          json?.data?.iframe_token ||
+          null;
+
+        if (!iframeToken) {
+          console.error("paytr-init response missing iframe_token:", json);
+          toast.error("PayTR token alınamadı.");
+          return;
+        }
+      } catch (initErr) {
+        console.error("paytr-init fetch error:", initErr);
+        toast.error("PayTR bağlantı hatası.");
+        return;
+      }
+
+      // 4) payments tablosuna token yaz (opsiyonel ama iyi)
+      try {
+        const { error: upTokErr } = await supabase
+          .from("payments")
+          .update({ paytr_iframe_token: iframeToken })
+          .eq("id", paymentId);
+
+        if (upTokErr) {
+          console.error("Payment token update error:", upTokErr);
+          // devam
+        }
+      } catch (e2) {
+        console.error("Payment token update catch:", e2);
+      }
+
+      // 5) Edge Function ile mail gönder (isteğe bağlı) — “Talep alındı” maili
+      // (Ödeme başarılı olunca ayrıca lifecycle event göndereceğiz)
       try {
         const res = await fetch(FUNCTION_URL, {
           method: "POST",
@@ -145,13 +307,26 @@ export default function BookSession() {
         console.error("Email function fetch error:", emailErr);
       }
 
-      // 3) Kullanıcıya başarı mesajı
-      toast.success("Seans talebin koça iletildi!");
+      // 6) Payment sayfasına yönlendir
+      // NOT: Route sende farklıysa (PaymentPage.tsx hangi path'e bağlıysa) burayı aynen o path yap.
+      toast.success("Ödeme sayfasına yönlendiriliyorsun…");
 
-      // 4) Dashboard'a yönlendir
-      navigate("/dashboard");
+      navigate(`/payment?merchant_oid=${encodeURIComponent(merchantOid)}`, {
+        state: {
+          sessionId,
+          paymentId,
+          merchantOid,
+          iframeToken,
+          amount: Number(fee || 0),
+          currency: "TRY",
+          coachId,
+          coachName: coach?.full_name || "",
+          date: form.date,
+          timeSlot: form.timeSlot,
+        },
+      });
     } catch (err) {
-      console.error("Reservation error:", err);
+      console.error("Reservation/PayTR init error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");
     } finally {
       setIsSubmitting(false);
@@ -177,8 +352,8 @@ export default function BookSession() {
             Seans Planla
           </h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-xl">
-            Uygun tarih ve saati seç, koçun onayladığında seans detayları e-posta
-            ve SMS ile iletilecektir.
+            Uygun tarih ve saati seç, ödeme tamamlandıktan sonra seansın
+            planlanacaktır.
           </p>
         </div>
       </div>
@@ -209,6 +384,16 @@ export default function BookSession() {
                 </span>
                 <span className="text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1 rounded-full">
                   {coach.title || "Kariyer Koçu"}
+                </span>
+                <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">
+                  {Number(
+                    coach?.session_fee ??
+                      coach?.sessionPrice ??
+                      coach?.price ??
+                      coach?.fee ??
+                      0
+                  ) || 0}{" "}
+                  TRY
                 </span>
               </div>
               {specializations.length > 0 && (
@@ -350,7 +535,7 @@ export default function BookSession() {
               className="bg-red-600 hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
             >
               <CreditCard className="w-4 h-4 mr-1" />
-              {isSubmitting ? "Kaydediliyor..." : "Rezervasyonu Tamamla"}
+              {isSubmitting ? "Ödeme başlatılıyor..." : "Rezervasyonu Tamamla"}
             </Button>
           </div>
         </form>

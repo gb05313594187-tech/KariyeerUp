@@ -178,7 +178,10 @@ function buildMonthMatrix(viewDate: Date) {
 }
 
 export default function CoachProfile() {
-  const { id } = useParams(); // /coach/:slug (sende böyle)
+  // ✅ Route param adı farklı olsa bile kırılmasın: /coach/:slugOrId  OR /coach/:slug OR /coach/:id
+  const params: any = useParams();
+  const id = params?.slugOrId || params?.slug || params?.id;
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { language } = useLanguage();

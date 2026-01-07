@@ -29,14 +29,13 @@ function toYears(v: any): number {
 
 /**
  * ✅ SEO slug üretimi
- * - Türkçe karakterleri düzgün çevirir: ğ->g, ı->i, ş->s, ç->c, ö->o, ü->u
- * - Noktalama/emoji vb temizler
- * - Boşlukları "-" yapar
+ * - TR karakterleri çevirir
+ * - aksanları temizler
+ * - özel karakterleri ayıklar
  */
 function slugify(input: any) {
   let s = String(input || "").trim().toLowerCase();
 
-  // Türkçe harf dönüşümleri (kritik: ı/İ, ğ, ş, ç, ö, ü)
   s = s
     .replace(/ı/g, "i")
     .replace(/ğ/g, "g")
@@ -52,13 +51,8 @@ function slugify(input: any) {
     .replace(/Ö/g, "o")
     .replace(/Ü/g, "u");
 
-  // Unicode aksanları da temizle (FR/EN için iyi)
   s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // Arapça harfleri tut (opsiyonel), diğer tüm özel karakterleri boşluğa çevir
   s = s.replace(/[^a-z0-9\u0600-\u06FF\s-]/g, " ");
-
-  // boşluk/-- temizliği
   s = s.replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 
   return s || "coach";
@@ -89,7 +83,7 @@ export default function Coaches() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlLang]);
 
-  // ✅ Lokal i18n (sayfayı tek başına çeviri yapar)
+  // ✅ Lokal i18n
   const i18n: any = {
     tr: {
       heroTitle1: "Potansiyelinizi Keşfedecek",
@@ -230,7 +224,8 @@ export default function Coaches() {
       categoryTitle: "Spécialité",
       experienceTitle: "Expérience",
       priceInfoTitle: "Tarif séance (Info)",
-      priceInfoDesc: "La plupart des séances de 45 min sont entre 750 ₺ et 5000 ₺.",
+      priceInfoDesc:
+        "La plupart des séances de 45 min sont entre 750 ₺ et 5000 ₺.",
       loading: "Chargement des coachs...",
       listed: "coachs affichés",
       sortRecommended: "Recommandé",
@@ -290,7 +285,7 @@ export default function Coaches() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // URL lang paramını garanti altına al
+  // ✅ URL lang paramını garanti altına al
   useEffect(() => {
     const current = searchParams.get("lang");
     if (!current && lang) {
@@ -301,7 +296,7 @@ export default function Coaches() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // ------- Supabase'ten koçları çek (dilden bağımsız, 1 kere) -------
+  // ------- Supabase'ten koçları çek -------
   useEffect(() => {
     const fetchCoaches = async () => {
       setLoading(true);
@@ -378,13 +373,13 @@ export default function Coaches() {
     } else if (sortOption === "price_asc") {
       list.sort((a, b) => (a.hourly_rate || 0) - (b.hourly_rate || 0));
     } else if (sortOption === "price_desc") {
-      list.sort((a, b) => (b.hourly_rate || 0) - (b.hourly_rate || 0));
+      list.sort((a, b) => (b.hourly_rate || 0) - (a.hourly_rate || 0));
     } else if (sortOption === "exp_desc") {
       list.sort(
         (a, b) => toYears(b.experience_years) - toYears(a.experience_years)
       );
     } else {
-      // recommended: rating yüksek + review fazla
+      // recommended
       list.sort((a, b) => {
         const scoreA = (a.rating || 0) * 10 + (a.total_reviews || 0);
         const scoreB = (b.rating || 0) * 10 + (b.total_reviews || 0);
@@ -395,23 +390,22 @@ export default function Coaches() {
     return list;
   }, [coaches, searchTerm, selectedCategory, experienceFilter, sortOption, t]);
 
-  // ---------- UI ----------
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* HERO BÖLÜMÜ */}
+      {/* HERO */}
       <div className="bg-gradient-to-r from-red-600 to-orange-500 pb-16 pt-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
 
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
-            {t.heroTitle1} <br />{" "}
+            {t.heroTitle1} <br />
             <span className="text-yellow-300">{t.heroTitle2}</span> {t.heroTitle3}
           </h1>
           <p className="text-lg text-red-50 max-w-2xl mx-auto mb-10">
             {t.heroSubtitle}
           </p>
 
-          {/* ARAMA KUTUSU */}
+          {/* SEARCH */}
           <div className="max-w-3xl mx-auto relative shadow-2xl rounded-2xl overflow-hidden border-4 border-white/20">
             <div className="flex bg-white h-16">
               <div className="flex-1 flex items-center px-6">
@@ -424,7 +418,11 @@ export default function Coaches() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="bg-gray-900 hover:bg-black text-white font-bold px-10 transition-colors text-lg">
+              <button
+                type="button"
+                onClick={() => {}}
+                className="bg-gray-900 hover:bg-black text-white font-bold px-10 transition-colors text-lg"
+              >
                 {t.searchBtn}
               </button>
             </div>
@@ -432,10 +430,10 @@ export default function Coaches() {
         </div>
       </div>
 
-      {/* İÇERİK */}
+      {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-4 py-16 -mt-8 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SOL: FİLTRELER */}
+          {/* LEFT FILTERS */}
           <div className="hidden lg:block space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-lg">
               <div className="flex items-center justify-between mb-6">
@@ -443,6 +441,7 @@ export default function Coaches() {
                   <SlidersHorizontal className="w-5 h-5" /> {t.filterTitle}
                 </h3>
                 <button
+                  type="button"
                   className="text-xs text-red-600 font-semibold hover:underline"
                   onClick={() => {
                     setSelectedCategory(t.categories?.[0] || "Tümü");
@@ -455,7 +454,7 @@ export default function Coaches() {
                 </button>
               </div>
 
-              {/* UZMANLIK ALANI */}
+              {/* CATEGORY */}
               <div className="mb-8 pb-6 border-b border-gray-100">
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   {t.categoryTitle}
@@ -480,7 +479,7 @@ export default function Coaches() {
                 </div>
               </div>
 
-              {/* DENEYİM */}
+              {/* EXPERIENCE */}
               <div className="mb-8 pb-6 border-b border-gray-100">
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   {t.experienceTitle}
@@ -505,7 +504,7 @@ export default function Coaches() {
                 </div>
               </div>
 
-              {/* FİYAT BİLGİLENDİRME */}
+              {/* PRICE INFO */}
               <div>
                 <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-wider">
                   {t.priceInfoTitle}
@@ -528,9 +527,9 @@ export default function Coaches() {
             </div>
           </div>
 
-          {/* SAĞ: LİSTE */}
+          {/* RIGHT LIST */}
           <div className="lg:col-span-3">
-            {/* ÜST BAR */}
+            {/* TOP BAR */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200 gap-4">
               <p className="text-gray-600 font-medium">
                 {loading ? (
@@ -560,6 +559,7 @@ export default function Coaches() {
 
                 <div className="flex border rounded-lg overflow-hidden">
                   <button
+                    type="button"
                     onClick={() => setViewMode("grid")}
                     className={`p-2 ${
                       viewMode === "grid"
@@ -570,6 +570,7 @@ export default function Coaches() {
                     <LayoutGrid className="w-5 h-5" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setViewMode("list")}
                     className={`p-2 ${
                       viewMode === "list"
@@ -583,7 +584,7 @@ export default function Coaches() {
               </div>
             </div>
 
-            {/* HATA / BOŞ DURUM */}
+            {/* ERROR / EMPTY */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
                 {error}
@@ -596,7 +597,7 @@ export default function Coaches() {
               </div>
             )}
 
-            {/* KARTLAR */}
+            {/* CARDS */}
             {!error && (
               <div
                 className={
@@ -610,15 +611,16 @@ export default function Coaches() {
                   const isPremium =
                     (coach.rating || 0) >= 4.8 &&
                     (coach.total_reviews || 0) >= 20;
+
                   const price = coach.hourly_rate || 0;
                   const currency = coach.currency || "₺";
 
-                  // ✅ Artık DB slug varsa onu kullan, yoksa fallback üret
                   const primarySpec = pickPrimarySpecialization(coach);
                   const fallbackSlug = `${slugify(coach.full_name)}-${slugify(
                     primarySpec
                   )}`;
-                  const slug = (coach.slug && String(coach.slug).trim()) || fallbackSlug;
+                  const slug =
+                    (coach.slug && String(coach.slug).trim()) || fallbackSlug;
 
                   return (
                     <div
@@ -629,7 +631,7 @@ export default function Coaches() {
                           : "flex-col h-full max-w-sm mx-auto"
                       }`}
                     >
-                      {/* ÜST RENKLİ ALAN */}
+                      {/* TOP GRADIENT */}
                       <div
                         className={`relative ${
                           viewMode === "list" ? "w-40" : "h-20"
@@ -638,7 +640,8 @@ export default function Coaches() {
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                         {isPremium && (
                           <span className="absolute top-3 right-3 bg-white/90 text-red-600 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm backdrop-blur-sm">
-                            <Star className="w-3 h-3 fill-current" /> {t.premium}
+                            <Star className="w-3 h-3 fill-current" />{" "}
+                            {t.premium}
                           </span>
                         )}
                       </div>
@@ -662,7 +665,7 @@ export default function Coaches() {
                           />
                         </div>
 
-                        {/* İsim & Puan */}
+                        {/* Name & Rating */}
                         <div
                           className={`${
                             viewMode === "list" ? "mt-10" : "mt-14"
@@ -676,6 +679,7 @@ export default function Coaches() {
                               {coach.title || "Kariyer Koçu"}
                             </p>
                           </div>
+
                           <div className="flex flex-col items-end">
                             <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg text-yellow-700 font-semibold text-sm">
                               <Star className="w-4 h-4 fill-current text-yellow-500" />
@@ -695,7 +699,7 @@ export default function Coaches() {
                           </div>
                         </div>
 
-                        {/* Detaylar */}
+                        {/* Details */}
                         <div className="mt-4 space-y-2 text-xs sm:text-sm text-gray-700 font-medium bg-gray-50 p-3 rounded-xl">
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-4 h-4 text-blue-500" />
@@ -719,7 +723,7 @@ export default function Coaches() {
                           </div>
                         </div>
 
-                        {/* Etiketler */}
+                        {/* Tags */}
                         <div className="mt-3 flex flex-wrap gap-2">
                           {specs.length === 0 && (
                             <span className="bg-white border border-gray-200 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
@@ -736,7 +740,7 @@ export default function Coaches() {
                           ))}
                         </div>
 
-                        {/* Alt kısım */}
+                        {/* Bottom */}
                         <div className="mt-5 pt-3 border-t flex items-center justify-between mt-auto">
                           <div>
                             <span className="text-[11px] text-gray-500 block font-medium mb-1">
@@ -748,12 +752,11 @@ export default function Coaches() {
                           </div>
 
                           <button
+                            type="button"
                             onClick={() => {
+                              // ✅ mevcut query paramları aynen taşınır (goal/level/lang vb)
                               const qs = new URLSearchParams(searchParams);
                               if (!qs.get("lang")) qs.set("lang", lang);
-
-                              // ✅ Yeni: artık id query koymaya gerek yok (profile slug ile DB’den çekiyor)
-                              // qs.set("id", coach.id);
 
                               navigate(`/coach/${slug}?${qs.toString()}`);
                             }}

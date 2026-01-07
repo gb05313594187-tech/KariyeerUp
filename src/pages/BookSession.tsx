@@ -2,7 +2,15 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, CreditCard, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  CreditCard,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -11,13 +19,25 @@ import { toast } from "sonner";
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ---------- date helpers ----------
+// ----------------- Date helpers (NO toISOString) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
-const toISODate = (d: Date) =>
+
+// local YYYY-MM-DD
+const toYMD = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
+const parseYMD = (s: string) => {
+  // expects YYYY-MM-DD
+  const [y, m, d] = String(s || "")
+    .split("-")
+    .map((x) => parseInt(x, 10));
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+};
+
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
 const addMonths = (d: Date, diff: number) =>
   new Date(d.getFullYear(), d.getMonth() + diff, 1);
@@ -27,87 +47,58 @@ const isSameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-const isBeforeDay = (a: Date, b: Date) => {
-  // compare only date parts
-  const aa = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
-  const bb = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
-  return aa < bb;
-};
+const isBeforeDay = (a: Date, b: Date) => startOfDay(a).getTime() < startOfDay(b).getTime();
 
 function buildMonthGrid(viewMonth: Date) {
-  // Monday-first grid (TR için daha iyi)
-  const first = startOfMonth(viewMonth);
-  const last = endOfMonth(viewMonth);
+  // Monday-first 6-week grid (42 cells)
+  // JS getDay(): Sun=0..Sat=6  -> Monday-first index: Mon=0..Sun=6
+  const mondayIndex = (dow: number) => (dow + 6) % 7;
 
-  const mondayFirstIndex = (day: number) => (day === 0 ? 6 : day - 1); // Sun(0)->6, Mon(1)->0...
-  const leading = mondayFirstIndex(first.getDay());
-  const totalDays = last.getDate();
+  const first = startOfMonth(viewMonth);
+  const lead = mondayIndex(first.getDay()); // 0..6
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate() - lead);
 
   const cells: { date: Date; inMonth: boolean }[] = [];
-
-  // leading days from prev month
-  for (let i = leading; i > 0; i--) {
-    const d = new Date(first);
-    d.setDate(first.getDate() - i);
-    cells.push({ date: d, inMonth: false });
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push({ date: d, inMonth: d.getMonth() === viewMonth.getMonth() });
   }
-
-  // days in month
-  for (let day = 1; day <= totalDays; day++) {
-    const d = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), day);
-    cells.push({ date: d, inMonth: true });
-  }
-
-  // trailing to complete weeks (7)
-  while (cells.length % 7 !== 0) {
-    const d = new Date(last);
-    d.setDate(last.getDate() + (cells.length % 7 === 0 ? 0 : (7 - (cells.length % 7))));
-    // yukarıdaki fazla karışmasın: basit trailing
-    break;
-  }
-  // daha sağlam trailing:
-  const lastCell = cells[cells.length - 1]?.date || last;
-  while (cells.length % 7 !== 0) {
-    const d = new Date(lastCell);
-    d.setDate(lastCell.getDate() + (cells.length % 7 === 0 ? 0 : 1));
-    const prev = cells[cells.length - 1].date;
-    d.setDate(prev.getDate() + 1);
-    cells.push({ date: d, inMonth: false });
-  }
-
-  // 5-6 hafta olacak şekilde (minimum 35 hücre)
-  while (cells.length < 35) {
-    const prev = cells[cells.length - 1].date;
-    const d = new Date(prev);
-    d.setDate(prev.getDate() + 1);
-    cells.push({ date: d, inMonth: false });
-  }
-
   return cells;
 }
 
 const monthTR = (d: Date) =>
   d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
-// ---------- component ----------
+// ----------------- Component -----------------
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const coachId = searchParams.get("coachId");
 
   const prefillDate = searchParams.get("date") || "";
   const prefillTime = searchParams.get("time") || "";
+
+  const today = useMemo(() => startOfDay(new Date()), []);
 
   const [coach, setCoach] = useState<any | null>(null);
   const [loadingCoach, setLoadingCoach] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Takvim state
-  const today = useMemo(() => new Date(), []);
+  // Calendar state
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
-  const [selectedDate, setSelectedDate] = useState<string>(prefillDate);
-  const [selectedTime, setSelectedTime] = useState<string>(prefillTime);
+
+  // Selected date/time
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // query date varsa onu al; yoksa bugünü
+    const d = parseYMD(prefillDate);
+    return d ? toYMD(d) : toYMD(new Date());
+  });
+
+  const [selectedTime, setSelectedTime] = useState<string>(() => prefillTime || "");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -115,7 +106,7 @@ export default function BookSession() {
     note: "",
   });
 
-  // Koç bilgisini çek
+  // Coach fetch
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -142,35 +133,35 @@ export default function BookSession() {
     fetchCoach();
   }, [coachId]);
 
-  // prefill date -> takvimi ilgili aya getir
+  // Prefill -> viewMonth sync (query değişse bile)
   useEffect(() => {
-    if (!prefillDate) return;
-    const [y, m] = prefillDate.split("-").map((x) => parseInt(x, 10));
-    if (!y || !m) return;
-    setViewMonth(new Date(y, m - 1, 1));
-  }, [prefillDate]);
+    const d = parseYMD(prefillDate);
+    if (d) {
+      setSelectedDate(toYMD(d));
+      setViewMonth(startOfMonth(d));
+    } else {
+      // query yoksa selectedDate zaten bugün; ayı da bugüne çek
+      const now = new Date();
+      setViewMonth(startOfMonth(now));
+    }
 
-  // Uzmanlık etiketleri
+    if (prefillTime) setSelectedTime(prefillTime);
+  }, [prefillDate, prefillTime]);
+
   const specializations = useMemo(() => {
     const raw =
-      coach?.specializations ??
-      coach?.expertise_tags ??
-      coach?.specialization ??
-      "";
+      coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
 
     if (Array.isArray(raw)) return raw.filter(Boolean);
-
     if (typeof raw === "string") {
       return raw
         .split(",")
         .map((s: string) => s.trim())
         .filter(Boolean);
     }
-
     return [];
   }, [coach]);
 
-  // Saat slotları
   const timeSlots = [
     "09:00",
     "10:00",
@@ -188,7 +179,12 @@ export default function BookSession() {
 
   const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
 
-  const canSubmit = !!coachId && !!selectedDate && !!selectedTime && !!form.fullName && !!form.email;
+  const canSubmit =
+    !!coachId &&
+    !!selectedDate &&
+    !!selectedTime &&
+    !!form.fullName &&
+    !!form.email;
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -209,7 +205,6 @@ export default function BookSession() {
     try {
       setIsSubmitting(true);
 
-      // ✅ user_id için login şart
       const { data: authUser } = await supabase.auth.getUser();
       const userId = authUser?.user?.id;
 
@@ -398,9 +393,9 @@ export default function BookSession() {
 
             <div className="grid grid-cols-7 gap-2">
               {calendarCells.map((cell, idx) => {
-                const iso = toISODate(cell.date);
+                const iso = toYMD(cell.date);
                 const isSelected = selectedDate === iso;
-                const disabled = isBeforeDay(cell.date, today); // geçmiş gün kapalı
+                const disabled = isBeforeDay(cell.date, today); // geçmiş kapalı
                 const isToday = isSameDay(cell.date, today);
 
                 return (
@@ -410,8 +405,8 @@ export default function BookSession() {
                     disabled={disabled}
                     onClick={() => {
                       setSelectedDate(iso);
-                      // tarih değişince saat seçimini sıfırlamak istersen aç:
-                      // setSelectedTime("");
+                      // ✅ tarih değişince saat sıfırlansın (kayma / yanlış saat seçimi önler)
+                      setSelectedTime("");
                     }}
                     className={[
                       "h-11 rounded-xl border text-sm font-semibold transition",
@@ -448,7 +443,7 @@ export default function BookSession() {
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                 {timeSlots.map((slot) => {
                   const active = selectedTime === slot;
-                  const disabledSlot = !selectedDate; // tarih seçmeden saat seçilemez
+                  const disabledSlot = !selectedDate;
                   return (
                     <button
                       key={slot}
@@ -457,8 +452,12 @@ export default function BookSession() {
                       onClick={() => setSelectedTime(slot)}
                       className={[
                         "px-3 py-2 rounded-xl border text-sm font-semibold transition flex items-center justify-center gap-2",
-                        disabledSlot ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:border-red-400",
-                        active ? "border-red-600 bg-red-50 text-red-700" : "border-gray-200 bg-white text-gray-800",
+                        disabledSlot
+                          ? "opacity-50 cursor-not-allowed bg-gray-50"
+                          : "hover:border-red-400",
+                        active
+                          ? "border-red-600 bg-red-50 text-red-700"
+                          : "border-gray-200 bg-white text-gray-800",
                       ].join(" ")}
                     >
                       <Clock className="w-4 h-4" />
@@ -503,7 +502,9 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, fullName: e.target.value }))
+                  }
                 />
               </div>
 
@@ -518,7 +519,9 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
                 />
               </div>
 
@@ -531,7 +534,9 @@ export default function BookSession() {
                   placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   value={form.note}
-                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, note: e.target.value }))
+                  }
                 />
               </div>
             </div>

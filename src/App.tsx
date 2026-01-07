@@ -9,6 +9,9 @@ import {
 } from "react-router-dom";
 import { Toaster } from "sonner";
 
+// ✅ AUTH PROVIDER
+import { AuthProvider } from "@/contexts/AuthContext";
+
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -92,97 +95,96 @@ function PublicLayout() {
 -------------------------------------------------- */
 export default function App() {
   return (
-    <Router>
-      <Toaster richColors position="top-right" />
-      <Routes>
-        {/* ADMIN */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="profile" element={<AdminProfile />} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
+    <AuthProvider>
+      <Router>
+        <Toaster richColors position="top-right" />
+        <Routes>
+          {/* ADMIN */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="profile" element={<AdminProfile />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
-        {/* PUBLIC */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<Home />} />
+          {/* PUBLIC */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Home />} />
 
-          {/* ✅ SITEMAP */}
-          <Route path="/sitemap.xml" element={<Sitemap />} />
+            {/* ✅ SITEMAP */}
+            <Route path="/sitemap.xml" element={<Sitemap />} />
 
-          {/* ✅ PREMIUM / PRICING */}
-          <Route path="/pricing" element={<Pricing />} />
+            {/* ✅ PREMIUM / PRICING */}
+            <Route path="/pricing" element={<Pricing />} />
 
-          {/* ✅ CHECKOUT FLOW */}
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
+            {/* ✅ CHECKOUT FLOW */}
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
 
-          {/* How it works */}
-          <Route path="/nasil-calisir" element={<HowItWorks />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
+            {/* How it works */}
+            <Route path="/nasil-calisir" element={<HowItWorks />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
 
-          <Route path="/coaches" element={<Coaches />} />
+            <Route path="/coaches" element={<Coaches />} />
 
-          {/* ✅ COACH PUBLIC PROFILE (SEO + Legacy aynı route)
-              Not: /coach/:slug ve /coach/:id aynı pattern olduğu için iki route çalışmaz.
-              Bu yüzden tek route kullandık: slug da gelir, uuid (eski link) de gelir.
-          */}
-          <Route path="/coach/:slugOrId" element={<CoachPublicProfile />} />
+            {/* ✅ COACH PUBLIC PROFILE */}
+            <Route path="/coach/:slugOrId" element={<CoachPublicProfile />} />
 
-          <Route path="/for-coaches" element={<ForCoaches />} />
-          <Route path="/for-companies" element={<ForCompanies />} />
-          <Route path="/mentor-circle" element={<MentorCircle />} />
-          <Route path="/webinars" element={<Webinars />} />
-          <Route path="/coach-selection-process" element={<CoachSelection />} />
-          <Route path="/book-session" element={<BookSession />} />
-          <Route path="/coach-application" element={<CoachApplication />} />
+            <Route path="/for-coaches" element={<ForCoaches />} />
+            <Route path="/for-companies" element={<ForCompanies />} />
+            <Route path="/mentor-circle" element={<MentorCircle />} />
+            <Route path="/webinars" element={<Webinars />} />
+            <Route path="/coach-selection-process" element={<CoachSelection />} />
+            <Route path="/book-session" element={<BookSession />} />
+            <Route path="/coach-application" element={<CoachApplication />} />
 
-          {/* USER */}
-          <Route path="/user/dashboard" element={<UserDashboard />} />
-          <Route path="/user/profile" element={<UserProfile />} />
-          <Route path="/user/profile/edit" element={<UserProfileEdit />} />
-          <Route path="/user/settings" element={<UserSettings />} />
+            {/* USER */}
+            <Route path="/user/dashboard" element={<UserDashboard />} />
+            <Route path="/user/profile" element={<UserProfile />} />
+            <Route path="/user/profile/edit" element={<UserProfileEdit />} />
+            <Route path="/user/settings" element={<UserSettings />} />
 
-          {/* CORPORATE */}
-          <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
-          <Route path="/corporate/profile" element={<CorporateProfile />} />
-          <Route path="/corporate/settings" element={<CorporateSettings />} />
+            {/* CORPORATE */}
+            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
+            <Route path="/corporate/profile" element={<CorporateProfile />} />
+            <Route path="/corporate/settings" element={<CorporateSettings />} />
 
-          {/* COACH */}
-          <Route path="/coach/dashboard" element={<CoachDashboard />} />
-          <Route path="/coach/profile" element={<CoachSelfProfile />} />
-          <Route path="/coach/settings" element={<CoachSettings />} />
-          <Route path="/coach/requests" element={<CoachRequests />} />
+            {/* COACH */}
+            <Route path="/coach/dashboard" element={<CoachDashboard />} />
+            <Route path="/coach/profile" element={<CoachSelfProfile />} />
+            <Route path="/coach/settings" element={<CoachSettings />} />
+            <Route path="/coach/requests" element={<CoachRequests />} />
 
-          {/* LEGAL */}
-          <Route path="/about" element={<About />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/returns" element={<Returns />} />
-          <Route path="/distance-sales" element={<DistanceSales />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/ethics" element={<Ethics />} />
+            {/* LEGAL */}
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/distance-sales" element={<DistanceSales />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/ethics" element={<Ethics />} />
 
-          {/* AUTH */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            {/* AUTH */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* LEGACY redirects */}
-          <Route
-            path="/dashboard"
-            element={<Navigate to="/user/dashboard" replace />}
-          />
-          <Route
-            path="/profile"
-            element={<Navigate to="/user/profile" replace />}
-          />
-          <Route
-            path="/coach-dashboard"
-            element={<Navigate to="/coach/dashboard" replace />}
-          />
+            {/* LEGACY redirects */}
+            <Route
+              path="/dashboard"
+              element={<Navigate to="/user/dashboard" replace />}
+            />
+            <Route
+              path="/profile"
+              element={<Navigate to="/user/profile" replace />}
+            />
+            <Route
+              path="/coach-dashboard"
+              element={<Navigate to="/coach/dashboard" replace />}
+            />
 
-          {/* 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
+            {/* 404 */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }

@@ -1,173 +1,157 @@
 // src/pages/BookSession.tsx
 // @ts-nocheck
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Calendar, Clock, CreditCard } from "lucide-react";
+import { ArrowLeft, Clock, CreditCard, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-// ❗ Edge Function URL – Supabase Details ekranından aldığın URL
+// ❗ Edge Function URL
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
+// ---------- date helpers ----------
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const toISODate = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
+const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+const addMonths = (d: Date, diff: number) =>
+  new Date(d.getFullYear(), d.getMonth() + diff, 1);
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const isBeforeDay = (a: Date, b: Date) => {
+  // compare only date parts
+  const aa = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+  const bb = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+  return aa < bb;
+};
+
+function buildMonthGrid(viewMonth: Date) {
+  // Monday-first grid (TR için daha iyi)
+  const first = startOfMonth(viewMonth);
+  const last = endOfMonth(viewMonth);
+
+  const mondayFirstIndex = (day: number) => (day === 0 ? 6 : day - 1); // Sun(0)->6, Mon(1)->0...
+  const leading = mondayFirstIndex(first.getDay());
+  const totalDays = last.getDate();
+
+  const cells: { date: Date; inMonth: boolean }[] = [];
+
+  // leading days from prev month
+  for (let i = leading; i > 0; i--) {
+    const d = new Date(first);
+    d.setDate(first.getDate() - i);
+    cells.push({ date: d, inMonth: false });
+  }
+
+  // days in month
+  for (let day = 1; day <= totalDays; day++) {
+    const d = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), day);
+    cells.push({ date: d, inMonth: true });
+  }
+
+  // trailing to complete weeks (7)
+  while (cells.length % 7 !== 0) {
+    const d = new Date(last);
+    d.setDate(last.getDate() + (cells.length % 7 === 0 ? 0 : (7 - (cells.length % 7))));
+    // yukarıdaki fazla karışmasın: basit trailing
+    break;
+  }
+  // daha sağlam trailing:
+  const lastCell = cells[cells.length - 1]?.date || last;
+  while (cells.length % 7 !== 0) {
+    const d = new Date(lastCell);
+    d.setDate(lastCell.getDate() + (cells.length % 7 === 0 ? 0 : 1));
+    const prev = cells[cells.length - 1].date;
+    d.setDate(prev.getDate() + 1);
+    cells.push({ date: d, inMonth: false });
+  }
+
+  // 5-6 hafta olacak şekilde (minimum 35 hücre)
+  while (cells.length < 35) {
+    const prev = cells[cells.length - 1].date;
+    const d = new Date(prev);
+    d.setDate(prev.getDate() + 1);
+    cells.push({ date: d, inMonth: false });
+  }
+
+  return cells;
+}
+
+const monthTR = (d: Date) =>
+  d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+
+// ---------- component ----------
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const coachId = searchParams.get("coachId");
 
+  const prefillDate = searchParams.get("date") || "";
+  const prefillTime = searchParams.get("time") || "";
+
   const [coach, setCoach] = useState<any | null>(null);
+  const [loadingCoach, setLoadingCoach] = useState(true);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Takvim state
+  const today = useMemo(() => new Date(), []);
+  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string>(prefillDate);
+  const [selectedTime, setSelectedTime] = useState<string>(prefillTime);
+
   const [form, setForm] = useState({
-    date: "",
-    timeSlot: "",
     fullName: "",
     email: "",
     note: "",
   });
 
-  // Koç bilgisini Supabase'ten çek
+  // Koç bilgisini çek
   useEffect(() => {
     const fetchCoach = async () => {
-      if (!coachId) return;
+      try {
+        if (!coachId) return;
+        setLoadingCoach(true);
 
-      // ✅ Gerçek koç tablon: public.app_2dff6511da_coaches (5 kayıt)
-      const { data, error } = await supabase
-        .from("app_2dff6511da_coaches")
-        .select("*")
-        .eq("id", coachId)
-        .single();
+        const { data, error } = await supabase
+          .from("app_2dff6511da_coaches")
+          .select("*")
+          .eq("id", coachId)
+          .single();
 
-      if (!error) {
+        if (error) {
+          console.error("Coach fetch error:", error);
+          toast.error("Koç bilgisi alınamadı.");
+          return;
+        }
         setCoach(data);
-      } else {
-        console.error("Coach fetch error on booking page:", error);
-        toast.error("Koç bilgisi alınamadı.");
+      } finally {
+        setLoadingCoach(false);
       }
     };
 
     fetchCoach();
   }, [coachId]);
 
-  // Düzenli, premium saat slotları
-  const timeSlots = [
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
-  ];
+  // prefill date -> takvimi ilgili aya getir
+  useEffect(() => {
+    if (!prefillDate) return;
+    const [y, m] = prefillDate.split("-").map((x) => parseInt(x, 10));
+    if (!y || !m) return;
+    setViewMonth(new Date(y, m - 1, 1));
+  }, [prefillDate]);
 
-  // 🔥 Seans talebini session_requests tablosuna yaz
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-
-    if (!coachId) {
-      toast.error("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
-      return;
-    }
-
-    if (!form.date || !form.timeSlot) {
-      toast.error("Lütfen bir tarih ve saat seçin.");
-      return;
-    }
-
-    if (!form.fullName || !form.email) {
-      toast.error("Lütfen ad soyad ve e-posta alanlarını doldurun.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      // ✅ Giriş yapan kullanıcı (user_id dolması için şart)
-      const { data: authUser } = await supabase.auth.getUser();
-      const userId = authUser?.user?.id;
-
-      if (!userId) {
-        toast.error("Seans talebi için giriş yapmalısın.");
-        navigate("/login");
-        return;
-      }
-
-      // 1) Seans talebini session_requests tablosuna kaydet
-      // ✅ Senin sistemin: public.app_2dff6511da_session_requests
-      const { error } = await supabase
-        .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachId,
-          user_id: userId,
-          full_name: form.fullName,
-          email: form.email,
-          selected_date: form.date, // YYYY-MM-DD
-          selected_time: form.timeSlot,
-          note: form.note || null,
-          status: "pending",
-          created_at: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error("Insert error:", error);
-        toast.error("Seans talebi oluşturulamadı.");
-        return;
-      }
-
-      // 2) Edge Function ile mail gönder (isteğe bağlı)
-      // NOT: app_2dff6511da_coaches tablosunda email kolonu yok.
-      // Bu yüzden coach_email boş gidebilir; sorun değil.
-      try {
-        const res = await fetch(FUNCTION_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({
-            coach_email: coach?.email || "", // çoğu zaman boş
-            user_email: form.email,
-            coach_name: coach?.full_name || "",
-            user_name: form.fullName,
-            session_date: form.date,
-            time_slot: form.timeSlot,
-            note: form.note,
-          }),
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("Email function error:", res.status, text);
-          // kayıt zaten oluştu, kullanıcıya ekstra hata göstermiyoruz
-        }
-      } catch (emailErr) {
-        console.error("Email function fetch error:", emailErr);
-      }
-
-      // 3) Kullanıcıya başarı mesajı
-      toast.success("Seans talebin koça iletildi!");
-
-      // 4) Dashboard'a yönlendir
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Reservation error:", err);
-      toast.error("Bir hata oluştu, lütfen tekrar dene.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // ✅ DB uyumu:
-  // - Bazı kayıtlarda specialization (string) var: "Kariyer, CV, Mülakat"
-  // - Bazı kayıtlarda specializations (array/json) olabilir
-  // UI için her koşulda array'e çeviriyoruz.
-  const specializations = (() => {
+  // Uzmanlık etiketleri
+  const specializations = useMemo(() => {
     const raw =
       coach?.specializations ??
       coach?.expertise_tags ??
@@ -184,13 +168,119 @@ export default function BookSession() {
     }
 
     return [];
-  })();
+  }, [coach]);
+
+  // Saat slotları
+  const timeSlots = [
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+  ];
+
+  const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+
+  const canSubmit = !!coachId && !!selectedDate && !!selectedTime && !!form.fullName && !!form.email;
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    if (!coachId) {
+      toast.error("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
+      return;
+    }
+    if (!selectedDate || !selectedTime) {
+      toast.error("Lütfen bir tarih ve saat seçin.");
+      return;
+    }
+    if (!form.fullName || !form.email) {
+      toast.error("Lütfen ad soyad ve e-posta alanlarını doldurun.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // ✅ user_id için login şart
+      const { data: authUser } = await supabase.auth.getUser();
+      const userId = authUser?.user?.id;
+
+      if (!userId) {
+        toast.error("Seans talebi için giriş yapmalısın.");
+        navigate("/login");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: coachId,
+          user_id: userId,
+          full_name: form.fullName,
+          email: form.email,
+          selected_date: selectedDate,
+          selected_time: selectedTime,
+          note: form.note || null,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error("Insert error:", error);
+        toast.error("Seans talebi oluşturulamadı.");
+        return;
+      }
+
+      // Mail (opsiyonel)
+      try {
+        const res = await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            coach_email: coach?.email || "",
+            user_email: form.email,
+            coach_name: coach?.full_name || "",
+            user_name: form.fullName,
+            session_date: selectedDate,
+            time_slot: selectedTime,
+            note: form.note,
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("Email function error:", res.status, text);
+        }
+      } catch (emailErr) {
+        console.error("Email function fetch error:", emailErr);
+      }
+
+      toast.success("Seans talebin koça iletildi!");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Reservation error:", err);
+      toast.error("Bir hata oluştu, lütfen tekrar dene.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
-      {/* HERO - turuncu/kırmızı gradient */}
+      {/* HERO */}
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white pt-8 pb-14 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 mb-4 text-white/90 hover:text-white text-xs font-medium"
@@ -202,185 +292,282 @@ export default function BookSession() {
           <h1 className="text-3xl md:text-4xl font-black leading-tight">
             Seans Planla
           </h1>
-          <p className="mt-3 text-sm md:text-base text-red-50 max-w-xl">
-            Uygun tarih ve saati seç, koçun onayladığında seans detayları e-posta
-            ve SMS ile iletilecektir.
+          <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
+            Takvimden günü seç, sonra saat aralığını belirle. Talep koça “pending”
+            olarak düşer.
           </p>
         </div>
       </div>
 
-      {/* KOÇ ÖZET KARTI + FORM */}
-      <div className="max-w-4xl mx-auto px-4 -mt-10 pb-20 relative z-10">
-        {/* Koç bilgisi kartı */}
-        {coach && (
-          <div className="bg-white rounded-2xl shadow-md border border-red-100 p-4 mb-6 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
-              <img
-                src={
-                  coach.avatar_url ||
-                  "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400"
-                }
-                alt={coach.full_name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
-                Seans planladığınız koç
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm md:text-base font-bold text-gray-900">
-                  {coach.full_name}
-                </span>
-                <span className="text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1 rounded-full">
-                  {coach.title || "Kariyer Koçu"}
-                </span>
-              </div>
-
-              {specializations.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {specializations.slice(0, 3).map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="text-[11px] font-medium bg-gray-50 text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {specializations.length > 3 && (
-                    <span className="text-[11px] text-gray-500">
-                      +{specializations.length - 3} alan daha
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* FORM KARTI */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 space-y-8"
-        >
-          {/* TARİH SEÇİMİ */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-              Tarih Seç
-            </label>
-            <div className="flex items-center gap-3 mt-1">
-              <Calendar className="w-5 h-5 text-gray-400" />
-              <input
-                type="date"
-                className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full max-w-xs focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-                value={form.date}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, date: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* SAAT SEÇİMİ */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
-              Saat Aralığı
-            </label>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-2.5">
-              {timeSlots.map((slot) => (
-                <label key={slot} className="relative cursor-pointer">
-                  <input
-                    type="radio"
-                    name="timeSlot"
-                    value={slot}
-                    className="peer sr-only"
-                    required
-                    checked={form.timeSlot === slot}
-                    onChange={() =>
-                      setForm((f) => ({ ...f, timeSlot: slot }))
-                    }
-                  />
-                  <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-300 bg-gray-50 text-sm text-gray-700 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:text-red-700 hover:border-red-400 transition">
-                    <Clock className="w-4 h-4" />
-                    {slot}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* İLETİŞİM BİLGİLERİ */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                Ad Soyad
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                placeholder="Adınız Soyadınız"
-                className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-                value={form.fullName}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, fullName: e.target.value }))
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                E-posta
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="ornek@mail.com"
-                className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-                value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* HEDEF / BEKLENTİ */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-              Hedefiniz / Beklentiniz
-            </label>
-            <textarea
-              name="note"
-              placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
-              className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-24 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              value={form.note}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, note: e.target.value }))
+      <div className="max-w-5xl mx-auto px-4 -mt-10 pb-20 relative z-10">
+        {/* Coach summary */}
+        <div className="bg-white rounded-2xl shadow-md border border-red-100 p-4 mb-6 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
+            <img
+              src={
+                coach?.avatar_url ||
+                "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400"
               }
+              alt={coach?.full_name || "Koç"}
+              className="w-full h-full object-cover"
             />
           </div>
 
-          {/* ALT ÇUBUK */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Clock className="w-4 h-4" />
-              45 dk seans süresi
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">
+              Seans planladığınız koç
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm md:text-base font-bold text-gray-900">
+                {loadingCoach ? "Yükleniyor..." : coach?.full_name || "Koç"}
+              </span>
+
+              <span className="text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1 rounded-full">
+                {coach?.title || "Kariyer Koçu"}
+              </span>
+            </div>
+
+            {specializations.length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {specializations.slice(0, 4).map((tag: string) => (
+                  <span
+                    key={tag}
+                    className="text-[11px] font-medium bg-gray-50 text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {specializations.length > 4 && (
+                  <span className="text-[11px] text-gray-500">
+                    +{specializations.length - 4} alan daha
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => toast.message("Favori özelliği burada bağlanacak.")}
+          >
+            <Heart className="w-4 h-4 mr-1" />
+            Favori
+          </Button>
+        </div>
+
+        {/* Layout: Calendar + Form */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* CALENDAR CARD */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-gray-400" />
+                <div className="font-extrabold text-gray-900 capitalize">
+                  {monthTR(viewMonth)}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
+                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
+                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-7 text-xs font-bold text-gray-500">
+              {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((d) => (
+                <div key={d} className="py-2 text-center">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {calendarCells.map((cell, idx) => {
+                const iso = toISODate(cell.date);
+                const isSelected = selectedDate === iso;
+                const disabled = isBeforeDay(cell.date, today); // geçmiş gün kapalı
+                const isToday = isSameDay(cell.date, today);
+
+                return (
+                  <button
+                    key={`${iso}-${idx}`}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      setSelectedDate(iso);
+                      // tarih değişince saat seçimini sıfırlamak istersen aç:
+                      // setSelectedTime("");
+                    }}
+                    className={[
+                      "h-11 rounded-xl border text-sm font-semibold transition",
+                      cell.inMonth ? "bg-white" : "bg-gray-50",
+                      cell.inMonth ? "text-gray-900" : "text-gray-400",
+                      disabled ? "opacity-40 cursor-not-allowed" : "hover:border-red-300",
+                      isToday ? "border-orange-300" : "border-gray-200",
+                      isSelected ? "border-red-600 bg-red-50 text-red-700" : "",
+                    ].join(" ")}
+                    title={iso}
+                  >
+                    {cell.date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 text-xs text-gray-500">
+              Seçilen tarih:{" "}
+              <span className="font-semibold text-gray-900">
+                {selectedDate || "-"}
+              </span>
+            </div>
+
+            {/* TIME PICKER */}
+            <div className="mt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Saat Aralığı
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                {timeSlots.map((slot) => {
+                  const active = selectedTime === slot;
+                  const disabledSlot = !selectedDate; // tarih seçmeden saat seçilemez
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={disabledSlot}
+                      onClick={() => setSelectedTime(slot)}
+                      className={[
+                        "px-3 py-2 rounded-xl border text-sm font-semibold transition flex items-center justify-center gap-2",
+                        disabledSlot ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:border-red-400",
+                        active ? "border-red-600 bg-red-50 text-red-700" : "border-gray-200 bg-white text-gray-800",
+                      ].join(" ")}
+                    >
+                      <Clock className="w-4 h-4" />
+                      {slot}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 text-xs text-gray-500">
+                Seçilen saat:{" "}
+                <span className="font-semibold text-gray-900">
+                  {selectedTime || "-"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* FORM CARD */}
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
+          >
+            <div>
+              <div className="text-sm font-extrabold text-gray-900">
+                Bilgilerini gir
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Talep oluşturmak için giriş yapmış olmalısın.
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Ad Soyad
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Adınız Soyadınız"
+                  className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  required
+                  value={form.fullName}
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  E-posta
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="ornek@mail.com"
+                  className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Hedefiniz / Beklentiniz
+                </label>
+                <textarea
+                  name="note"
+                  placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
+                  className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  value={form.note}
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
+              <div className="font-bold text-gray-900 mb-1">Özet</div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Tarih</span>
+                <span className="font-semibold">{selectedDate || "-"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-1">
+                <span>Saat</span>
+                <span className="font-semibold">{selectedTime || "-"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-1">
+                <span>Süre</span>
+                <span className="font-semibold">45 dk</span>
+              </div>
             </div>
 
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-red-600 hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
+              disabled={isSubmitting || !canSubmit}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
             >
               <CreditCard className="w-4 h-4 mr-1" />
               {isSubmitting ? "Kaydediliyor..." : "Rezervasyonu Tamamla"}
             </Button>
-          </div>
-        </form>
+
+            {!canSubmit && (
+              <div className="text-[11px] text-gray-500">
+                Devam etmek için: tarih + saat seç, ad soyad ve e-posta doldur.
+              </div>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -123,9 +123,10 @@ export default function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ PAYTR CHECKOUT (yeni) */}
-            <Route path="/paytr-checkout" element={<PaytrCheckout />} />
+            {/* ✅ PAYTR CHECKOUT */}
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
+            {/* ✅ ALIAS: BookSession’in yönlendirdiği route */}
+            <Route path="/paytr-checkout" element={<PaytrCheckout />} />
 
             {/* How it works */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />

@@ -260,8 +260,9 @@ export default function CoachPublicProfile() {
         } else {
           setCoachRow(data);
 
-          const rawParam = String(slugOrId || "").trim();
-          const paramIsUuid = rawParam && isUuid(rawParam);
+          // URL uuid ise slug'a canonical redirect
+          const rawParam2 = String(slugOrId || "").trim();
+          const paramIsUuid = rawParam2 && isUuid(rawParam2);
           if (paramIsUuid && data?.slug) {
             const nextQs = new URLSearchParams(location.search);
             const qsStr = nextQs.toString();
@@ -280,6 +281,7 @@ export default function CoachPublicProfile() {
     fetchCoach();
   }, [resolvedCoachId, slugOrId, location.search, navigate]);
 
+  // ✅ Coach view-model (hook değil, plain compute)
   const c = (() => {
     const coach = coachRow;
     if (!coach) return fallbackCoach;
@@ -319,6 +321,7 @@ export default function CoachPublicProfile() {
     };
   })();
 
+  // ✅ --- AŞAĞIDAKİ TÜM useMemo’lar ARTIK return’dan ÖNCE ---
   const primarySpecialty = useMemo(() => {
     const fromSlugToken = specialtyLabelFromToken(extractSpecialtyFromSlug(slugOrId || ""));
     if (fromSlugToken) return fromSlugToken;
@@ -350,11 +353,40 @@ export default function CoachPublicProfile() {
     c.tags,
   ]);
 
+  // canonical: mümkünse slug bazlı
   const canonicalUrl = useMemo(() => {
     const origin = (typeof window !== "undefined" && window.location?.origin) || "";
-    const path = `/coach/${encodeURIComponent(slugOrId || "")}`;
+    const best = (c as any)?.slug || slugOrId || "";
+    const path = `/coach/${encodeURIComponent(best)}`;
     return origin ? `${origin}${path}` : `${path}`;
-  }, [slugOrId]);
+  }, [slugOrId, (c as any)?.slug]);
+
+  // ✅ Takvim UI verileri (HOOK’lar return’dan önce!)
+  const { days } = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
+
+  const monthLabel = useMemo(() => {
+    return viewDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  }, [viewDate]);
+
+  const todayYmd = useMemo(() => toYMD(new Date()), []);
+  const isPastDay = (d: Date) => toYMD(d) < todayYmd;
+  const inViewMonth = (d: Date) => d.getMonth() === viewDate.getMonth();
+
+  const years = useMemo(() => {
+    const y = new Date().getFullYear();
+    const arr = [];
+    for (let i = y; i <= y + 2; i++) arr.push(i);
+    return arr;
+  }, []);
+
+  const months = useMemo(() => {
+    return Array.from({ length: 12 }).map((_, idx) => ({
+      value: idx,
+      label: new Date(2025, idx, 1).toLocaleDateString("tr-TR", { month: "long" }),
+    }));
+  }, []);
+
+  const timeSlots = useMemo(() => generateTimeSlots(10, 22, 30), []);
 
   useEffect(() => {
     try {
@@ -399,13 +431,11 @@ export default function CoachPublicProfile() {
   useEffect(() => {
     const run = async () => {
       try {
-        const coachIdToUse = c?.id || resolvedCoachId || "";
+        const coachIdToUse = (c as any)?.id || resolvedCoachId || "";
         if (!coachIdToUse || !selectedDate) return;
 
         setLoadingSlots(true);
 
-        // Not: tablo/kolon isimlerin sende var. Burada "selected_date/selected_time/status"
-        // kullanıyorum. Dolu sayılması için en güvenlisi: pending + approved + confirmed + paid
         const { data, error } = await supabase
           .from("app_2dff6511da_session_requests")
           .select("selected_time,status")
@@ -424,7 +454,6 @@ export default function CoachPublicProfile() {
           const t = String(r?.selected_time || "").trim();
           if (!t) return;
 
-          // dolu kabul ettiğimiz durumlar
           if (["pending", "approved", "confirmed", "paid"].includes(st)) {
             busy.add(t);
           }
@@ -437,10 +466,9 @@ export default function CoachPublicProfile() {
     };
 
     run();
-    // slot seçimini gün değişince sıfırla
     setSelectedSlot(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, c?.id, resolvedCoachId]);
+  }, [selectedDate, (c as any)?.id, resolvedCoachId]);
 
   // ✅ Seans oluştur -> requestId al -> PayTR checkout
   const handleRequestSession = async () => {
@@ -464,13 +492,12 @@ export default function CoachPublicProfile() {
     }
 
     try {
-      const coachIdToUse = c?.id || resolvedCoachId || "";
+      const coachIdToUse = (c as any)?.id || resolvedCoachId || "";
       if (!coachIdToUse) {
         toast.error("Koç bulunamadı. Lütfen geri gidip yeniden deneyin.");
         return;
       }
 
-      // ✅ insert + id dön
       const { data, error } = await supabase
         .from("app_2dff6511da_session_requests")
         .insert({
@@ -495,7 +522,6 @@ export default function CoachPublicProfile() {
         return;
       }
 
-      // ✅ artık requestId eksik hatası biter
       navigate(`/paytr/checkout?requestId=${encodeURIComponent(requestId)}`);
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -503,6 +529,7 @@ export default function CoachPublicProfile() {
     }
   };
 
+  // ✅ ARTIK erken return güvenli (hook yok aşağıda)
   if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
@@ -510,34 +537,6 @@ export default function CoachPublicProfile() {
       </div>
     );
   }
-
-  // ✅ Takvim UI verileri
-  const { days } = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
-
-  const monthLabel = useMemo(() => {
-    return viewDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
-  }, [viewDate]);
-
-  const todayYmd = useMemo(() => toYMD(new Date()), []);
-  const isPastDay = (d: Date) => toYMD(d) < todayYmd;
-  const inViewMonth = (d: Date) => d.getMonth() === viewDate.getMonth();
-
-  const years = useMemo(() => {
-    const y = new Date().getFullYear();
-    const arr = [];
-    for (let i = y; i <= y + 2; i++) arr.push(i);
-    return arr;
-  }, []);
-
-  const months = useMemo(() => {
-    // 0-11
-    return Array.from({ length: 12 }).map((_, idx) => ({
-      value: idx,
-      label: new Date(2025, idx, 1).toLocaleDateString("tr-TR", { month: "long" }),
-    }));
-  }, []);
-
-  const timeSlots = useMemo(() => generateTimeSlots(10, 22, 30), []);
 
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
@@ -629,7 +628,7 @@ export default function CoachPublicProfile() {
             </div>
           </div>
 
-          {/* ✅ Sağ Kart – GERÇEK TAKVİM (chip yok) */}
+          {/* ✅ Sağ Kart – GERÇEK TAKVİM */}
           <div className="w-full md:w-80">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
               <CardHeader className="pb-2">
@@ -706,9 +705,7 @@ export default function CoachPublicProfile() {
                 </div>
 
                 {/* Ay başlığı */}
-                <div className="text-center text-sm font-semibold text-gray-900">
-                  {monthLabel}
-                </div>
+                <div className="text-center text-sm font-semibold text-gray-900">{monthLabel}</div>
 
                 {/* Haftanın günleri */}
                 <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-500">
@@ -784,8 +781,6 @@ export default function CoachPublicProfile() {
                       );
                     })}
                   </div>
-
-                  {/* ✅ Senin istemediğin “Seçilen saat: ...” satırı tamamen kaldırıldı */}
                 </div>
               </CardContent>
             </Card>
@@ -808,9 +803,7 @@ export default function CoachPublicProfile() {
           <TabsContent value="about" className="space-y-6">
             <Card className="bg-white border border-orange-100 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-semibold text-gray-900">
-                  Koç Hakkında
-                </CardTitle>
+                <CardTitle className="text-base font-semibold text-gray-900">Koç Hakkında</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-gray-800">
                 <p className="whitespace-pre-line">{c.bio}</p>
@@ -877,9 +870,7 @@ export default function CoachPublicProfile() {
                 <Card className="bg-white border border-orange-100 shadow-sm">
                   <CardContent className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Koçun Özgeçmişi (CV)
-                      </p>
+                      <p className="text-sm font-semibold text-gray-900">Koçun Özgeçmişi (CV)</p>
                       <p className="text-xs text-gray-500 mt-1">
                         PDF formatında detaylı eğitim ve iş deneyimlerini inceleyebilirsiniz.
                       </p>
@@ -954,10 +945,7 @@ export default function CoachPublicProfile() {
           <TabsContent value="content">
             <div className="grid md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <Card
-                  key={i}
-                  className="bg-white border border-orange-100 shadow-sm flex flex-col"
-                >
+                <Card key={i} className="bg-white border border-orange-100 shadow-sm flex flex-col">
                   <div className="h-32 rounded-t-xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
                     <PlayCircle className="w-10 h-10 text-red-500" />
                   </div>

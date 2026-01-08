@@ -1,12 +1,6 @@
 // src/App.tsx
 // @ts-nocheck
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -24,6 +18,7 @@ import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
+import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
@@ -64,6 +59,8 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 
 import PaytrCheckout from "@/pages/PaytrCheckout";
 
+import BireyselPremium from "@/pages/BireyselPremium";
+
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -82,34 +79,27 @@ export default function App() {
       <Router>
         <Toaster richColors position="top-right" />
         <Routes>
-          {/* ADMIN */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* PUBLIC */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-
-            {/* SITEMAP */}
             <Route path="/sitemap.xml" element={<Sitemap />} />
 
-            {/* ✅ Bireysel Premium geri geldi */}
-            <Route path="/bireysel-premium" element={<Pricing />} />
-            {/* Mevcut /pricing de kalsın */}
+            {/* ✅ bireysel premium geri */}
+            <Route path="/bireysel-premium" element={<BireyselPremium />} />
+
             <Route path="/pricing" element={<Pricing />} />
 
-            {/* CHECKOUT FLOW */}
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
 
-            {/* PAYTR */}
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
             <Route path="/paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* How it works */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
 
@@ -121,29 +111,26 @@ export default function App() {
             <Route path="/mentor-circle" element={<MentorCircle />} />
             <Route path="/webinars" element={<Webinars />} />
             <Route path="/coach-selection-process" element={<CoachSelection />} />
+
+            {/* legacy, kırmıyoruz */}
+            <Route path="/book-session" element={<BookSession />} />
+
             <Route path="/coach-application" element={<CoachApplication />} />
 
-            {/* ✅ /book-session artık ayrı kullanılmayacak → kırılmasın diye redirect */}
-            <Route path="/book-session" element={<Navigate to="/coaches" replace />} />
-
-            {/* USER */}
             <Route path="/user/dashboard" element={<UserDashboard />} />
             <Route path="/user/profile" element={<UserProfile />} />
             <Route path="/user/profile/edit" element={<UserProfileEdit />} />
             <Route path="/user/settings" element={<UserSettings />} />
 
-            {/* CORPORATE */}
             <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
             <Route path="/corporate/profile" element={<CorporateProfile />} />
             <Route path="/corporate/settings" element={<CorporateSettings />} />
 
-            {/* COACH */}
             <Route path="/coach/dashboard" element={<CoachDashboard />} />
             <Route path="/coach/profile" element={<CoachSelfProfile />} />
             <Route path="/coach/settings" element={<CoachSettings />} />
             <Route path="/coach/requests" element={<CoachRequests />} />
 
-            {/* LEGAL */}
             <Route path="/about" element={<About />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/returns" element={<Returns />} />
@@ -151,16 +138,13 @@ export default function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/ethics" element={<Ethics />} />
 
-            {/* AUTH */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* LEGACY redirects */}
             <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
             <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
 
-            {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

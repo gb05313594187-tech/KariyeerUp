@@ -47,17 +47,16 @@ export default function UserDashboard() {
           return;
         }
 
-        // Profil (opsiyonel): profiles tablon varsa çeker; yoksa hata alsa bile kırmayız
+        // ✅ Profil: tek kaynak profiles (display_name + full_name uyumlu)
         try {
           const { data: pData, error: pErr } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id, full_name, display_name, phone, city, title, sector, industry")
             .eq("id", user.id)
             .maybeSingle();
 
           if (!pErr) setProfile(pData || null);
         } catch (e) {
-          // profiles yoksa/erişim yoksa sessiz geç
           setProfile(null);
         }
 
@@ -99,20 +98,26 @@ export default function UserDashboard() {
 
   const displayName =
     profile?.full_name ||
+    profile?.display_name ||
     profile?.name ||
     authUser?.user_metadata?.full_name ||
+    authUser?.user_metadata?.display_name ||
     authUser?.email?.split("@")?.[0] ||
     "Kullanıcı";
 
   const completion = useMemo(() => {
-    // “Tahmini” completion: alanlar yoksa puan düşer ama kırılmaz
-    // Senin profil şeman farklıysa sadece bu listeyi güncellersin
+    // ✅ UserProfile ile aynı isim zinciri + sector uyumu
     const checks = [
-      !!(profile?.full_name || profile?.name),
+      !!(
+        profile?.full_name ||
+        profile?.display_name ||
+        authUser?.user_metadata?.full_name ||
+        authUser?.user_metadata?.display_name
+      ),
       !!(profile?.phone || authUser?.phone),
-      !!(profile?.city || profile?.location),
-      !!(profile?.title || profile?.job_title),
-      !!(profile?.industry),
+      !!profile?.city,
+      !!profile?.title,
+      !!(profile?.sector || profile?.industry),
     ];
     const filled = checks.filter(Boolean).length;
     const pct = Math.round((filled / checks.length) * 100);

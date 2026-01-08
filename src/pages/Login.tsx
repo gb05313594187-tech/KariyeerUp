@@ -14,42 +14,25 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-
-// Sadece supabase, AuthContext YOK
 import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ returnTo paramını yakala (varsa)
-  const returnTo = useMemo(() => {
+  const nextUrl = useMemo(() => {
     const qs = new URLSearchParams(location.search);
-    const raw = (qs.get("returnTo") || "").trim();
-    if (!raw) return "";
-
-    // Güvenlik: sadece relative path kabul et
-    // - "/..." ile başlamalı
-    // - "http", "https", "//" vb. olamaz
-    if (!raw.startsWith("/")) return "";
-    if (raw.startsWith("//")) return "";
-    if (/^https?:/i.test(raw)) return "";
-
-    return raw;
+    return qs.get("next") || "/";
   }, [location.search]);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // 1) Supabase ile giriş
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -58,56 +41,21 @@ export default function Login() {
       if (error) {
         console.error("Login error:", error);
         toast.error("E-posta veya şifre hatalı.");
-        setIsLoading(false);
         return;
       }
 
       if (!data.user) {
         toast.error("Kullanıcı bulunamadı.");
-        setIsLoading(false);
         return;
       }
-
-      // 2) Profile çek (rol ve onay durumu için)
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", data.user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile error:", profileError);
-      }
-
-      localStorage.setItem(
-        "kariyeer_user",
-        JSON.stringify({
-          email: data.user.email,
-          id: data.user.id,
-          isLoggedIn: true,
-        })
-      );
 
       toast.success("Giriş başarılı!");
 
-      // ✅ 3) returnTo varsa ÖNCE onu uygula (akışı bozmaz)
-      if (returnTo) {
-        navigate(returnTo, { replace: true });
-        return;
-      }
-
-      // 4) Rol'e göre yönlendirme (MEVCUT AKIŞ AYNI)
-      if (profile?.account_type === "coach") {
-        if (!profile.is_approved) {
-          navigate("/coach-application");
-        } else {
-          navigate("/");
-        }
-      } else {
-        navigate("/");
-      }
-    } catch (error: any) {
-      console.error("Giriş Hatası:", error);
+      // ✅ Kritik: SPA navigate bazen AuthContext/Nav’i yarım bırakıyor.
+      // Hard redirect → AuthProvider session’ı kesin görür, navbar kilitlenmez.
+      window.location.assign(nextUrl);
+    } catch (err: any) {
+      console.error("Giriş Hatası:", err);
       toast.error("Giriş sırasında bir hata oluştu.");
     } finally {
       setIsLoading(false);
@@ -162,6 +110,14 @@ export default function Login() {
             >
               {isLoading ? "Giriş Yapılıyor..." : "Giriş Yap"}
             </Button>
+
+            <button
+              type="button"
+              className="w-full text-xs text-gray-500 hover:underline"
+              onClick={() => navigate("/")}
+            >
+              Ana sayfaya dön
+            </button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">

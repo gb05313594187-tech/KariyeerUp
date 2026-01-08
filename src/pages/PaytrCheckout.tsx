@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
+const REQUESTS_TABLE = "app_2dff6511da_session_requests";
+
 export default function PaytrCheckout() {
   const [sp] = useSearchParams();
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ export default function PaytrCheckout() {
     return `https://www.paytr.com/odeme/guvenli/${token}`;
   }, [token]);
 
+  // 1) Token al
   useEffect(() => {
     let mounted = true;
 
@@ -42,9 +45,10 @@ export default function PaytrCheckout() {
         }
 
         // ✅ Edge function: paytr-get-token
-        const { data, error } = await supabase.functions.invoke("paytr-get-token", {
-          body: { request_id: requestId },
-        });
+        const { data, error } = await supabase.functions.invoke(
+          "paytr-get-token",
+          { body: { request_id: requestId } }
+        );
 
         if (error) {
           console.error("paytr-get-token error:", error);
@@ -71,6 +75,49 @@ export default function PaytrCheckout() {
     run();
     return () => {
       mounted = false;
+    };
+  }, [requestId, navigate]);
+
+  // 2) DB polling: notify paid yazınca success'e gönder
+  useEffect(() => {
+    if (!requestId) return;
+
+    let alive = true;
+    let t: any = null;
+
+    const poll = async () => {
+      try {
+        const { data, error } = await supabase
+          .from(REQUESTS_TABLE)
+          .select("id, status, paid_at, payment_status")
+          .eq("id", requestId)
+          .maybeSingle();
+
+        if (error) return;
+
+        const pStatus = (data as any)?.payment_status;
+        const paidAt = (data as any)?.paid_at;
+
+        if (pStatus === "paid" || !!paidAt) {
+          if (!alive) return;
+          navigate(`/payment-success?requestId=${requestId}`, { replace: true });
+          return;
+        }
+
+        if (pStatus === "failed") {
+          toast.error("Ödeme başarısız görünüyor. Tekrar deneyebilirsin.");
+        }
+      } catch {
+      } finally {
+        if (alive) t = setTimeout(poll, 2500);
+      }
+    };
+
+    poll();
+
+    return () => {
+      alive = false;
+      if (t) clearTimeout(t);
     };
   }, [requestId, navigate]);
 
@@ -107,14 +154,16 @@ export default function PaytrCheckout() {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
             Ödeme iframe oluşturulamadı.
             <div className="mt-4">
-              <Button className="rounded-xl" onClick={() => navigate("/user/dashboard")}>
+              <Button
+                className="rounded-xl"
+                onClick={() => navigate("/user/dashboard")}
+              >
                 Dashboard’a dön
               </Button>
             </div>
           </div>
         ) : (
           <div className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* PayTR önerisi: iframe height genelde 700-800 arası iyi */}
             <iframe
               src={iframeSrc}
               title="PayTR"

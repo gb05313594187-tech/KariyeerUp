@@ -16,6 +16,8 @@ import {
   Award,
   Globe2,
   PlayCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -162,64 +164,99 @@ const buildMetaDescription = (
   return t ? `${base} Uzmanlık: ${t}.` : base;
 };
 
-// Önümüzdeki X günü üret
-const getNextDays = (count = 14) => {
-  const days = [];
-  const today = new Date();
+/* -------------------------
+   ✅ Yeni Takvim Helpers
+-------------------------- */
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const toYMD = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
-  for (let i = 0; i < count; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-
-    const value = d.toISOString().slice(0, 10); // YYYY-MM-DD
-    let label = d.toLocaleDateString("tr-TR", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
-
-    if (i === 0) label = "Bugün";
-    if (i === 1) label = "Yarın";
-
-    days.push({ date: d, value, label });
-  }
-
-  return days;
+const parseYMD = (s: string) => {
+  const [y, m, d] = String(s || "")
+    .split("-")
+    .map((x) => parseInt(x, 10));
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
 };
 
-// 30 dk slotlar
-const generateTimeSlots = (
-  startHour = 10,
-  endHour = 22,
-  intervalMinutes = 30
-) => {
-  const slots: string[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (let m = 0; m < 60; m += intervalMinutes) {
-      const hh = h.toString().padStart(2, "0");
-      const mm = m.toString().padStart(2, "0");
-      slots.push(`${hh}:${mm}`);
-    }
+const startOfDay = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
+const addMonths = (d: Date, diff: number) =>
+  new Date(d.getFullYear(), d.getMonth() + diff, 1);
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const isBeforeDay = (a: Date, b: Date) =>
+  startOfDay(a).getTime() < startOfDay(b).getTime();
+
+function buildMonthGrid(viewMonth: Date) {
+  const mondayIndex = (dow: number) => (dow + 6) % 7;
+  const first = startOfMonth(viewMonth);
+  const lead = mondayIndex(first.getDay());
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate() - lead);
+
+  const cells: { date: Date; inMonth: boolean }[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push({ date: d, inMonth: d.getMonth() === viewMonth.getMonth() });
   }
-  return slots;
-};
+  return cells;
+}
+
+const monthLabelTR = (d: Date) =>
+  d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+
+const monthNamesTR = [
+  "Ocak",
+  "Şubat",
+  "Mart",
+  "Nisan",
+  "Mayıs",
+  "Haziran",
+  "Temmuz",
+  "Ağustos",
+  "Eylül",
+  "Ekim",
+  "Kasım",
+  "Aralık",
+];
+
+const timeSlots = [
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+];
+
+// PayTR checkout route (mevcut)
+const PAYTR_ROUTE = "/paytr/checkout";
 
 export default function CoachPublicProfile() {
   const { slugOrId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Query paramları tek kaynaktan oku
+  // ✅ Query paramları kaybetme
   const qs = useMemo(
     () => new URLSearchParams(location.search),
     [location.search]
   );
-
   const qsId = qs.get("id") || ""; // legacy
-  const qsDate = qs.get("date") || ""; // ✅ prefill destek
-  const qsTime = qs.get("time") || ""; // ✅ prefill destek
 
-  // ✅ ID çöz
   const resolvedCoachId = useMemo(() => {
     if (qsId && isUuid(qsId)) return qsId;
     if (slugOrId && isUuid(slugOrId)) return slugOrId;
@@ -229,21 +266,17 @@ export default function CoachPublicProfile() {
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // ✅ Takvim state'leri (query'den prefill)
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const v = String(qsDate || "").trim();
-    // basit format kontrolü: YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-    return today;
-  });
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(() => {
-    const t = String(qsTime || "").trim();
-    if (/^\d{2}:\d{2}$/.test(t)) return t;
-    return null;
-  });
+  // ✅ Yeni takvim state'leri
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string>(() => toYMD(new Date()));
+  const [selectedTime, setSelectedTime] = useState<string>("");
 
-  // ✅ Koçu çek
+  // ✅ dolu saatler (DB)
+  const [busyTimes, setBusyTimes] = useState<Set<string>>(new Set());
+  const [loadingBusy, setLoadingBusy] = useState(false);
+
+  // ✅ Supabase'ten koçu çek
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -287,20 +320,13 @@ export default function CoachPublicProfile() {
           }
         }
 
-        console.log("CoachPublicProfile Supabase:", {
-          resolvedCoachId,
-          slugOrId: rawParam,
-          data,
-          error,
-        });
-
         if (error) {
           console.error("Coach fetch error:", error);
           setCoachRow(null);
         } else {
           setCoachRow(data);
 
-          // ✅ uuid ile geldiyse ve slug varsa SEO slug’a redirect
+          // ✅ Legacy uuid → slug redirect
           const paramIsUuid = rawParam && isUuid(rawParam);
           if (paramIsUuid && data?.slug) {
             const nextQs = new URLSearchParams(location.search);
@@ -322,7 +348,7 @@ export default function CoachPublicProfile() {
     fetchCoach();
   }, [resolvedCoachId, slugOrId, location.search, navigate]);
 
-  // 2) UI format
+  // 2) Tablo alanlarını UI formatına çevir
   const c = (() => {
     const coach = coachRow;
     if (!coach) return fallbackCoach;
@@ -359,10 +385,78 @@ export default function CoachPublicProfile() {
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
       id: coach.id,
       slug: coach.slug,
+      session_fee: coach.session_fee || coach.fee || coach.price || 0,
+      email: coach.email || "",
+      full_name: coach.full_name || "",
     };
   })();
 
-  // ✅ SEO
+  // ✅ takvim görünümünü seçili tarihe senk
+  useEffect(() => {
+    const d = parseYMD(selectedDate);
+    if (!d) return;
+    setViewMonth(startOfMonth(d));
+  }, [selectedDate]);
+
+  const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+
+  // ✅ DB’den dolu saatleri çek
+  useEffect(() => {
+    const run = async () => {
+      const coachIdToUse = c?.id || resolvedCoachId || "";
+      if (!coachIdToUse || !selectedDate) return;
+
+      try {
+        setLoadingBusy(true);
+
+        // Not: statü alanların değişken olabilir.
+        // En güvenlisi: pending + approved + confirmed + paid varsa blokla.
+        const { data, error } = await supabase
+          .from("app_2dff6511da_session_requests")
+          .select("selected_time, status, payment_status")
+          .eq("coach_id", coachIdToUse)
+          .eq("selected_date", selectedDate);
+
+        if (error) {
+          console.error("busy times fetch error:", error);
+          setBusyTimes(new Set());
+          return;
+        }
+
+        const blocked = new Set<string>();
+        (data || []).forEach((r: any) => {
+          const st = String(r?.status || "").toLowerCase();
+          const ps = String(r?.payment_status || "").toLowerCase();
+          const t = String(r?.selected_time || "").trim();
+          if (!t) return;
+
+          // blok kriteri (konservatif)
+          const shouldBlock =
+            st === "approved" ||
+            st === "confirmed" ||
+            st === "pending" ||
+            ps === "paid" ||
+            ps === "pending";
+
+          if (shouldBlock) blocked.add(t);
+        });
+
+        setBusyTimes(blocked);
+
+        // seçili saat dolu olduysa temizle
+        if (selectedTime && blocked.has(selectedTime)) {
+          setSelectedTime("");
+        }
+      } finally {
+        setLoadingBusy(false);
+      }
+    };
+
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c?.id, resolvedCoachId, selectedDate]);
+
+  // ✅ SEO başlıklar (mevcut yapı)
   const primarySpecialty = useMemo(() => {
     const fromSlugToken = specialtyLabelFromToken(
       extractSpecialtyFromSlug(slugOrId || "")
@@ -402,7 +496,6 @@ export default function CoachPublicProfile() {
     return origin ? `${origin}${path}` : `${path}`;
   }, [slugOrId]);
 
-  // ✅ HEAD
   useEffect(() => {
     try {
       document.title = seoTitle;
@@ -445,48 +538,77 @@ export default function CoachPublicProfile() {
     } catch (e) {}
   }, [seoTitle, metaDesc, canonicalUrl, c.photo_url]);
 
-  /**
-   * ✅ AKIŞ DÜZELTME (kritik)
-   * CoachPublicProfile içinde DB'ye session_request INSERT yapmıyoruz.
-   * Doğru akış: burada gün/saat seç → /book-session sayfasına prefill ile git → orada ödeme akışı çalışsın.
-   * Böylece "geri dönünce bug / cache temizleme" gibi problemler azalır (yarım talep bırakmıyoruz).
-   */
+  // ✅ Seans al: artık ödeme akışına gidecek (BookSession mantığı)
   const handleRequestSession = async () => {
-    if (!selectedSlot) {
-      toast.error("Lütfen önce bir saat seç.");
-      return;
-    }
+    if (!selectedDate) return toast.error("Tarih seç.");
+    if (!selectedTime) return toast.error("Saat seç.");
 
-    const coachIdToUse = c?.id || resolvedCoachId || "";
-    if (!coachIdToUse) {
-      toast.error("Koç bulunamadı. Lütfen geri gidip yeniden deneyin.");
-      return;
-    }
-
-    // auth yoksa login'e gönder (return path kaybetme)
     const { data: auth } = await supabase.auth.getUser();
     const userId = auth?.user?.id;
 
-    // ✅ BookSession prefill + mevcut query paramlarını koru
-    const nextQs = new URLSearchParams(location.search);
-    nextQs.set("coachId", coachIdToUse);
-    nextQs.set("date", selectedDate);
-    nextQs.set("time", selectedSlot);
-
-    // istersen ileride panel auto-open için:
-    nextQs.set("book", "1");
-
     if (!userId) {
       toast.error("Seans almak için giriş yapmalısın.");
-      // login sonrası geri dönmek için returnTo taşı (opsiyonel ama çok işe yarar)
-      const returnTo = `${location.pathname}?${nextQs.toString()}`;
-      const loginQs = new URLSearchParams();
-      loginQs.set("returnTo", returnTo);
-      navigate(`/login?${loginQs.toString()}`);
+      navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
 
-    navigate(`/book-session?${nextQs.toString()}`);
+    try {
+      const coachIdToUse = c?.id || resolvedCoachId || "";
+      if (!coachIdToUse) return toast.error("Koç bulunamadı.");
+
+      // 1) INSERT request
+      const { data: created, error: insErr } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: coachIdToUse,
+          user_id: userId,
+          selected_date: selectedDate,
+          selected_time: selectedTime,
+          status: "pending",
+          payment_status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (insErr) {
+        console.error("Insert error:", insErr);
+        toast.error("Seans talebi oluşturulamadı.");
+        return;
+      }
+
+      const requestId = created?.id;
+      if (!requestId) return toast.error("Talep oluştu ama ID alınamadı.");
+
+      // 2) PayTR alanları (merchant_oid vs)
+      const fee = Number(c?.session_fee || 0);
+      const paymentAmount = Math.max(1, Math.round(fee * 100));
+      const merchantOid = String(requestId).replace(/-/g, "");
+
+      const { error: upErr } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .update({
+          currency: "TL",
+          payment_amount: paymentAmount,
+          merchant_oid: merchantOid,
+          payment_status: "pending",
+        })
+        .eq("id", requestId);
+
+      if (upErr) {
+        console.error("Payment fields update error:", upErr);
+        toast.error("Ödeme alanları yazılamadı.");
+        return;
+      }
+
+      // 3) PayTR checkout’a git
+      toast.success("Ödemeye yönlendiriliyorsun...");
+      const qsPay = new URLSearchParams();
+      qsPay.set("requestId", requestId);
+      navigate(`${PAYTR_ROUTE}?${qsPay.toString()}`, { replace: true });
+    } catch (e) {
+      console.error(e);
+      toast.error("Beklenmeyen hata oluştu.");
+    }
   };
 
   if (loading && !coachRow) {
@@ -496,6 +618,12 @@ export default function CoachPublicProfile() {
       </div>
     );
   }
+
+  // ✅ yıl seçenekleri
+  const yearOptions = useMemo(() => {
+    const y = new Date().getFullYear();
+    return [y, y + 1, y + 2, y + 3];
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
@@ -539,7 +667,6 @@ export default function CoachPublicProfile() {
               <span className="text-sm text-gray-500">{c.location}</span>
             </p>
 
-            {/* Etiketler */}
             <div className="flex flex-wrap gap-2 mt-2">
               {c.tags?.map((tag: string) => (
                 <span
@@ -551,7 +678,6 @@ export default function CoachPublicProfile() {
               ))}
             </div>
 
-            {/* İstatistikler */}
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400" />
@@ -574,12 +700,11 @@ export default function CoachPublicProfile() {
               </div>
             </div>
 
-            {/* CTA Butonlar */}
             <div className="flex flex-wrap gap-3 mt-5">
               <Button
                 className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
                 onClick={handleRequestSession}
-                disabled={!selectedSlot}
+                disabled={!selectedDate || !selectedTime}
               >
                 Hemen Seans Al
               </Button>
@@ -593,78 +718,170 @@ export default function CoachPublicProfile() {
             </div>
           </div>
 
-          {/* Sağ Özet Kartı – Uygun Saatler */}
-          <div className="w-full md:w-72">
+          {/* ✅ SAĞ KART: Gerçek Takvim */}
+          <div className="w-full md:w-80">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
                   <CalendarDays className="w-4 h-4 text-orange-500" />
-                  Uygun Saat Seç
+                  Takvimden Seç
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-xs">
-                {/* Gün seçimi */}
-                <div className="flex gap-2 mb-2 overflow-x-auto pb-1 no-scrollbar">
-                  {getNextDays(14).map((day) => (
-                    <Button
-                      key={day.value}
-                      variant={day.value === selectedDate ? "default" : "outline"}
-                      size="sm"
-                      className={`rounded-full h-8 text-[11px] whitespace-nowrap ${
-                        day.value === selectedDate
-                          ? "bg-red-600 text-white"
-                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
-                      }`}
-                      onClick={() => {
-                        setSelectedDate(day.value);
-                        setSelectedSlot(null);
+
+              <CardContent className="space-y-4">
+                {/* Ay/Yıl kontrol */}
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    className="h-9 w-9 rounded-xl border border-orange-200 flex items-center justify-center hover:bg-orange-50"
+                    onClick={() => setViewMonth((m) => addMonths(m, -1))}
+                    aria-label="Önceki ay"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex-1 flex items-center justify-center gap-2">
+                    <select
+                      className="h-9 rounded-xl border border-orange-200 bg-white px-2 text-sm"
+                      value={viewMonth.getFullYear()}
+                      onChange={(e) => {
+                        const y = parseInt(e.target.value, 10);
+                        const next = new Date(y, viewMonth.getMonth(), 1);
+                        setViewMonth(next);
                       }}
                     >
-                      {day.label}
-                    </Button>
-                  ))}
-                </div>
+                      {yearOptions.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
 
-                {/* Saat slotları */}
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
-                  {generateTimeSlots(10, 22, 30).map((slot) => (
-                    <Button
-                      key={slot}
-                      variant={selectedSlot === slot ? "default" : "outline"}
-                      size="sm"
-                      className={`rounded-full h-8 text-[11px] ${
-                        selectedSlot === slot
-                          ? "bg-red-600 text-white"
-                          : "border-orange-200 text-gray-700 hover:bg-orange-50"
-                      }`}
-                      onClick={() => setSelectedSlot(slot)}
+                    <select
+                      className="h-9 rounded-xl border border-orange-200 bg-white px-2 text-sm"
+                      value={viewMonth.getMonth()}
+                      onChange={(e) => {
+                        const m = parseInt(e.target.value, 10);
+                        const next = new Date(viewMonth.getFullYear(), m, 1);
+                        setViewMonth(next);
+                      }}
                     >
-                      <Clock className="w-3 h-3 mr-1" />
-                      {slot}
-                    </Button>
+                      {monthNamesTR.map((mn, idx) => (
+                        <option key={mn} value={idx}>
+                          {mn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="h-9 w-9 rounded-xl border border-orange-200 flex items-center justify-center hover:bg-orange-50"
+                    onClick={() => setViewMonth((m) => addMonths(m, 1))}
+                    aria-label="Sonraki ay"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="text-xs font-semibold text-gray-700 text-center -mt-1">
+                  {monthLabelTR(viewMonth)}
+                </div>
+
+                {/* Gün isimleri */}
+                <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500">
+                  {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((d) => (
+                    <div key={d} className="py-1 text-center">
+                      {d}
+                    </div>
                   ))}
                 </div>
 
-                {selectedSlot && (
-                  <p className="text-[11px] text-gray-600 mt-2">
-                    Seçilen saat:{" "}
-                    <span className="font-semibold">
-                      {selectedSlot} ({selectedDate})
-                    </span>
-                  </p>
-                )}
-                {!selectedSlot && (
-                  <p className="text-[11px] text-gray-500 mt-2">
-                    Bir gün ve saat seç; seçimin otomatik olarak ödeme adımına taşınacak.
-                  </p>
-                )}
+                {/* Gün grid */}
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarCells.map((cell, idx) => {
+                    const iso = toYMD(cell.date);
+                    const isSelected = selectedDate === iso;
+                    const disabled = isBeforeDay(cell.date, today);
+                    const isToday = isSameDay(cell.date, today);
+
+                    return (
+                      <button
+                        key={`${iso}-${idx}`}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          setSelectedDate(iso);
+                          setSelectedTime("");
+                        }}
+                        className={[
+                          "h-10 rounded-xl border text-sm font-semibold transition",
+                          cell.inMonth ? "bg-white" : "bg-orange-50",
+                          cell.inMonth ? "text-gray-900" : "text-gray-400",
+                          disabled
+                            ? "opacity-40 cursor-not-allowed"
+                            : "hover:border-red-300",
+                          isToday ? "border-orange-300" : "border-orange-200",
+                          isSelected ? "border-red-600 bg-red-50 text-red-700" : "",
+                        ].join(" ")}
+                        title={iso}
+                      >
+                        {cell.date.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Saatler */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-orange-500" />
+                      <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Saat Seç
+                      </div>
+                    </div>
+                    {loadingBusy ? (
+                      <div className="text-[11px] text-gray-500">Kontrol ediliyor...</div>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {timeSlots.map((slot) => {
+                      const isBusy = busyTimes.has(slot);
+                      const active = selectedTime === slot;
+
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => setSelectedTime(slot)}
+                          className={[
+                            "px-3 py-2 rounded-xl border text-sm font-semibold transition flex items-center justify-center gap-2",
+                            isBusy
+                              ? "opacity-40 cursor-not-allowed bg-orange-50 border-orange-200 text-gray-500"
+                              : "hover:border-red-400 bg-white",
+                            active ? "border-red-600 bg-red-50 text-red-700" : "",
+                          ].join(" ")}
+                          title={isBusy ? "Dolu" : slot}
+                        >
+                          <Clock className="w-4 h-4" />
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* ✅ chipli açıklamalar kaldırıldı (sen istemiyorsun) */}
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* ALT İÇERİK – TABS */}
+      {/* ALT İÇERİK – TABS (dokunmadım) */}
       <div className="max-w-6xl mx-auto px-4 py-10">
         <Tabs defaultValue="about" className="space-y-6">
           <TabsList className="bg-white border border-orange-100 rounded-full p-1">

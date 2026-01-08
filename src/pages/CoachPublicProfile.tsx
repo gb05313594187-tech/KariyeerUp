@@ -81,7 +81,7 @@ const isUuid = (s: string) =>
     String(s || "").trim()
   );
 
-// slug -> okunabilir uzmanlık (mülakat-koclugu -> Mülakat, liderlik-kocu -> Liderlik)
+// slug -> okunabilir uzmanlık
 const extractSpecialtyFromSlug = (slug: string) => {
   const raw = String(slug || "")
     .toLowerCase()
@@ -162,7 +162,7 @@ const buildMetaDescription = (
   return t ? `${base} Uzmanlık: ${t}.` : base;
 };
 
-// Önümüzdeki X günü üret (Bugün, Yarın, vs) → default 14 gün
+// Önümüzdeki X günü üret
 const getNextDays = (count = 14) => {
   const days = [];
   const today = new Date();
@@ -187,7 +187,7 @@ const getNextDays = (count = 14) => {
   return days;
 };
 
-// Belirli saat aralığında 30 dk'lık slotlar üret
+// 30 dk slotlar
 const generateTimeSlots = (
   startHour = 10,
   endHour = 22,
@@ -205,22 +205,21 @@ const generateTimeSlots = (
 };
 
 export default function CoachPublicProfile() {
-  // ✅ App.tsx route: /coach/:slugOrId
   const { slugOrId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Query paramları tek kaynaktan oku (kaybetme)
+  // ✅ Query paramları tek kaynaktan oku
   const qs = useMemo(
     () => new URLSearchParams(location.search),
     [location.search]
   );
-  const qsId = qs.get("id") || ""; // legacy
 
-  // ✅ Koç ID çözümlemesi:
-  // 1) query id varsa onu kullan
-  // 2) yoksa route param uuid ise onu id kabul et
-  // 3) değilse SEO slug
+  const qsId = qs.get("id") || ""; // legacy
+  const qsDate = qs.get("date") || ""; // ✅ prefill destek
+  const qsTime = qs.get("time") || ""; // ✅ prefill destek
+
+  // ✅ ID çöz
   const resolvedCoachId = useMemo(() => {
     if (qsId && isUuid(qsId)) return qsId;
     if (slugOrId && isUuid(slugOrId)) return slugOrId;
@@ -230,17 +229,21 @@ export default function CoachPublicProfile() {
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Takvim state'leri
+  // ✅ Takvim state'leri (query'den prefill)
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const d = new Date();
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    const today = new Date().toISOString().slice(0, 10);
+    const v = String(qsDate || "").trim();
+    // basit format kontrolü: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    return today;
   });
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(() => {
+    const t = String(qsTime || "").trim();
+    if (/^\d{2}:\d{2}$/.test(t)) return t;
+    return null;
+  });
 
-  // ✅ Supabase'ten koçu çek:
-  // - önce slug dene (SEO)
-  // - olmazsa id dene (legacy uuid)
-  // - query id varsa zaten id ile gider
+  // ✅ Koçu çek
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -248,7 +251,6 @@ export default function CoachPublicProfile() {
 
         const rawParam = String(slugOrId || "").trim();
 
-        // param yoksa fallback
         if (!rawParam && !resolvedCoachId) {
           setCoachRow(null);
           return;
@@ -257,7 +259,6 @@ export default function CoachPublicProfile() {
         let data: any = null;
         let error: any = null;
 
-        // 1) query id veya uuid param → id ile dene
         if (resolvedCoachId) {
           const rId = await supabase
             .from("app_2dff6511da_coaches")
@@ -267,7 +268,6 @@ export default function CoachPublicProfile() {
           data = rId.data;
           error = rId.error;
         } else {
-          // 2) SEO slug → slug ile dene
           const rSlug = await supabase
             .from("app_2dff6511da_coaches")
             .select("*")
@@ -276,7 +276,6 @@ export default function CoachPublicProfile() {
           data = rSlug.data;
           error = rSlug.error;
 
-          // 3) slug bulunamazsa (edge-case) param uuid olabilir → id ile fallback
           if ((error || !data) && isUuid(rawParam)) {
             const r2 = await supabase
               .from("app_2dff6511da_coaches")
@@ -301,7 +300,7 @@ export default function CoachPublicProfile() {
         } else {
           setCoachRow(data);
 
-          // ✅ Legacy: /coach/<uuid> ile geldiyse ve DB slug varsa, SEO slug’a redirect
+          // ✅ uuid ile geldiyse ve slug varsa SEO slug’a redirect
           const paramIsUuid = rawParam && isUuid(rawParam);
           if (paramIsUuid && data?.slug) {
             const nextQs = new URLSearchParams(location.search);
@@ -323,7 +322,7 @@ export default function CoachPublicProfile() {
     fetchCoach();
   }, [resolvedCoachId, slugOrId, location.search, navigate]);
 
-  // 2) Tablo alanlarını UI formatına çevir
+  // 2) UI format
   const c = (() => {
     const coach = coachRow;
     if (!coach) return fallbackCoach;
@@ -363,7 +362,7 @@ export default function CoachPublicProfile() {
     };
   })();
 
-  // ✅ SEO: uzmanlık + başlıklar
+  // ✅ SEO
   const primarySpecialty = useMemo(() => {
     const fromSlugToken = specialtyLabelFromToken(
       extractSpecialtyFromSlug(slugOrId || "")
@@ -403,7 +402,7 @@ export default function CoachPublicProfile() {
     return origin ? `${origin}${path}` : `${path}`;
   }, [slugOrId]);
 
-  // ✅ HEAD güncelle (title/meta/canonical)
+  // ✅ HEAD
   useEffect(() => {
     try {
       document.title = seoTitle;
@@ -446,59 +445,48 @@ export default function CoachPublicProfile() {
     } catch (e) {}
   }, [seoTitle, metaDesc, canonicalUrl, c.photo_url]);
 
-  // ✅ seans talebi oluştur (query paramları kaybetme)
+  /**
+   * ✅ AKIŞ DÜZELTME (kritik)
+   * CoachPublicProfile içinde DB'ye session_request INSERT yapmıyoruz.
+   * Doğru akış: burada gün/saat seç → /book-session sayfasına prefill ile git → orada ödeme akışı çalışsın.
+   * Böylece "geri dönünce bug / cache temizleme" gibi problemler azalır (yarım talep bırakmıyoruz).
+   */
   const handleRequestSession = async () => {
     if (!selectedSlot) {
       toast.error("Lütfen önce bir saat seç.");
       return;
     }
 
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth?.user?.id;
-
-    if (!userId) {
-      toast.error("Seans almak için giriş yapmalısın.");
-      const nextQs = new URLSearchParams(location.search);
-      navigate(`/login${nextQs.toString() ? `?${nextQs.toString()}` : ""}`);
+    const coachIdToUse = c?.id || resolvedCoachId || "";
+    if (!coachIdToUse) {
+      toast.error("Koç bulunamadı. Lütfen geri gidip yeniden deneyin.");
       return;
     }
 
-    try {
-      const coachIdToUse = c?.id || resolvedCoachId || "";
+    // auth yoksa login'e gönder (return path kaybetme)
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth?.user?.id;
 
-      if (!coachIdToUse) {
-        toast.error("Koç bulunamadı. Lütfen geri gidip yeniden deneyin.");
-        return;
-      }
+    // ✅ BookSession prefill + mevcut query paramlarını koru
+    const nextQs = new URLSearchParams(location.search);
+    nextQs.set("coachId", coachIdToUse);
+    nextQs.set("date", selectedDate);
+    nextQs.set("time", selectedSlot);
 
-      const { error } = await supabase
-        .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachIdToUse,
-          user_id: userId,
-          selected_date: selectedDate,
-          selected_time: selectedSlot,
-          status: "pending",
-        });
+    // istersen ileride panel auto-open için:
+    nextQs.set("book", "1");
 
-      if (error) {
-        console.error("Seans talebi hatası:", error);
-        toast.error("Seans talebi oluşturulamadı.");
-        return;
-      }
-
-      toast.success(
-        "Seans talebin iletildi. Koç onayladığında dashboard’ta göreceksin."
-      );
-
-      const nextQs = new URLSearchParams(location.search);
-      navigate(
-        `/user/dashboard${nextQs.toString() ? `?${nextQs.toString()}` : ""}`
-      );
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      toast.error("Beklenmeyen bir hata oluştu.");
+    if (!userId) {
+      toast.error("Seans almak için giriş yapmalısın.");
+      // login sonrası geri dönmek için returnTo taşı (opsiyonel ama çok işe yarar)
+      const returnTo = `${location.pathname}?${nextQs.toString()}`;
+      const loginQs = new URLSearchParams();
+      loginQs.set("returnTo", returnTo);
+      navigate(`/login?${loginQs.toString()}`);
+      return;
     }
+
+    navigate(`/book-session?${nextQs.toString()}`);
   };
 
   if (loading && !coachRow) {
@@ -538,7 +526,6 @@ export default function CoachPublicProfile() {
           {/* Koç Bilgisi */}
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              {/* ✅ SEO H1 */}
               <h1 className="text-3xl font-bold text-gray-900">{h1Text}</h1>
               <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
                 Öne Çıkan Koç
@@ -668,8 +655,7 @@ export default function CoachPublicProfile() {
                 )}
                 {!selectedSlot && (
                   <p className="text-[11px] text-gray-500 mt-2">
-                    Bir gün ve saat seç; seçimin otomatik olarak koça iletilen
-                    seans talebi olarak kaydedilecek.
+                    Bir gün ve saat seç; seçimin otomatik olarak ödeme adımına taşınacak.
                   </p>
                 )}
               </CardContent>

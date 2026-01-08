@@ -19,10 +19,8 @@ import { toast } from "sonner";
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ✅ PayTR checkout route (PaytrCheckout.tsx route’u neyse burayı ona göre tut)
+// ✅ PayTR checkout route (tek kaynak)
 const PAYTR_ROUTE = "/paytr-checkout";
-// Eğer App.tsx’te route yoksa fallback:
-const FALLBACK_CHECKOUT_ROUTE = "/checkout";
 
 // ----------------- Date helpers (NO toISOString for date-only) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -37,16 +35,19 @@ const parseYMD = (s: string) => {
   return new Date(y, m - 1, d);
 };
 
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const startOfDay = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-const addMonths = (d: Date, diff: number) => new Date(d.getFullYear(), d.getMonth() + diff, 1);
+const addMonths = (d: Date, diff: number) =>
+  new Date(d.getFullYear(), d.getMonth() + diff, 1);
 
 const isSameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-const isBeforeDay = (a: Date, b: Date) => startOfDay(a).getTime() < startOfDay(b).getTime();
+const isBeforeDay = (a: Date, b: Date) =>
+  startOfDay(a).getTime() < startOfDay(b).getTime();
 
 function buildMonthGrid(viewMonth: Date) {
   // Monday-first 6-week grid (42 cells)
@@ -126,22 +127,18 @@ export default function BookSession() {
 
         // profiles tablosundan prefill
         try {
-          const { data: p, error: pErr } = await supabase
+          const { data: p } = await supabase
             .from("profiles")
             .select("id, display_name, full_name, email")
             .eq("id", u.id)
             .maybeSingle();
 
-          // display_name / full_name fallback sırası
           const meta = u?.user_metadata || {};
           const metaName =
             meta.display_name || meta.full_name || meta.fullName || meta.name || "";
 
-          const name =
-            (p?.display_name || p?.full_name || metaName || "").trim();
-
-          const email =
-            (p?.email || u?.email || "").trim();
+          const name = (p?.display_name || p?.full_name || metaName || "").trim();
+          const email = (p?.email || u?.email || "").trim();
 
           setForm((f) => ({
             ...f,
@@ -243,24 +240,6 @@ export default function BookSession() {
     !!String(form.fullName || "").trim() &&
     !!String(form.email || "").trim();
 
-  // ✅ PayTR yönlendirme (route varsa oraya, yoksa /checkout’a)
-  const goToPayment = (payload: {
-    requestId: string;
-    coachId: string;
-    selected_date: string;
-    selected_time: string;
-  }) => {
-    const qs = new URLSearchParams();
-    qs.set("requestId", payload.requestId);
-    qs.set("coachId", payload.coachId);
-    qs.set("date", payload.selected_date);
-    qs.set("time", payload.selected_time);
-
-    // Öncelik: PayTR checkout sayfan
-    // (route App.tsx’te yoksa bunu fallback’e çevir)
-    navigate(`${PAYTR_ROUTE}?${qs.toString()}`);
-  };
-
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -300,11 +279,7 @@ export default function BookSession() {
           selected_date: selectedDate,
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
-
-          // ❗ Coach ekranların bozulmasın diye pending bırakıyorum.
-          // PayTR ödeme sonrası istersen status’u "paid" vb yaparsın (kolon varsa).
           status: "pending",
-
           created_at: new Date().toISOString(),
         })
         .select("id")
@@ -351,23 +326,8 @@ export default function BookSession() {
 
       toast.success("Talep oluşturuldu. Ödemeye yönlendiriliyorsun...");
 
-      // ✅ 3) PayTR ödeme sayfasına yönlendir
-      try {
-        goToPayment({
-          requestId,
-          coachId,
-          selected_date: selectedDate,
-          selected_time: selectedTime,
-        });
-      } catch (navErr) {
-        // route yoksa fallback
-        const qs = new URLSearchParams();
-        qs.set("requestId", requestId);
-        qs.set("coachId", coachId);
-        qs.set("date", selectedDate);
-        qs.set("time", selectedTime);
-        navigate(`${FALLBACK_CHECKOUT_ROUTE}?${qs.toString()}`);
-      }
+      // ✅ 3) NET: sadece requestId ile PayTR sayfasına git
+      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(String(requestId))}`);
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");
@@ -675,7 +635,6 @@ export default function BookSession() {
               </div>
             )}
 
-            {/* küçük durum notu (akışı bozmaz) */}
             {loadingMe ? (
               <div className="text-[11px] text-gray-500">
                 Profil bilgileri kontrol ediliyor...

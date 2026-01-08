@@ -149,7 +149,7 @@ export default function UserProfileEdit() {
         // ✅ profili çek (kolonları açık seçelim)
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("id, full_name, display_name, role, phone, country, title, sector, city, updated_at")
+          .select("id, display_name, full_name, role, phone, country, title, sector, city, updated_at")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -217,10 +217,8 @@ export default function UserProfileEdit() {
 
       const payload = {
         id: user.id, // ✅ kritik (RLS with_check id=auth.uid())
-        // ✅ isim alanları paralel: dashboard/profile tutarlı kalsın
         display_name,
-        full_name: display_name,
-
+        full_name: display_name, // ✅ KRİTİK: profile/dashboard aynı isimden beslensin
         title: form.title || null,
         sector: form.sector || null,
         city: form.city || null,
@@ -410,8 +408,7 @@ export default function UserProfileEdit() {
             </div>
 
             <p className="text-xs text-slate-500">
-              * Kaydet dediğinde veriler <span className="font-mono">profiles</span> tablosuna yazılır. RLS bu kullanıcı için
-              sadece kendi kaydına izin verir.
+              * Kaydet dediğinde veriler <span className="font-mono">profiles</span> tablosuna yazılır.
             </p>
           </CardContent>
         </Card>

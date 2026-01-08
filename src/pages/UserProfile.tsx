@@ -137,7 +137,6 @@ function splitPhone(raw: string) {
       phone_local: clean.replace(found.dial, "").replace(/[^\d]/g, "").trim(),
     };
   }
-  // dial yoksa sadece rakam bırak
   return { phone_country: "TR", phone_local: clean.replace(/[^\d]/g, "").trim() };
 }
 
@@ -177,7 +176,6 @@ export default function UserProfile() {
       try {
         setLoading(true);
 
-        // ✅ getSession: askıda kalma riskini azaltır
         const { data: sData, error: sErr } = await withTimeout(
           supabase.auth.getSession(),
           12000,
@@ -195,11 +193,10 @@ export default function UserProfile() {
           return;
         }
 
-        // Profile çek (satır yoksa null)
         const { data: pData, error: pErr } = await withTimeout(
           supabase
             .from("profiles")
-            .select("id, full_name, display_name, title, sector, city, phone, email, created_at, updated_at")
+            .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
             .eq("id", user.id)
             .maybeSingle(),
           12000,
@@ -214,8 +211,8 @@ export default function UserProfile() {
           setProfile(null);
           setForm({
             full_name:
-              user?.user_metadata?.full_name ||
               user?.user_metadata?.display_name ||
+              user?.user_metadata?.full_name ||
               "",
             title: "",
             sector: "",
@@ -230,15 +227,13 @@ export default function UserProfile() {
         setProfile(p);
 
         const phoneParts = splitPhone(p?.phone || "");
-        const nameFallback =
-          p?.full_name ||
-          p?.display_name ||
-          user?.user_metadata?.full_name ||
-          user?.user_metadata?.display_name ||
-          "";
-
         setForm({
-          full_name: nameFallback,
+          full_name:
+            p?.display_name ||
+            p?.full_name ||
+            user?.user_metadata?.display_name ||
+            user?.user_metadata?.full_name ||
+            "",
           title: p?.title || "",
           sector: p?.sector || "",
           city: p?.city || "",
@@ -259,18 +254,19 @@ export default function UserProfile() {
     };
   }, []);
 
-  const effectiveName =
-    profile?.full_name ||
+  const displayName =
     profile?.display_name ||
-    me?.user_metadata?.full_name ||
+    profile?.full_name ||
     me?.user_metadata?.display_name ||
+    me?.user_metadata?.full_name ||
     me?.email?.split("@")?.[0] ||
     "Kullanıcı";
 
+  // ✅ PROFİL TAMAMLANMA: Tek şema (name + phone + city + title + sector)
   const completion = useMemo(() => {
     if (!me) return 0;
     const checks = [
-      !!(profile?.full_name || profile?.display_name || me?.user_metadata?.full_name || me?.user_metadata?.display_name),
+      !!(profile?.display_name || profile?.full_name || me?.user_metadata?.display_name || me?.user_metadata?.full_name),
       !!profile?.phone,
       !!profile?.city,
       !!profile?.title,
@@ -291,7 +287,6 @@ export default function UserProfile() {
     }
   }, [me]);
 
-  /** ✅ Modal aç (akış bozulmasın: sayfadan ayrılma yok) */
   const openEdit = () => {
     if (!me) {
       toast.error("Giriş yapmadan profili düzenleyemezsin.");
@@ -299,17 +294,14 @@ export default function UserProfile() {
       return;
     }
 
-    // mevcut profilden tekrar form bas (kullanıcı yarım bırakmış olabilir)
     const phoneParts = splitPhone(profile?.phone || "");
-    const nameFallback =
-      profile?.full_name ||
-      profile?.display_name ||
-      me?.user_metadata?.full_name ||
-      me?.user_metadata?.display_name ||
-      "";
-
     setForm({
-      full_name: nameFallback,
+      full_name:
+        profile?.display_name ||
+        profile?.full_name ||
+        me?.user_metadata?.display_name ||
+        me?.user_metadata?.full_name ||
+        "",
       title: profile?.title || "",
       sector: profile?.sector || "",
       city: profile?.city || "",
@@ -320,11 +312,8 @@ export default function UserProfile() {
     setEditOpen(true);
   };
 
-  const closeEdit = () => {
-    setEditOpen(false);
-  };
+  const closeEdit = () => setEditOpen(false);
 
-  /** ✅ Kaydet: email NOT NULL fix + phone E164 */
   const saveProfile = async () => {
     if (!me?.id) {
       toast.error("Lütfen giriş yapın.");
@@ -338,19 +327,28 @@ export default function UserProfile() {
     setSaving(true);
     try {
       const phoneE164 = buildE164(form.phone_country, form.phone_local);
+      const cleanName = (form.full_name || "").trim();
 
-      const name = (form.full_name || "").trim();
+      // ✅ auth metadata da aynı isimle güncellensin (navbar/role akışı bozulmasın)
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            display_name: cleanName,
+            full_name: cleanName,
+          },
+        });
+      } catch (e) {
+        // auth metadata güncellenemezse bile profiles kaydı devam etsin
+      }
 
       const payload = {
         id: me.id,
-        email: me.email, // ✅ KRİTİK FIX: profiles.email NOT NULL
-        // ✅ isim alanları paralel: edit sayfası display_name yazsa bile tutarlı kalsın
-        full_name: name || null,
-        display_name: name || null,
-
-        title: (form.title || "").trim() || null,
-        sector: (form.sector || "").trim() || null,
-        city: (form.city || "").trim() || null,
+        email: me.email,
+        display_name: cleanName, // ✅
+        full_name: cleanName,    // ✅
+        title: (form.title || "").trim(),
+        sector: (form.sector || "").trim(),
+        city: (form.city || "").trim(),
         phone: phoneE164 || null,
         updated_at: new Date().toISOString(),
       };
@@ -369,11 +367,10 @@ export default function UserProfile() {
 
       toast.success("Profil güncellendi.");
 
-      // tekrar çek
       const { data: pData, error: pErr } = await withTimeout(
         supabase
           .from("profiles")
-          .select("id, full_name, display_name, title, sector, city, phone, email, created_at, updated_at")
+          .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
           .eq("id", me.id)
           .maybeSingle(),
         12000,
@@ -406,7 +403,7 @@ export default function UserProfile() {
         <div className="max-w-6xl mx-auto px-4 py-10">
           <p className="text-xs text-white/90">User Profile</p>
           <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            {me ? effectiveName : "Profil"}
+            {me ? displayName : "Profil"}
           </h1>
           <p className="mt-2 text-sm text-white/90 max-w-2xl">
             Profil bilgilerin, koç eşleşmelerini ve seans deneyimini doğrudan etkiler.
@@ -661,7 +658,7 @@ export default function UserProfile() {
               </Card>
             </div>
 
-            {/* ✅ EDIT MODAL (aktif) */}
+            {/* ✅ EDIT MODAL */}
             {editOpen ? (
               <div className="fixed inset-0 z-50">
                 <div className="absolute inset-0 bg-black/50" onClick={saving ? undefined : closeEdit} />

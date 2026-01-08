@@ -33,10 +33,13 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const auth = useAuth();
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const me = auth?.user ?? null;
   const role = auth?.role ?? null; // user | coach | corporate | admin
+  const isAuthed = !!auth?.isAuthenticated;
+  const loading = !!auth?.loading;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -92,19 +95,24 @@ export default function Navbar() {
   }, [role]);
 
   const premiumTarget = useMemo(() => {
-    if (!auth?.isAuthenticated) return "/pricing";
+    if (!isAuthed) return "/pricing";
     if (role === "admin") return "/pricing";
     if (role === "corporate") return "/checkout?plan=corporate";
     if (role === "coach") return "/checkout?plan=coach";
     return "/checkout?plan=individual";
-  }, [auth?.isAuthenticated, role]);
+  }, [isAuthed, role]);
 
-  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+  const displayName =
+    me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
   const mobilePrimary =
     "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-700 transition";
+
+  // ✅ Auth yüklenirken navbar zıplamasın: login/register gösterme
+  const showAuthedUI = !loading && isAuthed && !!me;
+  const showGuestUI = !loading && !isAuthed;
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
@@ -145,15 +153,13 @@ export default function Navbar() {
             Webinar
           </Link>
 
+          {/* ✅ “2 tane premium” hissini bitir: tek satır, net */}
           <Button
             onClick={() => navigate(premiumTarget)}
             className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white"
           >
             <Crown className="h-4 w-4 mr-2" />
-            Premium{" "}
-            <span className="ml-2 hidden lg:inline text-white/80">
-              {premiumLabel}
-            </span>
+            {isAuthed ? premiumLabel : "Premium"}
           </Button>
         </nav>
 
@@ -189,8 +195,16 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
+          {/* ✅ AUTH LOADING PLACEHOLDER */}
+          {loading && (
+            <div className="hidden md:flex items-center gap-2">
+              <div className="h-10 w-24 rounded-xl bg-gray-100 animate-pulse" />
+              <div className="h-10 w-28 rounded-xl bg-gray-100 animate-pulse" />
+            </div>
+          )}
+
           {/* AUTH (DESKTOP) */}
-          {!me ? (
+          {showGuestUI && (
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
@@ -203,7 +217,9 @@ export default function Navbar() {
                 </Button>
               </Link>
             </div>
-          ) : (
+          )}
+
+          {showAuthedUI && (
             <div className="hidden md:flex items-center gap-2">
               <Link to={dashboardPath}>
                 <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
@@ -234,7 +250,6 @@ export default function Navbar() {
                     {dashboardLabel}
                   </DropdownMenuItem>
 
-                  {/* ✅ Admin kısayolu (desktop dropdown) */}
                   {role === "admin" && (
                     <DropdownMenuItem onClick={() => navigate("/admin")}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -283,10 +298,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <button
-              onClick={() => navigate("/mentor-circle")}
-              className={mobileBtn}
-            >
+            <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
               MentorCircle
             </button>
 
@@ -294,55 +306,43 @@ export default function Navbar() {
               Webinar
             </button>
 
-            <button
-              onClick={() => navigate(premiumTarget)}
-              className={mobilePrimary}
-            >
-              Premium — {premiumLabel}
+            <button onClick={() => navigate(premiumTarget)} className={mobilePrimary}>
+              {isAuthed ? premiumLabel : "Premium"}
             </button>
 
             <div className="pt-2 border-t space-y-2">
-              {!me ? (
+              {/* ✅ mobile’de de aynı: loading iken auth butonu gösterme */}
+              {loading ? (
+                <>
+                  <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
+                  <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
+                </>
+              ) : !isAuthed ? (
                 <>
                   <button onClick={() => navigate("/login")} className={mobileBtn}>
                     Giriş Yap
                   </button>
-                  <button
-                    onClick={() => navigate("/register")}
-                    className={mobilePrimary}
-                  >
+                  <button onClick={() => navigate("/register")} className={mobilePrimary}>
                     Kayıt Ol
                   </button>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => navigate(dashboardPath)}
-                    className={mobileBtn}
-                  >
+                  <button onClick={() => navigate(dashboardPath)} className={mobileBtn}>
                     {dashboardLabel}
                   </button>
 
                   {role === "admin" && (
-                    <button
-                      onClick={() => navigate("/admin")}
-                      className={mobileBtn}
-                    >
+                    <button onClick={() => navigate("/admin")} className={mobileBtn}>
                       Admin Paneli
                     </button>
                   )}
 
-                  <button
-                    onClick={() => navigate(profilePath)}
-                    className={mobileBtn}
-                  >
+                  <button onClick={() => navigate(profilePath)} className={mobileBtn}>
                     Profil
                   </button>
 
-                  <button
-                    onClick={() => navigate(settingsPath)}
-                    className={mobileBtn}
-                  >
+                  <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
                     Ayarlar
                   </button>
 

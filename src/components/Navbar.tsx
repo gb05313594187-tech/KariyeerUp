@@ -33,13 +33,10 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const auth = useAuth();
-
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const me = auth?.user ?? null;
-  const role = auth?.role ?? null; // user | coach | corporate | admin
-  const isAuthed = !!auth?.isAuthenticated;
-  const loading = !!auth?.loading;
+  const role = auth?.role ?? null;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -48,7 +45,6 @@ export default function Navbar() {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
-  /* ---------------- ROLE LABELS ---------------- */
   const roleLabel = useMemo(() => {
     if (role === "coach") return "Koç";
     if (role === "corporate") return "Şirket";
@@ -87,7 +83,7 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  // Premium label + hedef
+  // ✅ tek label
   const premiumLabel = useMemo(() => {
     if (role === "corporate") return "Kurumsal Premium";
     if (role === "coach") return "Koç Premium";
@@ -95,29 +91,23 @@ export default function Navbar() {
   }, [role]);
 
   const premiumTarget = useMemo(() => {
-    if (!isAuthed) return "/pricing";
+    if (!auth?.isAuthenticated) return "/pricing";
     if (role === "admin") return "/pricing";
     if (role === "corporate") return "/checkout?plan=corporate";
     if (role === "coach") return "/checkout?plan=coach";
     return "/checkout?plan=individual";
-  }, [isAuthed, role]);
+  }, [auth?.isAuthenticated, role]);
 
-  const displayName =
-    me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
   const mobilePrimary =
     "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-700 transition";
 
-  // ✅ Auth yüklenirken navbar zıplamasın: login/register gösterme
-  const showAuthedUI = !loading && isAuthed && !!me;
-  const showGuestUI = !loading && !isAuthed;
-
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* LOGO */}
         <Link to="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
@@ -125,7 +115,6 @@ export default function Navbar() {
           <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
-        {/* DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-2">
           <Link
             to="/mentor-circle"
@@ -153,19 +142,16 @@ export default function Navbar() {
             Webinar
           </Link>
 
-          {/* ✅ “2 tane premium” hissini bitir: tek satır, net */}
           <Button
             onClick={() => navigate(premiumTarget)}
             className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white"
           >
             <Crown className="h-4 w-4 mr-2" />
-            {isAuthed ? premiumLabel : "Premium"}
+            {premiumLabel}
           </Button>
         </nav>
 
-        {/* RIGHT */}
         <div className="flex items-center gap-2">
-          {/* LANGUAGE */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="rounded-xl">
@@ -176,18 +162,10 @@ export default function Navbar() {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("tr")}>
-                TR
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>
-                EN
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>
-                AR
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>
-                FR
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("tr")}>TR</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("en")}>EN</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("ar")}>AR</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("fr")}>FR</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -195,16 +173,13 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
-          {/* ✅ AUTH LOADING PLACEHOLDER */}
-          {loading && (
+          {/* ✅ loading bitmeden auth UI karar verme */}
+          {auth.loading ? (
             <div className="hidden md:flex items-center gap-2">
-              <div className="h-10 w-24 rounded-xl bg-gray-100 animate-pulse" />
-              <div className="h-10 w-28 rounded-xl bg-gray-100 animate-pulse" />
+              <div className="h-10 w-28 rounded-xl bg-gray-100" />
+              <div className="h-10 w-40 rounded-xl bg-gray-100" />
             </div>
-          )}
-
-          {/* AUTH (DESKTOP) */}
-          {showGuestUI && (
+          ) : !me ? (
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
@@ -217,9 +192,7 @@ export default function Navbar() {
                 </Button>
               </Link>
             </div>
-          )}
-
-          {showAuthedUI && (
+          ) : (
             <div className="hidden md:flex items-center gap-2">
               <Link to={dashboardPath}>
                 <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
@@ -283,7 +256,6 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* MOBILE TOGGLE */}
           <Button
             variant="outline"
             className="md:hidden rounded-xl"
@@ -294,30 +266,22 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* MOBILE MENU */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
             <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
               MentorCircle
             </button>
-
             <button onClick={() => navigate("/webinars")} className={mobileBtn}>
               Webinar
             </button>
 
             <button onClick={() => navigate(premiumTarget)} className={mobilePrimary}>
-              {isAuthed ? premiumLabel : "Premium"}
+              {premiumLabel}
             </button>
 
             <div className="pt-2 border-t space-y-2">
-              {/* ✅ mobile’de de aynı: loading iken auth butonu gösterme */}
-              {loading ? (
-                <>
-                  <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
-                  <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
-                </>
-              ) : !isAuthed ? (
+              {auth.loading ? null : !me ? (
                 <>
                   <button onClick={() => navigate("/login")} className={mobileBtn}>
                     Giriş Yap
@@ -331,21 +295,17 @@ export default function Navbar() {
                   <button onClick={() => navigate(dashboardPath)} className={mobileBtn}>
                     {dashboardLabel}
                   </button>
-
                   {role === "admin" && (
                     <button onClick={() => navigate("/admin")} className={mobileBtn}>
                       Admin Paneli
                     </button>
                   )}
-
                   <button onClick={() => navigate(profilePath)} className={mobileBtn}>
                     Profil
                   </button>
-
                   <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
                     Ayarlar
                   </button>
-
                   <button
                     onClick={async () => {
                       await auth.logout();

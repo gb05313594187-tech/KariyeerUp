@@ -1,7 +1,7 @@
 // src/pages/CoachProfile.tsx
 // @ts-nocheck
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,13 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-/* ----------------------------- content mocks ----------------------------- */
+/**
+ * ✅ SADECE BURAYI KONTROL ET
+ * Supabase tablo adların farklıysa burayı değiştir.
+ */
+const COACHES_TABLE = "app_2dff6511da_coaches";
+const SESSION_TABLE = "app_2dff6511da_session_requests"; // örn: session_requests
+
 const mockReviews = [
   {
     name: "Mert Y.",
@@ -42,6 +48,7 @@ const mockReviews = [
 ];
 
 const fallbackCoach = {
+  id: null,
   name: "Elif Kara",
   title: "Kariyer Koçu",
   location: "Online",
@@ -96,7 +103,9 @@ const tMini = (lang: string) => {
       bookNow: "Book now",
       selectTimeFirst: "Please select a time first.",
       loginRequired: "Please login to book a session.",
+      today: "Today",
       back: "Back",
+      busy: "Busy",
     };
   if (l === "fr")
     return {
@@ -106,7 +115,9 @@ const tMini = (lang: string) => {
       bookNow: "Réserver",
       selectTimeFirst: "Veuillez d’abord choisir une heure.",
       loginRequired: "Veuillez vous connecter pour réserver.",
+      today: "Aujourd’hui",
       back: "Retour",
+      busy: "Occupé",
     };
   if (l === "ar")
     return {
@@ -116,7 +127,9 @@ const tMini = (lang: string) => {
       bookNow: "احجز الآن",
       selectTimeFirst: "اختر الوقت أولاً.",
       loginRequired: "سجّل الدخول للحجز.",
+      today: "اليوم",
       back: "رجوع",
+      busy: "مشغول",
     };
   return {
     loading: "Koç profili yükleniyor...",
@@ -125,22 +138,47 @@ const tMini = (lang: string) => {
     bookNow: "Hemen Seans Al",
     selectTimeFirst: "Lütfen önce bir saat seç.",
     loginRequired: "Seans almak için giriş yapmalısın.",
+    today: "Bugün",
     back: "Geri dön",
+    busy: "Dolu",
   };
 };
 
-/* ----------------------------- calendar utils ----------------------------- */
-const pad2 = (n: number) => String(n).padStart(2, "0");
-const toYMD = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// 30 dk slotlar
+const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
+  const slots: string[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (let m = 0; m < 60; m += intervalMinutes) {
+      const hh = String(h).padStart(2, "0");
+      const mm = String(m).padStart(2, "0");
+      slots.push(`${hh}:${mm}`);
+    }
+  }
+  return slots;
+};
 
-const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
+// YYYY-MM-DD
+const toYMD = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.toISOString().slice(0, 10);
+};
 
-function buildMonthGrid(viewDate: Date) {
-  const first = startOfMonth(viewDate);
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+function buildMonthMatrix(viewDate: Date) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth(); // 0-11
+
+  const first = new Date(year, month, 1);
+  const startDow = first.getDay(); // 0 Sun - 6 Sat
+
   // Pazartesi başlangıç
-  const dow = (first.getDay() + 6) % 7; // Sun->6, Mon->0...
-  const gridStart = new Date(first);
-  gridStart.setDate(first.getDate() - dow);
+  const mondayBased = (startDow + 6) % 7; // Sun->6, Mon->0...
+  const gridStart = new Date(year, month, 1 - mondayBased);
 
   const days: Date[] = [];
   for (let i = 0; i < 42; i++) {
@@ -148,78 +186,101 @@ function buildMonthGrid(viewDate: Date) {
     d.setDate(gridStart.getDate() + i);
     days.push(d);
   }
-  return { first, days };
+  return { days, month, year };
 }
 
-const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
-  const slots: string[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (let m = 0; m < 60; m += intervalMinutes) {
-      slots.push(`${pad2(h)}:${pad2(m)}`);
-    }
-  }
-  return slots;
+// slug-...-<uuid> içinden uuid çek
+const extractUuidFromMixed = (s: string) => {
+  const m = String(s || "").match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
+  );
+  return m ? m[0] : "";
 };
 
-const isUuid = (s: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    String(s || "").trim()
+// "...-<uuid>" kısmını slug lookup için kırp
+const stripTrailingUuid = (s: string) => {
+  return String(s || "").replace(
+    /-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i,
+    ""
   );
+};
 
-/* -------------------------------- component ------------------------------ */
 export default function CoachProfile() {
-  // ✅ param esnek
+  // ✅ /coach/:slugOrId OR /coach/:slug OR /coach/:id
   const params: any = useParams();
-  const slugOrId = params?.slugOrId || params?.slug || params?.id;
+  const rawParam = String(params?.slugOrId || params?.slug || params?.id || "").trim();
+  const mixedUuid = useMemo(() => extractUuidFromMixed(rawParam), [rawParam]);
+  const slugForLookup = useMemo(() => stripTrailingUuid(rawParam), [rawParam]);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { language } = useLanguage();
   const TT = tMini(language || "tr");
-  const locale = useMemo(() => localeByLang(language || "tr"), [language]);
 
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // ✅ Takvim state (gerçek ay/yıl/gün)
-  const [viewDate, setViewDate] = useState<Date>(() => startOfMonth(new Date()));
+  // Takvim state
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
   const [selectedDate, setSelectedDate] = useState<string>(() => toYMD(new Date()));
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // ✅ Dolu saatler
-  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
-  const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
+  // ✅ Dolu saatler seti: "YYYY-MM-DD|HH:mm"
+  const [busySet, setBusySet] = useState<Set<string>>(new Set());
 
-  // ✅ coach fetch: önce slug, bulamazsa id
+  // ✅ Koçu slug/uuid/id ile sağlam çek (slug+uuid linkleri dahil)
   useEffect(() => {
-    if (!slugOrId) return;
+    if (!rawParam) return;
 
-    const run = async () => {
+    const fetchCoach = async () => {
       setLoading(true);
       try {
         let data: any = null;
         let error: any = null;
 
-        // slug ile dene
-        const r1 = await supabase
-          .from("app_2dff6511da_coaches")
-          .select("*")
-          .eq("slug", slugOrId)
-          .single();
-
-        data = r1.data;
-        error = r1.error;
-
-        // id ile dene
-        if ((error || !data) && isUuid(slugOrId)) {
-          const r2 = await supabase
-            .from("app_2dff6511da_coaches")
+        // 1) slug ile dene (uuid kırpılmış slug)
+        if (slugForLookup) {
+          const rSlug = await supabase
+            .from(COACHES_TABLE)
             .select("*")
-            .eq("id", slugOrId)
+            .eq("slug", slugForLookup)
             .single();
-          data = r2.data;
-          error = r2.error;
+          data = rSlug.data;
+          error = rSlug.error;
+        }
+
+        // 2) uuid varsa id ile dene
+        if ((!data || error) && mixedUuid) {
+          const rUuid = await supabase
+            .from(COACHES_TABLE)
+            .select("*")
+            .eq("id", mixedUuid)
+            .single();
+          data = rUuid.data;
+          error = rUuid.error;
+        }
+
+        // 3) rawParam direkt uuid/id olabilir
+        if ((!data || error) && rawParam) {
+          const rId = await supabase
+            .from(COACHES_TABLE)
+            .select("*")
+            .eq("id", rawParam)
+            .single();
+          data = rId.data;
+          error = rId.error;
         }
 
         if (error) {
@@ -236,13 +297,13 @@ export default function CoachProfile() {
       }
     };
 
-    run();
-  }, [slugOrId]);
+    fetchCoach();
+  }, [rawParam, mixedUuid, slugForLookup]);
 
   // UI map
   const c = useMemo(() => {
     const coach = coachRow;
-    if (!coach) return { ...fallbackCoach, id: null };
+    if (!coach) return fallbackCoach;
 
     return {
       id: coach.id,
@@ -278,70 +339,68 @@ export default function CoachProfile() {
     };
   }, [coachRow]);
 
-  // ✅ booked slots fetch (selectedDate değişince)
+  // ✅ Koçun dolu saatlerini çek (onaylı/ödeme alınmış gibi statüler)
   useEffect(() => {
     const run = async () => {
+      if (!c?.id) return;
+
       try {
-        const coachId = c?.id;
-        if (!coachId || !selectedDate) {
-          setBookedSlots(new Set());
-          return;
-        }
-
-        setLoadingSlots(true);
-
         const { data, error } = await supabase
-          .from("app_2dff6511da_session_requests")
-          .select("selected_time,status")
-          .eq("coach_id", coachId)
-          .eq("selected_date", selectedDate);
+          .from(SESSION_TABLE)
+          .select("selected_date, selected_time, status")
+          .eq("coach_id", c.id);
 
         if (error) {
-          console.error("Booked slots fetch error:", error);
-          setBookedSlots(new Set());
+          console.error("Busy fetch error:", error);
           return;
         }
 
-        const busy = new Set<string>();
+        const s = new Set<string>();
         (data || []).forEach((r: any) => {
-          const st = String(r?.status || "").toLowerCase();
-          const t = String(r?.selected_time || "").trim();
-          if (!t) return;
+          const st = String(r.status || "").toLowerCase();
 
-          // dolu sayılacak statüler
-          if (["pending", "approved", "confirmed", "paid"].includes(st)) {
-            busy.add(t);
+          // ✅ DOLU sayılacak statüler (kendi sistemine göre ekle/çıkar)
+          const isBusy =
+            ["approved", "confirmed", "paid", "completed"].includes(st);
+
+          if (isBusy && r.selected_date && r.selected_time) {
+            s.add(`${r.selected_date}|${r.selected_time}`);
           }
         });
 
-        setBookedSlots(busy);
-      } finally {
-        setLoadingSlots(false);
+        setBusySet(s);
+      } catch (e) {
+        console.error("Busy fetch unexpected:", e);
       }
     };
 
     run();
-    setSelectedSlot(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, c?.id]);
+  }, [c?.id]);
 
-  // header helpers
-  const { days } = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
-  const monthLabel = useMemo(
-    () => viewDate.toLocaleDateString(locale, { month: "long", year: "numeric" }),
-    [viewDate, locale]
-  );
+  const monthInfo = useMemo(() => buildMonthMatrix(calendarMonth), [calendarMonth]);
+  const locale = useMemo(() => localeByLang(language || "tr"), [language]);
 
-  const todayYmd = useMemo(() => toYMD(new Date()), []);
-  const isPastDay = (d: Date) => toYMD(d) < todayYmd;
-  const inViewMonth = (d: Date) => d.getMonth() === viewDate.getMonth();
+  const monthTitle = useMemo(() => {
+    return new Date(monthInfo.year, monthInfo.month, 1).toLocaleDateString(locale, {
+      month: "long",
+      year: "numeric",
+    });
+  }, [monthInfo, locale]);
 
-  const dowLabels = useMemo(() => {
+  const dow = useMemo(() => {
     // Pazartesi başlangıç
-    return ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-  }, []);
+    const base = new Date(2024, 0, 1); // Monday
+    const labels = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      labels.push(
+        d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "")
+      );
+    }
+    return labels;
+  }, [locale]);
 
-  // ✅ CTA: artık book-session değil -> requestId üret -> paytr
   const handleBook = async () => {
     if (!selectedSlot) {
       toast.error(TT.selectTimeFirst);
@@ -353,47 +412,23 @@ export default function CoachProfile() {
 
     if (!userId) {
       toast.error(TT.loginRequired);
-      const next = `${location.pathname}${location.search}`;
-      navigate(`/login?next=${encodeURIComponent(next)}`);
+      const qs = new URLSearchParams(searchParams);
+      if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
+      // login sonrası geri dönüş için
+      qs.set("next", `/coach/${rawParam}`);
+      navigate(`/login?${qs.toString()}`);
       return;
     }
 
-    const coachId = c?.id;
-    if (!coachId) {
-      toast.error("Koç bulunamadı.");
-      return;
-    }
+    // ✅ BookSession'e coachId/date/time gönder
+    const qs = new URLSearchParams(searchParams);
+    if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
 
-    try {
-      const { data, error } = await supabase
-        .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachId,
-          user_id: userId,
-          selected_date: selectedDate,
-          selected_time: selectedSlot,
-          status: "pending",
-        })
-        .select("id")
-        .single();
+    qs.set("coachId", String(c.id || "")); // DB id
+    qs.set("date", selectedDate);
+    qs.set("time", selectedSlot);
 
-      if (error) {
-        console.error("Session request insert error:", error);
-        toast.error("Seans talebi oluşturulamadı.");
-        return;
-      }
-
-      const requestId = data?.id;
-      if (!requestId) {
-        toast.error("requestId üretilemedi.");
-        return;
-      }
-
-      navigate(`/paytr/checkout?requestId=${encodeURIComponent(requestId)}`);
-    } catch (e) {
-      console.error("Unexpected book error:", e);
-      toast.error("Beklenmeyen bir hata oluştu.");
-    }
+    navigate(`/book-session?${qs.toString()}`);
   };
 
   if (loading && !coachRow) {
@@ -404,13 +439,11 @@ export default function CoachProfile() {
     );
   }
 
-  const timeSlots = useMemo(() => generateTimeSlots(10, 22, 30), []);
-
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
       {/* HERO */}
       <section className="w-full bg-white border-b border-orange-100">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-start gap-10">
+        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center gap-10">
           {/* Profil Fotoğrafı */}
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -464,8 +497,12 @@ export default function CoachProfile() {
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400" />
-                <span className="font-semibold">{Number(c.rating || 0).toFixed(1)}</span>
-                <span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span>
+                <span className="font-semibold">
+                  {Number(c.rating || 0).toFixed(1)}
+                </span>
+                <span className="text-gray-500">
+                  ({c.reviewCount || 0} değerlendirme)
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4 text-orange-500" />
@@ -484,7 +521,7 @@ export default function CoachProfile() {
               <Button
                 className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
                 onClick={handleBook}
-                disabled={!selectedDate || !selectedSlot}
+                disabled={!selectedSlot}
               >
                 {TT.bookNow}
               </Button>
@@ -499,82 +536,89 @@ export default function CoachProfile() {
             </div>
           </div>
 
-          {/* RIGHT: REAL CALENDAR + BUSY SLOTS */}
+          {/* RIGHT: REAL CALENDAR */}
           <div className="w-full md:w-80">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-orange-500" />
-                  Takvimden Gün ve Saat Seç
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-gray-800 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-orange-500" />
+                    {TT.chooseDate}
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-full border-orange-200 bg-white"
+                      onClick={() => {
+                        const d = new Date(calendarMonth);
+                        d.setMonth(d.getMonth() - 1);
+                        setCalendarMonth(d);
+                      }}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-full border-orange-200 bg-white"
+                      onClick={() => {
+                        const d = new Date(calendarMonth);
+                        d.setMonth(d.getMonth() + 1);
+                        setCalendarMonth(d);
+                      }}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardTitle>
+
+                <div className="mt-2 text-sm font-semibold text-gray-900">
+                  {monthTitle}
+                </div>
               </CardHeader>
 
-              <CardContent className="space-y-3">
-                {/* Ay kontrol */}
-                <div className="flex items-center justify-between gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl border-orange-200"
-                    onClick={() => {
-                      const d = new Date(viewDate);
-                      d.setMonth(d.getMonth() - 1);
-                      setViewDate(startOfMonth(d));
-                    }}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-
-                  <div className="text-center text-sm font-semibold text-gray-900 flex-1 capitalize">
-                    {monthLabel}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl border-orange-200"
-                    onClick={() => {
-                      const d = new Date(viewDate);
-                      d.setMonth(d.getMonth() + 1);
-                      setViewDate(startOfMonth(d));
-                    }}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-
+              <CardContent className="space-y-3 text-xs">
                 {/* DOW */}
-                <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-500">
-                  {dowLabels.map((d) => (
-                    <div key={d} className="text-center py-1">
+                <div className="grid grid-cols-7 gap-1">
+                  {dow.map((d) => (
+                    <div
+                      key={d}
+                      className="text-[11px] text-gray-500 font-semibold text-center"
+                    >
                       {d}
                     </div>
                   ))}
                 </div>
 
-                {/* Gün grid */}
+                {/* Month grid */}
                 <div className="grid grid-cols-7 gap-1">
-                  {days.map((d, idx) => {
+                  {monthInfo.days.map((d) => {
+                    const inMonth = d.getMonth() === monthInfo.month;
+                    const past = d < today;
                     const ymd = toYMD(d);
-                    const disabled = isPastDay(d);
-                    const selected = ymd === selectedDate;
-                    const muted = !inViewMonth(d);
+                    const isSelected = selectedDate === ymd;
+                    const isToday = isSameDay(d, today);
 
                     return (
                       <button
-                        key={`${ymd}-${idx}`}
-                        disabled={disabled}
+                        key={ymd}
+                        type="button"
+                        disabled={!inMonth || past}
                         onClick={() => {
                           setSelectedDate(ymd);
                           setSelectedSlot(null);
                         }}
                         className={[
-                          "h-9 rounded-xl text-sm border transition",
-                          selected
-                            ? "bg-red-600 text-white border-red-600"
-                            : "bg-white text-gray-800 border-orange-200 hover:bg-orange-50",
-                          disabled ? "opacity-40 cursor-not-allowed hover:bg-white" : "",
-                          muted ? "opacity-60" : "",
+                          "h-9 w-full rounded-xl text-[12px] font-semibold transition",
+                          inMonth ? "text-gray-800" : "text-gray-300",
+                          past ? "opacity-40 cursor-not-allowed" : "hover:bg-orange-50",
+                          isSelected ? "bg-red-600 text-white hover:bg-red-600" : "bg-white",
+                          isToday && !isSelected ? "ring-2 ring-orange-300" : "",
+                          "border border-orange-100",
                         ].join(" ")}
                       >
                         {d.getDate()}
@@ -583,44 +627,42 @@ export default function CoachProfile() {
                   })}
                 </div>
 
-                {/* Saat seçimi */}
+                {/* Time slots */}
                 <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-semibold text-gray-800 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-orange-500" />
-                      {TT.chooseTime}
-                    </div>
-                    {loadingSlots && (
-                      <div className="text-[11px] text-gray-500">yükleniyor...</div>
-                    )}
+                  <div className="text-[12px] font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-500" />
+                    {TT.chooseTime}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                    {timeSlots.map((slot) => {
-                      const busy = bookedSlots.has(slot);
-                      const active = selectedSlot === slot;
+                  <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
+                    {generateTimeSlots(10, 22, 30).map((slot) => {
+                      const isBusy = busySet.has(`${selectedDate}|${slot}`);
 
                       return (
-                        <button
+                        <Button
                           key={slot}
-                          disabled={busy}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={[
-                            "h-10 rounded-xl border text-sm flex items-center justify-center gap-2 transition",
-                            active
-                              ? "bg-red-600 text-white border-red-600"
-                              : "bg-white text-gray-800 border-orange-200 hover:bg-orange-50",
-                            busy ? "opacity-40 cursor-not-allowed hover:bg-white" : "",
-                          ].join(" ")}
+                          type="button"
+                          disabled={isBusy}
+                          variant={selectedSlot === slot ? "default" : "outline"}
+                          size="sm"
+                          className={`rounded-full h-8 text-[11px] ${
+                            isBusy
+                              ? "opacity-40 cursor-not-allowed bg-white border-orange-200 text-gray-500"
+                              : selectedSlot === slot
+                              ? "bg-red-600 text-white"
+                              : "border-orange-200 text-gray-700 hover:bg-orange-50 bg-white"
+                          }`}
+                          onClick={() => {
+                            if (isBusy) return;
+                            setSelectedSlot(slot);
+                          }}
                         >
-                          <Clock className="w-4 h-4" />
                           {slot}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
 
-                  {/* İstersen bunu tamamen kaldırabilirsin, ama bilgilendirici. */}
                   <div className="mt-3 text-[11px] text-gray-600">
                     {selectedSlot ? (
                       <>
@@ -630,7 +672,9 @@ export default function CoachProfile() {
                         </span>
                       </>
                     ) : (
-                      <span className="text-gray-500">Önce gün, sonra saat seç.</span>
+                      <span className="text-gray-500">
+                        Önce gün, sonra saat seç.
+                      </span>
                     )}
                   </div>
                 </div>
@@ -743,7 +787,9 @@ export default function CoachProfile() {
               ) : (
                 <Card className="bg-white border border-orange-100 shadow-sm">
                   <CardContent className="py-4">
-                    <p className="text-sm text-gray-600">Bu koç henüz özgeçmişini eklemedi.</p>
+                    <p className="text-sm text-gray-600">
+                      Bu koç henüz özgeçmişini eklemedi.
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -754,7 +800,9 @@ export default function CoachProfile() {
           <TabsContent value="programs">
             <div className="grid md:grid-cols-2 gap-4">
               {(c.programs || []).length === 0 && (
-                <p className="text-sm text-gray-500">Bu koç henüz program paketi eklemedi.</p>
+                <p className="text-sm text-gray-500">
+                  Bu koç henüz program paketi eklemedi.
+                </p>
               )}
             </div>
           </TabsContent>
@@ -767,9 +815,15 @@ export default function CoachProfile() {
                 <span className="font-medium text-gray-900">
                   {Number(c.rating || 0).toFixed(1)} / 5
                 </span>
-                <span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span>
+                <span className="text-gray-500">
+                  ({c.reviewCount || 0} değerlendirme)
+                </span>
               </div>
-              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 text-xs"
+              >
                 Filtrele
               </Button>
             </div>
@@ -790,7 +844,11 @@ export default function CoachProfile() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-800">{rev.text}</p>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-gray-500"
+                    >
                       <MessageCircle className="w-3 h-3 mr-1" />
                       Koç Yanıtı Yaz (yakında)
                     </Button>
@@ -812,8 +870,14 @@ export default function CoachProfile() {
                     <p className="font-semibold text-gray-900">
                       Kariyer Yönünü Bulmak İçin 3 Ana Soru
                     </p>
-                    <p className="text-xs text-gray-500">8 dk · Video · 1.2K görüntülenme</p>
-                    <Button variant="ghost" size="sm" className="px-0 h-7 text-xs text-red-600">
+                    <p className="text-xs text-gray-500">
+                      8 dk · Video · 1.2K görüntülenme
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-0 h-7 text-xs text-red-600"
+                    >
                       İçeriği Görüntüle
                     </Button>
                   </CardContent>

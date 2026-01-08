@@ -1,10 +1,10 @@
 // src/pages/Login.tsx
 // @ts-nocheck
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useMemo } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,18 +12,36 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/ui/card';
-import { toast } from 'sonner';
+} from "@/components/ui/card";
+import { toast } from "sonner";
 
 // Sadece supabase, AuthContext YOK
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ returnTo paramını yakala (varsa)
+  const returnTo = useMemo(() => {
+    const qs = new URLSearchParams(location.search);
+    const raw = (qs.get("returnTo") || "").trim();
+    if (!raw) return "";
+
+    // Güvenlik: sadece relative path kabul et
+    // - "/..." ile başlamalı
+    // - "http", "https", "//" vb. olamaz
+    if (!raw.startsWith("/")) return "";
+    if (raw.startsWith("//")) return "";
+    if (/^https?:/i.test(raw)) return "";
+
+    return raw;
+  }, [location.search]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const handleSubmit = async (e: any) => {
@@ -38,32 +56,31 @@ export default function Login() {
       });
 
       if (error) {
-        console.error('Login error:', error);
-        toast.error('E-posta veya şifre hatalı.');
+        console.error("Login error:", error);
+        toast.error("E-posta veya şifre hatalı.");
         setIsLoading(false);
         return;
       }
 
       if (!data.user) {
-        toast.error('Kullanıcı bulunamadı.');
+        toast.error("Kullanıcı bulunamadı.");
         setIsLoading(false);
         return;
       }
 
       // 2) Profile çek (rol ve onay durumu için)
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
         .single();
 
       if (profileError) {
-        console.error('Profile error:', profileError);
+        console.error("Profile error:", profileError);
       }
 
-      // (İstersen localStorage kaydı da tutabilirsin)
       localStorage.setItem(
-        'kariyeer_user',
+        "kariyeer_user",
         JSON.stringify({
           email: data.user.email,
           id: data.user.id,
@@ -71,24 +88,27 @@ export default function Login() {
         })
       );
 
-      toast.success('Giriş başarılı!');
+      toast.success("Giriş başarılı!");
 
-      // 3) Rol'e göre yönlendirme
-      if (profile?.account_type === 'coach') {
+      // ✅ 3) returnTo varsa ÖNCE onu uygula (akışı bozmaz)
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+        return;
+      }
+
+      // 4) Rol'e göre yönlendirme (MEVCUT AKIŞ AYNI)
+      if (profile?.account_type === "coach") {
         if (!profile.is_approved) {
-          // Koç ama henüz onaylanmamış → başvuru / durum sayfası
-          navigate('/coach-application');
+          navigate("/coach-application");
         } else {
-          // Onaylı koç → şimdilik ana sayfa
-          navigate('/');
+          navigate("/");
         }
       } else {
-        // Bireysel / şirket kullanıcı → ana sayfa
-        navigate('/');
+        navigate("/");
       }
     } catch (error: any) {
-      console.error('Giriş Hatası:', error);
-      toast.error('Giriş sırasında bir hata oluştu.');
+      console.error("Giriş Hatası:", error);
+      toast.error("Giriş sırasında bir hata oluştu.");
     } finally {
       setIsLoading(false);
     }
@@ -140,13 +160,13 @@ export default function Login() {
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
               disabled={isLoading}
             >
-              {isLoading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
+              {isLoading ? "Giriş Yapılıyor..." : "Giriş Yap"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <div className="text-sm text-gray-500">
-            Hesabınız yok mu?{' '}
+            Hesabınız yok mu?{" "}
             <Link
               to="/register"
               className="text-[#D32F2F] hover:underline font-semibold"

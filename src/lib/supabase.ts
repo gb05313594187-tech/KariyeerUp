@@ -4,6 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
+/* =========================================================
+   ✅ Supabase Client (stabil)
+   - global.headers'da apikey set ETME: supabase zaten ekler
+   - auth refresh/persist açık
+   ========================================================= */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -11,13 +16,42 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
   db: { schema: "public" },
-  global: {
-    headers: {
-      apikey: supabaseAnonKey,
-      // ❌ Authorization yok. Session varsa supabase kendisi yollar.
-    },
-  },
 });
+
+/* =========================================================
+   ✅ Helpers (timeout + token)
+   ========================================================= */
+
+// fetch timeout helper (pending kalmayı engeller)
+const fetchWithTimeout = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = 15000
+) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+      // network uyku / geri gelme durumlarında cache garipliklerini azaltır
+      cache: "no-store",
+    });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+};
+
+async function getAccessToken(): Promise<string | null> {
+  // getSession, refresh olmuş session’ı da döndürür; yoksa null
+  const { data, error } = await supabase.auth.getSession();
+  if (error) return null;
+  return data?.session?.access_token || null;
+}
+
+const nowIso = () => new Date().toISOString();
 
 /* =========================================================
    ✅ DB CHECK CONSTRAINT ile BİREBİR UYUMLU ENUMS
@@ -73,8 +107,6 @@ export interface PremiumSubscription {
   iyzico_subscription_id?: string | null;
   created_at: string;
   updated_at: string;
-
-  // ✅ nullable; doluysa sadece blue_badge | gold_badge
   badge_type: BadgeType | null;
 }
 
@@ -105,8 +137,6 @@ export interface Invoice {
   invoice_sent: boolean;
   invoice_sent_at?: string;
   created_at: string;
-
-  // opsiyonel alan, DB’de varsa
   subscription_type?: SubscriptionType | null;
 }
 
@@ -154,20 +184,10 @@ export interface Session {
   updated_at: string;
 }
 
-/* ---------------- HELPERS ---------------- */
+/* =========================================================
+   ✅ PREMIUM SUBSCRIPTION SERVICE
+   ========================================================= */
 
-async function getAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data?.session?.access_token || null;
-}
-
-const nowIso = () => new Date().toISOString();
-
-/* ---------------- PREMIUM SUBSCRIPTION SERVICE ---------------- */
-/**
- * ✅ Tek kaynak: app_2dff6511da_premium_subscriptions
- * Not: Premium kaydı oluştururken "badge_type" göndermek zorunda değilsin.
- */
 export const subscriptionService = {
   async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
     try {
@@ -181,8 +201,6 @@ export const subscriptionService = {
         .maybeSingle();
 
       if (error) return null;
-
-      // end_date null ise (süresiz) aktif sayabilirsin; istersen burada kontrol ekleriz.
       return (data as any) as PremiumSubscription;
     } catch {
       return null;
@@ -210,18 +228,23 @@ export const subscriptionService = {
       if (!token) return [];
 
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_subscriptions`;
-      const res = await fetch(edgeUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      const res = await fetchWithTimeout(
+        edgeUrl,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+        15000
+      );
 
       if (!res.ok) return [];
       const result = await res.json();
       return (result.subscriptions || []) as PremiumSubscription[];
     } catch {
+      // abort / network sleep dahil: boş dön
       return [];
     }
   },
@@ -229,15 +252,13 @@ export const subscriptionService = {
   async create(payload: {
     user_id: string;
     subscription_type: SubscriptionType;
-    status?: SubscriptionStatus; // default active
+    status?: SubscriptionStatus;
     price: number;
-    currency?: string; // default TRY
-    start_date?: string; // default now (DB)
+    currency?: string;
+    start_date?: string;
     end_date?: string | null;
     auto_renew?: boolean | null;
     iyzico_subscription_id?: string | null;
-
-    // ✅ İSTEMİYORSAN GÖNDERME / NULL GÖNDER
     badge_type?: BadgeType | null;
   }): Promise<PremiumSubscription | null> {
     try {
@@ -253,7 +274,6 @@ export const subscriptionService = {
         iyzico_subscription_id: payload.iyzico_subscription_id ?? null,
       };
 
-      // badge_type opsiyonel: hiç eklemiyoruz veya null ekliyoruz
       if (payload.badge_type !== undefined) {
         insertRow.badge_type = payload.badge_type;
       }
@@ -289,7 +309,9 @@ export const subscriptionService = {
   },
 };
 
-/* ---------------- PAYMENTS ---------------- */
+/* =========================================================
+   ✅ PAYMENTS
+   ========================================================= */
 
 export const paymentService = {
   async getByUserId(userId: string): Promise<Payment[]> {
@@ -297,13 +319,17 @@ export const paymentService = {
       const token = await getAccessToken();
       if (token) {
         const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_payments`;
-        const res = await fetch(edgeUrl, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        const res = await fetchWithTimeout(
+          edgeUrl,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+          15000
+        );
 
         if (res.ok) {
           const result = await res.json();
@@ -340,7 +366,9 @@ export const paymentService = {
   },
 };
 
-/* ---------------- INVOICES ---------------- */
+/* =========================================================
+   ✅ INVOICES
+   ========================================================= */
 
 export const invoiceService = {
   async getByUserId(userId: string): Promise<Invoice[]> {
@@ -348,13 +376,17 @@ export const invoiceService = {
       const token = await getAccessToken();
       if (token) {
         const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_invoices`;
-        const res = await fetch(edgeUrl, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        const res = await fetchWithTimeout(
+          edgeUrl,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+          15000
+        );
 
         if (res.ok) {
           const result = await res.json();
@@ -381,14 +413,18 @@ export const invoiceService = {
       if (!token) return { success: false, error: "No active session" };
 
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_generate_invoice_pdf`;
-      const response = await fetch(edgeUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      const response = await fetchWithTimeout(
+        edgeUrl,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ invoice_id: invoiceId }),
         },
-        body: JSON.stringify({ invoice_id: invoiceId }),
-      });
+        20000
+      );
 
       if (!response.ok) return { success: false, error: "Failed to generate PDF" };
       const result = await response.json();
@@ -404,14 +440,18 @@ export const invoiceService = {
       if (!token) return { success: false, error: "No active session" };
 
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_send_invoice_email`;
-      const response = await fetch(edgeUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      const response = await fetchWithTimeout(
+        edgeUrl,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ invoice_id: invoiceId }),
         },
-        body: JSON.stringify({ invoice_id: invoiceId }),
-      });
+        20000
+      );
 
       if (!response.ok) return { success: false, error: "Failed to send email" };
       return { success: true };
@@ -444,7 +484,9 @@ export const invoiceService = {
   },
 };
 
-/* ---------------- SUPPORT TICKETS ---------------- */
+/* =========================================================
+   ✅ SUPPORT TICKETS
+   ========================================================= */
 
 export const supportTicketService = {
   async create(
@@ -460,7 +502,7 @@ export const supportTicketService = {
       const user = userData?.user;
       if (!user) return { success: false, error: "User not found" };
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${supabaseUrl}/functions/v1/app_2dff6511da_create_support_ticket`,
         {
           method: "POST",
@@ -477,7 +519,8 @@ export const supportTicketService = {
               fullName: (user.user_metadata as any)?.full_name || user.email,
             },
           }),
-        }
+        },
+        20000
       );
 
       if (!response.ok) return { success: false, error: "Failed to create support ticket" };
@@ -504,7 +547,9 @@ export const supportTicketService = {
   },
 };
 
-/* ---------------- COACHES ---------------- */
+/* =========================================================
+   ✅ COACHES
+   ========================================================= */
 
 export const coachService = {
   async getApproved(): Promise<Coach[]> {
@@ -570,7 +615,9 @@ export const coachService = {
   },
 };
 
-/* ---------------- SESSIONS ---------------- */
+/* =========================================================
+   ✅ SESSIONS
+   ========================================================= */
 
 export const sessionService = {
   async getByCoachId(coachId: string): Promise<Session[]> {

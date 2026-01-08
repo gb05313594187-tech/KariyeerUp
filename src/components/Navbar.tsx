@@ -89,15 +89,23 @@ export default function Navbar() {
     return "Bireysel Premium";
   }, [role]);
 
-  // ✅ Bireysel premium sayfası geri
+  // ✅ Kritik düzeltme: giriş yoksa bireysel-premium landing’e gider.
+  // ✅ giriş varsa checkout’a gider. Böylece book-session asla hedef olamaz.
   const premiumTarget = useMemo(() => {
-    if (role === "corporate") return "/pricing?tab=corporate";
-    if (role === "coach") return "/pricing?tab=coach";
-    return "/bireysel-premium";
-  }, [role]);
+    const authed = !!auth?.isAuthenticated;
 
-  const displayName =
-    me?.fullName || me?.user_metadata?.full_name || me?.email?.split("@")?.[0] || "Kullanıcı";
+    if (!authed) {
+      // marketing/landing
+      return "/bireysel-premium";
+    }
+
+    if (role === "admin") return "/pricing";
+    if (role === "corporate") return "/checkout?plan=corporate";
+    if (role === "coach") return "/checkout?plan=coach";
+    return "/checkout?plan=individual";
+  }, [auth?.isAuthenticated, role]);
+
+  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";

@@ -149,7 +149,7 @@ export default function UserProfileEdit() {
         // ✅ profili çek (kolonları açık seçelim)
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("id, display_name, role, phone, country, title, sector, city, updated_at")
+          .select("id, full_name, display_name, role, phone, country, title, sector, city, updated_at")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -167,7 +167,7 @@ export default function UserProfileEdit() {
           meta.display_name || meta.full_name || meta.fullName || meta.name || "";
 
         setForm({
-          display_name: p?.display_name || metaName || "",
+          display_name: p?.display_name || p?.full_name || metaName || "",
           title: p?.title || "",
           sector: p?.sector || "",
           city: p?.city || "",
@@ -217,7 +217,10 @@ export default function UserProfileEdit() {
 
       const payload = {
         id: user.id, // ✅ kritik (RLS with_check id=auth.uid())
+        // ✅ isim alanları paralel: dashboard/profile tutarlı kalsın
         display_name,
+        full_name: display_name,
+
         title: form.title || null,
         sector: form.sector || null,
         city: form.city || null,

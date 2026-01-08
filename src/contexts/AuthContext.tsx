@@ -21,7 +21,6 @@ interface AuthContextType {
   role: Role | null;
   isAuthenticated: boolean;
 
-  // ✅ UI için
   loading: boolean;
   refresh: () => Promise<void>;
 
@@ -45,30 +44,12 @@ function normalizeRole(v: any): Role {
   return "user";
 }
 
-function pickFullName(meta: any, profile: any) {
-  // ✅ Tek kaynaktan isim üretelim (öncelik: profiles.display_name)
-  const fromProfile = profile?.display_name || profile?.full_name || "";
-  if (String(fromProfile || "").trim()) return String(fromProfile).trim();
-
-  const fromMeta =
-    meta?.display_name ||
-    meta?.displayName ||
-    meta?.full_name ||
-    meta?.fullName ||
-    meta?.name ||
-    "";
-  if (String(fromMeta || "").trim()) return String(fromMeta).trim();
-
-  return "User";
-}
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // ✅ UI buna göre davranacak
   const [loading, setLoading] = useState(true);
 
   const clearAuth = () => {
@@ -78,56 +59,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
   };
 
-  const loadUserProfile = async (u: SupabaseUser) => {
-    setSupabaseUser(u);
-
-    const meta = u.user_metadata || {};
-    const metaRole = normalizeRole(meta.role || meta.user_type || meta.userType);
-
-    // ✅ profiles okunamazsa bile login kalmasın diye try/catch içinde
-    let profile: any = null;
+  const loadUserProfile = async (supabaseUserData: SupabaseUser) => {
     try {
-      const { data, error } = await supabase
+      setSupabaseUser(supabaseUserData);
+
+      const meta = supabaseUserData.user_metadata || {};
+      const metaRole = normalizeRole(meta.role || meta.user_type || meta.userType);
+
+      // NOTE: burada kolon isimlerini senin tablona göre seç (aşağıda RLS kısmında da anlatacağım)
+      const { data: profile, error } = await supabase
         .from("profiles")
-        .select("display_name, full_name, role, phone, country, user_type")
-        .eq("id", u.id)
+        .select("full_name, display_name, role, phone, country, user_type")
+        .eq("id", supabaseUserData.id)
         .maybeSingle();
 
-      if (!error) profile = data || null;
+      let finalRole: Role = metaRole;
+
+      // isim önceliği: profiles.full_name -> profiles.display_name -> metadata -> email prefix
+      let fullName =
+        profile?.full_name ||
+        profile?.display_name ||
+        meta.full_name ||
+        meta.fullName ||
+        meta.display_name ||
+        meta.displayName ||
+        (supabaseUserData.email ? supabaseUserData.email.split("@")[0] : "User");
+
+      let phone: string | null = profile?.phone ?? null;
+      let country: string | null = profile?.country ?? null;
+
+      if (!error && profile) {
+        finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
+      }
+
+      setRole(finalRole);
+      setUser({
+        id: supabaseUserData.id,
+        email: supabaseUserData.email || "",
+        fullName,
+        role: finalRole,
+        phone,
+        country,
+      });
+      setIsAuthenticated(true);
     } catch (e) {
-      // RLS / network vs: meta ile devam edeceğiz
-      profile = null;
+      console.error("Error loading user profile:", e);
+      clearAuth();
     }
-
-    const finalRole = normalizeRole(profile?.role || profile?.user_type || metaRole);
-    const fullName = pickFullName(meta, profile);
-
-    const nextUser: User = {
-      id: u.id,
-      email: u.email || "",
-      fullName,
-      role: finalRole,
-      phone: profile?.phone ?? null,
-      country: profile?.country ?? null,
-    };
-
-    setRole(finalRole);
-    setUser(nextUser);
-    setIsAuthenticated(true);
   };
 
-  // ✅ tek otorite: session kontrolü
   const refresh = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
 
-      const u = data?.session?.user || null;
+      const u = data?.session?.user;
       if (u) await loadUserProfile(u);
       else clearAuth();
     } catch (e) {
-      console.error("Auth refresh error:", e);
+      console.error("Error checking user:", e);
       clearAuth();
     } finally {
       setLoading(false);
@@ -135,42 +126,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // ilk yük
     refresh();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // ✅ event geldiğinde UI “giriş yap” diye zıplamasın
       setLoading(true);
       try {
-        const u = session?.user || null;
-
-        if (event === "SIGNED_OUT") {
-          clearAuth();
-          return;
-        }
-
-        if (u) {
+        const u = session?.user;
+        if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && u) {
           await loadUserProfile(u);
-        } else {
+        } else if (event === "SIGNED_OUT") {
           clearAuth();
+        } else {
+          if (u) await loadUserProfile(u);
+          else clearAuth();
         }
-      } catch (e) {
-        console.error("onAuthStateChange error:", e);
-        clearAuth();
       } finally {
         setLoading(false);
       }
     });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { success: false, message: error.message };
 
@@ -188,8 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       clearAuth();
     } catch (e) {
@@ -203,25 +184,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (updates: Partial<User>): Promise<boolean> => {
     if (!user) return false;
 
-    setLoading(true);
     try {
-      const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
-      const nextName = String(updates.fullName ?? user.fullName ?? "").trim() || "User";
+      setLoading(true);
 
-      // ✅ auth metadata: hem display_name hem full_name set (geriye dönük uyum)
+      const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
+
       await supabase.auth.updateUser({
         data: {
           role: nextRole,
-          display_name: nextName,
-          full_name: nextName,
+          full_name: updates.fullName ?? user.fullName,
+          display_name: updates.fullName ?? user.fullName,
         },
       });
 
-      // ✅ DB: display_name ana isim kaynağı
       const { error } = await supabase
         .from("profiles")
         .update({
-          display_name: nextName,
+          full_name: updates.fullName ?? user.fullName,
+          display_name: updates.fullName ?? user.fullName,
           role: nextRole,
           phone: updates.phone ?? user.phone ?? null,
           country: updates.country ?? user.country ?? null,
@@ -233,13 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      const next: User = {
-        ...user,
-        ...updates,
-        fullName: nextName,
-        role: nextRole,
-      };
-
+      const next: User = { ...user, ...updates, role: nextRole };
       setUser(next);
       setRole(next.role);
       setIsAuthenticated(true);

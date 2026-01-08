@@ -15,14 +15,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-// ❗ Edge Function URL (opsiyonel mail)
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ✅ PayTR checkout route (SENDEKİ GERÇEK ROUTE BU)
+// ✅ DOĞRU route
 const PAYTR_ROUTE = "/paytr/checkout";
+const FALLBACK_CHECKOUT_ROUTE = "/paytr/checkout";
 
-// ----------------- Date helpers (NO toISOString for date-only) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -50,9 +49,7 @@ const isBeforeDay = (a: Date, b: Date) =>
   startOfDay(a).getTime() < startOfDay(b).getTime();
 
 function buildMonthGrid(viewMonth: Date) {
-  // Monday-first 6-week grid (42 cells)
   const mondayIndex = (dow: number) => (dow + 6) % 7;
-
   const first = startOfMonth(viewMonth);
   const lead = mondayIndex(first.getDay());
   const gridStart = new Date(first);
@@ -70,13 +67,11 @@ function buildMonthGrid(viewMonth: Date) {
 const monthTR = (d: Date) =>
   d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
-// ----------------- Component -----------------
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const coachId = searchParams.get("coachId");
-
   const prefillDate = searchParams.get("date") || "";
   const prefillTime = searchParams.get("time") || "";
 
@@ -90,12 +85,8 @@ export default function BookSession() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calendar state
-  const [viewMonth, setViewMonth] = useState<Date>(() =>
-    startOfMonth(new Date())
-  );
+  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
 
-  // Selected date/time
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = parseYMD(prefillDate);
     return d ? toYMD(d) : toYMD(new Date());
@@ -109,7 +100,6 @@ export default function BookSession() {
     note: "",
   });
 
-  // Auth + Prefill
   useEffect(() => {
     let mounted = true;
 
@@ -159,7 +149,6 @@ export default function BookSession() {
     };
   }, []);
 
-  // Coach fetch
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -186,7 +175,6 @@ export default function BookSession() {
     fetchCoach();
   }, [coachId]);
 
-  // Prefill -> viewMonth sync
   useEffect(() => {
     const d = parseYMD(prefillDate);
     if (d) {
@@ -196,20 +184,15 @@ export default function BookSession() {
       const now = new Date();
       setViewMonth(startOfMonth(now));
     }
-
     if (prefillTime) setSelectedTime(prefillTime);
   }, [prefillDate, prefillTime]);
 
   const specializations = useMemo(() => {
     const raw =
       coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
-
     if (Array.isArray(raw)) return raw.filter(Boolean);
     if (typeof raw === "string") {
-      return raw
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
+      return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
     return [];
   }, [coach]);
@@ -228,21 +211,19 @@ export default function BookSession() {
     !!String(form.fullName || "").trim() &&
     !!String(form.email || "").trim();
 
+  const goToPayment = (payload: { requestId: string }) => {
+    const qs = new URLSearchParams();
+    qs.set("requestId", payload.requestId);
+    navigate(`${PAYTR_ROUTE}?${qs.toString()}`, { replace: true });
+  };
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (!coachId) {
-      toast.error("Koç bilgisi bulunamadı. Lütfen tekrar deneyin.");
-      return;
-    }
-    if (!selectedDate || !selectedTime) {
-      toast.error("Lütfen bir tarih ve saat seçin.");
-      return;
-    }
-    if (!String(form.fullName || "").trim() || !String(form.email || "").trim()) {
-      toast.error("Lütfen ad soyad ve e-posta alanlarını doldurun.");
-      return;
-    }
+    if (!coachId) return toast.error("Koç bilgisi bulunamadı.");
+    if (!selectedDate || !selectedTime) return toast.error("Tarih ve saat seç.");
+    if (!String(form.fullName || "").trim() || !String(form.email || "").trim())
+      return toast.error("Ad soyad ve e-posta zorunlu.");
 
     try {
       setIsSubmitting(true);
@@ -256,18 +237,10 @@ export default function BookSession() {
         return;
       }
 
-      // ✅ ÜCRET (kuruş)
-      const feeTL = Number(coach?.session_fee || coach?.price || 0);
-      const payment_amount = Math.max(1, Math.round(feeTL * 100));
-
-      // ✅ ID'yi biz üretelim ki merchant_oid’yi de aynı anda dolduralım
-      const requestId = crypto.randomUUID();
-      const merchant_oid = requestId.replace(/-/g, ""); // PayTR için en güvenlisi
-
-      const { error: insErr } = await supabase
+      // 1) INSERT
+      const { data: created, error: insErr } = await supabase
         .from("app_2dff6511da_session_requests")
         .insert({
-          id: requestId,
           coach_id: coachId,
           user_id: userId,
           full_name: String(form.fullName || "").trim(),
@@ -276,13 +249,9 @@ export default function BookSession() {
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
           status: "pending",
-
-          // ✅ PayTR için kritik alanlar
-          payment_status: "pending",
-          payment_amount,
-          currency: "TL",
-          merchant_oid,
-        });
+        })
+        .select("id")
+        .single();
 
       if (insErr) {
         console.error("Insert error:", insErr);
@@ -290,9 +259,36 @@ export default function BookSession() {
         return;
       }
 
-      // ✅ Mail (opsiyonel)
+      const requestId = created?.id;
+      if (!requestId) {
+        toast.error("Talep oluşturuldu ama ID alınamadı.");
+        return;
+      }
+
+      // 2) PayTR için DB alanlarını doldur (kritik)
+      const fee = Number(coach?.session_fee || 0);
+      const paymentAmount = Math.max(1, Math.round(fee * 100)); // kuruş
+      const merchantOid = String(requestId).replace(/-/g, "");   // alfanumerik
+
+      const { error: upErr } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .update({
+          payment_status: "pending",
+          currency: "TL",
+          payment_amount: paymentAmount,
+          merchant_oid: merchantOid,
+        })
+        .eq("id", requestId);
+
+      if (upErr) {
+        console.error("Payment fields update error:", upErr);
+        toast.error("Ödeme alanları yazılamadı.");
+        return;
+      }
+
+      // 3) Mail (opsiyonel)
       try {
-        const res = await fetch(FUNCTION_URL, {
+        await fetch(FUNCTION_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -308,23 +304,15 @@ export default function BookSession() {
             note: form.note,
           }),
         });
+      } catch {}
 
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("Email function error:", res.status, text);
-        }
-      } catch (emailErr) {
-        console.error("Email function fetch error:", emailErr);
-      }
-
-      // ✅ ÖDEME SAYFASI
-      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(requestId)}`, {
-        replace: true,
-      });
+      // 4) Direkt ödeme
+      toast.success("Ödemeye yönlendiriliyorsun...");
+      goToPayment({ requestId });
       return;
     } catch (err) {
       console.error("Reservation error:", err);
-      toast.error("Bir hata oluştu, lütfen tekrar dene.");
+      toast.error("Bir hata oluştu, tekrar dene.");
     } finally {
       setIsSubmitting(false);
     }
@@ -332,7 +320,6 @@ export default function BookSession() {
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
-      {/* HERO */}
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white pt-8 pb-14 px-4">
         <div className="max-w-5xl mx-auto">
           <button
@@ -343,9 +330,7 @@ export default function BookSession() {
             Geri dön
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-black leading-tight">
-            Seans Planla
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">Seans Planla</h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
             Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme adımına geçilir.
           </p>
@@ -353,7 +338,6 @@ export default function BookSession() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 -mt-10 pb-20 relative z-10">
-        {/* Coach summary */}
         <div className="bg-white rounded-2xl shadow-md border border-red-100 p-4 mb-6 flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
             <img
@@ -411,9 +395,7 @@ export default function BookSession() {
           </Button>
         </div>
 
-        {/* Layout: Calendar + Form */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* CALENDAR CARD */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -481,14 +463,6 @@ export default function BookSession() {
               })}
             </div>
 
-            <div className="mt-4 text-xs text-gray-500">
-              Seçilen tarih:{" "}
-              <span className="font-semibold text-gray-900">
-                {selectedDate || "-"}
-              </span>
-            </div>
-
-            {/* TIME PICKER */}
             <div className="mt-6">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-4 h-4 text-gray-400" />
@@ -523,25 +497,15 @@ export default function BookSession() {
                   );
                 })}
               </div>
-
-              <div className="mt-3 text-xs text-gray-500">
-                Seçilen saat:{" "}
-                <span className="font-semibold text-gray-900">
-                  {selectedTime || "-"}
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* FORM CARD */}
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
           >
             <div>
-              <div className="text-sm font-extrabold text-gray-900">
-                Bilgilerini gir
-              </div>
+              <div className="text-sm font-extrabold text-gray-900">Bilgilerini gir</div>
               <div className="text-xs text-gray-500 mt-1">
                 Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış olmalısın.
               </div>
@@ -559,9 +523,7 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, fullName: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                 />
               </div>
 
@@ -576,9 +538,7 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 />
               </div>
 
@@ -588,29 +548,11 @@ export default function BookSession() {
                 </label>
                 <textarea
                   name="note"
-                  placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
+                  placeholder="Örn: kariyer geçişi planlıyorum..."
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   value={form.note}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                 />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
-              <div className="font-bold text-gray-900 mb-1">Özet</div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Tarih</span>
-                <span className="font-semibold">{selectedDate || "-"}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 mt-1">
-                <span>Saat</span>
-                <span className="font-semibold">{selectedTime || "-"}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 mt-1">
-                <span>Süre</span>
-                <span className="font-semibold">45 dk</span>
               </div>
             </div>
 
@@ -623,16 +565,8 @@ export default function BookSession() {
               {isSubmitting ? "Yönlendiriliyor..." : "Ödemeye Geç"}
             </Button>
 
-            {!canSubmit && (
-              <div className="text-[11px] text-gray-500">
-                Devam etmek için: tarih + saat seç, ad soyad ve e-posta doldur.
-              </div>
-            )}
-
             {loadingMe ? (
-              <div className="text-[11px] text-gray-500">
-                Profil bilgileri kontrol ediliyor...
-              </div>
+              <div className="text-[11px] text-gray-500">Profil bilgileri kontrol ediliyor...</div>
             ) : null}
           </form>
         </div>

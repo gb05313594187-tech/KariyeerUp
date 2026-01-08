@@ -14,6 +14,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+
 import { supabase } from "@/lib/supabase";
 
 export default function Login() {
@@ -22,16 +23,6 @@ export default function Login() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
-
-  // ✅ geri dönüş: ?redirect=... veya location.state.from
-  const redirectTo = (() => {
-    const qs = new URLSearchParams(location.search);
-    const q = qs.get("redirect");
-    if (q) return q;
-    const st: any = location.state;
-    if (st?.from) return st.from;
-    return "/";
-  })();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -48,32 +39,22 @@ export default function Login() {
         toast.error("E-posta veya şifre hatalı.");
         return;
       }
-      if (!data?.user) {
+
+      if (!data.user) {
         toast.error("Kullanıcı bulunamadı.");
         return;
       }
 
-      // ✅ localStorage yazma: KALDIRILDI (AuthProvider ile çakışıyordu)
-      // localStorage.setItem("kariyeer_user", ...)
-
       toast.success("Giriş başarılı!");
 
-      // Rol bilgisi gerekiyorsa AuthContext zaten yakalayacak.
-      // Sadece koç onaysız ise yönlendir.
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("account_type,is_approved")
-          .eq("id", data.user.id)
-          .single();
-
-        if (profile?.account_type === "coach" && !profile?.is_approved) {
-          navigate("/coach-application", { replace: true });
-          return;
-        }
-      } catch {}
-
-      navigate(redirectTo, { replace: true });
+      // ✅ next param’a dön (seans/checkout akışını kurtarır)
+      const qs = new URLSearchParams(location.search);
+      const next = qs.get("next");
+      if (next) {
+        navigate(next, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err: any) {
       console.error("Giriş Hatası:", err);
       toast.error("Giriş sırasında bir hata oluştu.");

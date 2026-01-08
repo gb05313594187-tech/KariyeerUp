@@ -125,7 +125,7 @@ export default function App() {
 
             {/* ✅ PAYTR CHECKOUT */}
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
-            {/* ✅ ALIAS: BookSession’in yönlendirdiği route */}
+            {/* ✅ ALIAS: BookSession /paytr-checkout’a yönlendiriyor olabilir */}
             <Route path="/paytr-checkout" element={<PaytrCheckout />} />
 
             {/* How it works */}

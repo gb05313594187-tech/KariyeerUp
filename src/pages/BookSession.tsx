@@ -1,6 +1,6 @@
 // src/pages/BookSession.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,6 +20,10 @@ const FUNCTION_URL =
 
 // ✅ DOĞRU route
 const PAYTR_ROUTE = "/paytr/checkout";
+
+// ✅ tablo adlarını tek yerden yönet
+const COACHES_TABLE = "app_2dff6511da_coaches";
+const SESSION_TABLE = "app_2dff6511da_session_requests"; // sende farklıysa değiştir
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (d: Date) =>
@@ -69,13 +73,31 @@ const monthTR = (d: Date) =>
 const monthNameTR = (year: number, monthIdx: number) =>
   new Date(year, monthIdx, 1).toLocaleDateString("tr-TR", { month: "long" });
 
+// ✅ PayTR merchant_oid üret (sadece güvenli karakterler)
+const makeMerchantOid = () => {
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `oid_${Date.now()}_${rand}`;
+};
+
+// ✅ toast spam önleyici: aynı mesajı tek sefer bas
+const useOnceToast = () => {
+  const shown = useRef(new Set<string>());
+  return (key: string, fn: () => void) => {
+    if (shown.current.has(key)) return;
+    shown.current.add(key);
+    fn();
+  };
+};
+
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const onceToast = useOnceToast();
 
-  const coachId = searchParams.get("coachId");
-  const prefillDate = searchParams.get("date") || "";
-  const prefillTime = searchParams.get("time") || "";
+  const coachId = (searchParams.get("coachId") || "").trim();
+  const prefillDate = (searchParams.get("date") || "").trim();
+  const prefillTime = (searchParams.get("time") || "").trim();
+  const lang = (searchParams.get("lang") || "tr").trim();
 
   const today = useMemo(() => startOfDay(new Date()), []);
 
@@ -104,16 +126,25 @@ export default function BookSession() {
     note: "",
   });
 
-  // ✅ Ay/Yıl seçici state (takvim kayma sorununu çözer: direkt seç, grid doğru render)
+  // ✅ Ay/Yıl seçici state
   const [monthPick, setMonthPick] = useState<number>(() => viewMonth.getMonth()); // 0-11
   const [yearPick, setYearPick] = useState<number>(() => viewMonth.getFullYear());
 
   useEffect(() => {
-    // viewMonth değişince picker'ı senkronla
     setMonthPick(viewMonth.getMonth());
     setYearPick(viewMonth.getFullYear());
   }, [viewMonth]);
 
+  // ✅ Guard: coachId yoksa burada durma (navbar kilitleyen ana sebep)
+  useEffect(() => {
+    if (coachId) return;
+
+    onceToast("missing_coachId", () => toast.error("coachId eksik."));
+    // Premium CTA yanlış yere geldiyse stabil fallback
+    navigate(`/coaches?lang=${encodeURIComponent(lang)}`, { replace: true });
+  }, [coachId, lang, navigate]);
+
+  // ✅ Auth + profil prefill
   useEffect(() => {
     let mounted = true;
 
@@ -128,7 +159,16 @@ export default function BookSession() {
         if (!mounted) return;
         setAuthUser(u);
 
-        if (!u) return;
+        // login yoksa -> login'e yönlendir (return path ile)
+        if (!u) {
+          const nextQs = new URLSearchParams(searchParams);
+          if (!nextQs.get("lang")) nextQs.set("lang", lang);
+          const next = `/book-session?${nextQs.toString()}`;
+          navigate(`/login?lang=${encodeURIComponent(lang)}&next=${encodeURIComponent(next)}`, {
+            replace: true,
+          });
+          return;
+        }
 
         try {
           const { data: p } = await supabase
@@ -161,8 +201,10 @@ export default function BookSession() {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ Koç fetch (coachId yoksa zaten guard geri attı)
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -170,14 +212,16 @@ export default function BookSession() {
         setLoadingCoach(true);
 
         const { data, error } = await supabase
-          .from("app_2dff6511da_coaches")
+          .from(COACHES_TABLE)
           .select("*")
           .eq("id", coachId)
           .single();
 
         if (error) {
           console.error("Coach fetch error:", error);
-          toast.error("Koç bilgisi alınamadı.");
+          onceToast("coach_fetch_fail", () => toast.error("Koç bilgisi alınamadı."));
+          // burada kalma
+          navigate(`/coaches?lang=${encodeURIComponent(lang)}`, { replace: true });
           return;
         }
         setCoach(data);
@@ -187,8 +231,9 @@ export default function BookSession() {
     };
 
     fetchCoach();
-  }, [coachId]);
+  }, [coachId, lang, navigate]);
 
+  // ✅ query date/time prefill
   useEffect(() => {
     const d = parseYMD(prefillDate);
     if (d) {
@@ -231,6 +276,7 @@ export default function BookSession() {
   const goToPayment = (payload: { requestId: string }) => {
     const qs = new URLSearchParams();
     qs.set("requestId", payload.requestId);
+    if (lang) qs.set("lang", lang);
     navigate(`${PAYTR_ROUTE}?${qs.toString()}`, { replace: true });
   };
 
@@ -249,14 +295,23 @@ export default function BookSession() {
       const userId = auth?.user?.id;
 
       if (!userId) {
-        toast.error("Seans talebi için giriş yapmalısın.");
-        navigate(`/login`);
+        // ✅ spam yapma, tek yönlendir
+        onceToast("login_required", () =>
+          toast.error("Seans talebi için giriş yapmalısın.")
+        );
+
+        const nextQs = new URLSearchParams(searchParams);
+        if (!nextQs.get("lang")) nextQs.set("lang", lang);
+        const next = `/book-session?${nextQs.toString()}`;
+        navigate(`/login?lang=${encodeURIComponent(lang)}&next=${encodeURIComponent(next)}`, {
+          replace: true,
+        });
         return;
       }
 
       // 1) INSERT
       const { data: created, error: insErr } = await supabase
-        .from("app_2dff6511da_session_requests")
+        .from(SESSION_TABLE)
         .insert({
           coach_id: coachId,
           user_id: userId,
@@ -285,11 +340,13 @@ export default function BookSession() {
 
       // 2) PayTR için DB alanlarını doldur (kritik)
       const fee = Number(coach?.session_fee || 0);
-      const paymentAmount = Math.max(1, Math.round(fee * 100)); // kuruş
-      const merchantOid = String(requestId).replace(/-/g, ""); // alfanumerik
+      // fee 0 ise bile patlamasın -> min 1 kuruş
+      const paymentAmount = Math.max(1, Math.round(fee * 100));
+
+      const merchantOid = makeMerchantOid();
 
       const { error: upErr } = await supabase
-        .from("app_2dff6511da_session_requests")
+        .from(SESSION_TABLE)
         .update({
           payment_status: "pending",
           currency: "TL",
@@ -304,14 +361,11 @@ export default function BookSession() {
         return;
       }
 
-      // 3) Mail (opsiyonel)
+      // 3) Mail (opsiyonel, hata olsa da akış bozulmasın)
       try {
         await fetch(FUNCTION_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             coach_email: coach?.email || "",
             user_email: String(form.email || "").trim(),
@@ -322,12 +376,14 @@ export default function BookSession() {
             note: form.note,
           }),
         });
-      } catch {}
+      } catch (mailErr) {
+        // mail fail akışı bozmaz
+        console.warn("Reservation email failed:", mailErr);
+      }
 
       // 4) Direkt ödeme
       toast.success("Ödemeye yönlendiriliyorsun...");
       goToPayment({ requestId });
-      return;
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, tekrar dene.");
@@ -336,7 +392,7 @@ export default function BookSession() {
     }
   };
 
-  // ✅ Yıl aralığı: bu yıl - 2 ... bu yıl + 5 (istersen genişlet)
+  // ✅ Yıl aralığı
   const yearOptions = useMemo(() => {
     const y = new Date().getFullYear();
     const arr: number[] = [];
@@ -348,6 +404,9 @@ export default function BookSession() {
     const next = startOfMonth(new Date(yy, mm, 1));
     setViewMonth(next);
   };
+
+  // coachId guard yönlendireceği için burada ekstra render kilitlemeyelim
+  if (!coachId) return null;
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
@@ -435,12 +494,12 @@ export default function BookSession() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-gray-400" />
+_toggleBRB:
                 <div className="font-extrabold text-gray-900 capitalize">
                   {monthTR(viewMonth)}
                 </div>
               </div>
 
-              {/* ✅ Yıl + Ay seçici (kayma yerine direkt seçim) */}
               <div className="flex items-center gap-2">
                 <select
                   value={yearPick}
@@ -474,13 +533,10 @@ export default function BookSession() {
                   ))}
                 </select>
 
-                {/* İstersen kalsın: oklarla ay değişimi */}
                 <button
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                  onClick={() =>
-                    setViewMonth((m) => addMonths(m, -1))
-                  }
+                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
                   aria-label="Önceki ay"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -488,9 +544,7 @@ export default function BookSession() {
                 <button
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                  onClick={() =>
-                    setViewMonth((m) => addMonths(m, 1))
-                  }
+                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
                   aria-label="Sonraki ay"
                 >
                   <ChevronRight className="w-4 h-4" />

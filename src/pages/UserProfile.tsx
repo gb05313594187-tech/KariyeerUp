@@ -41,7 +41,7 @@ export default function UserProfile() {
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
-  // ⚠️ Modal edit UI: şimdilik koruyoruz (senin dosyan kırpılmasın diye)
+  // ✅ Modal edit aktif
   const [editOpen, setEditOpen] = useState(false);
 
   // Edit form state (profiles tablosu ile 1:1)
@@ -52,6 +52,20 @@ export default function UserProfile() {
     city: "",
     phone: "",
   });
+
+  const hydrateFormFrom = (user: any, p: any) => {
+    setForm({
+      full_name:
+        p?.full_name ||
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.display_name ||
+        "",
+      title: p?.title || "",
+      sector: p?.sector || "",
+      city: p?.city || "",
+      phone: p?.phone || "",
+    });
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -82,7 +96,9 @@ export default function UserProfile() {
         const { data: pData, error: pErr } = await withTimeout(
           supabase
             .from("profiles")
-            .select("id, full_name, title, sector, city, phone, created_at, updated_at")
+            .select(
+              "id, full_name, title, sector, city, phone, created_at, updated_at"
+            )
             .eq("id", user.id)
             .maybeSingle(),
           12000,
@@ -92,35 +108,25 @@ export default function UserProfile() {
         if (pErr) {
           console.error("profiles select error:", pErr);
 
-          // ✅ kritik: burada UI takılmasın, fallback ile sayfa yaşasın
           toast.error(
-            `Profil okunamadı: ${pErr.message || "RLS/kolon kontrol et (profiles)"}`
+            `Profil okunamadı: ${
+              pErr.message || "RLS/kolon kontrol et (profiles)"
+            }`
           );
 
           setProfile(null);
-          setForm({
-            full_name: user?.user_metadata?.full_name || user?.user_metadata?.display_name || "",
-            title: "",
-            sector: "",
-            city: "",
-            phone: "",
-          });
+          hydrateFormFrom(user, null);
           return;
         }
 
         const p = pData || null;
         setProfile(p);
-
-        setForm({
-          full_name: p?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.display_name || "",
-          title: p?.title || "",
-          sector: p?.sector || "",
-          city: p?.city || "",
-          phone: p?.phone || "",
-        });
+        hydrateFormFrom(user, p);
       } catch (e: any) {
         console.error("UserProfile load error:", e);
-        toast.error(e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi.");
+        toast.error(
+          e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi."
+        );
       } finally {
         if (mounted) setLoading(false);
       }
@@ -142,7 +148,11 @@ export default function UserProfile() {
   const completion = useMemo(() => {
     if (!me) return 0;
     const checks = [
-      !!(profile?.full_name || me?.user_metadata?.full_name || me?.user_metadata?.display_name),
+      !!(
+        profile?.full_name ||
+        me?.user_metadata?.full_name ||
+        me?.user_metadata?.display_name
+      ),
       !!profile?.phone,
       !!profile?.city,
       !!profile?.title,
@@ -163,29 +173,21 @@ export default function UserProfile() {
     }
   }, [me]);
 
-  // ✅ Tek kaynak: profil düzenleme her zaman edit sayfasına gitsin
+  // ✅ Modal aç
   const goEdit = () => {
     if (!me) {
       toast.error("Giriş yapmadan profili düzenleyemezsin.");
       navigate("/login");
       return;
     }
-    navigate("/user/profile/edit");
+    // formu en güncel state ile doldur
+    hydrateFormFrom(me, profile);
+    setEditOpen(true);
   };
 
-  // ⚠️ Modal edit’i koruyoruz ama şimdilik kullanılmıyor
   const closeEdit = () => {
-    setForm({
-      full_name:
-        profile?.full_name ||
-        me?.user_metadata?.full_name ||
-        me?.user_metadata?.display_name ||
-        "",
-      title: profile?.title || "",
-      sector: profile?.sector || "",
-      city: profile?.city || "",
-      phone: profile?.phone || "",
-    });
+    // kaydetmeden kapatılırsa mevcut profile’a geri döndür
+    hydrateFormFrom(me, profile);
     setEditOpen(false);
   };
 
@@ -195,15 +197,21 @@ export default function UserProfile() {
       return;
     }
 
+    const full_name = String(form.full_name || "").trim();
+    if (!full_name) {
+      toast.error("Ad Soyad zorunlu.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         id: me.id, // ✅ kritik: auth.uid() = id
-        full_name: (form.full_name || "").trim(),
-        title: (form.title || "").trim(),
-        sector: (form.sector || "").trim(),
-        city: (form.city || "").trim(),
-        phone: (form.phone || "").trim(),
+        full_name,
+        title: (form.title || "").trim() || null,
+        sector: (form.sector || "").trim() || null,
+        city: (form.city || "").trim() || null,
+        phone: (form.phone || "").trim() || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -219,25 +227,31 @@ export default function UserProfile() {
         return;
       }
 
-      toast.success("Profil güncellendi.");
+      // ✅ state’i anında güncelle (UI beklemesin)
+      setProfile((prev: any) => ({ ...(prev || {}), ...payload }));
 
-      // tekrar çek (garanti)
+      // ✅ yeniden çek (garanti)
       const { data: pData, error: pErr } = await withTimeout(
         supabase
           .from("profiles")
-          .select("id, full_name, title, sector, city, phone, created_at, updated_at")
+          .select(
+            "id, full_name, title, sector, city, phone, created_at, updated_at"
+          )
           .eq("id", me.id)
           .maybeSingle(),
         12000,
         "profiles.reselect"
       );
 
-      if (!pErr) setProfile(pData || payload);
+      if (!pErr && pData) setProfile(pData);
 
+      toast.success("Profil güncellendi.");
       setEditOpen(false);
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu.");
+      toast.error(
+        e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu."
+      );
     } finally {
       setSaving(false);
     }
@@ -272,7 +286,10 @@ export default function UserProfile() {
               <span className="font-semibold">%{me ? completion : 0}</span>
             </div>
             <div className="mt-2 h-2 rounded-full bg-white/25 overflow-hidden">
-              <div className="h-full bg-white" style={{ width: `${me ? completion : 0}%` }} />
+              <div
+                className="h-full bg-white"
+                style={{ width: `${me ? completion : 0}%` }}
+              />
             </div>
           </div>
 
@@ -464,7 +481,10 @@ export default function UserProfile() {
                     </p>
 
                     <div className="mt-4 flex gap-2 flex-wrap">
-                      <Button className="rounded-xl w-full" onClick={() => navigate("/coaches")}>
+                      <Button
+                        className="rounded-xl w-full"
+                        onClick={() => navigate("/coaches")}
+                      >
                         Koçları İncele <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                       <Button
@@ -517,7 +537,7 @@ export default function UserProfile() {
               </Card>
             </div>
 
-            {/* EDIT MODAL (korunuyor ama şu an kullanılmıyor) */}
+            {/* ✅ EDIT MODAL (aktif) */}
             {editOpen ? (
               <div className="fixed inset-0 z-50">
                 <div
@@ -553,7 +573,9 @@ export default function UserProfile() {
                           <label className="text-xs text-slate-600">Ad Soyad</label>
                           <input
                             value={form.full_name}
-                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                            onChange={(e) =>
+                              setForm((s) => ({ ...s, full_name: e.target.value }))
+                            }
                             placeholder="Örn: Salih Gökalp Büyükçelebi"
                             className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                           />
@@ -563,7 +585,7 @@ export default function UserProfile() {
                           <label className="text-xs text-slate-600">Unvan</label>
                           <input
                             value={form.title}
-                            onChange={(e) => setForm({ ...form, title: e.target.value })}
+                            onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
                             placeholder="Örn: Product Manager"
                             className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                           />
@@ -573,7 +595,9 @@ export default function UserProfile() {
                           <label className="text-xs text-slate-600">Sektör</label>
                           <input
                             value={form.sector}
-                            onChange={(e) => setForm({ ...form, sector: e.target.value })}
+                            onChange={(e) =>
+                              setForm((s) => ({ ...s, sector: e.target.value }))
+                            }
                             placeholder="Örn: Yazılım, Fintech..."
                             className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                           />
@@ -583,7 +607,7 @@ export default function UserProfile() {
                           <label className="text-xs text-slate-600">Şehir</label>
                           <input
                             value={form.city}
-                            onChange={(e) => setForm({ ...form, city: e.target.value })}
+                            onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
                             placeholder="Örn: İstanbul"
                             className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                           />
@@ -593,7 +617,7 @@ export default function UserProfile() {
                           <label className="text-xs text-slate-600">Telefon</label>
                           <input
                             value={form.phone}
-                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                            onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
                             placeholder="Örn: +90 5xx xxx xx xx"
                             className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
                           />

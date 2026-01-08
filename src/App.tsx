@@ -75,6 +75,9 @@ import AdminSettings from "@/pages/AdminSettings";
 import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 
+// ✅ PAYTR
+import PaytrCheckout from "@/pages/PaytrCheckout";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -116,9 +119,12 @@ export default function App() {
             {/* ✅ PREMIUM / PRICING */}
             <Route path="/pricing" element={<Pricing />} />
 
-            {/* ✅ CHECKOUT FLOW */}
+            {/* ✅ CHECKOUT FLOW (mevcut) */}
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+
+            {/* ✅ PAYTR CHECKOUT (yeni) */}
+            <Route path="/paytr/checkout" element={<PaytrCheckout />} />
 
             {/* How it works */}
             <Route path="/nasil-calisir" element={<HowItWorks />} />

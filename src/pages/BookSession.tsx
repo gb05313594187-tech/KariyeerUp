@@ -19,8 +19,10 @@ import { toast } from "sonner";
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ✅ PayTR checkout route (tek kaynak)
+// ✅ PayTR checkout route
 const PAYTR_ROUTE = "/paytr-checkout";
+// Eğer App.tsx’te route yoksa fallback:
+const FALLBACK_CHECKOUT_ROUTE = "/checkout";
 
 // ----------------- Date helpers (NO toISOString for date-only) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -91,7 +93,9 @@ export default function BookSession() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calendar state
-  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [viewMonth, setViewMonth] = useState<Date>(() =>
+    startOfMonth(new Date())
+  );
 
   // Selected date/time
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -240,6 +244,22 @@ export default function BookSession() {
     !!String(form.fullName || "").trim() &&
     !!String(form.email || "").trim();
 
+  // ✅ PayTR yönlendirme
+  const goToPayment = (payload: {
+    requestId: string;
+    coachId: string;
+    selected_date: string;
+    selected_time: string;
+  }) => {
+    const qs = new URLSearchParams();
+    qs.set("requestId", payload.requestId);
+    qs.set("coachId", payload.coachId);
+    qs.set("date", payload.selected_date);
+    qs.set("time", payload.selected_time);
+
+    navigate(`${PAYTR_ROUTE}?${qs.toString()}`);
+  };
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -326,8 +346,22 @@ export default function BookSession() {
 
       toast.success("Talep oluşturuldu. Ödemeye yönlendiriliyorsun...");
 
-      // ✅ 3) NET: sadece requestId ile PayTR sayfasına git
-      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(String(requestId))}`);
+      // ✅ 3) PayTR ödeme sayfasına yönlendir
+      try {
+        goToPayment({
+          requestId,
+          coachId,
+          selected_date: selectedDate,
+          selected_time: selectedTime,
+        });
+      } catch {
+        const qs = new URLSearchParams();
+        qs.set("requestId", requestId);
+        qs.set("coachId", coachId);
+        qs.set("date", selectedDate);
+        qs.set("time", selectedTime);
+        navigate(`${FALLBACK_CHECKOUT_ROUTE}?${qs.toString()}`);
+      }
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");

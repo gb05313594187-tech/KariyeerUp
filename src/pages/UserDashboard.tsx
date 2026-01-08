@@ -40,18 +40,17 @@ export default function UserDashboard() {
         setAuthUser(user);
 
         if (!user) {
-          // Giriş yok → dashboard yine render olsun ama “giriş yap” CTA çıksın
           setProfile(null);
           setSessionsCount(null);
           setPaymentsCount(null);
           return;
         }
 
-        // ✅ Profil: tek kaynak profiles (display_name + full_name uyumlu)
+        // profiles (opsiyonel)
         try {
           const { data: pData, error: pErr } = await supabase
             .from("profiles")
-            .select("id, full_name, display_name, phone, city, title, sector, industry")
+            .select("*")
             .eq("id", user.id)
             .maybeSingle();
 
@@ -60,7 +59,7 @@ export default function UserDashboard() {
           setProfile(null);
         }
 
-        // Sessions (opsiyonel): tablo yoksa hata alabilir, kırmayız
+        // sessions (opsiyonel)
         try {
           const { count, error: sErr } = await supabase
             .from("sessions")
@@ -72,7 +71,7 @@ export default function UserDashboard() {
           setSessionsCount(null);
         }
 
-        // Payments (opsiyonel): tablo yoksa hata alabilir, kırmayız
+        // payments (opsiyonel)
         try {
           const { count, error: payErr } = await supabase
             .from("payments")
@@ -97,28 +96,30 @@ export default function UserDashboard() {
   }, []);
 
   const displayName =
-    profile?.full_name ||
     profile?.display_name ||
-    profile?.name ||
-    authUser?.user_metadata?.full_name ||
+    profile?.full_name ||
     authUser?.user_metadata?.display_name ||
+    authUser?.user_metadata?.full_name ||
     authUser?.email?.split("@")?.[0] ||
     "Kullanıcı";
 
+  // ✅ completion: UserProfile ile birebir aynı check seti
   const completion = useMemo(() => {
-    // ✅ UserProfile ile aynı isim zinciri + sector uyumu
+    if (!authUser) return 0;
+
     const checks = [
       !!(
-        profile?.full_name ||
         profile?.display_name ||
-        authUser?.user_metadata?.full_name ||
-        authUser?.user_metadata?.display_name
+        profile?.full_name ||
+        authUser?.user_metadata?.display_name ||
+        authUser?.user_metadata?.full_name
       ),
-      !!(profile?.phone || authUser?.phone),
-      !!profile?.city,
-      !!profile?.title,
-      !!(profile?.sector || profile?.industry),
+      !!(profile?.phone),
+      !!(profile?.city),
+      !!(profile?.title),
+      !!(profile?.sector),
     ];
+
     const filled = checks.filter(Boolean).length;
     const pct = Math.round((filled / checks.length) * 100);
     return isNaN(pct) ? 0 : pct;
@@ -375,7 +376,7 @@ export default function UserDashboard() {
               ) : paymentsCount === null ? (
                 <div className="space-y-3">
                   <p className="text-slate-600">
-                    Ödeme modülü hazırlanıyor. (iyzico / alternatif sağlayıcı bağlanınca aktif)
+                    Ödeme modülü hazırlanıyor. (PayTR bağlanınca aktif)
                   </p>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <ShieldCheck className="h-4 w-4" />

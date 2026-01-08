@@ -89,16 +89,15 @@ export default function Navbar() {
     return "Bireysel Premium";
   }, [role]);
 
-  // ✅ Fix: bireysel premium -> /bireysel-premium
+  // ✅ Bireysel premium sayfası geri
   const premiumTarget = useMemo(() => {
-    if (!auth?.isAuthenticated) return "/bireysel-premium";
-    if (role === "admin") return "/pricing";
-    if (role === "corporate") return "/checkout?plan=corporate";
-    if (role === "coach") return "/checkout?plan=coach";
+    if (role === "corporate") return "/pricing?tab=corporate";
+    if (role === "coach") return "/pricing?tab=coach";
     return "/bireysel-premium";
-  }, [auth?.isAuthenticated, role]);
+  }, [role]);
 
-  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+  const displayName =
+    me?.fullName || me?.user_metadata?.full_name || me?.email?.split("@")?.[0] || "Kullanıcı";
 
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
@@ -244,7 +243,7 @@ export default function Navbar() {
                   <DropdownMenuItem
                     onClick={async () => {
                       await auth.logout();
-                      window.location.assign("/");
+                      navigate("/");
                     }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -308,7 +307,7 @@ export default function Navbar() {
                   <button
                     onClick={async () => {
                       await auth.logout();
-                      window.location.assign("/");
+                      navigate("/");
                     }}
                     className={mobileBtn}
                   >

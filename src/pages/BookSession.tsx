@@ -20,7 +20,6 @@ const FUNCTION_URL =
 
 // ✅ DOĞRU route
 const PAYTR_ROUTE = "/paytr/checkout";
-const FALLBACK_CHECKOUT_ROUTE = "/paytr/checkout";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (d: Date) =>
@@ -67,6 +66,9 @@ function buildMonthGrid(viewMonth: Date) {
 const monthTR = (d: Date) =>
   d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
+const monthNameTR = (year: number, monthIdx: number) =>
+  new Date(year, monthIdx, 1).toLocaleDateString("tr-TR", { month: "long" });
+
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -85,7 +87,9 @@ export default function BookSession() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [viewMonth, setViewMonth] = useState<Date>(() =>
+    startOfMonth(new Date())
+  );
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = parseYMD(prefillDate);
@@ -99,6 +103,16 @@ export default function BookSession() {
     email: "",
     note: "",
   });
+
+  // ✅ Ay/Yıl seçici state (takvim kayma sorununu çözer: direkt seç, grid doğru render)
+  const [monthPick, setMonthPick] = useState<number>(() => viewMonth.getMonth()); // 0-11
+  const [yearPick, setYearPick] = useState<number>(() => viewMonth.getFullYear());
+
+  useEffect(() => {
+    // viewMonth değişince picker'ı senkronla
+    setMonthPick(viewMonth.getMonth());
+    setYearPick(viewMonth.getFullYear());
+  }, [viewMonth]);
 
   useEffect(() => {
     let mounted = true;
@@ -192,7 +206,10 @@ export default function BookSession() {
       coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
     if (Array.isArray(raw)) return raw.filter(Boolean);
     if (typeof raw === "string") {
-      return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
+      return raw
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
     }
     return [];
   }, [coach]);
@@ -249,6 +266,7 @@ export default function BookSession() {
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
           status: "pending",
+          payment_status: "pending",
         })
         .select("id")
         .single();
@@ -268,7 +286,7 @@ export default function BookSession() {
       // 2) PayTR için DB alanlarını doldur (kritik)
       const fee = Number(coach?.session_fee || 0);
       const paymentAmount = Math.max(1, Math.round(fee * 100)); // kuruş
-      const merchantOid = String(requestId).replace(/-/g, "");   // alfanumerik
+      const merchantOid = String(requestId).replace(/-/g, ""); // alfanumerik
 
       const { error: upErr } = await supabase
         .from("app_2dff6511da_session_requests")
@@ -318,6 +336,19 @@ export default function BookSession() {
     }
   };
 
+  // ✅ Yıl aralığı: bu yıl - 2 ... bu yıl + 5 (istersen genişlet)
+  const yearOptions = useMemo(() => {
+    const y = new Date().getFullYear();
+    const arr: number[] = [];
+    for (let i = y - 2; i <= y + 5; i++) arr.push(i);
+    return arr;
+  }, []);
+
+  const jumpToMonth = (yy: number, mm: number) => {
+    const next = startOfMonth(new Date(yy, mm, 1));
+    setViewMonth(next);
+  };
+
   return (
     <div className="bg-white min-h-screen text-gray-900">
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white pt-8 pb-14 px-4">
@@ -330,9 +361,12 @@ export default function BookSession() {
             Geri dön
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-black leading-tight">Seans Planla</h1>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">
+            Seans Planla
+          </h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
-            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme adımına geçilir.
+            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme
+            adımına geçilir.
           </p>
         </div>
       </div>
@@ -396,8 +430,9 @@ export default function BookSession() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
+          {/* TAKVİM */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-gray-400" />
                 <div className="font-extrabold text-gray-900 capitalize">
@@ -405,18 +440,58 @@ export default function BookSession() {
                 </div>
               </div>
 
+              {/* ✅ Yıl + Ay seçici (kayma yerine direkt seçim) */}
               <div className="flex items-center gap-2">
+                <select
+                  value={yearPick}
+                  onChange={(e) => {
+                    const yy = Number(e.target.value);
+                    setYearPick(yy);
+                    jumpToMonth(yy, monthPick);
+                  }}
+                  className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-sm font-semibold"
+                >
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={monthPick}
+                  onChange={(e) => {
+                    const mm = Number(e.target.value);
+                    setMonthPick(mm);
+                    jumpToMonth(yearPick, mm);
+                  }}
+                  className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-sm font-semibold capitalize"
+                >
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <option key={idx} value={idx}>
+                      {monthNameTR(yearPick, idx)}
+                    </option>
+                  ))}
+                </select>
+
+                {/* İstersen kalsın: oklarla ay değişimi */}
                 <button
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
+                  onClick={() =>
+                    setViewMonth((m) => addMonths(m, -1))
+                  }
+                  aria-label="Önceki ay"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
-                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
+                  onClick={() =>
+                    setViewMonth((m) => addMonths(m, 1))
+                  }
+                  aria-label="Sonraki ay"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -451,7 +526,9 @@ export default function BookSession() {
                       "h-11 rounded-xl border text-sm font-semibold transition",
                       cell.inMonth ? "bg-white" : "bg-gray-50",
                       cell.inMonth ? "text-gray-900" : "text-gray-400",
-                      disabled ? "opacity-40 cursor-not-allowed" : "hover:border-red-300",
+                      disabled
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:border-red-300",
                       isToday ? "border-orange-300" : "border-gray-200",
                       isSelected ? "border-red-600 bg-red-50 text-red-700" : "",
                     ].join(" ")}
@@ -500,14 +577,18 @@ export default function BookSession() {
             </div>
           </div>
 
+          {/* FORM */}
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
           >
             <div>
-              <div className="text-sm font-extrabold text-gray-900">Bilgilerini gir</div>
+              <div className="text-sm font-extrabold text-gray-900">
+                Bilgilerini gir
+              </div>
               <div className="text-xs text-gray-500 mt-1">
-                Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış olmalısın.
+                Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış
+                olmalısın.
               </div>
             </div>
 
@@ -523,7 +604,9 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, fullName: e.target.value }))
+                  }
                 />
               </div>
 
@@ -538,7 +621,9 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
                 />
               </div>
 
@@ -551,7 +636,9 @@ export default function BookSession() {
                   placeholder="Örn: kariyer geçişi planlıyorum..."
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   value={form.note}
-                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, note: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -566,7 +653,9 @@ export default function BookSession() {
             </Button>
 
             {loadingMe ? (
-              <div className="text-[11px] text-gray-500">Profil bilgileri kontrol ediliyor...</div>
+              <div className="text-[11px] text-gray-500">
+                Profil bilgileri kontrol ediliyor...
+              </div>
             ) : null}
           </form>
         </div>

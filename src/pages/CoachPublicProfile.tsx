@@ -542,7 +542,8 @@ export default function CoachPublicProfile() {
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
       {/* HERO */}
       <section className="w-full bg-white border-b border-orange-100">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-start gap-10">
+        {/* ✅ BOŞLUK FIX: py-10 -> py-6/md:py-8, gap-10 -> gap-8 */}
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 flex flex-col md:flex-row items-start gap-8">
           {/* Profil Fotoğrafı */}
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -789,8 +790,9 @@ export default function CoachPublicProfile() {
       </section>
 
       {/* ALT İÇERİK – TABS */}
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <Tabs defaultValue="about" className="space-y-6">
+      {/* ✅ BOŞLUK FIX: -mt ile yukarı çek, py azalt */}
+      <div className="max-w-6xl mx-auto px-4 -mt-6 md:-mt-8 py-6 md:py-8">
+        <Tabs defaultValue="about" className="space-y-4">
           <TabsList className="bg-white border border-orange-100 rounded-full p-1">
             <TabsTrigger value="about">Hakkında</TabsTrigger>
             <TabsTrigger value="cv">Özgeçmiş</TabsTrigger>

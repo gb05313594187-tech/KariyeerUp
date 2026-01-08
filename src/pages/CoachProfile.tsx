@@ -1,11 +1,12 @@
-// src/pages/CoachProfile.tsx
+// src/pages/CoachPublicProfile.tsx
 // @ts-nocheck
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Star,
   Users,
@@ -16,12 +17,16 @@ import {
   Award,
   Globe2,
   PlayCircle,
-  ChevronLeft,
-  ChevronRight,
+  CreditCard,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useLanguage } from "@/contexts/LanguageContext";
+
+const PAYTR_ROUTE = "/paytr/checkout";
+
+// ✅ DOĞRU function url (markdown link değil, düz string)
+const FUNCTION_URL =
+  "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
 const mockReviews = [
   {
@@ -52,13 +57,8 @@ const fallbackCoach = {
   tags: ["Kariyer", "Liderlik", "Mülakat", "CV", "Yeni Mezun"],
   photo_url:
     "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400",
-  bio: `
-10+ yıllık kurumsal deneyime sahip Executive ve Kariyer Koçu. 
-Unilever, Google, Trendyol gibi şirketlerde liderlik gelişimi, kariyer geçişi ve performans koçluğu alanlarında birebir ve grup çalışmaları yürüttü.
-  `,
-  methodology: `
-Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odaklı çalışma yöntemlerini kullanıyorum.
-  `,
+  bio: `10+ yıllık kurumsal deneyime sahip Executive ve Kariyer Koçu.`,
+  methodology: `Seanslarda çözüm odaklı koçluk ve aksiyon planı yaklaşımı.`,
   education: ["ICF Onaylı Profesyonel Koçluk Programı (PCC Track)"],
   experience: ["Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi"],
   cv_url: null,
@@ -76,160 +76,199 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   return fallback;
 };
 
-const localeByLang = (lang: string) => {
-  const l = (lang || "tr").toLowerCase();
-  if (l === "tr") return "tr-TR";
-  if (l === "en") return "en-US";
-  if (l === "fr") return "fr-FR";
-  if (l === "ar") return "ar-TN";
-  return "tr-TR";
+const isUuid = (s: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(s || "").trim()
+  );
+
+const extractSpecialtyFromSlug = (slug: string) => {
+  const raw = String(slug || "")
+    .toLowerCase()
+    .replace(/[_]+/g, "-")
+    .replace(/[^a-z0-9ğüşöçı\-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  const parts = raw.split("-").filter(Boolean);
+  const keywords = [
+    "mulakat",
+    "liderlik",
+    "kariyer",
+    "cv",
+    "linkedin",
+    "performans",
+    "terfi",
+    "iletisim",
+    "ozguven",
+    "job",
+    "career",
+    "leadership",
+    "interview",
+  ];
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (["koc", "kocu", "koclugu", "coach", "coaching"].includes(p)) continue;
+    if (keywords.includes(p)) return p;
+  }
+  return "";
 };
 
-const tMini = (lang: string) => {
-  const l = (lang || "tr").toLowerCase();
-  if (l === "en")
-    return {
-      loading: "Loading coach profile...",
-      chooseDate: "Pick a date",
-      chooseTime: "Pick a time",
-      bookNow: "Book now",
-      selectTimeFirst: "Please select a time first.",
-      loginRequired: "Please login to book a session.",
-      today: "Today",
-      back: "Back",
-    };
-  if (l === "fr")
-    return {
-      loading: "Chargement du profil...",
-      chooseDate: "Choisir une date",
-      chooseTime: "Choisir une heure",
-      bookNow: "Réserver",
-      selectTimeFirst: "Veuillez d’abord choisir une heure.",
-      loginRequired: "Veuillez vous connecter pour réserver.",
-      today: "Aujourd’hui",
-      back: "Retour",
-    };
-  if (l === "ar")
-    return {
-      loading: "جاري تحميل الملف...",
-      chooseDate: "اختر التاريخ",
-      chooseTime: "اختر الوقت",
-      bookNow: "احجز الآن",
-      selectTimeFirst: "اختر الوقت أولاً.",
-      loginRequired: "سجّل الدخول للحجز.",
-      today: "اليوم",
-      back: "رجوع",
-    };
-  return {
-    loading: "Koç profili yükleniyor...",
-    chooseDate: "Tarih seç",
-    chooseTime: "Saat seç",
-    bookNow: "Hemen Seans Al",
-    selectTimeFirst: "Lütfen önce bir saat seç.",
-    loginRequired: "Seans almak için giriş yapmalısın.",
-    today: "Bugün",
-    back: "Geri dön",
+const capitalizeTr = (s: string) => {
+  const x = String(s || "").trim();
+  if (!x) return "";
+  return x.charAt(0).toLocaleUpperCase("tr-TR") + x.slice(1);
+};
+
+const specialtyLabelFromToken = (token: string) => {
+  const t = String(token || "").toLowerCase().trim();
+  if (!t) return "";
+  const map: any = {
+    mulakat: "Mülakat",
+    liderlik: "Liderlik",
+    kariyer: "Kariyer",
+    cv: "CV",
+    linkedin: "LinkedIn",
+    performans: "Performans",
+    terfi: "Terfi",
+    iletisim: "İletişim",
+    ozguven: "Özgüven",
+    interview: "Interview",
+    leadership: "Leadership",
+    career: "Career",
+    job: "Job",
   };
+  return map[t] || capitalizeTr(t);
 };
 
-// 30 dk slotlar
+const buildMetaDescription = (coachName: string, coachTitle: string, tags: string[]) => {
+  const t = (tags || []).slice(0, 4).join(", ");
+  const base = `${coachName} – ${coachTitle}. Online koçluk seansı planla.`;
+  return t ? `${base} Uzmanlık: ${t}.` : base;
+};
+
 const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
   const slots: string[] = [];
   for (let h = startHour; h < endHour; h++) {
     for (let m = 0; m < 60; m += intervalMinutes) {
-      const hh = String(h).padStart(2, "0");
-      const mm = String(m).padStart(2, "0");
+      const hh = h.toString().padStart(2, "0");
+      const mm = m.toString().padStart(2, "0");
       slots.push(`${hh}:${mm}`);
     }
   }
   return slots;
 };
 
-// YYYY-MM-DD
 const toYMD = (d: Date) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x.toISOString().slice(0, 10);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 };
 
-const isSameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
-
-function buildMonthMatrix(viewDate: Date) {
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth(); // 0-11
-
-  const first = new Date(year, month, 1);
-  const startDow = first.getDay(); // 0 Sun - 6 Sat
-  // TR/EU alışkanlığı için Pazartesi başlangıç istersen değiştirebilirsin.
-  // Burada: Pazartesi başlangıç yapıyoruz.
-  const mondayBased = (startDow + 6) % 7; // Sun->6, Mon->0...
-
-  const gridStart = new Date(year, month, 1 - mondayBased);
-  const days: Date[] = [];
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(gridStart);
-    d.setDate(gridStart.getDate() + i);
-    days.push(d);
-  }
-  return { days, month, year };
-}
-
-export default function CoachProfile() {
-  // ✅ Route param adı farklı olsa bile kırılmasın: /coach/:slugOrId  OR /coach/:slug OR /coach/:id
-  const params: any = useParams();
-  const id = params?.slugOrId || params?.slug || params?.id;
-
+export default function CoachPublicProfile() {
+  const { slugOrId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { language } = useLanguage();
-  const TT = tMini(language || "tr");
+  const location = useLocation();
+
+  const qs = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const qsId = qs.get("id") || "";
+
+  const resolvedCoachId = useMemo(() => {
+    if (qsId && isUuid(qsId)) return qsId;
+    if (slugOrId && isUuid(slugOrId)) return slugOrId;
+    return "";
+  }, [qsId, slugOrId]);
 
   const [coachRow, setCoachRow] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Takvim state
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  // ✅ booking state
+  const [selectedDay, setSelectedDay] = useState<Date>(() => new Date());
+  const selectedDate = useMemo(() => toYMD(selectedDay), [selectedDay]);
 
-  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
-    const d = new Date();
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-
-  const [selectedDate, setSelectedDate] = useState<string>(() => toYMD(new Date()));
+  const [busySlots, setBusySlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // ✅ Koçu slug ile çek (bulamazsa id ile dene)
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [form, setForm] = useState({ fullName: "", email: "", note: "" });
+
+  // ✅ user prefill
   useEffect(() => {
-    if (!id) return;
-
-    const fetchCoach = async () => {
-      setLoading(true);
+    let mounted = true;
+    (async () => {
       try {
-        // 1) slug ile dene
-        let { data, error } = await supabase
-          .from("app_2dff6511da_coaches")
-          .select("*")
-          .eq("slug", id)
-          .single();
+        const { data } = await supabase.auth.getUser();
+        const u = data?.user;
+        if (!u || !mounted) return;
 
-        // 2) slug yoksa id ile dene
-        if (error || !data) {
-          const r2 = await supabase
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("id, display_name, full_name, email")
+          .eq("id", u.id)
+          .maybeSingle();
+
+        const meta = u?.user_metadata || {};
+        const metaName =
+          meta.display_name || meta.full_name || meta.fullName || meta.name || "";
+
+        const name = (p?.display_name || p?.full_name || metaName || "").trim();
+        const email = (p?.email || u?.email || "").trim();
+
+        setForm((f) => ({
+          ...f,
+          fullName: f.fullName || name || "",
+          email: f.email || email || "",
+        }));
+      } catch {}
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ✅ coach fetch
+  useEffect(() => {
+    const fetchCoach = async () => {
+      try {
+        setLoading(true);
+        const rawParam = String(slugOrId || "").trim();
+        if (!rawParam && !resolvedCoachId) {
+          setCoachRow(null);
+          return;
+        }
+
+        let data: any = null;
+        let error: any = null;
+
+        if (resolvedCoachId) {
+          const rId = await supabase
             .from("app_2dff6511da_coaches")
             .select("*")
-            .eq("id", id)
+            .eq("id", resolvedCoachId)
             .single();
-          data = r2.data;
-          error = r2.error;
+          data = rId.data;
+          error = rId.error;
+        } else {
+          const rSlug = await supabase
+            .from("app_2dff6511da_coaches")
+            .select("*")
+            .eq("slug", rawParam)
+            .single();
+          data = rSlug.data;
+          error = rSlug.error;
+
+          if ((error || !data) && isUuid(rawParam)) {
+            const r2 = await supabase
+              .from("app_2dff6511da_coaches")
+              .select("*")
+              .eq("id", rawParam)
+              .single();
+            data = r2.data;
+            error = r2.error;
+          }
         }
 
         if (error) {
@@ -237,9 +276,17 @@ export default function CoachProfile() {
           setCoachRow(null);
         } else {
           setCoachRow(data);
+
+          const paramIsUuid = rawParam && isUuid(rawParam);
+          if (paramIsUuid && data?.slug) {
+            const nextQs = new URLSearchParams(location.search);
+            const qsStr = nextQs.toString();
+            const nextUrl = `/coach/${encodeURIComponent(data.slug)}${qsStr ? `?${qsStr}` : ""}`;
+            navigate(nextUrl, { replace: true });
+          }
         }
-      } catch (e) {
-        console.error("Unexpected fetch error:", e);
+      } catch (err) {
+        console.error("Unexpected error:", err);
         setCoachRow(null);
       } finally {
         setLoading(false);
@@ -247,15 +294,13 @@ export default function CoachProfile() {
     };
 
     fetchCoach();
-  }, [id]);
+  }, [resolvedCoachId, slugOrId, location.search, navigate]);
 
-  // UI map
-  const c = useMemo(() => {
+  const c = (() => {
     const coach = coachRow;
-    if (!coach) return fallbackCoach;
+    if (!coach) return { ...fallbackCoach, id: resolvedCoachId || "", slug: "" };
 
     return {
-      id: coach.id,
       name: coach.full_name || fallbackCoach.name,
       title: coach.title || "Kariyer Koçu",
       location: coach.location || coach.city || coach.country || "Online",
@@ -270,90 +315,246 @@ export default function CoachProfile() {
       methodology: coach.methodology || fallbackCoach.methodology,
       education: toStringArray(coach.education_list, fallbackCoach.education),
       experience: toStringArray(coach.experience_list, fallbackCoach.experience),
-      services: coach.services || [],
       programs: coach.programs || [],
-      faqs:
-        coach.faqs ||
-        [
-          {
-            q: "Seanslar online mı gerçekleşiyor?",
-            a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir.",
-          },
-          {
-            q: "Seans öncesi nasıl hazırlanmalıyım?",
-            a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
-          },
-        ],
+      faqs: coach.faqs || [],
       cv_url: coach.cv_url || fallbackCoach.cv_url || null,
+      id: coach.id,
+      slug: coach.slug,
+      email: coach.email || "",
+      session_fee: coach.session_fee || 0,
     };
-  }, [coachRow]);
+  })();
 
-  const monthInfo = useMemo(() => buildMonthMatrix(calendarMonth), [calendarMonth]);
-  const locale = useMemo(() => localeByLang(language || "tr"), [language]);
+  // ✅ SEO
+  const primarySpecialty = useMemo(() => {
+    const fromSlugToken = specialtyLabelFromToken(extractSpecialtyFromSlug(slugOrId || ""));
+    if (fromSlugToken) return fromSlugToken;
+    const firstTag = (c.tags || [])[0] || "";
+    const normalized = String(firstTag || "").trim();
+    if (!normalized) return "";
+    if (normalized.toLowerCase().includes("mülakat")) return "Mülakat";
+    if (normalized.toLowerCase().includes("liderlik")) return "Liderlik";
+    if (normalized.toLowerCase().includes("kariyer")) return "Kariyer";
+    if (normalized.toLowerCase().includes("cv")) return "CV";
+    if (normalized.toLowerCase().includes("linkedin")) return "LinkedIn";
+    return normalized.split(" ")[0];
+  }, [slugOrId, c.tags]);
 
-  const monthTitle = useMemo(() => {
-    return new Date(monthInfo.year, monthInfo.month, 1).toLocaleDateString(locale, {
-      month: "long",
-      year: "numeric",
-    });
-  }, [monthInfo, locale]);
+  const seoTitle = useMemo(() => {
+    if (!primarySpecialty) return `${c.name} | ${c.title} | Kariyeer`;
+    return `${c.name} | ${primarySpecialty} Koçu | Kariyeer`;
+  }, [c.name, c.title, primarySpecialty]);
 
-  const dow = useMemo(() => {
-    // Pazartesi başlangıç: Mon Tue Wed Thu Fri Sat Sun
-    const base = new Date(2024, 0, 1); // Monday
-    const labels = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      labels.push(
-        d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "")
-      );
-    }
-    return labels;
-  }, [locale]);
+  const h1Text = useMemo(() => {
+    if (!primarySpecialty) return c.name;
+    return `${primarySpecialty} Koçluğu – ${c.name}`;
+  }, [primarySpecialty, c.name]);
 
-  const handleBook = async () => {
+  const metaDesc = useMemo(() => buildMetaDescription(c.name, c.title, c.tags || []), [
+    c.name,
+    c.title,
+    c.tags,
+  ]);
+
+  const canonicalUrl = useMemo(() => {
+    const origin = (typeof window !== "undefined" && window.location?.origin) || "";
+    const path = `/coach/${encodeURIComponent(slugOrId || "")}`;
+    return origin ? `${origin}${path}` : `${path}`;
+  }, [slugOrId]);
+
+  useEffect(() => {
+    try {
+      document.title = seoTitle;
+
+      const ensureMeta = (name: string, attr: "name" | "property" = "name") => {
+        const selector =
+          attr === "name" ? `meta[name="${name}"]` : `meta[property="${name}"]`;
+        let el = document.querySelector(selector) as HTMLMetaElement | null;
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute(attr, name);
+          document.head.appendChild(el);
+        }
+        return el;
+      };
+
+      ensureMeta("description", "name").setAttribute("content", metaDesc);
+      ensureMeta("og:title", "property").setAttribute("content", seoTitle);
+      ensureMeta("og:description", "property").setAttribute("content", metaDesc);
+      ensureMeta("og:type", "property").setAttribute("content", "profile");
+      ensureMeta("og:url", "property").setAttribute("content", canonicalUrl);
+      ensureMeta("og:image", "property").setAttribute("content", c.photo_url || "");
+
+      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.setAttribute("rel", "canonical");
+        document.head.appendChild(link);
+      }
+      link.setAttribute("href", canonicalUrl);
+    } catch {}
+  }, [seoTitle, metaDesc, canonicalUrl, c.photo_url]);
+
+  // ✅ busy slots fetch (koç dolu saatler)
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const coachIdToUse = c?.id || resolvedCoachId || "";
+        if (!coachIdToUse || !selectedDate) return;
+
+        const { data, error } = await supabase
+          .from("app_2dff6511da_session_requests")
+          .select("selected_time,status")
+          .eq("coach_id", coachIdToUse)
+          .eq("selected_date", selectedDate)
+          .in("status", ["pending", "approved", "confirmed", "paid"]); // 🔥 dolu sayılacak statüler
+
+        if (error) {
+          console.error("busy slots error:", error);
+          setBusySlots([]);
+          return;
+        }
+
+        const busy = (data || [])
+          .map((r: any) => String(r.selected_time || "").trim())
+          .filter(Boolean);
+
+        setBusySlots(busy);
+
+        // seçili slot dolu olduysa düşür
+        setSelectedSlot((prev) => (prev && busy.includes(prev) ? null : prev));
+      } catch (e) {
+        setBusySlots([]);
+      }
+    };
+
+    run();
+  }, [c?.id, resolvedCoachId, selectedDate]);
+
+  const openBooking = async () => {
     if (!selectedSlot) {
-      toast.error(TT.selectTimeFirst);
+      toast.error("Lütfen önce gün ve saat seç.");
       return;
     }
+    setBookingOpen(true);
+  };
 
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth?.user?.id;
+  const goToPayment = (requestId: string) => {
+    const qs2 = new URLSearchParams();
+    qs2.set("requestId", requestId);
+    navigate(`${PAYTR_ROUTE}?${qs2.toString()}`, { replace: true });
+  };
 
-    if (!userId) {
-      toast.error(TT.loginRequired);
-      const qs = new URLSearchParams(searchParams);
-      if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
-      navigate(`/login?${qs.toString()}`);
-      return;
+  const handleCreateAndPay = async () => {
+    try {
+      if (!selectedSlot) return toast.error("Saat seç.");
+      if (!String(form.fullName || "").trim() || !String(form.email || "").trim())
+        return toast.error("Ad soyad ve e-posta zorunlu.");
+
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth?.user?.id;
+      if (!userId) {
+        toast.error("Devam etmek için giriş yapmalısın.");
+        const back = encodeURIComponent(location.pathname + location.search);
+        navigate(`/login?redirect=${back}`);
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      const coachIdToUse = c?.id || resolvedCoachId || "";
+      if (!coachIdToUse) return toast.error("Koç bulunamadı.");
+
+      // 1) insert request
+      const { data: created, error: insErr } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: coachIdToUse,
+          user_id: userId,
+          full_name: String(form.fullName || "").trim(),
+          email: String(form.email || "").trim(),
+          selected_date: selectedDate,
+          selected_time: selectedSlot,
+          note: String(form.note || "").trim() || null,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (insErr) {
+        console.error("insert error:", insErr);
+        toast.error("Seans talebi oluşturulamadı.");
+        return;
+      }
+
+      const requestId = created?.id;
+      if (!requestId) return toast.error("Talep oluştu ama ID alınamadı.");
+
+      // 2) PayTR alanları
+      const fee = Number(c?.session_fee || 0);
+      const paymentAmount = Math.max(1, Math.round(fee * 100));
+      const merchantOid = String(requestId).replace(/-/g, "");
+
+      const { error: upErr } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .update({
+          payment_status: "pending",
+          currency: "TL",
+          payment_amount: paymentAmount,
+          merchant_oid: merchantOid,
+        })
+        .eq("id", requestId);
+
+      if (upErr) {
+        console.error("payment fields update error:", upErr);
+        toast.error("Ödeme alanları yazılamadı.");
+        return;
+      }
+
+      // 3) mail (opsiyonel)
+      try {
+        await fetch(FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            coach_email: c?.email || "",
+            user_email: String(form.email || "").trim(),
+            coach_name: c?.name || "",
+            user_name: String(form.fullName || "").trim(),
+            session_date: selectedDate,
+            time_slot: selectedSlot,
+            note: form.note,
+          }),
+        });
+      } catch {}
+
+      toast.success("Ödemeye yönlendiriliyorsun...");
+      goToPayment(requestId);
+    } catch (e) {
+      console.error("create&pay error:", e);
+      toast.error("Bir hata oluştu.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // ✅ BookSession sayfasına taşır (senin istediğin takvim orada da var / olacak)
-    const qs = new URLSearchParams(searchParams);
-    if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
-
-    qs.set("coachId", String(c.id || coachRow?.id || "")); // DB id
-    qs.set("date", selectedDate);
-    qs.set("time", selectedSlot);
-
-    navigate(`/book-session?${qs.toString()}`);
   };
 
   if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
-        {TT.loading}
+        Koç profili yükleniyor...
       </div>
     );
   }
 
+  const timeSlots = useMemo(() => generateTimeSlots(10, 22, 30), []);
+
   return (
     <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
-      {/* HERO */}
       <section className="w-full bg-white border-b border-orange-100">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center gap-10">
-          {/* Profil Fotoğrafı */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
@@ -374,10 +575,9 @@ export default function CoachProfile() {
             </button>
           </div>
 
-          {/* Koç Bilgisi */}
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{c.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{h1Text}</h1>
               <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
                 Öne Çıkan Koç
               </Badge>
@@ -390,7 +590,6 @@ export default function CoachProfile() {
               <span className="text-sm text-gray-500">{c.location}</span>
             </p>
 
-            {/* Etiketler */}
             <div className="flex flex-wrap gap-2 mt-2">
               {c.tags?.map((tag: string) => (
                 <span
@@ -402,16 +601,11 @@ export default function CoachProfile() {
               ))}
             </div>
 
-            {/* İstatistikler */}
             <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400" />
-                <span className="font-semibold">
-                  {Number(c.rating || 0).toFixed(1)}
-                </span>
-                <span className="text-gray-500">
-                  ({c.reviewCount || 0} değerlendirme)
-                </span>
+                <span className="font-semibold">{Number(c.rating || 0).toFixed(1)}</span>
+                <span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span>
               </div>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4 text-orange-500" />
@@ -425,16 +619,14 @@ export default function CoachProfile() {
               </div>
             </div>
 
-            {/* CTA */}
             <div className="flex flex-wrap gap-3 mt-5">
               <Button
                 className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow"
-                onClick={handleBook}
+                onClick={openBooking}
                 disabled={!selectedSlot}
               >
-                {TT.bookNow}
+                Hemen Seans Al
               </Button>
-
               <Button
                 variant="outline"
                 className="px-6 py-3 rounded-xl border-gray-300 text-gray-800 hover:bg-gray-50"
@@ -445,145 +637,131 @@ export default function CoachProfile() {
             </div>
           </div>
 
-          {/* RIGHT: REAL CALENDAR */}
-          <div className="w-full md:w-80">
+          {/* ✅ SAĞ KART: yeni takvim */}
+          <div className="w-full md:w-[360px]">
             <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-800 flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-orange-500" />
-                    {TT.chooseDate}
-                  </span>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 rounded-full border-orange-200 bg-white"
-                      onClick={() => {
-                        const d = new Date(calendarMonth);
-                        d.setMonth(d.getMonth() - 1);
-                        setCalendarMonth(d);
-                      }}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 rounded-full border-orange-200 bg-white"
-                      onClick={() => {
-                        const d = new Date(calendarMonth);
-                        d.setMonth(d.getMonth() + 1);
-                        setCalendarMonth(d);
-                      }}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-orange-500" />
+                  Takvimden Seç
                 </CardTitle>
-
-                <div className="mt-2 text-sm font-semibold text-gray-900">
-                  {monthTitle}
-                </div>
               </CardHeader>
 
-              <CardContent className="space-y-3 text-xs">
-                {/* DOW */}
-                <div className="grid grid-cols-7 gap-1">
-                  {dow.map((d) => (
-                    <div
-                      key={d}
-                      className="text-[11px] text-gray-500 font-semibold text-center"
-                    >
-                      {d}
+              <CardContent className="space-y-4">
+                <div className="rounded-2xl bg-white border border-orange-100 p-2">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDay}
+                    onSelect={(d: any) => {
+                      if (!d) return;
+                      setSelectedDay(d);
+                      setSelectedSlot(null);
+                      setBookingOpen(false);
+                    }}
+                    disabled={(date: Date) => {
+                      const today = new Date();
+                      const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const x = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                      return x.getTime() < t.getTime();
+                    }}
+                    // ✅ yıl/ay dropdown
+                    captionLayout="dropdown"
+                    fromYear={new Date().getFullYear()}
+                    toYear={new Date().getFullYear() + 2}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      Saat Seç
                     </div>
-                  ))}
-                </div>
-
-                {/* Month grid */}
-                <div className="grid grid-cols-7 gap-1">
-                  {monthInfo.days.map((d) => {
-                    const inMonth = d.getMonth() === monthInfo.month;
-                    const past = d < today;
-                    const ymd = toYMD(d);
-                    const isSelected = selectedDate === ymd;
-                    const isToday = isSameDay(d, today);
-
-                    return (
-                      <button
-                        key={ymd}
-                        type="button"
-                        disabled={!inMonth || past}
-                        onClick={() => {
-                          setSelectedDate(ymd);
-                          setSelectedSlot(null);
-                        }}
-                        className={[
-                          "h-9 w-full rounded-xl text-[12px] font-semibold transition",
-                          inMonth ? "text-gray-800" : "text-gray-300",
-                          past ? "opacity-40 cursor-not-allowed" : "hover:bg-orange-50",
-                          isSelected ? "bg-red-600 text-white hover:bg-red-600" : "bg-white",
-                          isToday && !isSelected ? "ring-2 ring-orange-300" : "",
-                          "border border-orange-100",
-                        ].join(" ")}
-                      >
-                        {d.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Time slots */}
-                <div className="pt-2">
-                  <div className="text-[12px] font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-orange-500" />
-                    {TT.chooseTime}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
-                    {generateTimeSlots(10, 22, 30).map((slot) => (
-                      <Button
-                        key={slot}
-                        type="button"
-                        variant={selectedSlot === slot ? "default" : "outline"}
-                        size="sm"
-                        className={`rounded-full h-8 text-[11px] ${
-                          selectedSlot === slot
-                            ? "bg-red-600 text-white"
-                            : "border-orange-200 text-gray-700 hover:bg-orange-50 bg-white"
-                        }`}
-                        onClick={() => setSelectedSlot(slot)}
-                      >
-                        {slot}
-                      </Button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-2">
+                    {timeSlots.map((slot) => {
+                      const isBusy = busySlots.includes(slot);
+                      const active = selectedSlot === slot;
+
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => setSelectedSlot(slot)}
+                          className={[
+                            "h-10 rounded-xl border text-sm font-semibold transition flex items-center justify-center gap-2",
+                            isBusy
+                              ? "opacity-40 cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
+                              : "hover:border-red-400 bg-white border-orange-200 text-gray-800",
+                            active ? "border-red-600 bg-red-50 text-red-700" : "",
+                          ].join(" ")}
+                        >
+                          <Clock className="w-4 h-4" />
+                          {slot}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="mt-3 text-[11px] text-gray-600">
-                    {selectedSlot ? (
-                      <>
-                        Seçilen:{" "}
-                        <span className="font-semibold">
-                          {selectedDate} · {selectedSlot}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-gray-500">
-                        Önce gün, sonra saat seç.
-                      </span>
-                    )}
-                  </div>
+                  {/* ✅ o “Seçilen saat …” yazısı KALDIRILDI */}
                 </div>
+
+                {bookingOpen && (
+                  <div className="bg-white border border-orange-100 rounded-2xl p-4 space-y-3">
+                    <div className="text-sm font-extrabold text-gray-900">Bilgilerini gir</div>
+
+                    <div className="grid gap-3">
+                      <input
+                        className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="Ad Soyad"
+                        value={form.fullName}
+                        onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                      />
+                      <input
+                        className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="E-posta"
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      />
+                      <textarea
+                        className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-24 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="Hedefiniz / Beklentiniz (opsiyonel)"
+                        value={form.note}
+                        onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      disabled={isSubmitting || !selectedSlot}
+                      className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
+                      onClick={handleCreateAndPay}
+                    >
+                      <CreditCard className="w-4 h-4 mr-1" />
+                      {isSubmitting ? "Yönlendiriliyor..." : "Ödemeye Geç"}
+                    </Button>
+                  </div>
+                )}
+
+                {!bookingOpen && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-xl border-orange-200"
+                    disabled={!selectedSlot}
+                    onClick={() => setBookingOpen(true)}
+                  >
+                    Devam Et
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* TABS */}
       <div className="max-w-6xl mx-auto px-4 py-10">
         <Tabs defaultValue="about" className="space-y-6">
           <TabsList className="bg-white border border-orange-100 rounded-full p-1">
@@ -595,7 +773,6 @@ export default function CoachProfile() {
             <TabsTrigger value="faq">SSS</TabsTrigger>
           </TabsList>
 
-          {/* ABOUT */}
           <TabsContent value="about" className="space-y-6">
             <Card className="bg-white border border-orange-100 shadow-sm">
               <CardHeader>
@@ -662,7 +839,6 @@ export default function CoachProfile() {
             </Card>
           </TabsContent>
 
-          {/* CV */}
           <TabsContent value="cv">
             <div className="space-y-4">
               {c.cv_url ? (
@@ -695,18 +871,14 @@ export default function CoachProfile() {
             </div>
           </TabsContent>
 
-          {/* PROGRAMS */}
           <TabsContent value="programs">
             <div className="grid md:grid-cols-2 gap-4">
               {(c.programs || []).length === 0 && (
-                <p className="text-sm text-gray-500">
-                  Bu koç henüz program paketi eklemedi.
-                </p>
+                <p className="text-sm text-gray-500">Bu koç henüz program paketi eklemedi.</p>
               )}
             </div>
           </TabsContent>
 
-          {/* REVIEWS */}
           <TabsContent value="reviews">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm">
@@ -714,9 +886,7 @@ export default function CoachProfile() {
                 <span className="font-medium text-gray-900">
                   {Number(c.rating || 0).toFixed(1)} / 5
                 </span>
-                <span className="text-gray-500">
-                  ({c.reviewCount || 0} değerlendirme)
-                </span>
+                <span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span>
               </div>
               <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 text-xs">
                 Filtrele
@@ -749,11 +919,13 @@ export default function CoachProfile() {
             </div>
           </TabsContent>
 
-          {/* CONTENT */}
           <TabsContent value="content">
             <div className="grid md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="bg-white border border-orange-100 shadow-sm flex flex-col">
+                <Card
+                  key={i}
+                  className="bg-white border border-orange-100 shadow-sm flex flex-col"
+                >
                   <div className="h-32 rounded-t-xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
                     <PlayCircle className="w-10 h-10 text-red-500" />
                   </div>
@@ -761,9 +933,7 @@ export default function CoachProfile() {
                     <p className="font-semibold text-gray-900">
                       Kariyer Yönünü Bulmak İçin 3 Ana Soru
                     </p>
-                    <p className="text-xs text-gray-500">
-                      8 dk · Video · 1.2K görüntülenme
-                    </p>
+                    <p className="text-xs text-gray-500">8 dk · Video · 1.2K görüntülenme</p>
                     <Button variant="ghost" size="sm" className="px-0 h-7 text-xs text-red-600">
                       İçeriği Görüntüle
                     </Button>
@@ -773,7 +943,6 @@ export default function CoachProfile() {
             </div>
           </TabsContent>
 
-          {/* FAQ */}
           <TabsContent value="faq">
             <div className="space-y-3">
               {(c.faqs || []).map((item: any, idx: number) => (

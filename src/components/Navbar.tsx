@@ -90,13 +90,20 @@ export default function Navbar() {
     return "Bireysel Premium";
   }, [role]);
 
+  /**
+   * ✅ PREMIUM TARGET (DÜZELTİLDİ)
+   * - Misafir / user / admin: /bireysel-premium (Bireysel Premium sayfası)
+   * - corporate: /checkout?plan=corporate (mevcut akış bozulmaz)
+   * - coach: /checkout?plan=coach (mevcut akış bozulmaz)
+   *
+   * Not: "user" role'ü premium satın almak isterse de bireysel premium landing'e gider.
+   * Satın al butonları o sayfadan checkout'a yönlendirmeli.
+   */
   const premiumTarget = useMemo(() => {
-    if (!auth?.isAuthenticated) return "/pricing";
-    if (role === "admin") return "/pricing";
     if (role === "corporate") return "/checkout?plan=corporate";
     if (role === "coach") return "/checkout?plan=coach";
-    return "/checkout?plan=individual";
-  }, [auth?.isAuthenticated, role]);
+    return "/bireysel-premium";
+  }, [role]);
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 

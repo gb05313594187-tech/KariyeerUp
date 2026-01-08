@@ -6,6 +6,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  useSearchParams,
 } from "react-router-dom";
 import { Toaster } from "sonner";
 
@@ -28,7 +29,6 @@ import ForCompanies from "@/pages/ForCompanies";
 import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
-import BookSession from "@/pages/BookSession";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
@@ -94,6 +94,36 @@ function PublicLayout() {
 }
 
 /* -------------------------------------------------
+   Redirect: /book-session -> /coach/:id (inline booking panel)
+   - /book-session?coachId=<uuid>&date=YYYY-MM-DD&time=HH:mm&goal=...&level=...&lang=...
+   -> /coach/<coachId>?book=1&date=...&time=...&goal=...&level=...&lang=...
+-------------------------------------------------- */
+function BookSessionRedirect() {
+  const [sp] = useSearchParams();
+
+  const coachId = sp.get("coachId") || "";
+  const date = sp.get("date") || "";
+  const time = sp.get("time") || "";
+
+  // mevcut query paramlarını taşı (goal, level, lang vs.)
+  const out = new URLSearchParams();
+  out.set("book", "1");
+  if (date) out.set("date", date);
+  if (time) out.set("time", time);
+
+  // geri kalan her şeyi aynen geçir
+  for (const [k, v] of sp.entries()) {
+    if (k === "coachId" || k === "date" || k === "time") continue;
+    if (!out.has(k)) out.set(k, v);
+  }
+
+  // coachId yoksa koç listesine dön
+  if (!coachId) return <Navigate to="/coaches" replace />;
+
+  return <Navigate to={`/coach/${coachId}?${out.toString()}`} replace />;
+}
+
+/* -------------------------------------------------
    APP
 -------------------------------------------------- */
 export default function App() {
@@ -119,13 +149,15 @@ export default function App() {
             {/* ✅ PREMIUM / PRICING */}
             <Route path="/pricing" element={<Pricing />} />
 
-            {/* ✅ CHECKOUT FLOW (mevcut) */}
+            {/* ✅ BİREYSEL PREMIUM (geri geldi) */}
+            <Route path="/bireysel-premium" element={<Pricing />} />
+
+            {/* ✅ CHECKOUT FLOW */}
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
 
             {/* ✅ PAYTR CHECKOUT */}
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
-            {/* ✅ ALIAS: BookSession /paytr-checkout’a yönlendiriyor olabilir */}
             <Route path="/paytr-checkout" element={<PaytrCheckout />} />
 
             {/* How it works */}
@@ -134,7 +166,7 @@ export default function App() {
 
             <Route path="/coaches" element={<Coaches />} />
 
-            {/* ✅ COACH PUBLIC PROFILE */}
+            {/* ✅ COACH PUBLIC PROFILE (takvim burada) */}
             <Route path="/coach/:slugOrId" element={<CoachPublicProfile />} />
 
             <Route path="/for-coaches" element={<ForCoaches />} />
@@ -142,7 +174,10 @@ export default function App() {
             <Route path="/mentor-circle" element={<MentorCircle />} />
             <Route path="/webinars" element={<Webinars />} />
             <Route path="/coach-selection-process" element={<CoachSelection />} />
-            <Route path="/book-session" element={<BookSession />} />
+
+            {/* ✅ /book-session artık profile içi booking’e yönlendiriyor */}
+            <Route path="/book-session" element={<BookSessionRedirect />} />
+
             <Route path="/coach-application" element={<CoachApplication />} />
 
             {/* USER */}
@@ -175,18 +210,9 @@ export default function App() {
             <Route path="/register" element={<Register />} />
 
             {/* LEGACY redirects */}
-            <Route
-              path="/dashboard"
-              element={<Navigate to="/user/dashboard" replace />}
-            />
-            <Route
-              path="/profile"
-              element={<Navigate to="/user/profile" replace />}
-            />
-            <Route
-              path="/coach-dashboard"
-              element={<Navigate to="/coach/dashboard" replace />}
-            />
+            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+            <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
+            <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />

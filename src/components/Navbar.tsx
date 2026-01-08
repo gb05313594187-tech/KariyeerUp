@@ -83,27 +83,20 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  // ✅ tek label
   const premiumLabel = useMemo(() => {
     if (role === "corporate") return "Kurumsal Premium";
     if (role === "coach") return "Koç Premium";
     return "Bireysel Premium";
   }, [role]);
 
-  /**
-   * ✅ PREMIUM TARGET (DÜZELTİLDİ)
-   * - Misafir / user / admin: /bireysel-premium (Bireysel Premium sayfası)
-   * - corporate: /checkout?plan=corporate (mevcut akış bozulmaz)
-   * - coach: /checkout?plan=coach (mevcut akış bozulmaz)
-   *
-   * Not: "user" role'ü premium satın almak isterse de bireysel premium landing'e gider.
-   * Satın al butonları o sayfadan checkout'a yönlendirmeli.
-   */
+  // ✅ Fix: bireysel premium -> /bireysel-premium
   const premiumTarget = useMemo(() => {
+    if (!auth?.isAuthenticated) return "/bireysel-premium";
+    if (role === "admin") return "/pricing";
     if (role === "corporate") return "/checkout?plan=corporate";
     if (role === "coach") return "/checkout?plan=coach";
     return "/bireysel-premium";
-  }, [role]);
+  }, [auth?.isAuthenticated, role]);
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
@@ -180,7 +173,6 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
-          {/* ✅ loading bitmeden auth UI karar verme */}
           {auth.loading ? (
             <div className="hidden md:flex items-center gap-2">
               <div className="h-10 w-28 rounded-xl bg-gray-100" />
@@ -252,7 +244,7 @@ export default function Navbar() {
                   <DropdownMenuItem
                     onClick={async () => {
                       await auth.logout();
-                      navigate("/");
+                      window.location.assign("/");
                     }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -316,7 +308,7 @@ export default function Navbar() {
                   <button
                     onClick={async () => {
                       await auth.logout();
-                      navigate("/");
+                      window.location.assign("/");
                     }}
                     className={mobileBtn}
                   >

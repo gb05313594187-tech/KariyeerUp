@@ -77,6 +77,9 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 // ✅ PAYTR
 import PaytrCheckout from "@/pages/PaytrCheckout";
 
+// ✅ PREMIUM LANDING (YENİ)
+import BireyselPremium from "@/pages/BireyselPremium";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -115,11 +118,11 @@ export default function App() {
             {/* ✅ SITEMAP */}
             <Route path="/sitemap.xml" element={<Sitemap />} />
 
-            {/* ✅ PREMIUM / PRICING */}
-            <Route path="/pricing" element={<Pricing />} />
+            {/* ✅ PREMIUM LANDING (Pricing'e bağlama!) */}
+            <Route path="/bireysel-premium" element={<BireyselPremium />} />
 
-            {/* ✅ Bireysel premium landing geri geldi */}
-            <Route path="/bireysel-premium" element={<Pricing />} />
+            {/* ✅ PRICING */}
+            <Route path="/pricing" element={<Pricing />} />
 
             {/* ✅ CHECKOUT FLOW */}
             <Route path="/checkout" element={<Checkout />} />
@@ -129,7 +132,7 @@ export default function App() {
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
             <Route path="/paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* ✅ BookSession artık public page değil (yanlış yönlenmeyi öldür) */}
+            {/* ✅ BookSession public değil */}
             <Route path="/book-session" element={<Navigate to="/coaches" replace />} />
 
             {/* How it works */}
@@ -180,7 +183,10 @@ export default function App() {
             {/* LEGACY redirects */}
             <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
             <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
-            <Route path="/coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+            <Route
+              path="/coach-dashboard"
+              element={<Navigate to="/coach/dashboard" replace />}
+            />
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />

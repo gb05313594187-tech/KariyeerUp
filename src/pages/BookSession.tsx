@@ -15,47 +15,29 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-// ❗ Edge Function URL
-const FUNCTION_URL =
-  "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
-
-// ----------------- Date helpers (NO toISOString) -----------------
+// ----------------- Date helpers (NO toISOString for date fields) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
-
-// local YYYY-MM-DD
-const toYMD = (d: Date) =>
-  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const toYMD = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
 const parseYMD = (s: string) => {
-  // expects YYYY-MM-DD
-  const [y, m, d] = String(s || "")
-    .split("-")
-    .map((x) => parseInt(x, 10));
+  const [y, m, d] = String(s || "").split("-").map((x) => parseInt(x, 10));
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d);
 };
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-
-const addMonths = (d: Date, diff: number) =>
-  new Date(d.getFullYear(), d.getMonth() + diff, 1);
+const addMonths = (d: Date, diff: number) => new Date(d.getFullYear(), d.getMonth() + diff, 1);
 
 const isSameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const isBeforeDay = (a: Date, b: Date) => startOfDay(a).getTime() < startOfDay(b).getTime();
 
 function buildMonthGrid(viewMonth: Date) {
-  // Monday-first 6-week grid (42 cells)
-  // JS getDay(): Sun=0..Sat=6  -> Monday-first index: Mon=0..Sun=6
   const mondayIndex = (dow: number) => (dow + 6) % 7;
-
   const first = startOfMonth(viewMonth);
-  const lead = mondayIndex(first.getDay()); // 0..6
+  const lead = mondayIndex(first.getDay());
   const gridStart = new Date(first);
   gridStart.setDate(first.getDate() - lead);
 
@@ -68,8 +50,7 @@ function buildMonthGrid(viewMonth: Date) {
   return cells;
 }
 
-const monthTR = (d: Date) =>
-  d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+const monthTR = (d: Date) => d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
 // ----------------- Component -----------------
 export default function BookSession() {
@@ -77,27 +58,21 @@ export default function BookSession() {
   const navigate = useNavigate();
 
   const coachId = searchParams.get("coachId");
-
   const prefillDate = searchParams.get("date") || "";
   const prefillTime = searchParams.get("time") || "";
 
   const today = useMemo(() => startOfDay(new Date()), []);
 
+  const [authUser, setAuthUser] = useState<any | null>(null);
   const [coach, setCoach] = useState<any | null>(null);
   const [loadingCoach, setLoadingCoach] = useState(true);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calendar state
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
-
-  // Selected date/time
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // query date varsa onu al; yoksa bugünü
     const d = parseYMD(prefillDate);
     return d ? toYMD(d) : toYMD(new Date());
   });
-
   const [selectedTime, setSelectedTime] = useState<string>(() => prefillTime || "");
 
   const [form, setForm] = useState({
@@ -105,6 +80,57 @@ export default function BookSession() {
     email: "",
     note: "",
   });
+
+  // ✅ Auth + profile prefill
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const u = data?.user || null;
+        if (!mounted) return;
+        setAuthUser(u);
+
+        if (u) {
+          // try profiles (optional)
+          try {
+            const { data: p } = await supabase
+              .from("profiles")
+              .select("display_name, full_name, email")
+              .eq("id", u.id)
+              .maybeSingle();
+
+            const name =
+              p?.display_name ||
+              p?.full_name ||
+              u?.user_metadata?.display_name ||
+              u?.user_metadata?.full_name ||
+              "";
+
+            setForm((f) => ({
+              ...f,
+              fullName: f.fullName || name || "",
+              email: f.email || (p?.email || u.email || ""),
+            }));
+          } catch {
+            const name =
+              u?.user_metadata?.display_name || u?.user_metadata?.full_name || "";
+            setForm((f) => ({
+              ...f,
+              fullName: f.fullName || name || "",
+              email: f.email || (u.email || ""),
+            }));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Coach fetch
   useEffect(() => {
@@ -133,58 +159,53 @@ export default function BookSession() {
     fetchCoach();
   }, [coachId]);
 
-  // Prefill -> viewMonth sync (query değişse bile)
+  // Prefill -> viewMonth sync
   useEffect(() => {
     const d = parseYMD(prefillDate);
     if (d) {
       setSelectedDate(toYMD(d));
       setViewMonth(startOfMonth(d));
     } else {
-      // query yoksa selectedDate zaten bugün; ayı da bugüne çek
       const now = new Date();
       setViewMonth(startOfMonth(now));
     }
-
     if (prefillTime) setSelectedTime(prefillTime);
   }, [prefillDate, prefillTime]);
 
   const specializations = useMemo(() => {
-    const raw =
-      coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
-
+    const raw = coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
     if (Array.isArray(raw)) return raw.filter(Boolean);
     if (typeof raw === "string") {
-      return raw
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
+      return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
     return [];
   }, [coach]);
 
   const timeSlots = [
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
+    "09:00","10:00","11:00","12:00","13:00","14:00",
+    "15:00","16:00","17:00","18:00","19:00","20:00",
   ];
 
   const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
 
   const canSubmit =
-    !!coachId &&
-    !!selectedDate &&
-    !!selectedTime &&
-    !!form.fullName &&
-    !!form.email;
+    !!coachId && !!selectedDate && !!selectedTime && !!form.fullName && !!form.email;
+
+  // ✅ Amount resolver (PayTR: kuruş integer)
+  const amountKurus = useMemo(() => {
+    const fee =
+      coach?.session_fee ??
+      coach?.price ??
+      coach?.fee ??
+      coach?.session_price ??
+      null;
+
+    const n = Number(fee);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+
+    // fee TL ise kuruşa çevir
+    return Math.round(n * 100);
+  }, [coach]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -202,11 +223,17 @@ export default function BookSession() {
       return;
     }
 
+    // ✅ ödeme ücreti şart
+    if (!amountKurus || amountKurus <= 0) {
+      toast.error("Bu koç için seans ücreti tanımlı değil (session_fee). Ödeme başlatılamaz.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      const { data: authUser } = await supabase.auth.getUser();
-      const userId = authUser?.user?.id;
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth?.user?.id;
 
       if (!userId) {
         toast.error("Seans talebi için giriş yapmalısın.");
@@ -214,19 +241,27 @@ export default function BookSession() {
         return;
       }
 
-      const { error } = await supabase
+      // ✅ 1) session_request oluştur (unpaid)
+      const insertPayload = {
+        coach_id: coachId,
+        user_id: userId,
+        full_name: form.fullName,
+        email: form.email,
+        selected_date: selectedDate,
+        selected_time: selectedTime,
+        note: form.note || null,
+        status: "pending",
+        payment_status: "unpaid",
+        payment_amount: amountKurus,
+        currency: "TL",
+        created_at: new Date().toISOString(),
+      };
+
+      const { data: created, error } = await supabase
         .from("app_2dff6511da_session_requests")
-        .insert({
-          coach_id: coachId,
-          user_id: userId,
-          full_name: form.fullName,
-          email: form.email,
-          selected_date: selectedDate,
-          selected_time: selectedTime,
-          note: form.note || null,
-          status: "pending",
-          created_at: new Date().toISOString(),
-        });
+        .insert(insertPayload)
+        .select("id")
+        .single();
 
       if (error) {
         console.error("Insert error:", error);
@@ -234,35 +269,15 @@ export default function BookSession() {
         return;
       }
 
-      // Mail (opsiyonel)
-      try {
-        const res = await fetch(FUNCTION_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({
-            coach_email: coach?.email || "",
-            user_email: form.email,
-            coach_name: coach?.full_name || "",
-            user_name: form.fullName,
-            session_date: selectedDate,
-            time_slot: selectedTime,
-            note: form.note,
-          }),
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("Email function error:", res.status, text);
-        }
-      } catch (emailErr) {
-        console.error("Email function fetch error:", emailErr);
+      const requestId = created?.id;
+      if (!requestId) {
+        toast.error("Talep ID alınamadı.");
+        return;
       }
 
-      toast.success("Seans talebin koça iletildi!");
-      navigate("/dashboard");
+      // ✅ 2) PayTR ödeme sayfasına yönlendir
+      toast.success("Talep oluşturuldu. Ödeme sayfasına yönlendiriliyorsun...");
+      navigate(`/paytr/checkout?requestId=${encodeURIComponent(requestId)}`);
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");
@@ -284,12 +299,9 @@ export default function BookSession() {
             Geri dön
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-black leading-tight">
-            Seans Planla
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">Seans Planla</h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
-            Takvimden günü seç, sonra saat aralığını belirle. Talep koça “pending”
-            olarak düşer.
+            Takvimden günü seç, sonra saat aralığını belirle. Talep oluşturulur ve ödeme adımına geçilir.
           </p>
         </div>
       </div>
@@ -321,6 +333,12 @@ export default function BookSession() {
               <span className="text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1 rounded-full">
                 {coach?.title || "Kariyer Koçu"}
               </span>
+
+              {!!amountKurus && amountKurus > 0 ? (
+                <span className="text-xs font-semibold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-full">
+                  Ücret: {(amountKurus / 100).toFixed(2)} TL
+                </span>
+              ) : null}
             </div>
 
             {specializations.length > 0 && (
@@ -360,9 +378,7 @@ export default function BookSession() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-gray-400" />
-                <div className="font-extrabold text-gray-900 capitalize">
-                  {monthTR(viewMonth)}
-                </div>
+                <div className="font-extrabold text-gray-900 capitalize">{monthTR(viewMonth)}</div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -385,9 +401,7 @@ export default function BookSession() {
 
             <div className="mt-4 grid grid-cols-7 text-xs font-bold text-gray-500">
               {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((d) => (
-                <div key={d} className="py-2 text-center">
-                  {d}
-                </div>
+                <div key={d} className="py-2 text-center">{d}</div>
               ))}
             </div>
 
@@ -395,7 +409,7 @@ export default function BookSession() {
               {calendarCells.map((cell, idx) => {
                 const iso = toYMD(cell.date);
                 const isSelected = selectedDate === iso;
-                const disabled = isBeforeDay(cell.date, today); // geçmiş kapalı
+                const disabled = isBeforeDay(cell.date, today);
                 const isToday = isSameDay(cell.date, today);
 
                 return (
@@ -405,7 +419,6 @@ export default function BookSession() {
                     disabled={disabled}
                     onClick={() => {
                       setSelectedDate(iso);
-                      // ✅ tarih değişince saat sıfırlansın (kayma / yanlış saat seçimi önler)
                       setSelectedTime("");
                     }}
                     className={[
@@ -425,19 +438,14 @@ export default function BookSession() {
             </div>
 
             <div className="mt-4 text-xs text-gray-500">
-              Seçilen tarih:{" "}
-              <span className="font-semibold text-gray-900">
-                {selectedDate || "-"}
-              </span>
+              Seçilen tarih: <span className="font-semibold text-gray-900">{selectedDate || "-"}</span>
             </div>
 
             {/* TIME PICKER */}
             <div className="mt-6">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-4 h-4 text-gray-400" />
-                <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Saat Aralığı
-                </div>
+                <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">Saat Aralığı</div>
               </div>
 
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -452,12 +460,8 @@ export default function BookSession() {
                       onClick={() => setSelectedTime(slot)}
                       className={[
                         "px-3 py-2 rounded-xl border text-sm font-semibold transition flex items-center justify-center gap-2",
-                        disabledSlot
-                          ? "opacity-50 cursor-not-allowed bg-gray-50"
-                          : "hover:border-red-400",
-                        active
-                          ? "border-red-600 bg-red-50 text-red-700"
-                          : "border-gray-200 bg-white text-gray-800",
+                        disabledSlot ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:border-red-400",
+                        active ? "border-red-600 bg-red-50 text-red-700" : "border-gray-200 bg-white text-gray-800",
                       ].join(" ")}
                     >
                       <Clock className="w-4 h-4" />
@@ -468,10 +472,7 @@ export default function BookSession() {
               </div>
 
               <div className="mt-3 text-xs text-gray-500">
-                Seçilen saat:{" "}
-                <span className="font-semibold text-gray-900">
-                  {selectedTime || "-"}
-                </span>
+                Seçilen saat: <span className="font-semibold text-gray-900">{selectedTime || "-"}</span>
               </div>
             </div>
           </div>
@@ -482,11 +483,9 @@ export default function BookSession() {
             className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
           >
             <div>
-              <div className="text-sm font-extrabold text-gray-900">
-                Bilgilerini gir
-              </div>
+              <div className="text-sm font-extrabold text-gray-900">Bilgilerini kontrol et</div>
               <div className="text-xs text-gray-500 mt-1">
-                Talep oluşturmak için giriş yapmış olmalısın.
+                Talep oluşturulur ve ödeme adımına geçilir.
               </div>
             </div>
 
@@ -502,9 +501,7 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, fullName: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                 />
               </div>
 
@@ -519,9 +516,7 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 />
               </div>
 
@@ -534,9 +529,7 @@ export default function BookSession() {
                   placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   value={form.note}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                 />
               </div>
             </div>
@@ -555,6 +548,12 @@ export default function BookSession() {
                 <span>Süre</span>
                 <span className="font-semibold">45 dk</span>
               </div>
+              <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-gray-200">
+                <span>Ücret</span>
+                <span className="font-extrabold text-gray-900">
+                  {amountKurus > 0 ? `${(amountKurus / 100).toFixed(2)} TL` : "-"}
+                </span>
+              </div>
             </div>
 
             <Button
@@ -563,7 +562,7 @@ export default function BookSession() {
               className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-md"
             >
               <CreditCard className="w-4 h-4 mr-1" />
-              {isSubmitting ? "Kaydediliyor..." : "Rezervasyonu Tamamla"}
+              {isSubmitting ? "Hazırlanıyor..." : "Ödemeye Geç"}
             </Button>
 
             {!canSubmit && (

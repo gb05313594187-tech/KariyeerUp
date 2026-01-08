@@ -14,7 +14,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";
@@ -123,7 +123,7 @@ export default function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ PAYTR CHECKOUT */}
+            {/* ✅ PAYTR CHECKOUT (yeni) */}
             <Route path="/paytr-checkout" element={<PaytrCheckout />} />
             <Route path="/paytr/checkout" element={<PaytrCheckout />} />
 

@@ -23,6 +23,15 @@ import {
   X,
 } from "lucide-react";
 
+function withTimeout(promise: any, ms = 12000, label = "request") {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms)
+    ),
+  ]);
+}
+
 export default function UserProfile() {
   const navigate = useNavigate();
 
@@ -51,10 +60,15 @@ export default function UserProfile() {
       try {
         setLoading(true);
 
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
+        // ✅ getUser yerine getSession: bazı ortamlarda getUser askıda kalabiliyor
+        const { data: sData, error: sErr } = await withTimeout(
+          supabase.auth.getSession(),
+          12000,
+          "auth.getSession"
+        );
+        if (sErr) throw sErr;
 
-        const user = data?.user || null;
+        const user = sData?.session?.user || null;
         if (!mounted) return;
 
         setMe(user);
@@ -65,21 +79,27 @@ export default function UserProfile() {
         }
 
         // Profile çek (satır yoksa null döner)
-        const { data: pData, error: pErr } = await supabase
-          .from("profiles")
-          .select("id, full_name, title, sector, city, phone, created_at, updated_at")
-          .eq("id", user.id)
-          .maybeSingle();
+        const { data: pData, error: pErr } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("id, full_name, title, sector, city, phone, created_at, updated_at")
+            .eq("id", user.id)
+            .maybeSingle(),
+          12000,
+          "profiles.select"
+        );
 
         if (pErr) {
           console.error("profiles select error:", pErr);
 
           // ✅ kritik: burada UI takılmasın, fallback ile sayfa yaşasın
-          toast.error("Profil okunamadı. RLS/kolon kontrol et (profiles).");
+          toast.error(
+            `Profil okunamadı: ${pErr.message || "RLS/kolon kontrol et (profiles)"}`
+          );
 
           setProfile(null);
           setForm({
-            full_name: user?.user_metadata?.full_name || "",
+            full_name: user?.user_metadata?.full_name || user?.user_metadata?.display_name || "",
             title: "",
             sector: "",
             city: "",
@@ -92,15 +112,15 @@ export default function UserProfile() {
         setProfile(p);
 
         setForm({
-          full_name: p?.full_name || user?.user_metadata?.full_name || "",
+          full_name: p?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.display_name || "",
           title: p?.title || "",
           sector: p?.sector || "",
           city: p?.city || "",
           phone: p?.phone || "",
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error("UserProfile load error:", e);
-        toast.error("Profil yüklenemedi.");
+        toast.error(e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -115,13 +135,14 @@ export default function UserProfile() {
   const displayName =
     profile?.full_name ||
     me?.user_metadata?.full_name ||
+    me?.user_metadata?.display_name ||
     me?.email?.split("@")?.[0] ||
     "Kullanıcı";
 
   const completion = useMemo(() => {
     if (!me) return 0;
     const checks = [
-      !!(profile?.full_name || me?.user_metadata?.full_name),
+      !!(profile?.full_name || me?.user_metadata?.full_name || me?.user_metadata?.display_name),
       !!profile?.phone,
       !!profile?.city,
       !!profile?.title,
@@ -155,7 +176,11 @@ export default function UserProfile() {
   // ⚠️ Modal edit’i koruyoruz ama şimdilik kullanılmıyor
   const closeEdit = () => {
     setForm({
-      full_name: profile?.full_name || me?.user_metadata?.full_name || "",
+      full_name:
+        profile?.full_name ||
+        me?.user_metadata?.full_name ||
+        me?.user_metadata?.display_name ||
+        "",
       title: profile?.title || "",
       sector: profile?.sector || "",
       city: profile?.city || "",
@@ -182,31 +207,37 @@ export default function UserProfile() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("profiles").upsert(payload, {
-        onConflict: "id",
-      });
+      const { error } = await withTimeout(
+        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
+        12000,
+        "profiles.upsert"
+      );
 
       if (error) {
         console.error("profiles upsert error:", error);
-        toast.error("Kaydedilemedi. RLS veya tablo kolonlarını kontrol et.");
+        toast.error(`Kaydedilemedi: ${error.message || "RLS/kolon kontrol et"}`);
         return;
       }
 
       toast.success("Profil güncellendi.");
 
       // tekrar çek (garanti)
-      const { data: pData, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, full_name, title, sector, city, phone, created_at, updated_at")
-        .eq("id", me.id)
-        .maybeSingle();
+      const { data: pData, error: pErr } = await withTimeout(
+        supabase
+          .from("profiles")
+          .select("id, full_name, title, sector, city, phone, created_at, updated_at")
+          .eq("id", me.id)
+          .maybeSingle(),
+        12000,
+        "profiles.reselect"
+      );
 
       if (!pErr) setProfile(pData || payload);
 
       setEditOpen(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("Beklenmeyen bir hata oluştu.");
+      toast.error(e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu.");
     } finally {
       setSaving(false);
     }

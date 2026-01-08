@@ -32,6 +32,7 @@ export default function UserProfile() {
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
+  // ⚠️ Modal edit UI: şimdilik koruyoruz (senin dosyan kırpılmasın diye)
   const [editOpen, setEditOpen] = useState(false);
 
   // Edit form state (profiles tablosu ile 1:1)
@@ -72,8 +73,11 @@ export default function UserProfile() {
 
         if (pErr) {
           console.error("profiles select error:", pErr);
+
+          // ✅ kritik: burada UI takılmasın, fallback ile sayfa yaşasın
+          toast.error("Profil okunamadı. RLS/kolon kontrol et (profiles).");
+
           setProfile(null);
-          // formu en azından user metadata ile doldur
           setForm({
             full_name: user?.user_metadata?.full_name || "",
             title: "",
@@ -96,6 +100,7 @@ export default function UserProfile() {
         });
       } catch (e) {
         console.error("UserProfile load error:", e);
+        toast.error("Profil yüklenemedi.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -137,14 +142,18 @@ export default function UserProfile() {
     }
   }, [me]);
 
-  const openEdit = () => {
-    if (!me) return;
-    // ✅ artık edit sayfasına gidiyoruz
+  // ✅ Tek kaynak: profil düzenleme her zaman edit sayfasına gitsin
+  const goEdit = () => {
+    if (!me) {
+      toast.error("Giriş yapmadan profili düzenleyemezsin.");
+      navigate("/login");
+      return;
+    }
     navigate("/user/profile/edit");
   };
 
+  // ⚠️ Modal edit’i koruyoruz ama şimdilik kullanılmıyor
   const closeEdit = () => {
-    // kaydetmeden kapatılırsa mevcut profile’a geri döndür
     setForm({
       full_name: profile?.full_name || me?.user_metadata?.full_name || "",
       title: profile?.title || "",
@@ -257,7 +266,7 @@ export default function UserProfile() {
               <Button
                 variant="outline"
                 className="rounded-xl border-white/70 text-white hover:bg-white/10"
-                onClick={() => navigate("/user/profile/edit")} // ✅ İSTEDİĞİN EKLENDİ
+                onClick={goEdit}
               >
                 <Pencil className="h-4 w-4 mr-2" />
                 Profili Düzenle
@@ -368,11 +377,7 @@ export default function UserProfile() {
                       Nasıl çalışır?
                     </Button>
 
-                    <Button
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => navigate("/user/profile/edit")} // ✅ İSTEDİĞİN EKLENDİ
-                    >
+                    <Button variant="outline" className="rounded-xl" onClick={goEdit}>
                       <Pencil className="h-4 w-4 mr-2" />
                       Profili Düzenle
                     </Button>
@@ -441,11 +446,7 @@ export default function UserProfile() {
                     </div>
 
                     <div className="mt-3">
-                      <Button
-                        variant="outline"
-                        className="rounded-xl w-full"
-                        onClick={() => navigate("/user/profile/edit")} // ✅ ekstra CTA
-                      >
+                      <Button variant="outline" className="rounded-xl w-full" onClick={goEdit}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Profili Düzenle
                       </Button>
@@ -473,17 +474,10 @@ export default function UserProfile() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
-                      <Button
-                        className="rounded-xl"
-                        onClick={() => navigate("/coach-selection-process")}
-                      >
+                      <Button className="rounded-xl" onClick={() => navigate("/coach-selection-process")}>
                         Koç seçimi rehberi
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => navigate("/user/dashboard")}
-                      >
+                      <Button variant="outline" className="rounded-xl" onClick={() => navigate("/user/dashboard")}>
                         Dashboard
                       </Button>
                     </div>
@@ -492,7 +486,7 @@ export default function UserProfile() {
               </Card>
             </div>
 
-            {/* EDIT MODAL (artık kullanılmıyor ama dosyada kalsın istersen) */}
+            {/* EDIT MODAL (korunuyor ama şu an kullanılmıyor) */}
             {editOpen ? (
               <div className="fixed inset-0 z-50">
                 <div

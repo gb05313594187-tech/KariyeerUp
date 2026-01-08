@@ -19,10 +19,8 @@ import { toast } from "sonner";
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ✅ PayTR checkout route
-const PAYTR_ROUTE = "/paytr-checkout";
-// Eğer App.tsx’te route yoksa fallback:
-const FALLBACK_CHECKOUT_ROUTE = "/checkout";
+// ✅ PayTR checkout route (SENDEKİ GERÇEK ROUTE BU)
+const PAYTR_ROUTE = "/paytr/checkout";
 
 // ----------------- Date helpers (NO toISOString for date-only) -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -111,7 +109,7 @@ export default function BookSession() {
     note: "",
   });
 
-  // Auth + Prefill from profiles (minimal, only for this page)
+  // Auth + Prefill
   useEffect(() => {
     let mounted = true;
 
@@ -126,10 +124,8 @@ export default function BookSession() {
         if (!mounted) return;
         setAuthUser(u);
 
-        // giriş yoksa prefill yapma (kullanıcı yine de sayfayı görebilir)
         if (!u) return;
 
-        // profiles tablosundan prefill
         try {
           const { data: p } = await supabase
             .from("profiles")
@@ -149,9 +145,7 @@ export default function BookSession() {
             fullName: f.fullName || name || "",
             email: f.email || email || "",
           }));
-        } catch {
-          // sessiz geç
-        }
+        } catch {}
       } catch (e) {
         console.error("BookSession auth/prefill error:", e);
       } finally {
@@ -221,18 +215,8 @@ export default function BookSession() {
   }, [coach]);
 
   const timeSlots = [
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
+    "09:00","10:00","11:00","12:00","13:00","14:00",
+    "15:00","16:00","17:00","18:00","19:00","20:00",
   ];
 
   const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
@@ -243,22 +227,6 @@ export default function BookSession() {
     !!selectedTime &&
     !!String(form.fullName || "").trim() &&
     !!String(form.email || "").trim();
-
-  // ✅ PayTR yönlendirme
-  const goToPayment = (payload: {
-    requestId: string;
-    coachId: string;
-    selected_date: string;
-    selected_time: string;
-  }) => {
-    const qs = new URLSearchParams();
-    qs.set("requestId", payload.requestId);
-    qs.set("coachId", payload.coachId);
-    qs.set("date", payload.selected_date);
-    qs.set("time", payload.selected_time);
-
-    navigate(`${PAYTR_ROUTE}?${qs.toString()}`);
-  };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -288,10 +256,18 @@ export default function BookSession() {
         return;
       }
 
-      // ✅ 1) Seans talebini oluştur ve ID al
-      const { data: created, error: insErr } = await supabase
+      // ✅ ÜCRET (kuruş)
+      const feeTL = Number(coach?.session_fee || coach?.price || 0);
+      const payment_amount = Math.max(1, Math.round(feeTL * 100));
+
+      // ✅ ID'yi biz üretelim ki merchant_oid’yi de aynı anda dolduralım
+      const requestId = crypto.randomUUID();
+      const merchant_oid = requestId.replace(/-/g, ""); // PayTR için en güvenlisi
+
+      const { error: insErr } = await supabase
         .from("app_2dff6511da_session_requests")
         .insert({
+          id: requestId,
           coach_id: coachId,
           user_id: userId,
           full_name: String(form.fullName || "").trim(),
@@ -300,10 +276,13 @@ export default function BookSession() {
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
           status: "pending",
-          created_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
+
+          // ✅ PayTR için kritik alanlar
+          payment_status: "pending",
+          payment_amount,
+          currency: "TL",
+          merchant_oid,
+        });
 
       if (insErr) {
         console.error("Insert error:", insErr);
@@ -311,13 +290,7 @@ export default function BookSession() {
         return;
       }
 
-      const requestId = created?.id;
-      if (!requestId) {
-        toast.error("Seans talebi oluşturuldu ama ID alınamadı.");
-        return;
-      }
-
-      // ✅ 2) Mail (opsiyonel, akışı bozmaz)
+      // ✅ Mail (opsiyonel)
       try {
         const res = await fetch(FUNCTION_URL, {
           method: "POST",
@@ -344,24 +317,11 @@ export default function BookSession() {
         console.error("Email function fetch error:", emailErr);
       }
 
-      toast.success("Talep oluşturuldu. Ödemeye yönlendiriliyorsun...");
-
-      // ✅ 3) PayTR ödeme sayfasına yönlendir
-      try {
-        goToPayment({
-          requestId,
-          coachId,
-          selected_date: selectedDate,
-          selected_time: selectedTime,
-        });
-      } catch {
-        const qs = new URLSearchParams();
-        qs.set("requestId", requestId);
-        qs.set("coachId", coachId);
-        qs.set("date", selectedDate);
-        qs.set("time", selectedTime);
-        navigate(`${FALLBACK_CHECKOUT_ROUTE}?${qs.toString()}`);
-      }
+      // ✅ ÖDEME SAYFASI
+      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(requestId)}`, {
+        replace: true,
+      });
+      return;
     } catch (err) {
       console.error("Reservation error:", err);
       toast.error("Bir hata oluştu, lütfen tekrar dene.");

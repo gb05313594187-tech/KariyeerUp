@@ -16,7 +16,7 @@ export default function UserProfileEdit() {
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
-  // ---- Telefon ülke kodları (genişletilebilir) ----
+  // ---- Telefon ülke kodları ----
   const PHONE_COUNTRIES = useMemo(
     () => [
       { iso: "TR", name: "Türkiye", dial: "+90", placeholder: "5xx xxx xx xx" },
@@ -94,9 +94,9 @@ export default function UserProfileEdit() {
     []
   );
 
-  // Form state (profiles kolonlarıyla uyumlu)
+  // ✅ Form state (profiles kolonlarıyla uyumlu) -> display_name kullan
   const [form, setForm] = useState({
-    full_name: "",
+    display_name: "",
     title: "",
     sector: "",
     city: "",
@@ -104,7 +104,6 @@ export default function UserProfileEdit() {
     phone_local: "",
   });
 
-  // Telefonu DB’den okurken parçala (+90....)
   const splitPhone = (raw: string) => {
     if (!raw) return { phone_country: "TR", phone_local: "" };
     const clean = String(raw).trim();
@@ -115,15 +114,13 @@ export default function UserProfileEdit() {
         phone_local: clean.replace(found.dial, "").trim(),
       };
     }
-    // + ile gelmiş ama listede yoksa local’a at
     return { phone_country: "TR", phone_local: clean.replace("+", "").trim() };
   };
 
   const buildE164 = () => {
-    const country = PHONE_COUNTRIES.find((c) => c.iso === form.phone_country) || PHONE_COUNTRIES[0];
-    const local = String(form.phone_local || "")
-      .replace(/[^\d]/g, "")
-      .trim();
+    const country =
+      PHONE_COUNTRIES.find((c) => c.iso === form.phone_country) || PHONE_COUNTRIES[0];
+    const local = String(form.phone_local || "").replace(/[^\d]/g, "").trim();
     if (!local) return "";
     return `${country.dial}${local}`;
   };
@@ -149,23 +146,28 @@ export default function UserProfileEdit() {
           return;
         }
 
-        // profili çek
+        // ✅ profili çek (kolonları açık seçelim)
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("*")
+          .select("id, display_name, role, phone, country, title, sector, city, updated_at")
           .eq("id", user.id)
           .maybeSingle();
 
         if (pErr) {
-          // RLS kapalı/yanlışsa burada da patlar. Ama biz zaten SQL ile düzelttik.
           console.error("profiles select error:", pErr);
         }
 
         const phoneParts = splitPhone(p?.phone || "");
 
         setProfile(p || null);
+
+        // ✅ display_name öncelik: profiles -> user_metadata
+        const meta = user?.user_metadata || {};
+        const metaName =
+          meta.display_name || meta.full_name || meta.fullName || meta.name || "";
+
         setForm({
-          full_name: p?.full_name || user?.user_metadata?.full_name || "",
+          display_name: p?.display_name || metaName || "",
           title: p?.title || "",
           sector: p?.sector || "",
           city: p?.city || "",
@@ -189,8 +191,8 @@ export default function UserProfileEdit() {
   const onSave = async () => {
     if (saving) return;
 
-    const full_name = String(form.full_name || "").trim();
-    if (!full_name) {
+    const display_name = String(form.display_name || "").trim();
+    if (!display_name) {
       toast.error("Ad Soyad zorunlu.");
       return;
     }
@@ -205,9 +207,17 @@ export default function UserProfileEdit() {
         return;
       }
 
+      // ✅ Auth metadata da güncellensin (Navbar/AuthContext tutarlı kalsın)
+      await supabase.auth.updateUser({
+        data: {
+          display_name,
+          full_name: display_name, // geriye dönük uyum
+        },
+      });
+
       const payload = {
-        id: user.id, // ✅ kritik
-        full_name,
+        id: user.id, // ✅ kritik (RLS with_check id=auth.uid())
+        display_name,
         title: form.title || null,
         sector: form.sector || null,
         city: form.city || null,
@@ -215,11 +225,14 @@ export default function UserProfileEdit() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("profiles").upsert(payload);
+      // ✅ upsert’te conflict açık olsun
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "id" });
 
       if (error) {
         console.error("profiles upsert error:", error);
-        toast.error("Kaydedilemedi. RLS veya tablo kolonlarını kontrol et.");
+        toast.error("Kaydedilemedi. RLS/policy veya kolonları kontrol et.");
         return;
       }
 
@@ -261,7 +274,11 @@ export default function UserProfileEdit() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Geri
             </Button>
-            <Button className="rounded-xl bg-white text-slate-900 hover:bg-white/90" onClick={onSave} disabled={saving}>
+            <Button
+              className="rounded-xl bg-white text-slate-900 hover:bg-white/90"
+              onClick={onSave}
+              disabled={saving}
+            >
               <Save className="h-4 w-4 mr-2" />
               {saving ? "Kaydediliyor..." : "Kaydet"}
             </Button>
@@ -284,8 +301,8 @@ export default function UserProfileEdit() {
             <div>
               <label className="text-xs text-slate-600">Ad Soyad</label>
               <input
-                value={form.full_name}
-                onChange={(e) => setForm((s) => ({ ...s, full_name: e.target.value }))}
+                value={form.display_name}
+                onChange={(e) => setForm((s) => ({ ...s, display_name: e.target.value }))}
                 className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
                 placeholder="Örn: Salih Gökalp Büyükçelebi"
               />
@@ -313,7 +330,7 @@ export default function UserProfileEdit() {
 
               <div>
                 <label className="text-xs text-slate-600 flex items-center gap-2">
-                  <Building2 className="h-4 h-4 text-slate-500" /> Sektör
+                  <Building2 className="w-4 h-4 text-slate-500" /> Sektör
                 </label>
                 <select
                   value={form.sector}

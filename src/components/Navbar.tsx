@@ -38,6 +38,7 @@ export default function Navbar() {
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
 
+  // ✅ Route değişince mobil menü kapansın (render loop yok)
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
@@ -83,27 +84,8 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  const premiumLabel = useMemo(() => {
-    if (role === "corporate") return "Kurumsal Premium";
-    if (role === "coach") return "Koç Premium";
-    return "Bireysel Premium";
-  }, [role]);
-
-  // ✅ Kritik düzeltme: giriş yoksa bireysel-premium landing’e gider.
-  // ✅ giriş varsa checkout’a gider. Böylece book-session asla hedef olamaz.
-  const premiumTarget = useMemo(() => {
-    const authed = !!auth?.isAuthenticated;
-
-    if (!authed) {
-      // marketing/landing
-      return "/bireysel-premium";
-    }
-
-    if (role === "admin") return "/pricing";
-    if (role === "corporate") return "/checkout?plan=corporate";
-    if (role === "coach") return "/checkout?plan=coach";
-    return "/checkout?plan=individual";
-  }, [auth?.isAuthenticated, role]);
+  // ✅ Premium linki ASLA auth/role ile dinamik değil: bu kilitlenmeyi bitirir
+  const premiumPath = "/bireysel-premium";
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
@@ -149,13 +131,13 @@ export default function Navbar() {
             Webinar
           </Link>
 
-          <Button
-            onClick={() => navigate(premiumTarget)}
-            className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Crown className="h-4 w-4 mr-2" />
-            {premiumLabel}
-          </Button>
+          {/* ✅ Premium her zaman landing */}
+          <Link to={premiumPath}>
+            <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
+              <Crown className="h-4 w-4 mr-2" />
+              Bireysel Premium
+            </Button>
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -282,9 +264,10 @@ export default function Navbar() {
               Webinar
             </button>
 
-            <button onClick={() => navigate(premiumTarget)} className={mobilePrimary}>
-              {premiumLabel}
-            </button>
+            {/* ✅ Premium sabit */}
+            <Link to={premiumPath} className="block" onClick={() => setMobileOpen(false)}>
+              <div className={mobilePrimary}>Bireysel Premium</div>
+            </Link>
 
             <div className="pt-2 border-t space-y-2">
               {auth.loading ? null : !me ? (

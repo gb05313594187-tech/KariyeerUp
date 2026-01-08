@@ -1,6 +1,6 @@
 // src/pages/Login.tsx
 // @ts-nocheck
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +20,18 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const nextUrl = useMemo(() => {
-    const qs = new URLSearchParams(location.search);
-    return qs.get("next") || "/";
-  }, [location.search]);
-
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
+
+  // ✅ geri dönüş: ?redirect=... veya location.state.from
+  const redirectTo = (() => {
+    const qs = new URLSearchParams(location.search);
+    const q = qs.get("redirect");
+    if (q) return q;
+    const st: any = location.state;
+    if (st?.from) return st.from;
+    return "/";
+  })();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -43,17 +48,32 @@ export default function Login() {
         toast.error("E-posta veya şifre hatalı.");
         return;
       }
-
-      if (!data.user) {
+      if (!data?.user) {
         toast.error("Kullanıcı bulunamadı.");
         return;
       }
 
+      // ✅ localStorage yazma: KALDIRILDI (AuthProvider ile çakışıyordu)
+      // localStorage.setItem("kariyeer_user", ...)
+
       toast.success("Giriş başarılı!");
 
-      // ✅ Kritik: SPA navigate bazen AuthContext/Nav’i yarım bırakıyor.
-      // Hard redirect → AuthProvider session’ı kesin görür, navbar kilitlenmez.
-      window.location.assign(nextUrl);
+      // Rol bilgisi gerekiyorsa AuthContext zaten yakalayacak.
+      // Sadece koç onaysız ise yönlendir.
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("account_type,is_approved")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile?.account_type === "coach" && !profile?.is_approved) {
+          navigate("/coach-application", { replace: true });
+          return;
+        }
+      } catch {}
+
+      navigate(redirectTo, { replace: true });
     } catch (err: any) {
       console.error("Giriş Hatası:", err);
       toast.error("Giriş sırasında bir hata oluştu.");
@@ -76,6 +96,7 @@ export default function Login() {
             Devam etmek için hesabınıza giriş yapın
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -91,6 +112,7 @@ export default function Login() {
                 }
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Şifre</Label>
               <Input
@@ -103,6 +125,7 @@ export default function Login() {
                 }
               />
             </div>
+
             <Button
               type="submit"
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
@@ -110,16 +133,9 @@ export default function Login() {
             >
               {isLoading ? "Giriş Yapılıyor..." : "Giriş Yap"}
             </Button>
-
-            <button
-              type="button"
-              className="w-full text-xs text-gray-500 hover:underline"
-              onClick={() => navigate("/")}
-            >
-              Ana sayfaya dön
-            </button>
           </form>
         </CardContent>
+
         <CardFooter className="flex justify-center">
           <div className="text-sm text-gray-500">
             Hesabınız yok mu?{" "}

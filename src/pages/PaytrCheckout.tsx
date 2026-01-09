@@ -2,212 +2,133 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export default function PaytrCheckout() {
+  const [sp] = useSearchParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  const requestId = useMemo(() => searchParams.get("requestId") || "", [searchParams]);
+  const requestId = sp.get("requestId") || "";
 
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string>("");
-  const [errorMsg, setErrorMsg] = useState<string>("");
-
-  // ✅ UI debug
-  const [dbgStatus, setDbgStatus] = useState<string>("");
-  const [dbgBody, setDbgBody] = useState<string>("");
-  const [dbgHint, setDbgHint] = useState<string>("");
+  const [dbg, setDbg] = useState<any>(null);
 
   const iframeSrc = useMemo(() => {
     if (!token) return "";
-    return `https://www.paytr.com/odeme/guvenli/${encodeURIComponent(token)}`;
+    return `https://www.paytr.com/odeme/guvenli/${token}`;
   }, [token]);
 
-  async function manualFetchDebug(fnName: string, reqId: string) {
-    const base = import.meta.env.VITE_SUPABASE_URL;
-    const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!base || !anon) {
-      const msg = `ENV eksik: VITE_SUPABASE_URL veya VITE_SUPABASE_ANON_KEY yok. (base=${String(
-        base
-      )}, anon=${anon ? "var" : "yok"})`;
-      console.error(msg);
-      setDbgHint(msg);
-      return;
-    }
-
-    const url = `${base}/functions/v1/${fnName}`;
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: anon,
-        Authorization: `Bearer ${anon}`,
-      },
-      body: JSON.stringify({ request_id: reqId }),
-    });
-
-    const text = await resp.text();
-    console.log("paytr-get-token manual status:", resp.status);
-    console.log("paytr-get-token manual body:", text);
-
-    setDbgStatus(String(resp.status));
-    setDbgBody(text);
-
-    return { status: resp.status, bodyText: text };
-  }
-
-  async function getPaytrTokenDebug(reqId: string) {
-    const fnName = "paytr-get-token";
-
-    // 1) normal invoke
-    const { data, error } = await supabase.functions.invoke(fnName, {
-      body: { request_id: reqId },
-    });
-
-    console.log("paytr-get-token invoke response:", { data, error });
-
-    if (!error) {
-      const t = data?.token;
-      if (!t) throw new Error("Token missing in 200 response");
-      return String(t);
-    }
-
-    // 2) invoke hata verdiyse: manual fetch ile body’yi ekrana bas
-    await manualFetchDebug(fnName, reqId);
-
-    throw error;
-  }
-
   useEffect(() => {
-    let alive = true;
+    let mounted = true;
 
-    (async () => {
+    const run = async () => {
       try {
         setLoading(true);
-        setErrorMsg("");
-        setToken("");
-        setDbgStatus("");
-        setDbgBody("");
-        setDbgHint("");
 
         if (!requestId) {
-          const msg = "RequestId yok.";
-          console.error("paytr: missing requestId in URL");
-          if (!alive) return;
-          setErrorMsg(msg);
-          toast.error(msg);
+          toast.error("requestId eksik.");
+          navigate("/book-session");
           return;
         }
 
-        console.log("paytr requestId:", requestId);
+        // ✅ login şart (401 fix)
+        const { data: sess } = await supabase.auth.getSession();
+        const access = sess?.session?.access_token;
+        if (!access) {
+          toast.error("Ödeme için giriş yapmalısın.");
+          navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+          return;
+        }
 
-        const t = await getPaytrTokenDebug(requestId);
-        if (!alive) return;
-        setToken(t);
+        // ✅ Edge function invoke (auth header otomatik gider)
+        const { data, error } = await supabase.functions.invoke("paytr-get-token", {
+          body: { request_id: requestId },
+        });
+
+        setDbg({ requestId, data, error });
+
+        if (error) {
+          console.error("paytr-get-token error:", error);
+          toast.error("Ödeme başlatılamadı (token).");
+          return;
+        }
+
+        if (!data?.token) {
+          console.error("paytr-get-token bad response:", data);
+          toast.error("Ödeme token alınamadı.");
+          return;
+        }
+
+        if (!mounted) return;
+        setToken(String(data.token));
       } catch (e) {
-        console.error("paytr token flow failed:", e);
-        if (!alive) return;
-        setErrorMsg("Ödeme başlatılamadı (token).");
-        toast.error("Ödeme başlatılamadı (token).");
+        console.error(e);
+        toast.error("Ödeme sayfası yüklenemedi.");
       } finally {
-        if (!alive) return;
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
-    })();
-
-    return () => {
-      alive = false;
     };
-  }, [requestId]);
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [requestId, navigate]);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="w-full bg-gradient-to-r from-orange-500 to-red-500">
-        <div className="mx-auto max-w-6xl px-4 py-6">
+    <div className="min-h-screen bg-white text-slate-900">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400 text-white">
+        <div className="max-w-5xl mx-auto px-4 py-8">
           <button
             onClick={() => navigate(-1)}
-            className="mb-2 inline-flex items-center gap-2 text-white/90 hover:text-white"
+            className="inline-flex items-center gap-2 text-white/90 hover:text-white text-xs font-medium"
           >
-            <span className="text-lg">←</span>
-            <span>Geri</span>
+            <ArrowLeft className="w-4 h-4" />
+            Geri
           </button>
 
-          <h1 className="text-3xl font-bold text-white">Ödeme</h1>
-          <p className="mt-1 text-white/90">
+          <h1 className="mt-2 text-3xl font-extrabold">Ödeme</h1>
+          <p className="mt-2 text-sm text-white/90 max-w-2xl">
             Ödeme güvenli şekilde PayTR altyapısında tamamlanır.
           </p>
-          <p className="mt-1 text-white/80 text-sm">Kart bilgileri platformda saklanmaz.</p>
+
+          <div className="mt-4 flex items-center gap-2 text-xs text-white/90">
+            <ShieldCheck className="w-4 h-4" />
+            Kart bilgileri platformda saklanmaz.
+          </div>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        {loading && (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
-            <div className="text-gray-700 font-medium">Yükleniyor...</div>
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            Güvenli ödeme ekranı yükleniyor...
           </div>
-        )}
-
-        {!loading && errorMsg && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-            <div className="text-red-700 font-semibold">Ödeme iframe oluşturulamadı.</div>
-            <div className="mt-1 text-red-700/90 text-sm">{errorMsg}</div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-white hover:bg-gray-800"
-              >
-                Dashboard&apos;a dön
-              </button>
-
-              <button
-                onClick={() => window.location.reload()}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
-              >
-                Yeniden dene
-              </button>
+        ) : !iframeSrc ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
+            Ödeme iframe oluşturulamadı.
+            <div className="mt-3 text-xs text-red-800/80">
+              Debug: {JSON.stringify(dbg)}
+            </div>
+            <div className="mt-4">
+              <Button className="rounded-xl" onClick={() => navigate("/user/dashboard")}>
+                Dashboard’a dön
+              </Button>
             </div>
           </div>
-        )}
-
-        {!loading && !errorMsg && token && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <div className="mb-3 text-sm text-gray-600">Güvenli ödeme ekranı yükleniyor...</div>
-
+        ) : (
+          <div className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <iframe
-              title="PayTR Checkout"
               src={iframeSrc}
-              className="w-full rounded-lg border border-gray-200"
-              style={{ height: 720 }}
-              frameBorder={0}
-              allow="payment *"
+              title="PayTR"
+              className="w-full"
+              style={{ height: 760 }}
+              frameBorder="0"
             />
-          </div>
-        )}
-
-        {/* Debug */}
-        {!loading && (
-          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-800">
-            <div className="font-semibold mb-2">Debug</div>
-            <div>requestId: {requestId || "(yok)"}</div>
-            <div>token: {token ? "(var)" : "(yok)"}</div>
-
-            <div className="mt-2 font-semibold">Edge Function Response</div>
-            <div>status: {dbgStatus || "(yok)"}</div>
-            <pre className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-white p-3 border border-gray-200">
-              {dbgBody || "(body yok — invoke hata verdi ama manual fetch body alamadı)"}
-            </pre>
-
-            {dbgHint && (
-              <div className="mt-2 text-red-700">
-                {dbgHint}
-              </div>
-            )}
           </div>
         )}
       </div>

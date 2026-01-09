@@ -1,6 +1,6 @@
 // src/pages/BookSession.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,16 +15,17 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+// Opsiyonel mail function
 const FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/reservation-email";
 
-// ✅ DOĞRU route
+// ✅ DOĞRU route: PaytrCheckout sayfanın route'u bununla aynı olmalı
 const PAYTR_ROUTE = "/paytr/checkout";
 
-// ✅ tablo adlarını tek yerden yönet
+const REQUESTS_TABLE = "app_2dff6511da_session_requests";
 const COACHES_TABLE = "app_2dff6511da_coaches";
-const SESSION_TABLE = "app_2dff6511da_session_requests"; // sende farklıysa değiştir
 
+// ----------------- Date helpers -----------------
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -70,54 +71,28 @@ function buildMonthGrid(viewMonth: Date) {
 const monthTR = (d: Date) =>
   d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
-const monthNameTR = (year: number, monthIdx: number) =>
-  new Date(year, monthIdx, 1).toLocaleDateString("tr-TR", { month: "long" });
-
-// ✅ PayTR merchant_oid üret (sadece güvenli karakterler)
-const makeMerchantOid = () => {
-  const rand = Math.random().toString(36).slice(2, 10);
-  return `oid_${Date.now()}_${rand}`;
-};
-
-// ✅ toast spam önleyici: aynı mesajı tek sefer bas
-const useOnceToast = () => {
-  const shown = useRef(new Set<string>());
-  return (key: string, fn: () => void) => {
-    if (shown.current.has(key)) return;
-    shown.current.add(key);
-    fn();
-  };
-};
-
 export default function BookSession() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const onceToast = useOnceToast();
 
-  const coachId = (searchParams.get("coachId") || "").trim();
-  const prefillDate = (searchParams.get("date") || "").trim();
-  const prefillTime = (searchParams.get("time") || "").trim();
-  const lang = (searchParams.get("lang") || "tr").trim();
+  const coachId = searchParams.get("coachId");
+  const prefillDate = searchParams.get("date") || "";
+  const prefillTime = searchParams.get("time") || "";
 
   const today = useMemo(() => startOfDay(new Date()), []);
 
   const [coach, setCoach] = useState<any | null>(null);
   const [loadingCoach, setLoadingCoach] = useState(true);
 
-  const [authUser, setAuthUser] = useState<any | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [viewMonth, setViewMonth] = useState<Date>(() =>
-    startOfMonth(new Date())
-  );
+  const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = parseYMD(prefillDate);
     return d ? toYMD(d) : toYMD(new Date());
   });
-
   const [selectedTime, setSelectedTime] = useState<string>(() => prefillTime || "");
 
   const [form, setForm] = useState({
@@ -126,85 +101,55 @@ export default function BookSession() {
     note: "",
   });
 
-  // ✅ Ay/Yıl seçici state
-  const [monthPick, setMonthPick] = useState<number>(() => viewMonth.getMonth()); // 0-11
-  const [yearPick, setYearPick] = useState<number>(() => viewMonth.getFullYear());
-
-  useEffect(() => {
-    setMonthPick(viewMonth.getMonth());
-    setYearPick(viewMonth.getFullYear());
-  }, [viewMonth]);
-
-  // ✅ Guard: coachId yoksa burada durma (navbar kilitleyen ana sebep)
-  useEffect(() => {
-    if (coachId) return;
-
-    onceToast("missing_coachId", () => toast.error("coachId eksik."));
-    // Premium CTA yanlış yere geldiyse stabil fallback
-    navigate(`/coaches?lang=${encodeURIComponent(lang)}`, { replace: true });
-  }, [coachId, lang, navigate]);
-
-  // ✅ Auth + profil prefill
+  // Auth + prefill
   useEffect(() => {
     let mounted = true;
 
-    const loadMeAndPrefill = async () => {
+    const run = async () => {
       try {
         setLoadingMe(true);
-
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-
+        const { data } = await supabase.auth.getUser();
         const u = data?.user || null;
-        if (!mounted) return;
-        setAuthUser(u);
 
-        // login yoksa -> login'e yönlendir (return path ile)
         if (!u) {
-          const nextQs = new URLSearchParams(searchParams);
-          if (!nextQs.get("lang")) nextQs.set("lang", lang);
-          const next = `/book-session?${nextQs.toString()}`;
-          navigate(`/login?lang=${encodeURIComponent(lang)}&next=${encodeURIComponent(next)}`, {
-            replace: true,
-          });
+          // giriş yok -> sadece sayfayı gösterebilir ama submitte login ister
           return;
         }
 
-        try {
-          const { data: p } = await supabase
-            .from("profiles")
-            .select("id, display_name, full_name, email")
-            .eq("id", u.id)
-            .maybeSingle();
+        // profiles tablosundan prefill (varsa)
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("id, display_name, full_name, email")
+          .eq("id", u.id)
+          .maybeSingle();
 
-          const meta = u?.user_metadata || {};
-          const metaName =
-            meta.display_name || meta.full_name || meta.fullName || meta.name || "";
+        const meta = u?.user_metadata || {};
+        const metaName =
+          meta.display_name || meta.full_name || meta.fullName || meta.name || "";
 
-          const name = (p?.display_name || p?.full_name || metaName || "").trim();
-          const email = (p?.email || u?.email || "").trim();
+        const name = (p?.display_name || p?.full_name || metaName || "").trim();
+        const email = (p?.email || u?.email || "").trim();
 
-          setForm((f) => ({
-            ...f,
-            fullName: f.fullName || name || "",
-            email: f.email || email || "",
-          }));
-        } catch {}
+        if (!mounted) return;
+        setForm((f) => ({
+          ...f,
+          fullName: f.fullName || name || "",
+          email: f.email || email || "",
+        }));
       } catch (e) {
-        console.error("BookSession auth/prefill error:", e);
+        console.error(e);
       } finally {
         if (mounted) setLoadingMe(false);
       }
     };
 
-    loadMeAndPrefill();
+    run();
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Koç fetch (coachId yoksa zaten guard geri attı)
+  // Coach fetch
   useEffect(() => {
     const fetchCoach = async () => {
       try {
@@ -213,15 +158,13 @@ export default function BookSession() {
 
         const { data, error } = await supabase
           .from(COACHES_TABLE)
-          .select("*")
+          .select("id, full_name, email, avatar_url, title, session_fee, specializations, expertise_tags, specialization")
           .eq("id", coachId)
-          .single();
+          .maybeSingle();
 
-        if (error) {
+        if (error || !data) {
           console.error("Coach fetch error:", error);
-          onceToast("coach_fetch_fail", () => toast.error("Koç bilgisi alınamadı."));
-          // burada kalma
-          navigate(`/coaches?lang=${encodeURIComponent(lang)}`, { replace: true });
+          toast.error("Koç bilgisi alınamadı.");
           return;
         }
         setCoach(data);
@@ -231,17 +174,16 @@ export default function BookSession() {
     };
 
     fetchCoach();
-  }, [coachId, lang, navigate]);
+  }, [coachId]);
 
-  // ✅ query date/time prefill
+  // Prefill -> viewMonth sync
   useEffect(() => {
     const d = parseYMD(prefillDate);
     if (d) {
       setSelectedDate(toYMD(d));
       setViewMonth(startOfMonth(d));
     } else {
-      const now = new Date();
-      setViewMonth(startOfMonth(now));
+      setViewMonth(startOfMonth(new Date()));
     }
     if (prefillTime) setSelectedTime(prefillTime);
   }, [prefillDate, prefillTime]);
@@ -251,17 +193,13 @@ export default function BookSession() {
       coach?.specializations ?? coach?.expertise_tags ?? coach?.specialization ?? "";
     if (Array.isArray(raw)) return raw.filter(Boolean);
     if (typeof raw === "string") {
-      return raw
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
+      return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
     return [];
   }, [coach]);
 
   const timeSlots = [
-    "09:00","10:00","11:00","12:00","13:00","14:00",
-    "15:00","16:00","17:00","18:00","19:00","20:00",
+    "09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00",
   ];
 
   const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
@@ -273,45 +211,36 @@ export default function BookSession() {
     !!String(form.fullName || "").trim() &&
     !!String(form.email || "").trim();
 
-  const goToPayment = (payload: { requestId: string }) => {
-    const qs = new URLSearchParams();
-    qs.set("requestId", payload.requestId);
-    if (lang) qs.set("lang", lang);
-    navigate(`${PAYTR_ROUTE}?${qs.toString()}`, { replace: true });
-  };
-
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!coachId) return toast.error("Koç bilgisi bulunamadı.");
-    if (!selectedDate || !selectedTime) return toast.error("Tarih ve saat seç.");
-    if (!String(form.fullName || "").trim() || !String(form.email || "").trim())
+    if (!selectedDate || !selectedTime) return toast.error("Tarih ve saat seçmelisin.");
+    if (!String(form.fullName || "").trim() || !String(form.email || "").trim()) {
       return toast.error("Ad soyad ve e-posta zorunlu.");
+    }
 
     try {
       setIsSubmitting(true);
 
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth?.user?.id;
+      // ✅ Login şart
+      const { data: sess } = await supabase.auth.getSession();
+      const access = sess?.session?.access_token;
+      const userId = sess?.session?.user?.id;
 
-      if (!userId) {
-        // ✅ spam yapma, tek yönlendir
-        onceToast("login_required", () =>
-          toast.error("Seans talebi için giriş yapmalısın.")
-        );
-
-        const nextQs = new URLSearchParams(searchParams);
-        if (!nextQs.get("lang")) nextQs.set("lang", lang);
-        const next = `/book-session?${nextQs.toString()}`;
-        navigate(`/login?lang=${encodeURIComponent(lang)}&next=${encodeURIComponent(next)}`, {
-          replace: true,
-        });
+      if (!access || !userId) {
+        toast.error("Devam etmek için giriş yapmalısın.");
+        navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
 
-      // 1) INSERT
+      // ✅ ücret -> kuruş
+      const feeTL = Number(coach?.session_fee || 990);
+      const payment_amount = Math.max(1, Math.round(feeTL * 100));
+
+      // ✅ önce request oluştur
       const { data: created, error: insErr } = await supabase
-        .from(SESSION_TABLE)
+        .from(REQUESTS_TABLE)
         .insert({
           coach_id: coachId,
           user_id: userId,
@@ -321,51 +250,40 @@ export default function BookSession() {
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
           status: "pending",
+
+          // ✅ PayTR alanları (EN KRİTİK)
           payment_status: "pending",
+          currency: "TL",
+          payment_amount,
+          merchant_oid: null, // id geldikten sonra update edeceğiz
         })
         .select("id")
         .single();
 
-      if (insErr) {
+      if (insErr || !created?.id) {
         console.error("Insert error:", insErr);
         toast.error("Seans talebi oluşturulamadı.");
         return;
       }
 
-      const requestId = created?.id;
-      if (!requestId) {
-        toast.error("Talep oluşturuldu ama ID alınamadı.");
-        return;
-      }
+      const requestId = created.id;
+      const merchantOid = String(requestId).replace(/-/g, "");
 
-      // 2) PayTR için DB alanlarını doldur (kritik)
-      const fee = Number(coach?.session_fee || 0);
-      // fee 0 ise bile patlamasın -> min 1 kuruş
-      const paymentAmount = Math.max(1, Math.round(fee * 100));
-
-      const merchantOid = makeMerchantOid();
-
-      const { error: upErr } = await supabase
-        .from(SESSION_TABLE)
-        .update({
-          payment_status: "pending",
-          currency: "TL",
-          payment_amount: paymentAmount,
-          merchant_oid: merchantOid,
-        })
+      // ✅ merchant_oid'yi güncelle
+      await supabase
+        .from(REQUESTS_TABLE)
+        .update({ merchant_oid: merchantOid })
         .eq("id", requestId);
 
-      if (upErr) {
-        console.error("Payment fields update error:", upErr);
-        toast.error("Ödeme alanları yazılamadı.");
-        return;
-      }
-
-      // 3) Mail (opsiyonel, hata olsa da akış bozulmasın)
+      // opsiyonel mail (akışı bozmaz)
       try {
         await fetch(FUNCTION_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${access}`,
+          },
           body: JSON.stringify({
             coach_email: coach?.email || "",
             user_email: String(form.email || "").trim(),
@@ -376,37 +294,20 @@ export default function BookSession() {
             note: form.note,
           }),
         });
-      } catch (mailErr) {
-        // mail fail akışı bozmaz
-        console.warn("Reservation email failed:", mailErr);
+      } catch (errMail) {
+        console.error("reservation-email error:", errMail);
       }
 
-      // 4) Direkt ödeme
-      toast.success("Ödemeye yönlendiriliyorsun...");
-      goToPayment({ requestId });
+      // ✅ direkt ödeme
+      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(requestId)}`, { replace: true });
+      return;
     } catch (err) {
-      console.error("Reservation error:", err);
-      toast.error("Bir hata oluştu, tekrar dene.");
+      console.error(err);
+      toast.error("Bir hata oluştu.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // ✅ Yıl aralığı
-  const yearOptions = useMemo(() => {
-    const y = new Date().getFullYear();
-    const arr: number[] = [];
-    for (let i = y - 2; i <= y + 5; i++) arr.push(i);
-    return arr;
-  }, []);
-
-  const jumpToMonth = (yy: number, mm: number) => {
-    const next = startOfMonth(new Date(yy, mm, 1));
-    setViewMonth(next);
-  };
-
-  // coachId guard yönlendireceği için burada ekstra render kilitlemeyelim
-  if (!coachId) return null;
 
   return (
     <div className="bg-white min-h-screen text-gray-900">
@@ -420,12 +321,9 @@ export default function BookSession() {
             Geri dön
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-black leading-tight">
-            Seans Planla
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">Seans Planla</h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
-            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme
-            adımına geçilir.
+            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme adımına geçilir.
           </p>
         </div>
       </div>
@@ -489,55 +387,20 @@ export default function BookSession() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* TAKVİM */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-gray-400" />
-_toggleBRB:
                 <div className="font-extrabold text-gray-900 capitalize">
                   {monthTR(viewMonth)}
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <select
-                  value={yearPick}
-                  onChange={(e) => {
-                    const yy = Number(e.target.value);
-                    setYearPick(yy);
-                    jumpToMonth(yy, monthPick);
-                  }}
-                  className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-sm font-semibold"
-                >
-                  {yearOptions.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={monthPick}
-                  onChange={(e) => {
-                    const mm = Number(e.target.value);
-                    setMonthPick(mm);
-                    jumpToMonth(yearPick, mm);
-                  }}
-                  className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-sm font-semibold capitalize"
-                >
-                  {Array.from({ length: 12 }).map((_, idx) => (
-                    <option key={idx} value={idx}>
-                      {monthNameTR(yearPick, idx)}
-                    </option>
-                  ))}
-                </select>
-
                 <button
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
                   onClick={() => setViewMonth((m) => addMonths(m, -1))}
-                  aria-label="Önceki ay"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -545,7 +408,6 @@ _toggleBRB:
                   type="button"
                   className="h-9 w-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"
                   onClick={() => setViewMonth((m) => addMonths(m, 1))}
-                  aria-label="Sonraki ay"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -580,9 +442,7 @@ _toggleBRB:
                       "h-11 rounded-xl border text-sm font-semibold transition",
                       cell.inMonth ? "bg-white" : "bg-gray-50",
                       cell.inMonth ? "text-gray-900" : "text-gray-400",
-                      disabled
-                        ? "opacity-40 cursor-not-allowed"
-                        : "hover:border-red-300",
+                      disabled ? "opacity-40 cursor-not-allowed" : "hover:border-red-300",
                       isToday ? "border-orange-300" : "border-gray-200",
                       isSelected ? "border-red-600 bg-red-50 text-red-700" : "",
                     ].join(" ")}
@@ -592,6 +452,11 @@ _toggleBRB:
                   </button>
                 );
               })}
+            </div>
+
+            <div className="mt-4 text-xs text-gray-500">
+              Seçilen tarih:{" "}
+              <span className="font-semibold text-gray-900">{selectedDate || "-"}</span>
             </div>
 
             <div className="mt-6">
@@ -628,21 +493,22 @@ _toggleBRB:
                   );
                 })}
               </div>
+
+              <div className="mt-3 text-xs text-gray-500">
+                Seçilen saat:{" "}
+                <span className="font-semibold text-gray-900">{selectedTime || "-"}</span>
+              </div>
             </div>
           </div>
 
-          {/* FORM */}
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
           >
             <div>
-              <div className="text-sm font-extrabold text-gray-900">
-                Bilgilerini gir
-              </div>
+              <div className="text-sm font-extrabold text-gray-900">Bilgilerini gir</div>
               <div className="text-xs text-gray-500 mt-1">
-                Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış
-                olmalısın.
+                Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış olmalısın.
               </div>
             </div>
 
@@ -653,14 +519,11 @@ _toggleBRB:
                 </label>
                 <input
                   type="text"
-                  name="fullName"
                   placeholder="Adınız Soyadınız"
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, fullName: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                 />
               </div>
 
@@ -670,14 +533,11 @@ _toggleBRB:
                 </label>
                 <input
                   type="email"
-                  name="email"
                   placeholder="ornek@mail.com"
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 />
               </div>
 
@@ -686,14 +546,27 @@ _toggleBRB:
                   Hedefiniz / Beklentiniz
                 </label>
                 <textarea
-                  name="note"
-                  placeholder="Örn: kariyer geçişi planlıyorum..."
+                  placeholder="Örn: kariyer geçişi planlıyorum, mülakatlara hazırlanmak istiyorum..."
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full h-28 resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   value={form.note}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                 />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
+              <div className="font-bold text-gray-900 mb-1">Özet</div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Tarih</span>
+                <span className="font-semibold">{selectedDate || "-"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-1">
+                <span>Saat</span>
+                <span className="font-semibold">{selectedTime || "-"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-1">
+                <span>Süre</span>
+                <span className="font-semibold">45 dk</span>
               </div>
             </div>
 
@@ -707,9 +580,7 @@ _toggleBRB:
             </Button>
 
             {loadingMe ? (
-              <div className="text-[11px] text-gray-500">
-                Profil bilgileri kontrol ediliyor...
-              </div>
+              <div className="text-[11px] text-gray-500">Profil bilgileri kontrol ediliyor...</div>
             ) : null}
           </form>
         </div>

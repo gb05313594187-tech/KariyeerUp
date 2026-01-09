@@ -2,175 +2,175 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-
-const REQUESTS_TABLE = "app_2dff6511da_session_requests";
 
 export default function PaytrCheckout() {
-  const [sp] = useSearchParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const requestId = sp.get("requestId") || "";
+  const requestId = useMemo(() => searchParams.get("requestId") || "", [searchParams]);
 
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
+  // PayTR iframe URL
   const iframeSrc = useMemo(() => {
     if (!token) return "";
-    return `https://www.paytr.com/odeme/guvenli/${token}`;
+    return `https://www.paytr.com/odeme/guvenli/${encodeURIComponent(token)}`;
   }, [token]);
 
-  // 1) Token al
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
 
-    const run = async () => {
+    async function run() {
       try {
         setLoading(true);
+        setErrorMsg("");
+        setToken("");
 
+        // ✅ requestId kontrol
         if (!requestId) {
-          toast.error("requestId eksik.");
-          navigate("/book-session");
+          const msg = "RequestId yok. Ödeme başlatılamadı.";
+          console.error("paytr: missing requestId in URL");
+          if (!alive) return;
+          setErrorMsg(msg);
+          toast.error(msg);
           return;
         }
 
-        const { data: u } = await supabase.auth.getUser();
-        if (!u?.user?.id) {
-          toast.error("Ödeme için giriş yapmalısın.");
-          navigate("/login");
-          return;
-        }
+        console.log("paytr requestId:", requestId);
 
-        // ✅ Edge function: paytr-get-token
-        const { data, error } = await supabase.functions.invoke(
-          "paytr-get-token",
-          { body: { request_id: requestId } }
-        );
+        // ✅ Edge Function invoke (POST + doğru body)
+        const { data, error } = await supabase.functions.invoke("paytr-get-token", {
+          body: { request_id: requestId },
+        });
 
+        console.log("paytr-get-token response:", { data, error });
+
+        // ✅ invoke error (non-2xx / network / function crash)
         if (error) {
-          console.error("paytr-get-token error:", error);
-          toast.error("Ödeme başlatılamadı (token).");
-          return;
+          console.error("paytr-get-token invoke error:", error);
+          console.error("paytr-get-token data:", data);
+          throw error;
         }
 
-        if (!data?.token) {
+        // ✅ token yoksa
+        const t = data?.token;
+        if (!t) {
           console.error("paytr-get-token bad response:", data);
-          toast.error("Ödeme token alınamadı.");
-          return;
+          throw new Error("Token missing");
         }
 
-        if (!mounted) return;
-        setToken(String(data.token));
-      } catch (e) {
-        console.error(e);
-        toast.error("Ödeme sayfası yüklenemedi.");
+        if (!alive) return;
+        setToken(String(t));
+      } catch (e: any) {
+        console.error("paytr: token flow failed:", e);
+        const msg = "Ödeme başlatılamadı (token).";
+        if (!alive) return;
+        setErrorMsg(msg);
+        toast.error(msg);
       } finally {
-        if (mounted) setLoading(false);
+        if (!alive) return;
+        setLoading(false);
       }
-    };
+    }
 
     run();
-    return () => {
-      mounted = false;
-    };
-  }, [requestId, navigate]);
-
-  // 2) DB polling: notify paid yazınca success'e gönder
-  useEffect(() => {
-    if (!requestId) return;
-
-    let alive = true;
-    let t: any = null;
-
-    const poll = async () => {
-      try {
-        const { data, error } = await supabase
-          .from(REQUESTS_TABLE)
-          .select("id, status, paid_at, payment_status")
-          .eq("id", requestId)
-          .maybeSingle();
-
-        if (error) return;
-
-        const pStatus = (data as any)?.payment_status;
-        const paidAt = (data as any)?.paid_at;
-
-        if (pStatus === "paid" || !!paidAt) {
-          if (!alive) return;
-          navigate(`/payment-success?requestId=${requestId}`, { replace: true });
-          return;
-        }
-
-        if (pStatus === "failed") {
-          toast.error("Ödeme başarısız görünüyor. Tekrar deneyebilirsin.");
-        }
-      } catch {
-      } finally {
-        if (alive) t = setTimeout(poll, 2500);
-      }
-    };
-
-    poll();
 
     return () => {
       alive = false;
-      if (t) clearTimeout(t);
     };
-  }, [requestId, navigate]);
+  }, [requestId]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="w-full bg-gradient-to-r from-orange-500 to-red-500">
+        <div className="mx-auto max-w-6xl px-4 py-6">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-white/90 hover:text-white text-xs font-medium"
+            className="mb-2 inline-flex items-center gap-2 text-white/90 hover:text-white"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Geri
+            <span className="text-lg">←</span>
+            <span>Geri</span>
           </button>
 
-          <h1 className="mt-2 text-3xl font-extrabold">Ödeme</h1>
-          <p className="mt-2 text-sm text-white/90 max-w-2xl">
+          <h1 className="text-3xl font-bold text-white">Ödeme</h1>
+          <p className="mt-1 text-white/90">
             Ödeme güvenli şekilde PayTR altyapısında tamamlanır.
           </p>
-
-          <div className="mt-4 flex items-center gap-2 text-xs text-white/90">
-            <ShieldCheck className="w-4 h-4" />
+          <p className="mt-1 text-white/80 text-sm">
             Kart bilgileri platformda saklanmaz.
-          </div>
+          </p>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-            Yükleniyor...
+      {/* Body */}
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        {loading && (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
+            <div className="text-gray-700 font-medium">Yükleniyor...</div>
           </div>
-        ) : !iframeSrc ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
-            Ödeme iframe oluşturulamadı.
-            <div className="mt-4">
-              <Button
-                className="rounded-xl"
-                onClick={() => navigate("/user/dashboard")}
+        )}
+
+        {!loading && errorMsg && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+            <div className="text-red-700 font-semibold">Ödeme iframe oluşturulamadı.</div>
+            <div className="mt-1 text-red-700/90 text-sm">{errorMsg}</div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-white hover:bg-gray-800"
               >
-                Dashboard’a dön
-              </Button>
+                Dashboard&apos;a dön
+              </button>
+
+              <button
+                onClick={() => window.location.reload()}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
+              >
+                Yeniden dene
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        )}
+
+        {!loading && !errorMsg && token && (
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <div className="mb-3 text-sm text-gray-600">
+              Güvenli ödeme ekranı yükleniyor...
+            </div>
+
+            {/* ✅ iframe */}
             <iframe
+              title="PayTR Checkout"
               src={iframeSrc}
-              title="PayTR"
-              className="w-full"
-              style={{ height: 760 }}
-              frameBorder="0"
+              className="w-full rounded-lg border border-gray-200"
+              style={{ height: 720 }}
+              frameBorder={0}
+              allow="payment *"
             />
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
+              >
+                Vazgeç / Dashboard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Debug (istersen kaldır) */}
+        {!loading && (
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
+            <div className="font-semibold mb-2">Debug</div>
+            <div>requestId: {requestId || "(yok)"}</div>
+            <div>token: {token ? "(var)" : "(yok)"}</div>
           </div>
         )}
       </div>

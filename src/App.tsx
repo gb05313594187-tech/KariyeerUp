@@ -77,7 +77,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 // ✅ PAYTR
 import PaytrCheckout from "@/pages/PaytrCheckout";
 
-// ✅ PREMIUM LANDING (YENİ)
+// ✅ PREMIUM LANDING
 import BireyselPremium from "@/pages/BireyselPremium";
 
 /* -------------------------------------------------
@@ -111,80 +111,98 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* PUBLIC */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
+          {/* ✅ ROOT EKLENDİ */}
+          <Route path="/" element={<PublicLayout />}>
+            <Route index element={<Home />} />
 
             {/* ✅ SITEMAP */}
-            <Route path="/sitemap.xml" element={<Sitemap />} />
+            <Route path="sitemap.xml" element={<Sitemap />} />
 
-            {/* ✅ PREMIUM LANDING (Pricing'e bağlama!) */}
-            <Route path="/bireysel-premium" element={<BireyselPremium />} />
+            {/* ✅ PREMIUM LANDING */}
+            <Route path="bireysel-premium" element={<BireyselPremium />} />
 
             {/* ✅ PRICING */}
-            <Route path="/pricing" element={<Pricing />} />
+            <Route path="pricing" element={<Pricing />} />
 
             {/* ✅ CHECKOUT FLOW */}
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ PAYTR CHECKOUT */}
-            <Route path="/paytr/checkout" element={<PaytrCheckout />} />
-            <Route path="/paytr-checkout" element={<PaytrCheckout />} />
+            {/* ✅ PAYTR */}
+            <Route path="paytr/checkout" element={<PaytrCheckout />} />
+            <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* ✅ BookSession public değil */}
-            <Route path="/book-session" element={<Navigate to="/coaches" replace />} />
+            {/* BookSession public değil */}
+            <Route
+              path="book-session"
+              element={<Navigate to="/coaches" replace />}
+            />
 
             {/* How it works */}
-            <Route path="/nasil-calisir" element={<HowItWorks />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="nasil-calisir" element={<HowItWorks />} />
+            <Route path="how-it-works" element={<HowItWorks />} />
 
-            <Route path="/coaches" element={<Coaches />} />
+            <Route path="coaches" element={<Coaches />} />
 
-            {/* ✅ COACH PUBLIC PROFILE */}
-            <Route path="/coach/:slugOrId" element={<CoachPublicProfile />} />
+            {/* COACH PUBLIC PROFILE */}
+            <Route path="coach/:slugOrId" element={<CoachPublicProfile />} />
 
-            <Route path="/for-coaches" element={<ForCoaches />} />
-            <Route path="/for-companies" element={<ForCompanies />} />
-            <Route path="/mentor-circle" element={<MentorCircle />} />
-            <Route path="/webinars" element={<Webinars />} />
-            <Route path="/coach-selection-process" element={<CoachSelection />} />
-            <Route path="/coach-application" element={<CoachApplication />} />
+            <Route path="for-coaches" element={<ForCoaches />} />
+            <Route path="for-companies" element={<ForCompanies />} />
+            <Route path="mentor-circle" element={<MentorCircle />} />
+            <Route path="webinars" element={<Webinars />} />
+            <Route
+              path="coach-selection-process"
+              element={<CoachSelection />}
+            />
+            <Route path="coach-application" element={<CoachApplication />} />
 
             {/* USER */}
-            <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/user/profile" element={<UserProfile />} />
-            <Route path="/user/profile/edit" element={<UserProfileEdit />} />
-            <Route path="/user/settings" element={<UserSettings />} />
+            <Route path="user/dashboard" element={<UserDashboard />} />
+            <Route path="user/profile" element={<UserProfile />} />
+            <Route path="user/profile/edit" element={<UserProfileEdit />} />
+            <Route path="user/settings" element={<UserSettings />} />
 
             {/* CORPORATE */}
-            <Route path="/corporate/dashboard" element={<CorporateDashboard />} />
-            <Route path="/corporate/profile" element={<CorporateProfile />} />
-            <Route path="/corporate/settings" element={<CorporateSettings />} />
+            <Route
+              path="corporate/dashboard"
+              element={<CorporateDashboard />}
+            />
+            <Route path="corporate/profile" element={<CorporateProfile />} />
+            <Route
+              path="corporate/settings"
+              element={<CorporateSettings />}
+            />
 
             {/* COACH */}
-            <Route path="/coach/dashboard" element={<CoachDashboard />} />
-            <Route path="/coach/profile" element={<CoachSelfProfile />} />
-            <Route path="/coach/settings" element={<CoachSettings />} />
-            <Route path="/coach/requests" element={<CoachRequests />} />
+            <Route path="coach/dashboard" element={<CoachDashboard />} />
+            <Route path="coach/profile" element={<CoachSelfProfile />} />
+            <Route path="coach/settings" element={<CoachSettings />} />
+            <Route path="coach/requests" element={<CoachRequests />} />
 
             {/* LEGAL */}
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/distance-sales" element={<DistanceSales />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/ethics" element={<Ethics />} />
+            <Route path="about" element={<About />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="returns" element={<Returns />} />
+            <Route path="distance-sales" element={<DistanceSales />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="ethics" element={<Ethics />} />
 
             {/* AUTH */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
 
-            {/* LEGACY redirects */}
-            <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
-            <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
+            {/* LEGACY */}
             <Route
-              path="/coach-dashboard"
+              path="dashboard"
+              element={<Navigate to="/user/dashboard" replace />}
+            />
+            <Route
+              path="profile"
+              element={<Navigate to="/user/profile" replace />}
+            />
+            <Route
+              path="coach-dashboard"
               element={<Navigate to="/coach/dashboard" replace />}
             />
 

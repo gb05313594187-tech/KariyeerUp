@@ -24,18 +24,21 @@ export default function PaytrCheckout() {
     let mounted = true;
 
     async function run() {
-      setLoading(true);
-      setIframeUrl("");
-      setDebug(null);
-
       try {
+        setLoading(true);
+        setIframeUrl("");
+        setDebug(null);
+
         if (!requestId) {
           toast.error("requestId yok");
           setLoading(false);
           return;
         }
 
-        const { data: { session }, error: sErr } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error: sErr,
+        } = await supabase.auth.getSession();
         if (sErr) throw sErr;
 
         if (!session?.access_token) {
@@ -46,15 +49,11 @@ export default function PaytrCheckout() {
 
         const payload = {
           requestId,
-          user_name: "Kariyeer Kullanıcısı",
-          user_address: "N/A",
-          user_phone: "0000000000",
-          // amount: 10000, // kuruş (opsiyonel)
-          // currency: "TL",
-          // no_installment: 0,
-          // max_installment: 0,
-          // debug_on: 1,
-          // timeout_limit: 30,
+          user_name: "Test User",
+          user_address: "Istanbul",
+          user_phone: "05550000000",
+          debug_on: 1, // ✅ PayTR debug aç
+          // amount: 10000, // kuruş (opsiyonel override)
         };
 
         const r = await fetch(PAYTR_TOKEN_FN, {
@@ -71,9 +70,9 @@ export default function PaytrCheckout() {
         if (!mounted) return;
 
         setDebug({
-          ok: r.ok,
-          status: r.status,
           requestId,
+          http_ok: r.ok,
+          http_status: r.status,
           response: j,
         });
 
@@ -117,7 +116,8 @@ export default function PaytrCheckout() {
         <CardContent className="space-y-4">
           {!requestId ? (
             <div className="text-sm text-red-600">
-              URL’de <b>requestId</b> yok. Örn: <code>/paytr/checkout?requestId=...</code>
+              URL’de <b>requestId</b> yok. Örn:{" "}
+              <code>/paytr/checkout?requestId=...</code>
             </div>
           ) : null}
 
@@ -155,7 +155,10 @@ export default function PaytrCheckout() {
               Dashboard’a dön
             </Button>
 
-            <Button variant="secondary" onClick={() => window.location.reload()}>
+            <Button
+              variant="secondary"
+              onClick={() => window.location.reload()}
+            >
               Yenile
             </Button>
           </div>

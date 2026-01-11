@@ -5,20 +5,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 /* =========================================================
-   ✅ Supabase Client (stabil)
-   - global.headers'da apikey set ETME: supabase zaten ekler
-   - auth refresh/persist açık
-   ========================================================= */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  db: { schema: "public" },
-});
-
-/* =========================================================
    ✅ Helpers (timeout + token)
    ========================================================= */
 
@@ -43,6 +29,32 @@ const fetchWithTimeout = async (
     clearTimeout(id);
   }
 };
+
+// ✅ Supabase internal fetch'leri de timeout'lu yap
+const supabaseFetch: typeof fetch = (input: any, init?: any) => {
+  // Supabase-js bazı yerlerde init undefined geçebilir
+  return fetchWithTimeout(input, init || {}, 15000) as any;
+};
+
+/* =========================================================
+   ✅ Supabase Client (stabil)
+   - global.headers'da apikey set ETME: supabase zaten ekler
+   - auth refresh/persist açık
+   - ✅ global.fetch: tüm supabase istekleri timeout'lu
+   ========================================================= */
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+  db: { schema: "public" },
+
+  // ✅ KRİTİK: pending kalan istekler navbar/auth'ı kilitlemesin
+  global: {
+    fetch: supabaseFetch,
+  },
+});
 
 async function getAccessToken(): Promise<string | null> {
   // getSession, refresh olmuş session’ı da döndürür; yoksa null

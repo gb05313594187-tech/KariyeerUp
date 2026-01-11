@@ -1,169 +1,124 @@
 // src/pages/PaytrCheckout.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
-const PAYTR_TOKEN_FN =
-  "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-token";
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 
 export default function PaytrCheckout() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [sp] = useSearchParams();
 
-  const requestId = useMemo(() => sp.get("requestId") || "", [sp]);
+  const coachId = searchParams.get("coachId");
+  const selectedDate = searchParams.get("date");
+  const selectedTime = searchParams.get("time");
 
   const [loading, setLoading] = useState(true);
-  const [iframeUrl, setIframeUrl] = useState<string>("");
-  const [debug, setDebug] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [iframeToken, setIframeToken] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function run() {
+    async function initPayment() {
       try {
-        setLoading(true);
-        setIframeUrl("");
-        setDebug(null);
-
-        if (!requestId) {
-          toast.error("requestId yok");
-          setLoading(false);
-          return;
-        }
-
+        // 1️⃣ Kullanıcı bilgisi
         const {
-          data: { session },
-          error: sErr,
-        } = await supabase.auth.getSession();
-        if (sErr) throw sErr;
+          data: { user },
+        } = await supabase.auth.getUser();
 
-        if (!session?.access_token) {
-          toast.error("Giriş yapman gerekiyor");
-          navigate("/login");
-          return;
+        if (!user || !user.email) {
+          throw new Error("Kullanıcı girişi gerekli");
         }
 
-        const payload = {
-          requestId,
-          user_name: "Test User",
-          user_address: "Istanbul",
-          user_phone: "05550000000",
-          debug_on: 1, // ✅ PayTR debug aç
-          // amount: 10000, // kuruş (opsiyonel override)
-        };
-
-        const r = await fetch(PAYTR_TOKEN_FN, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const j = await r.json().catch(() => ({}));
-
-        if (!mounted) return;
-
-        setDebug({
-          requestId,
-          http_ok: r.ok,
-          http_status: r.status,
-          response: j,
-        });
-
-        if (!r.ok || j?.error) {
-          console.error("paytr-token error:", j);
-          toast.error(j?.error || "PayTR token alınamadı");
-          setLoading(false);
-          return;
+        if (!coachId || !selectedDate || !selectedTime) {
+          throw new Error("Eksik parametre");
         }
 
-        const url = j?.iframe_url;
-        if (!url) {
-          toast.error("iframe_url gelmedi");
-          setLoading(false);
-          return;
+        // 2️⃣ ÖNCE session_requests INSERT (ALTIN KURAL)
+        const { data: requestRow, error: insertError } = await supabase
+          .from("session_requests")
+          .insert({
+            coach_id: coachId,
+            user_id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || "Kullanıcı",
+            selected_date: selectedDate,
+            selected_time: selectedTime,
+            payment_status: "pending",
+          })
+          .select()
+          .single();
+
+        if (insertError || !requestRow) {
+          throw new Error("Seans talebi oluşturulamadı");
         }
 
-        setIframeUrl(url);
+        const requestId = requestRow.id; // 🔴 TEK DOĞRU ID
+
+        // 3️⃣ PayTR token al
+        const res = await fetch(
+          "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-token",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              requestId,
+              email: user.email,
+            }),
+          }
+        );
+
+        const json = await res.json();
+
+        if (!res.ok || !json.token) {
+          throw new Error(json.error || "PayTR token alınamadı");
+        }
+
+        setIframeToken(json.token);
         setLoading(false);
       } catch (e: any) {
-        if (!mounted) return;
-        console.error(e);
-        toast.error(e?.message || "Hata");
+        setError(e.message);
         setLoading(false);
       }
     }
 
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, [requestId, navigate]);
+    initPayment();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-xl mx-auto py-20 text-center">
+        <h2 className="text-lg font-semibold">Ödeme hazırlanıyor…</h2>
+        <p className="text-sm text-gray-500">Lütfen bekleyin</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto py-20 text-center text-red-600">
+        <p>{error}</p>
+        <button
+          className="mt-4 underline"
+          onClick={() => navigate("/dashboard")}
+        >
+          Geri dön
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>PayTR Ödeme</CardTitle>
-        </CardHeader>
+    <div className="max-w-xl mx-auto py-10">
+      <h1 className="text-xl font-semibold mb-4">Güvenli Ödeme</h1>
 
-        <CardContent className="space-y-4">
-          {!requestId ? (
-            <div className="text-sm text-red-600">
-              URL’de <b>requestId</b> yok. Örn:{" "}
-              <code>/paytr/checkout?requestId=...</code>
-            </div>
-          ) : null}
-
-          {loading ? (
-            <div className="text-sm">
-              Token alınıyor, ödeme ekranı hazırlanıyor…
-            </div>
-          ) : null}
-
-          {!loading && iframeUrl ? (
-            <div className="w-full">
-              <iframe
-                title="PayTR"
-                src={iframeUrl}
-                style={{ width: "100%", height: 720, border: 0 }}
-                allow="payment *"
-              />
-            </div>
-          ) : null}
-
-          {!loading && !iframeUrl && requestId ? (
-            <div className="text-sm text-red-600">
-              Ödeme ekranı oluşturulamadı. Aşağıdaki debug’u kontrol et.
-            </div>
-          ) : null}
-
-          {debug ? (
-            <pre className="text-xs bg-gray-50 border rounded-md p-3 overflow-auto">
-{JSON.stringify(debug, null, 2)}
-            </pre>
-          ) : null}
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>
-              Dashboard’a dön
-            </Button>
-
-            <Button
-              variant="secondary"
-              onClick={() => window.location.reload()}
-            >
-              Yenile
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {iframeToken && (
+        <iframe
+          src={`https://www.paytr.com/odeme/guvenli/${iframeToken}`}
+          frameBorder="0"
+          scrolling="no"
+          style={{ width: "100%", height: "600px" }}
+        />
+      )}
     </div>
   );
 }

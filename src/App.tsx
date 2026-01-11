@@ -111,25 +111,26 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ✅ ROOT EKLENDİ */}
+          {/* ROOT */}
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
 
-            {/* ✅ SITEMAP */}
+            {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />
 
-            {/* ✅ PREMIUM LANDING */}
+            {/* PREMIUM LANDING */}
             <Route path="bireysel-premium" element={<BireyselPremium />} />
 
-            {/* ✅ PRICING */}
+            {/* PRICING */}
             <Route path="pricing" element={<Pricing />} />
 
-            {/* ✅ CHECKOUT FLOW */}
+            {/* CHECKOUT FLOW */}
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
 
             {/* ✅ PAYTR */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />
+            {/* legacy */}
             <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
             {/* BookSession public değil */}

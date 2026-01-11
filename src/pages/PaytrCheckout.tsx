@@ -1,5 +1,6 @@
 // src/pages/PaytrCheckout.tsx
 // @ts-nocheck
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -7,8 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+// ✅ Supabase Edge Function URL
 const PAYTR_FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-get-token";
+
+// ✅ Timeout (ms) - edge function cevap vermezse UI kilitlenmesin
+const REQUEST_TIMEOUT_MS = 12000;
 
 export default function PaytrCheckout() {
   const [searchParams] = useSearchParams();
@@ -21,42 +26,46 @@ export default function PaytrCheckout() {
   const [debug, setDebug] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startedRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  const safeSet = (fn: Function) => {
+    if (mountedRef.current) fn();
+  };
 
   const start = async () => {
-    startedRef.current += 1;
-    const runId = startedRef.current;
+    // önce eski request varsa iptal et
+    try {
+      abortRef.current?.abort();
+    } catch (_) {}
+    abortRef.current = new AbortController();
 
-    setLoading(true);
-    setError(null);
-    setIframeUrl(null);
-    setDebug({ phase: "init", requestId, runId, at: new Date().toISOString() });
-
-    // ✅ Watchdog: 8sn sonra hâlâ loading ise ekrana hata bas
-    const watchdog = setTimeout(() => {
-      // eski run’lar için çalışmasın
-      if (startedRef.current !== runId) return;
-      setError("İstek çok uzun sürdü (8sn). Edge Function cevap vermiyor olabilir.");
-      setDebug((d: any) => ({ ...(d || {}), phase: "watchdog-timeout" }));
-      setLoading(false);
-    }, 8000);
+    safeSet(() => {
+      setLoading(true);
+      setError(null);
+      setIframeUrl(null);
+      setDebug({
+        at: new Date().toISOString(),
+        requestId,
+        phase: "start",
+      });
+    });
 
     try {
       if (!requestId) {
-        setError("Geçersiz ödeme isteği. (requestId yok)");
-        setDebug((d: any) => ({ ...(d || {}), phase: "no-requestId" }));
+        safeSet(() => {
+          setError("Geçersiz ödeme isteği. (requestId yok)");
+          setLoading(false);
+        });
         return;
       }
 
-      setDebug((d: any) => ({ ...(d || {}), phase: "getSession" }));
-
+      // ✅ Session + access token
       const { data: sess } = await supabase.auth.getSession();
-      const accessToken = sess?.session?.access_token;
+      const access = sess?.session?.access_token;
 
-      if (!accessToken) {
+      if (!access) {
         toast.error("Ödeme için giriş yapmalısın.");
-        setError("Giriş gerekli (session yok).");
-        setDebug((d: any) => ({ ...(d || {}), phase: "no-session" }));
         navigate(
           `/login?returnTo=${encodeURIComponent(
             window.location.pathname + window.location.search
@@ -65,47 +74,70 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ 15sn abort
-      const controller = new AbortController();
-      const abortTimer = setTimeout(() => controller.abort(), 15000);
-
-      setDebug((d: any) => ({ ...(d || {}), phase: "fetch-function" }));
+      // ✅ timeout kurgusu
+      const timeoutId = setTimeout(() => {
+        try {
+          abortRef.current?.abort();
+        } catch (_) {}
+      }, REQUEST_TIMEOUT_MS);
 
       const res = await fetch(PAYTR_FUNCTION_URL, {
         method: "POST",
-        signal: controller.signal,
+        signal: abortRef.current.signal,
         headers: {
           "Content-Type": "application/json",
+          // ✅ Supabase edge function çağrısı için kritik
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${access}`,
         },
-        body: JSON.stringify({ request_id: requestId }),
-      }).finally(() => clearTimeout(abortTimer));
+        body: JSON.stringify({
+          request_id: requestId, // ✅ edge function bunu bekliyor
+        }),
+      }).finally(() => clearTimeout(timeoutId));
 
       const json = await res.json().catch(() => ({}));
 
-      setDebug((d: any) => ({
-        ...(d || {}),
-        phase: "function-response",
-        httpStatus: res.status,
-        json,
-      }));
+      safeSet(() => {
+        setDebug((d: any) => ({
+          ...(d || {}),
+          phase: "function_response",
+          status: res.status,
+          json,
+        }));
+      });
 
       if (!res.ok) {
-        setError(json?.error || json?.message || `Function hata (HTTP ${res.status})`);
+        const msg =
+          json?.error ||
+          json?.message ||
+          (res.status === 401
+            ? "Yetkisiz. (Authorization/apikey yok ya da session yok)"
+            : "Function hata döndü. (paytr-get-token)");
+        safeSet(() => {
+          setError(msg);
+          setLoading(false);
+        });
         return;
       }
 
       if (!json?.success) {
-        setError(json?.error || "Ödeme başlatılamadı (success=false).");
+        safeSet(() => {
+          setError(json?.error || "Ödeme başlatılamadı (success=false).");
+          setLoading(false);
+        });
         return;
       }
 
+      // ✅ 1) function iframe_url döndürürse direkt kullan
       if (json?.iframe_url) {
-        setIframeUrl(json.iframe_url);
+        safeSet(() => {
+          setIframeUrl(json.iframe_url);
+          setLoading(false);
+        });
         return;
       }
 
+      // ✅ 2) function token döndürürse iframe_url üret
       const token =
         json?.token ||
         json?.paytr_token ||
@@ -113,29 +145,50 @@ export default function PaytrCheckout() {
         json?.data?.paytr_token;
 
       if (token) {
-        setIframeUrl(`https://www.paytr.com/odeme/guvenli/${token}`);
+        const url = `https://www.paytr.com/odeme/guvenli/${token}`;
+        safeSet(() => {
+          setIframeUrl(url);
+          setLoading(false);
+        });
         return;
       }
 
-      setError("Function token/iframe_url döndürmüyor (response formatı uyumsuz).");
+      safeSet(() => {
+        setError(
+          "Function token/iframe_url döndürmüyor. Edge Function halen test response dönüyor olabilir."
+        );
+        setLoading(false);
+      });
     } catch (e: any) {
-      console.error(e);
-      if (String(e?.name) === "AbortError") {
-        setError("paytr-get-token isteği 15sn timeout oldu.");
-        setDebug((d: any) => ({ ...(d || {}), phase: "abort-timeout" }));
-      } else {
-        setError("Beklenmeyen hata oluştu.");
-        setDebug((d: any) => ({ ...(d || {}), phase: "exception", err: String(e) }));
-      }
-    } finally {
-      clearTimeout(watchdog);
-      // ✅ eski run’lar state basmasın
-      if (startedRef.current === runId) setLoading(false);
+      const isAbort =
+        String(e?.name || "").toLowerCase().includes("abort") ||
+        String(e || "").toLowerCase().includes("aborted");
+
+      safeSet(() => {
+        setError(
+          isAbort
+            ? `İstek çok uzun sürdü (${REQUEST_TIMEOUT_MS / 1000}s). Edge Function cevap vermiyor olabilir.`
+            : "Beklenmeyen bir hata oluştu."
+        );
+        setLoading(false);
+        setDebug((d: any) => ({
+          ...(d || {}),
+          phase: "catch",
+          error: String(e),
+        }));
+      });
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     start();
+    return () => {
+      mountedRef.current = false;
+      try {
+        abortRef.current?.abort();
+      } catch (_) {}
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
@@ -150,14 +203,9 @@ export default function PaytrCheckout() {
         </div>
 
         {loading && (
-          <div className="space-y-3">
-            <div className="text-sm text-gray-600">Ödeme hazırlanıyor…</div>
-            <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
-              <div className="font-semibold mb-2">Debug (loading)</div>
-              <pre className="whitespace-pre-wrap">
-{JSON.stringify(debug, null, 2)}
-              </pre>
-            </div>
+          <div className="text-sm text-gray-600">
+            Ödeme hazırlanıyor… (requestId:{" "}
+            <span className="font-mono">{requestId || "-"}</span>)
           </div>
         )}
 
@@ -174,6 +222,7 @@ export default function PaytrCheckout() {
               </Button>
             </div>
 
+            {/* Debug (prod'da istersen kaldırırsın) */}
             <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
               <div className="font-semibold mb-2">Debug</div>
               <pre className="whitespace-pre-wrap">
@@ -185,7 +234,9 @@ export default function PaytrCheckout() {
 
         {!loading && !error && iframeUrl && (
           <div className="space-y-3">
-            <div className="text-xs text-gray-600">Token alındı, iframe yükleniyor…</div>
+            <div className="text-xs text-gray-600">
+              Token alındı, iframe yükleniyor…
+            </div>
 
             <iframe
               src={iframeUrl}
@@ -202,13 +253,6 @@ export default function PaytrCheckout() {
             >
               Dashboard’a Dön
             </Button>
-
-            <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
-              <div className="font-semibold mb-2">Debug</div>
-              <pre className="whitespace-pre-wrap">
-{JSON.stringify(debug, null, 2)}
-              </pre>
-            </div>
           </div>
         )}
       </Card>

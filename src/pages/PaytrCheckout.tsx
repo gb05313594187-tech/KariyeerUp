@@ -27,6 +27,7 @@ export default function PaytrCheckout() {
     setLoading(true);
     setError(null);
     setIframeUrl(null);
+    setDebug(null);
 
     try {
       if (!requestId) {
@@ -35,9 +36,11 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // login kontrolü (opsiyonel ama kalsın)
+      // ✅ login + access token (Edge Function çoğu zaman JWT ister)
       const { data: sess } = await supabase.auth.getSession();
-      if (!sess?.session) {
+      const accessToken = sess?.session?.access_token;
+
+      if (!accessToken) {
         toast.error("Ödeme için giriş yapmalısın.");
         navigate(
           `/login?returnTo=${encodeURIComponent(
@@ -47,14 +50,18 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ Function çağrısı
       const res = await fetch(PAYTR_FUNCTION_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // ✅ Supabase function auth headers (çok önemli)
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          request_id: requestId, // ✅ function tarafında bu isimle okuyorsun
+          // ✅ iki ihtimali de gönder (function hangisini okuyorsa)
+          request_id: requestId,
+          requestId: requestId,
         }),
       });
 
@@ -65,26 +72,26 @@ export default function PaytrCheckout() {
         const msg =
           json?.error ||
           json?.message ||
-          "Function hata döndü. (paytr-get-token)";
+          `Function hata döndü. (HTTP ${res.status})`;
         setError(msg);
         setLoading(false);
         return;
       }
 
-      if (!json?.success) {
+      if (json?.success === false) {
         setError(json?.error || "Ödeme başlatılamadı (success=false).");
         setLoading(false);
         return;
       }
 
-      // ✅ 1) Eğer function direkt iframe_url döndürüyorsa
+      // ✅ 1) function direkt iframe_url döndürürse
       if (json?.iframe_url) {
         setIframeUrl(json.iframe_url);
         setLoading(false);
         return;
       }
 
-      // ✅ 2) Eğer function token döndürüyorsa -> iframe_url üret
+      // ✅ 2) token döndürürse iframe url üret
       const token =
         json?.token ||
         json?.paytr_token ||
@@ -98,9 +105,9 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ 3) Hiçbiri yoksa: senin mevcut function halen test response dönüyor demektir
+      // ✅ 3) token/iframe yoksa: function halen test cevap dönüyor olabilir
       setError(
-        "Function token/iframe_url döndürmüyor. Şu an test response dönüyor olabilir."
+        "Function token/iframe_url döndürmüyor. (Muhtemelen hâlâ test response / fiyat eşleşmesi / request bulunamadı)"
       );
       setLoading(false);
     } catch (e: any) {
@@ -137,17 +144,16 @@ export default function PaytrCheckout() {
               <Button variant="outline" className="flex-1" onClick={start}>
                 Tekrar Dene
               </Button>
-              <Button
-                className="flex-1"
-                onClick={() => navigate("/dashboard")}
-              >
+              <Button className="flex-1" onClick={() => navigate("/dashboard")}>
                 Dashboard’a Dön
               </Button>
             </div>
 
-            {/* Debug (prod'da istersen kaldırırsın) */}
             <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
               <div className="font-semibold mb-2">Debug</div>
+              <div className="text-[11px] mb-2">
+                URL: <span className="font-mono">{window.location.href}</span>
+              </div>
               <pre className="whitespace-pre-wrap">
 {JSON.stringify(debug, null, 2)}
               </pre>

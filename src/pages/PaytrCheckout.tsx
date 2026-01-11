@@ -1,13 +1,12 @@
 // src/pages/PaytrCheckout.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-// Edge Function URL (Supabase)
 const PAYTR_FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-get-token";
 
@@ -22,26 +21,42 @@ export default function PaytrCheckout() {
   const [debug, setDebug] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const startedRef = useRef(0);
+
   const start = async () => {
+    startedRef.current += 1;
+    const runId = startedRef.current;
+
     setLoading(true);
     setError(null);
     setIframeUrl(null);
-    setDebug(null);
+    setDebug({ phase: "init", requestId, runId, at: new Date().toISOString() });
+
+    // ✅ Watchdog: 8sn sonra hâlâ loading ise ekrana hata bas
+    const watchdog = setTimeout(() => {
+      // eski run’lar için çalışmasın
+      if (startedRef.current !== runId) return;
+      setError("İstek çok uzun sürdü (8sn). Edge Function cevap vermiyor olabilir.");
+      setDebug((d: any) => ({ ...(d || {}), phase: "watchdog-timeout" }));
+      setLoading(false);
+    }, 8000);
 
     try {
       if (!requestId) {
         setError("Geçersiz ödeme isteği. (requestId yok)");
+        setDebug((d: any) => ({ ...(d || {}), phase: "no-requestId" }));
         return;
       }
 
-      // ✅ Session kontrol
+      setDebug((d: any) => ({ ...(d || {}), phase: "getSession" }));
+
       const { data: sess } = await supabase.auth.getSession();
       const accessToken = sess?.session?.access_token;
 
       if (!accessToken) {
         toast.error("Ödeme için giriş yapmalısın.");
-        // ✅ loading’i kapatıp yönlendir
         setError("Giriş gerekli (session yok).");
+        setDebug((d: any) => ({ ...(d || {}), phase: "no-session" }));
         navigate(
           `/login?returnTo=${encodeURIComponent(
             window.location.pathname + window.location.search
@@ -50,33 +65,34 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ 15sn timeout (pending kalmasın)
+      // ✅ 15sn abort
       const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 15000);
+      const abortTimer = setTimeout(() => controller.abort(), 15000);
 
-      // ✅ Function çağrısı (AUTH + APIKEY ekledik)
+      setDebug((d: any) => ({ ...(d || {}), phase: "fetch-function" }));
+
       const res = await fetch(PAYTR_FUNCTION_URL, {
         method: "POST",
         signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, // ✅ önemli
-          Authorization: `Bearer ${accessToken}`, // ✅ önemli (verify_jwt açıksa şart)
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          request_id: requestId,
-        }),
-      }).finally(() => clearTimeout(t));
+        body: JSON.stringify({ request_id: requestId }),
+      }).finally(() => clearTimeout(abortTimer));
 
       const json = await res.json().catch(() => ({}));
-      setDebug({ status: res.status, json });
+
+      setDebug((d: any) => ({
+        ...(d || {}),
+        phase: "function-response",
+        httpStatus: res.status,
+        json,
+      }));
 
       if (!res.ok) {
-        const msg =
-          json?.error ||
-          json?.message ||
-          `Function hata döndü. (HTTP ${res.status})`;
-        setError(msg);
+        setError(json?.error || json?.message || `Function hata (HTTP ${res.status})`);
         return;
       }
 
@@ -85,13 +101,11 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ 1) iframe_url geldiyse direkt bas
       if (json?.iframe_url) {
         setIframeUrl(json.iframe_url);
         return;
       }
 
-      // ✅ 2) token geldiyse iframe url üret
       const token =
         json?.token ||
         json?.paytr_token ||
@@ -103,18 +117,20 @@ export default function PaytrCheckout() {
         return;
       }
 
-      setError("Function token/iframe_url döndürmüyor. (response formatı uyumsuz)");
+      setError("Function token/iframe_url döndürmüyor (response formatı uyumsuz).");
     } catch (e: any) {
       console.error(e);
       if (String(e?.name) === "AbortError") {
-        setError("paytr-get-token isteği zaman aşımına uğradı (15sn).");
+        setError("paytr-get-token isteği 15sn timeout oldu.");
+        setDebug((d: any) => ({ ...(d || {}), phase: "abort-timeout" }));
       } else {
-        setError("Beklenmeyen bir hata oluştu.");
+        setError("Beklenmeyen hata oluştu.");
+        setDebug((d: any) => ({ ...(d || {}), phase: "exception", err: String(e) }));
       }
-      setDebug((d: any) => d || { error: String(e) });
     } finally {
-      // ✅ EN KRİTİK: asla loading’de takılı kalma
-      setLoading(false);
+      clearTimeout(watchdog);
+      // ✅ eski run’lar state basmasın
+      if (startedRef.current === runId) setLoading(false);
     }
   };
 
@@ -133,7 +149,17 @@ export default function PaytrCheckout() {
           </Button>
         </div>
 
-        {loading && <div className="text-sm text-gray-600">Ödeme hazırlanıyor…</div>}
+        {loading && (
+          <div className="space-y-3">
+            <div className="text-sm text-gray-600">Ödeme hazırlanıyor…</div>
+            <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
+              <div className="font-semibold mb-2">Debug (loading)</div>
+              <pre className="whitespace-pre-wrap">
+{JSON.stringify(debug, null, 2)}
+              </pre>
+            </div>
+          </div>
+        )}
 
         {!loading && error && (
           <div className="space-y-3">

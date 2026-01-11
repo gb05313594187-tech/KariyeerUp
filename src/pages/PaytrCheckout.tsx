@@ -1,6 +1,5 @@
 // src/pages/PaytrCheckout.tsx
 // @ts-nocheck
-
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -32,16 +31,17 @@ export default function PaytrCheckout() {
     try {
       if (!requestId) {
         setError("Geçersiz ödeme isteği. (requestId yok)");
-        setLoading(false);
         return;
       }
 
-      // ✅ login + access token (Edge Function çoğu zaman JWT ister)
+      // ✅ Session kontrol
       const { data: sess } = await supabase.auth.getSession();
       const accessToken = sess?.session?.access_token;
 
       if (!accessToken) {
         toast.error("Ödeme için giriş yapmalısın.");
+        // ✅ loading’i kapatıp yönlendir
+        setError("Giriş gerekli (session yok).");
         navigate(
           `/login?returnTo=${encodeURIComponent(
             window.location.pathname + window.location.search
@@ -50,20 +50,23 @@ export default function PaytrCheckout() {
         return;
       }
 
+      // ✅ 15sn timeout (pending kalmasın)
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 15000);
+
+      // ✅ Function çağrısı (AUTH + APIKEY ekledik)
       const res = await fetch(PAYTR_FUNCTION_URL, {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
-          // ✅ Supabase function auth headers (çok önemli)
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, // ✅ önemli
+          Authorization: `Bearer ${accessToken}`, // ✅ önemli (verify_jwt açıksa şart)
         },
         body: JSON.stringify({
-          // ✅ iki ihtimali de gönder (function hangisini okuyorsa)
           request_id: requestId,
-          requestId: requestId,
         }),
-      });
+      }).finally(() => clearTimeout(t));
 
       const json = await res.json().catch(() => ({}));
       setDebug({ status: res.status, json });
@@ -74,24 +77,21 @@ export default function PaytrCheckout() {
           json?.message ||
           `Function hata döndü. (HTTP ${res.status})`;
         setError(msg);
-        setLoading(false);
         return;
       }
 
-      if (json?.success === false) {
+      if (!json?.success) {
         setError(json?.error || "Ödeme başlatılamadı (success=false).");
-        setLoading(false);
         return;
       }
 
-      // ✅ 1) function direkt iframe_url döndürürse
+      // ✅ 1) iframe_url geldiyse direkt bas
       if (json?.iframe_url) {
         setIframeUrl(json.iframe_url);
-        setLoading(false);
         return;
       }
 
-      // ✅ 2) token döndürürse iframe url üret
+      // ✅ 2) token geldiyse iframe url üret
       const token =
         json?.token ||
         json?.paytr_token ||
@@ -99,20 +99,21 @@ export default function PaytrCheckout() {
         json?.data?.paytr_token;
 
       if (token) {
-        const url = `https://www.paytr.com/odeme/guvenli/${token}`;
-        setIframeUrl(url);
-        setLoading(false);
+        setIframeUrl(`https://www.paytr.com/odeme/guvenli/${token}`);
         return;
       }
 
-      // ✅ 3) token/iframe yoksa: function halen test cevap dönüyor olabilir
-      setError(
-        "Function token/iframe_url döndürmüyor. (Muhtemelen hâlâ test response / fiyat eşleşmesi / request bulunamadı)"
-      );
-      setLoading(false);
+      setError("Function token/iframe_url döndürmüyor. (response formatı uyumsuz)");
     } catch (e: any) {
       console.error(e);
-      setError("Beklenmeyen bir hata oluştu.");
+      if (String(e?.name) === "AbortError") {
+        setError("paytr-get-token isteği zaman aşımına uğradı (15sn).");
+      } else {
+        setError("Beklenmeyen bir hata oluştu.");
+      }
+      setDebug((d: any) => d || { error: String(e) });
+    } finally {
+      // ✅ EN KRİTİK: asla loading’de takılı kalma
       setLoading(false);
     }
   };
@@ -132,9 +133,7 @@ export default function PaytrCheckout() {
           </Button>
         </div>
 
-        {loading && (
-          <div className="text-sm text-gray-600">Ödeme hazırlanıyor…</div>
-        )}
+        {loading && <div className="text-sm text-gray-600">Ödeme hazırlanıyor…</div>}
 
         {!loading && error && (
           <div className="space-y-3">
@@ -151,9 +150,6 @@ export default function PaytrCheckout() {
 
             <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
               <div className="font-semibold mb-2">Debug</div>
-              <div className="text-[11px] mb-2">
-                URL: <span className="font-mono">{window.location.href}</span>
-              </div>
               <pre className="whitespace-pre-wrap">
 {JSON.stringify(debug, null, 2)}
               </pre>
@@ -163,9 +159,7 @@ export default function PaytrCheckout() {
 
         {!loading && !error && iframeUrl && (
           <div className="space-y-3">
-            <div className="text-xs text-gray-600">
-              Token alındı, iframe yükleniyor…
-            </div>
+            <div className="text-xs text-gray-600">Token alındı, iframe yükleniyor…</div>
 
             <iframe
               src={iframeUrl}
@@ -182,6 +176,13 @@ export default function PaytrCheckout() {
             >
               Dashboard’a Dön
             </Button>
+
+            <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
+              <div className="font-semibold mb-2">Debug</div>
+              <pre className="whitespace-pre-wrap">
+{JSON.stringify(debug, null, 2)}
+              </pre>
+            </div>
           </div>
         )}
       </Card>

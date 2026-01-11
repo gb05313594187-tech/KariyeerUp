@@ -72,9 +72,7 @@ const monthTR = (d: Date) =>
   d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
 function normalizeEmail(v: any) {
-  return String(v || "")
-    .trim()
-    .toLowerCase();
+  return String(v || "").trim().toLowerCase();
 }
 
 function normalizeName(v: any) {
@@ -82,7 +80,6 @@ function normalizeName(v: any) {
 }
 
 function isValidEmail(v: string) {
-  // yeterli ve güvenli basit regex
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
@@ -99,7 +96,20 @@ export default function BookSession() {
   const [coach, setCoach] = useState<any | null>(null);
   const [loadingCoach, setLoadingCoach] = useState(true);
 
+  // ✅ Profil (tek kaynak) — submit öncesi hazır olmalı
   const [loadingMe, setLoadingMe] = useState(true);
+  const [me, setMe] = useState<{
+    userId: string | null;
+    accessToken: string | null;
+    email: string;
+    fullName: string;
+  }>({
+    userId: null,
+    accessToken: null,
+    email: "",
+    fullName: "",
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -116,38 +126,62 @@ export default function BookSession() {
     note: "",
   });
 
-  // Auth + prefill
+  // ✅ Auth + profiles prefill (GARANTİ)
   useEffect(() => {
     let mounted = true;
 
     const run = async () => {
       try {
         setLoadingMe(true);
-        const { data } = await supabase.auth.getUser();
-        const u = data?.user || null;
 
-        if (!u) {
+        // Session (token + user)
+        const { data: sess } = await supabase.auth.getSession();
+        const accessToken = sess?.session?.access_token || null;
+        const userId = sess?.session?.user?.id || null;
+        const authEmail = normalizeEmail(sess?.session?.user?.email || "");
+
+        if (!userId) {
+          // giriş yok -> form boş kalabilir, submit zaten login ister
+          if (!mounted) return;
+          setMe({ userId: null, accessToken: null, email: "", fullName: "" });
           return;
         }
 
-        const { data: p } = await supabase
+        // profiles
+        const { data: p, error: pErr } = await supabase
           .from("profiles")
           .select("id, display_name, full_name, email")
-          .eq("id", u.id)
+          .eq("id", userId)
           .maybeSingle();
 
-        const meta = u?.user_metadata || {};
-        const metaName =
-          meta.display_name || meta.full_name || meta.fullName || meta.name || "";
+        if (pErr) console.error("profiles read error:", pErr);
 
-        const name = normalizeName(p?.display_name || p?.full_name || metaName || "");
-        const email = normalizeEmail(p?.email || u?.email || "");
+        const profileName = normalizeName(p?.full_name || p?.display_name || "");
+        const profileEmail = normalizeEmail(p?.email || "");
+
+        // meta fallback
+        const meta = sess?.session?.user?.user_metadata || {};
+        const metaName = normalizeName(
+          meta.display_name || meta.full_name || meta.fullName || meta.name || ""
+        );
+
+        const finalName = profileName || metaName || "";
+        const finalEmail = profileEmail || authEmail || "";
 
         if (!mounted) return;
+
+        setMe({
+          userId,
+          accessToken,
+          email: finalEmail,
+          fullName: finalName,
+        });
+
+        // Formu doldur (kullanıcı yazdıysa ezme)
         setForm((f) => ({
           ...f,
-          fullName: f.fullName || name || "",
-          email: f.email || email || "",
+          fullName: f.fullName || finalName || "",
+          email: f.email || finalEmail || "",
         }));
       } catch (e) {
         console.error(e);
@@ -217,18 +251,34 @@ export default function BookSession() {
   }, [coach]);
 
   const timeSlots = [
-    "09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00",
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
   ];
 
   const calendarCells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+
+  // ✅ submit için: profil okuması bitmiş olsun + email valid olsun
+  const safeName = useMemo(() => normalizeName(form.fullName), [form.fullName]);
+  const safeEmail = useMemo(() => normalizeEmail(form.email), [form.email]);
 
   const canSubmit =
     !!coachId &&
     !!selectedDate &&
     !!selectedTime &&
-    !!normalizeName(form.fullName) &&
-    !!normalizeEmail(form.email) &&
-    isValidEmail(normalizeEmail(form.email));
+    !loadingMe &&
+    !!safeName &&
+    !!safeEmail &&
+    isValidEmail(safeEmail);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -236,28 +286,45 @@ export default function BookSession() {
     if (!coachId) return toast.error("Koç bilgisi bulunamadı.");
     if (!selectedDate || !selectedTime) return toast.error("Tarih ve saat seçmelisin.");
 
-    const safeName = normalizeName(form.fullName);
-    const safeEmail = normalizeEmail(form.email);
-
-    if (!safeName) return toast.error("Ad soyad zorunlu.");
-    if (!safeEmail || !isValidEmail(safeEmail)) return toast.error("Geçerli bir e-posta yazmalısın.");
+    // ✅ login zorunlu
+    const { data: sess } = await supabase.auth.getSession();
+    const access = sess?.session?.access_token || null;
+    const userId = sess?.session?.user?.id || null;
+    if (!access || !userId) {
+      toast.error("Devam etmek için giriş yapmalısın.");
+      navigate(
+        `/login?returnTo=${encodeURIComponent(
+          window.location.pathname + window.location.search
+        )}`
+      );
+      return;
+    }
 
     try {
       setIsSubmitting(true);
 
-      // ✅ Login şart
-      const { data: sess } = await supabase.auth.getSession();
-      const access = sess?.session?.access_token;
-      const userId = sess?.session?.user?.id;
-      const authEmail = normalizeEmail(sess?.session?.user?.email);
+      // ✅ Tek kaynak: PROFILES -> session_requests.email/full_name buradan doldur
+      // (Formu kullanıcı değiştirdiyse yine alacağız ama profil boşsa izin vermeyeceğiz.)
+      const { data: p, error: pErr } = await supabase
+        .from("profiles")
+        .select("email, full_name, display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (pErr) console.error("profiles read error:", pErr);
 
-      if (!access || !userId) {
-        toast.error("Devam etmek için giriş yapmalısın.");
-        navigate(
-          `/login?returnTo=${encodeURIComponent(
-            window.location.pathname + window.location.search
-          )}`
-        );
+      const profileEmail = normalizeEmail(p?.email || "");
+      const profileName = normalizeName(p?.full_name || p?.display_name || "");
+
+      // form fallback (kullanıcı yazmış olabilir)
+      const finalEmail = profileEmail || safeEmail || normalizeEmail(sess?.session?.user?.email || "");
+      const finalName = profileName || safeName || "Kullanıcı";
+
+      if (!finalEmail || !isValidEmail(finalEmail)) {
+        toast.error("Profil e-postan eksik/geçersiz. profiles tablosunu kontrol et.");
+        return;
+      }
+      if (!finalName) {
+        toast.error("Profil ad-soyadın eksik. profiles tablosunu kontrol et.");
         return;
       }
 
@@ -265,23 +332,17 @@ export default function BookSession() {
       const feeTL = Number(coach?.session_fee || 990);
       const payment_amount = Math.max(1, Math.round(feeTL * 100));
 
-      // ✅ Insert (ama NULL olmasın diye email fallback)
-      const insertEmail = safeEmail || authEmail || "";
-      const insertName = safeName || "Kullanıcı";
-
-      if (!insertEmail || !isValidEmail(insertEmail)) {
-        toast.error("E-posta alınamadı. Profil e-postanı kontrol et.");
-        return;
-      }
-
       // ✅ önce request oluştur
       const { data: created, error: insErr } = await supabase
         .from(REQUESTS_TABLE)
         .insert({
           coach_id: coachId,
           user_id: userId,
-          full_name: insertName,
-          email: insertEmail,
+
+          // ✅ EN KRİTİK: asla NULL bırakma
+          full_name: finalName,
+          email: finalEmail,
+
           selected_date: selectedDate,
           selected_time: selectedTime,
           note: String(form.note || "").trim() || null,
@@ -303,24 +364,24 @@ export default function BookSession() {
       }
 
       const requestId = created.id;
-      console.log("[BookSession] created requestId:", requestId);
 
-      // ✅ merchant_oid + garanti email/full_name (DB’ye geri okuyup doğrula)
-      const merchantOid = String(requestId).replace(/-/g, "");
+      // ✅ merchant_oid update
+      const merchantOid = `REQ${String(requestId).replace(/-/g, "")}`;
+      const { error: upErr } = await supabase
+        .from(REQUESTS_TABLE)
+        .update({ merchant_oid: merchantOid })
+        .eq("id", requestId);
 
-      // 1) önce merchant oid update
-      await supabase.from(REQUESTS_TABLE).update({ merchant_oid: merchantOid }).eq("id", requestId);
+      if (upErr) console.error("merchant_oid update error:", upErr);
 
-      // 2) sonra geri çekip doğrula (kritik sigorta)
+      // ✅ Sigorta: DB'de email/full_name boş kalmış mı kontrol et ve düzelt
       const { data: checkRow, error: checkErr } = await supabase
         .from(REQUESTS_TABLE)
         .select("id, email, full_name, merchant_oid")
         .eq("id", requestId)
         .maybeSingle();
 
-      if (checkErr) {
-        console.error("Post-insert check error:", checkErr);
-      }
+      if (checkErr) console.error("Post-insert check error:", checkErr);
 
       const dbEmail = normalizeEmail(checkRow?.email);
       const dbName = normalizeName(checkRow?.full_name);
@@ -328,8 +389,8 @@ export default function BookSession() {
 
       const fixPayload: any = {};
       if (!dbOid) fixPayload.merchant_oid = merchantOid;
-      if (!dbEmail || !isValidEmail(dbEmail)) fixPayload.email = insertEmail;
-      if (!dbName) fixPayload.full_name = insertName;
+      if (!dbEmail || !isValidEmail(dbEmail)) fixPayload.email = finalEmail;
+      if (!dbName) fixPayload.full_name = finalName;
 
       if (Object.keys(fixPayload).length > 0) {
         const { error: fixErr } = await supabase
@@ -350,9 +411,9 @@ export default function BookSession() {
           },
           body: JSON.stringify({
             coach_email: coach?.email || "",
-            user_email: insertEmail,
+            user_email: finalEmail,
             coach_name: coach?.full_name || "",
-            user_name: insertName,
+            user_name: finalName,
             session_date: selectedDate,
             time_slot: selectedTime,
             note: form.note,
@@ -363,7 +424,9 @@ export default function BookSession() {
       }
 
       // ✅ direkt ödeme
-      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(requestId)}`, { replace: true });
+      navigate(`${PAYTR_ROUTE}?requestId=${encodeURIComponent(requestId)}`, {
+        replace: true,
+      });
       return;
     } catch (err) {
       console.error(err);
@@ -385,9 +448,12 @@ export default function BookSession() {
             Geri dön
           </button>
 
-          <h1 className="text-3xl md:text-4xl font-black leading-tight">Seans Planla</h1>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">
+            Seans Planla
+          </h1>
           <p className="mt-3 text-sm md:text-base text-red-50 max-w-2xl">
-            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme adımına geçilir.
+            Takvimden günü seç, saat aralığını belirle. Talep oluşturulur ve ödeme
+            adımına geçilir.
           </p>
         </div>
       </div>
@@ -506,7 +572,9 @@ export default function BookSession() {
                       "h-11 rounded-xl border text-sm font-semibold transition",
                       cell.inMonth ? "bg-white" : "bg-gray-50",
                       cell.inMonth ? "text-gray-900" : "text-gray-400",
-                      disabled ? "opacity-40 cursor-not-allowed" : "hover:border-red-300",
+                      disabled
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:border-red-300",
                       isToday ? "border-orange-300" : "border-gray-200",
                       isSelected ? "border-red-600 bg-red-50 text-red-700" : "",
                     ].join(" ")}
@@ -520,7 +588,9 @@ export default function BookSession() {
 
             <div className="mt-4 text-xs text-gray-500">
               Seçilen tarih:{" "}
-              <span className="font-semibold text-gray-900">{selectedDate || "-"}</span>
+              <span className="font-semibold text-gray-900">
+                {selectedDate || "-"}
+              </span>
             </div>
 
             <div className="mt-6">
@@ -560,7 +630,9 @@ export default function BookSession() {
 
               <div className="mt-3 text-xs text-gray-500">
                 Seçilen saat:{" "}
-                <span className="font-semibold text-gray-900">{selectedTime || "-"}</span>
+                <span className="font-semibold text-gray-900">
+                  {selectedTime || "-"}
+                </span>
               </div>
             </div>
           </div>
@@ -570,7 +642,9 @@ export default function BookSession() {
             className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-7 space-y-6"
           >
             <div>
-              <div className="text-sm font-extrabold text-gray-900">Bilgilerini gir</div>
+              <div className="text-sm font-extrabold text-gray-900">
+                Bilgilerini gir
+              </div>
               <div className="text-xs text-gray-500 mt-1">
                 Talep oluşturmak ve ödeme adımına geçmek için giriş yapmış olmalısın.
               </div>
@@ -587,7 +661,9 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.fullName}
-                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, fullName: e.target.value }))
+                  }
                 />
               </div>
 
@@ -601,8 +677,15 @@ export default function BookSession() {
                   className="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   required
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
                 />
+                {!loadingMe && me.userId && (!me.email || !isValidEmail(me.email)) ? (
+                  <div className="mt-2 text-[11px] text-red-600">
+                    profiles tablosunda email boş/geçersiz. PayTR için zorunlu.
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -644,7 +727,13 @@ export default function BookSession() {
             </Button>
 
             {loadingMe ? (
-              <div className="text-[11px] text-gray-500">Profil bilgileri kontrol ediliyor...</div>
+              <div className="text-[11px] text-gray-500">
+                Profil bilgileri kontrol ediliyor...
+              </div>
+            ) : !me.userId ? (
+              <div className="text-[11px] text-gray-500">
+                Giriş yapmadın. Ödemeye geçmek için giriş gerekli.
+              </div>
             ) : null}
           </form>
         </div>

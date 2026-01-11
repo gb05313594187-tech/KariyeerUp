@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.tsx
 // @ts-nocheck
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -44,26 +44,41 @@ function normalizeRole(v: any): Role {
   return "user";
 }
 
-// ✅ Pending kalan çağrılar loading'i kilitlemesin
-const withTimeout = async <T,>(p: Promise<T>, ms = 12000, label = "timeout"): Promise<T> => {
-  let t: any;
-  const timeoutPromise = new Promise<T>((_, reject) => {
-    t = setTimeout(() => reject(new Error(label)), ms);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withTimeout<T>(p: Promise<T>, timeoutMs: number, label = "timeout"): Promise<T> {
+  let t: any = null;
+  const timeout = new Promise<T>((_, rej) => {
+    t = setTimeout(() => rej(new Error(label)), timeoutMs);
   });
+
   try {
-    return await Promise.race([p, timeoutPromise]);
+    return await Promise.race([p, timeout]);
   } finally {
-    clearTimeout(t);
+    if (t) clearTimeout(t);
   }
-};
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   const [loading, setLoading] = useState(true);
+
+  // ✅ Loading kilitlenmesin diye watchdog
+  const loadingWatchdogRef = useRef<any>(null);
+  const startLoadingWatchdog = (ms = 12000) => {
+    if (loadingWatchdogRef.current) clearTimeout(loadingWatchdogRef.current);
+    loadingWatchdogRef.current = setTimeout(() => {
+      // Her ne olduysa oldu, UI kilitlenmesin
+      setLoading(false);
+    }, ms);
+  };
+  const stopLoadingWatchdog = () => {
+    if (loadingWatchdogRef.current) clearTimeout(loadingWatchdogRef.current);
+    loadingWatchdogRef.current = null;
+  };
 
   const clearAuth = () => {
     setUser(null);
@@ -79,21 +94,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const meta = supabaseUserData.user_metadata || {};
       const metaRole = normalizeRole(meta.role || meta.user_type || meta.userType);
 
-      // ✅ profiles okuması asla “pending” kalıp UI’ı kilitlemesin
-      const { data: profile, error } = await withTimeout(
-        supabase
-          .from("profiles")
-          .select("full_name, display_name, role, phone, country, user_type")
-          .eq("id", supabaseUserData.id)
-          .maybeSingle(),
-        12000,
-        "profiles_read_timeout"
-      );
+      // ✅ profiles sorgusu bazen tab uyku / network suspend sonrası asılı kalabiliyor.
+      // Bu yüzden timeout ile güvenli hale getiriyoruz.
+      let profile: any = null;
+      let profileError: any = null;
+
+      try {
+        const res = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("full_name, display_name, role, phone, country, user_type, email")
+            .eq("id", supabaseUserData.id)
+            .maybeSingle(),
+          8000,
+          "profiles_fetch_timeout"
+        );
+        profile = res?.data ?? null;
+        profileError = res?.error ?? null;
+      } catch (e) {
+        profile = null;
+        profileError = e;
+      }
 
       let finalRole: Role = metaRole;
 
       // isim önceliği: profiles.full_name -> profiles.display_name -> metadata -> email prefix
-      let fullName =
+      const fullName =
         profile?.full_name ||
         profile?.display_name ||
         meta.full_name ||
@@ -102,11 +128,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         meta.displayName ||
         (supabaseUserData.email ? supabaseUserData.email.split("@")[0] : "User");
 
-      let phone: string | null = profile?.phone ?? null;
-      let country: string | null = profile?.country ?? null;
+      const phone: string | null = profile?.phone ?? null;
+      const country: string | null = profile?.country ?? null;
 
-      if (!error && profile) {
+      // profile alınabildiyse rolü oradan normalize et
+      if (!profileError && profile) {
         finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
+      } else {
+        // Hata olsa bile (RLS/401/timeout) UI kilitlenmesin; meta ile devam et
+        if (profileError) console.warn("profiles fetch issue:", profileError);
       }
 
       setRole(finalRole);
@@ -121,16 +151,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
     } catch (e) {
       console.error("Error loading user profile:", e);
-      // ✅ en kötü senaryoda auth'u temizle ve UI kilitlenmesin
       clearAuth();
     }
   };
 
   const refresh = async () => {
     setLoading(true);
+    startLoadingWatchdog(12000);
+
     try {
-      // ✅ getSession de pending kalabilir (token refresh network vs.)
-      const { data, error } = await withTimeout(supabase.auth.getSession(), 12000, "getSession_timeout");
+      // getSession bazen tab uykudan dönünce geç cevaplayabiliyor -> timeout ekliyoruz
+      const { data, error } = await withTimeout(supabase.auth.getSession(), 8000, "getSession_timeout");
       if (error) throw error;
 
       const u = data?.session?.user;
@@ -140,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error checking user:", e);
       clearAuth();
     } finally {
+      stopLoadingWatchdog();
       setLoading(false);
     }
   };
@@ -147,22 +179,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let alive = true;
 
-    // İlk yük
+    // ilk load
     refresh();
 
-    // ✅ Tab geri gelince (idle sonrası) auth’u tazele: navbar stuck olmasın
-    const onVis = () => {
+    // ✅ Tab geri gelince (2-3 dk inactivity sonrası) auth’ı toparla
+    const onFocus = () => {
+      // spam yapma: kısa debounce
       if (!alive) return;
-      if (document.visibilityState === "visible") {
-        refresh();
-      }
+      refresh();
     };
-    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
 
-    // Auth state change
+    // ✅ Auth state değişimleri: burada takılma olunca navbar kilitleniyordu
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!alive) return;
+
       setLoading(true);
+      startLoadingWatchdog(12000);
+
       try {
         const u = session?.user;
 
@@ -171,22 +205,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (event === "SIGNED_OUT") {
           clearAuth();
         } else {
-          // diğer eventlerde de güvenli davran
+          // INITIAL_SESSION / USER_UPDATED vb.
           if (u) await loadUserProfile(u);
           else clearAuth();
         }
       } catch (e) {
-        console.error("Auth state change error:", e);
+        console.error("onAuthStateChange handler error:", e);
         clearAuth();
       } finally {
-        if (alive) setLoading(false);
+        stopLoadingWatchdog();
+        setLoading(false);
       }
     });
 
     return () => {
       alive = false;
-      document.removeEventListener("visibilitychange", onVis);
-      authListener.subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
+      stopLoadingWatchdog();
+      authListener?.subscription?.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -194,11 +230,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
+      startLoadingWatchdog(12000);
+
       const { data, error } = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
-        12000,
-        "login_timeout"
+        10000,
+        "signIn_timeout"
       );
+
       if (error) return { success: false, message: error.message };
 
       if (data.user) {
@@ -210,6 +249,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Login error:", e);
       return { success: false, message: "Bir hata oluştu" };
     } finally {
+      stopLoadingWatchdog();
       setLoading(false);
     }
   };
@@ -217,12 +257,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
-      await withTimeout(supabase.auth.signOut(), 12000, "logout_timeout");
+      startLoadingWatchdog(12000);
+
+      await withTimeout(supabase.auth.signOut(), 8000, "signOut_timeout");
       clearAuth();
     } catch (e) {
       console.error("Logout error:", e);
       clearAuth();
     } finally {
+      stopLoadingWatchdog();
       setLoading(false);
     }
   };
@@ -232,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       setLoading(true);
+      startLoadingWatchdog(12000);
 
       const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
 
@@ -243,8 +287,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             display_name: updates.fullName ?? user.fullName,
           },
         }),
-        12000,
-        "auth_update_timeout"
+        10000,
+        "updateUser_timeout"
       );
 
       const { error } = await withTimeout(
@@ -258,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             country: updates.country ?? user.country ?? null,
           })
           .eq("id", user.id),
-        12000,
+        10000,
         "profiles_update_timeout"
       );
 
@@ -276,6 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("updateProfile error:", e);
       return false;
     } finally {
+      stopLoadingWatchdog();
       setLoading(false);
     }
   };

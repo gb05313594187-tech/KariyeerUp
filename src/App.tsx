@@ -1,5 +1,6 @@
 // src/App.tsx
 // @ts-nocheck
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -118,7 +119,7 @@ export default function App() {
             {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />
 
-            {/* PREMIUM LANDING */}
+            {/* PREMIUM */}
             <Route path="bireysel-premium" element={<BireyselPremium />} />
 
             {/* PRICING */}
@@ -128,9 +129,8 @@ export default function App() {
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ PAYTR */}
+            {/* ✅ PAYTR (NET) */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />
-            {/* legacy */}
             <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
             {/* BookSession public değil */}

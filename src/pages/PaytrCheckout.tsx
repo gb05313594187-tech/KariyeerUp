@@ -13,7 +13,10 @@ const PAYTR_FUNCTION_URL =
   "https://wzadnstzslxvuwmmjmwn.supabase.co/functions/v1/paytr-get-token";
 
 // ✅ Timeout (ms) - edge function cevap vermezse UI kilitlenmesin
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 20000;
+
+// ✅ Iframe yüksekliği (buton aşağıda kalmasın)
+const IFRAME_MIN_HEIGHT_PX = 1300;
 
 export default function PaytrCheckout() {
   const [searchParams] = useSearchParams();
@@ -222,11 +225,10 @@ export default function PaytrCheckout() {
               </Button>
             </div>
 
-            {/* Debug (prod'da istersen kaldırırsın) */}
             <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
               <div className="font-semibold mb-2">Debug</div>
               <pre className="whitespace-pre-wrap">
-{JSON.stringify(debug, null, 2)}
+                {JSON.stringify(debug, null, 2)}
               </pre>
             </div>
           </div>
@@ -238,12 +240,17 @@ export default function PaytrCheckout() {
               Token alındı, iframe yükleniyor…
             </div>
 
+            {/* ✅ KRİTİK DÜZELTME:
+                - scrolling="yes" -> PayTR formunun altındaki ÖDE/TAMAMLA butonu görünür
+                - min-height yükseltildi -> buton aşağıda kalmasın
+            */}
             <iframe
               src={iframeUrl}
               title="PayTR Güvenli Ödeme"
-              className="w-full h-[680px] border rounded"
+              className="w-full border rounded"
+              style={{ minHeight: `${IFRAME_MIN_HEIGHT_PX}px` }}
               frameBorder={0}
-              scrolling="no"
+              scrolling="yes"
             />
 
             <Button

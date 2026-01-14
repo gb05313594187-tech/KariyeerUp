@@ -81,6 +81,9 @@ import PaytrCheckout from "@/pages/PaytrCheckout";
 // ✅ PREMIUM LANDING
 import BireyselPremium from "@/pages/BireyselPremium";
 
+// ✅ NEW: SESSION JOIN (EKLENDİ)
+import SessionJoin from "@/pages/SessionJoin";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -128,6 +131,9 @@ export default function App() {
             {/* CHECKOUT FLOW */}
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
+
+            {/* ✅ NEW: JOIN SESSION ROUTE (EKLENDİ) */}
+            <Route path="session/:id/join" element={<SessionJoin />} />
 
             {/* ✅ PAYTR (NET) */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />

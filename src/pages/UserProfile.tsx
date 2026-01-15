@@ -1,310 +1,815 @@
-import React, { useEffect, useState } from "react";
+// src/pages/UserProfile.tsx
+// @ts-nocheck
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { 
-  Target, Trophy, Zap, MapPin, Camera, Globe, Briefcase, 
-  GraduationCap, Edit3, Save, X, CheckCircle2, Award, 
-  Star, Share2, ChevronRight, Download, Image as ImageIcon,
-  FileText, ShieldCheck, Mail, Phone, Link as LinkIcon, 
-  Linkedin, Twitter, Plus, Trash2, Languages, Cpu, LayoutGrid,
-  History, Settings2, UserCircle2, Rocket, ExternalLink
-} from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Building2,
+  BadgeCheck,
+  ShieldCheck,
+  Calendar,
+  ArrowRight,
+  LogIn,
+  Pencil,
+  Save,
+  X,
+} from "lucide-react";
 
-const UserProfile = () => {
+/** ✅ timeout wrapper (askıda kalma fix) */
+function withTimeout(promise: any, ms = 12000, label = "request") {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms)
+    ),
+  ]);
+}
+
+/** ✅ Telefon ülke kodları + format örnekleri */
+const PHONE_COUNTRIES = [
+  { iso: "TR", name: "Türkiye", dial: "+90", sample: "10 hane (5xx xxx xx xx)" },
+  { iso: "TN", name: "Tunus", dial: "+216", sample: "8 hane (xx xxx xxx)" },
+  { iso: "DE", name: "Almanya", dial: "+49", sample: "10-11 hane (15xx xxxxxx)" },
+  { iso: "FR", name: "Fransa", dial: "+33", sample: "9 hane (6 xx xx xx xx)" },
+  { iso: "NL", name: "Hollanda", dial: "+31", sample: "9 hane (6 xxxxxxxx)" },
+  { iso: "GB", name: "İngiltere", dial: "+44", sample: "10 hane (7xxx xxxxxx)" },
+  { iso: "US", name: "ABD", dial: "+1", sample: "10 hane (555 123 4567)" },
+  { iso: "AE", name: "BAE", dial: "+971", sample: "9 hane (5x xxx xxxx)" },
+  { iso: "SA", name: "Suudi Arabistan", dial: "+966", sample: "9 hane (5x xxx xxxx)" },
+  { iso: "QA", name: "Katar", dial: "+974", sample: "8 hane (xxxx xxxx)" },
+  { iso: "KW", name: "Kuveyt", dial: "+965", sample: "8 hane (xxxx xxxx)" },
+];
+
+/** ✅ Sektör listesi (kapsamlı, genişletilebilir) */
+const SECTORS = [
+  "Yazılım",
+  "Fintech",
+  "E-ticaret",
+  "Sağlık",
+  "Eğitim",
+  "Lojistik",
+  "Üretim",
+  "Danışmanlık",
+  "Pazarlama",
+  "Satış",
+  "İnsan Kaynakları",
+  "Hukuk",
+  "Turizm",
+  "Gıda & İçecek",
+  "Medya",
+  "Telekom",
+  "Enerji",
+  "Perakende",
+  "Otomotiv",
+  "Gayrimenkul",
+  "Kamu",
+  "Sigorta",
+  "Bankacılık",
+  "Siber Güvenlik",
+  "Yapay Zeka",
+  "Oyun",
+  "İnşaat",
+  "Tekstil",
+  "Kimya",
+  "Diğer",
+];
+
+/** ✅ Ünvan listesi (kapsamlı, genişletilebilir) */
+const TITLES = [
+  "CEO / Kurucu",
+  "COO",
+  "CTO",
+  "CFO",
+  "CHRO",
+  "Genel Müdür",
+  "Genel Müdür Yrd.",
+  "Direktör",
+  "Müdür",
+  "Takım Lideri",
+  "Product Manager",
+  "Product Owner",
+  "Project Manager",
+  "Program Manager",
+  "Scrum Master",
+  "Software Engineer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "Mobile Developer",
+  "UI/UX Designer",
+  "Data Analyst",
+  "Data Scientist",
+  "ML Engineer",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "QA / Test Engineer",
+  "Cybersecurity Specialist",
+  "Sales Manager",
+  "Account Manager",
+  "Marketing Manager",
+  "Growth Manager",
+  "HR Manager",
+  "Recruiter",
+  "Finance Specialist",
+  "Lawyer",
+  "Operations",
+  "Business Development",
+  "Student",
+  "Freelancer",
+  "Diğer",
+];
+
+function splitPhone(raw: string) {
+  if (!raw) return { phone_country: "TR", phone_local: "" };
+  const clean = String(raw).trim();
+  const found = PHONE_COUNTRIES.find((c) => clean.startsWith(c.dial));
+  if (found) {
+    return {
+      phone_country: found.iso,
+      phone_local: clean.replace(found.dial, "").replace(/[^\d]/g, "").trim(),
+    };
+  }
+  return { phone_country: "TR", phone_local: clean.replace(/[^\d]/g, "").trim() };
+}
+
+function buildE164(countryIso: string, phoneLocal: string) {
+  const c = PHONE_COUNTRIES.find((x) => x.iso === countryIso) || PHONE_COUNTRIES[0];
+  const local = String(phoneLocal || "").replace(/[^\d]/g, "");
+  if (!local) return "";
+  return `${c.dial}${local}`;
+}
+
+export default function UserProfile() {
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [formData, setFormData] = useState<any>({});
 
-  useEffect(() => { fetchProfile(); }, []);
+  /** ✅ Modal edit aktif */
+  const [editOpen, setEditOpen] = useState(false);
 
-  const fetchProfile = async () => {
+  /** ✅ Form state (profiles tablosu ile uyumlu) */
+  const [form, setForm] = useState({
+    full_name: "",
+    title: "",
+    sector: "",
+    city: "",
+    phone_country: "TR",
+    phone_local: "",
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+
+        const { data: sData, error: sErr } = await withTimeout(
+          supabase.auth.getSession(),
+          12000,
+          "auth.getSession"
+        );
+        if (sErr) throw sErr;
+
+        const user = sData?.session?.user || null;
+        if (!mounted) return;
+
+        setMe(user);
+
+        if (!user) {
+          setProfile(null);
+          return;
+        }
+
+        const { data: pData, error: pErr } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
+            .eq("id", user.id)
+            .maybeSingle(),
+          12000,
+          "profiles.select"
+        );
+
+        if (pErr) {
+          console.error("profiles select error:", pErr);
+          toast.error(`Profil okunamadı: ${pErr.message || "RLS/kolon kontrol et"}`);
+
+          const phoneParts = splitPhone(user?.user_metadata?.phone || "");
+          setProfile(null);
+          setForm({
+            full_name:
+              user?.user_metadata?.display_name ||
+              user?.user_metadata?.full_name ||
+              "",
+            title: "",
+            sector: "",
+            city: "",
+            phone_country: phoneParts.phone_country,
+            phone_local: phoneParts.phone_local,
+          });
+          return;
+        }
+
+        const p = pData || null;
+        setProfile(p);
+
+        const phoneParts = splitPhone(p?.phone || "");
+        setForm({
+          full_name:
+            p?.display_name ||
+            p?.full_name ||
+            user?.user_metadata?.display_name ||
+            user?.user_metadata?.full_name ||
+            "",
+          title: p?.title || "",
+          sector: p?.sector || "",
+          city: p?.city || "",
+          phone_country: phoneParts.phone_country,
+          phone_local: phoneParts.phone_local,
+        });
+      } catch (e: any) {
+        console.error("UserProfile load error:", e);
+        toast.error(e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const displayName =
+    profile?.display_name ||
+    profile?.full_name ||
+    me?.user_metadata?.display_name ||
+    me?.user_metadata?.full_name ||
+    me?.email?.split("@")?.[0] ||
+    "Kullanıcı";
+
+  // ✅ PROFİL TAMAMLANMA: Tek şema (name + phone + city + title + sector)
+  const completion = useMemo(() => {
+    if (!me) return 0;
+    const checks = [
+      !!(profile?.display_name || profile?.full_name || me?.user_metadata?.display_name || me?.user_metadata?.full_name),
+      !!profile?.phone,
+      !!profile?.city,
+      !!profile?.title,
+      !!profile?.sector,
+    ];
+    const filled = checks.filter(Boolean).length;
+    return Math.round((filled / checks.length) * 100);
+  }, [me, profile]);
+
+  const lastSignIn = useMemo(() => {
+    const raw = me?.last_sign_in_at;
+    if (!raw) return "-";
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (error) throw error;
-      setProfile(data);
-      setFormData(data);
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+      const d = new Date(raw);
+      return d.toLocaleString();
+    } catch {
+      return raw;
+    }
+  }, [me]);
+
+  const openEdit = () => {
+    if (!me) {
+      toast.error("Giriş yapmadan profili düzenleyemezsin.");
+      navigate("/login");
+      return;
+    }
+
+    const phoneParts = splitPhone(profile?.phone || "");
+    setForm({
+      full_name:
+        profile?.display_name ||
+        profile?.full_name ||
+        me?.user_metadata?.display_name ||
+        me?.user_metadata?.full_name ||
+        "",
+      title: profile?.title || "",
+      sector: profile?.sector || "",
+      city: profile?.city || "",
+      phone_country: phoneParts.phone_country,
+      phone_local: phoneParts.phone_local,
+    });
+
+    setEditOpen(true);
   };
 
-  const handleSave = async () => {
-    const { error } = await supabase.from("profiles").update(formData).eq("id", profile.id);
-    if (!error) {
-      setProfile(formData);
-      setIsEditing(false);
-      toast.success("Veritabanı senkronize edildi.");
+  const closeEdit = () => setEditOpen(false);
+
+  const saveProfile = async () => {
+    if (!me?.id) {
+      toast.error("Lütfen giriş yapın.");
+      return;
+    }
+    if (!me?.email) {
+      toast.error("Email bulunamadı. Lütfen çıkış yapıp tekrar giriş yap.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const phoneE164 = buildE164(form.phone_country, form.phone_local);
+      const cleanName = (form.full_name || "").trim();
+
+      // ✅ auth metadata da aynı isimle güncellensin (navbar/role akışı bozulmasın)
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            display_name: cleanName,
+            full_name: cleanName,
+          },
+        });
+      } catch (e) {
+        // auth metadata güncellenemezse bile profiles kaydı devam etsin
+      }
+
+      const payload = {
+        id: me.id,
+        email: me.email,
+        display_name: cleanName, // ✅
+        full_name: cleanName,    // ✅
+        title: (form.title || "").trim(),
+        sector: (form.sector || "").trim(),
+        city: (form.city || "").trim(),
+        phone: phoneE164 || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await withTimeout(
+        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
+        12000,
+        "profiles.upsert"
+      );
+
+      if (error) {
+        console.error("profiles upsert error:", error);
+        toast.error(`Kaydedilemedi: ${error.message || "RLS/kolon kontrol et"}`);
+        return;
+      }
+
+      toast.success("Profil güncellendi.");
+
+      const { data: pData, error: pErr } = await withTimeout(
+        supabase
+          .from("profiles")
+          .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
+          .eq("id", me.id)
+          .maybeSingle(),
+        12000,
+        "profiles.reselect"
+      );
+
+      if (!pErr) setProfile(pData || payload);
+
+      setEditOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-[#0A0A0B]">
-      <div className="w-12 h-12 border-2 border-[#C62828] border-t-transparent rounded-full animate-spin mb-4" />
-      <span className="text-white font-mono text-[10px] tracking-[0.5em] uppercase">System Booting...</span>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
+        Yükleniyor...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#F1F3F5] text-[#1A1A1B] font-sans antialiased">
-      {/* 🏛️ ULTRA-MODERN NAVIGATION / ACTION BAR */}
-      <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200">
-        <div className="max-w-[1600px] mx-auto px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/20">
-              <Rocket className="w-5 h-5 text-white" />
+    <div className="bg-white text-slate-900">
+      {/* HERO */}
+      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <p className="text-xs text-white/90">User Profile</p>
+          <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
+            {me ? displayName : "Profil"}
+          </h1>
+          <p className="mt-2 text-sm text-white/90 max-w-2xl">
+            Profil bilgilerin, koç eşleşmelerini ve seans deneyimini doğrudan etkiler.
+            Ne kadar net olursan, sonuç o kadar hızlı gelir.
+          </p>
+
+          {/* Completion */}
+          <div className="mt-6 max-w-xl">
+            <div className="flex items-center justify-between text-xs text-white/90">
+              <span>Profil tamamlanma</span>
+              <span className="font-semibold">%{me ? completion : 0}</span>
             </div>
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-tighter">Unicorn Talent <span className="text-[#C62828]">OS</span></h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Global Executive Management</p>
+            <div className="mt-2 h-2 rounded-full bg-white/25 overflow-hidden">
+              <div className="h-full bg-white" style={{ width: `${me ? completion : 0}%` }} />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" className="rounded-xl font-bold text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-100">
-              <Eye className="w-4 h-4 mr-2" /> Preview Mode
+
+          {/* CTA row */}
+          <div className="mt-6 flex gap-2 flex-wrap">
+            <Button
+              className="rounded-xl bg-white text-slate-900 hover:bg-white/90"
+              onClick={() => navigate("/user/dashboard")}
+            >
+              Dashboard <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-            {isEditing ? (
-              <Button onClick={handleSave} className="bg-black hover:bg-zinc-800 text-white rounded-xl px-10 h-12 font-black shadow-xl transition-all active:scale-95">
-                <Save className="w-4 h-4 mr-2" /> CHANGES PUBLISH
+
+            <Button
+              variant="outline"
+              className="rounded-xl border-white/70 text-white hover:bg-white/10"
+              onClick={() => navigate("/coaches")}
+            >
+              Koçları İncele
+            </Button>
+
+            {me ? (
+              <Button
+                variant="outline"
+                className="rounded-xl border-white/70 text-white hover:bg-white/10"
+                onClick={openEdit}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Profili Düzenle
               </Button>
-            ) : (
-              <Button onClick={() => setIsEditing(true)} className="bg-[#C62828] hover:bg-[#A31F1F] text-white rounded-xl px-10 h-12 font-black shadow-xl shadow-red-900/10 transition-all active:scale-95">
-                <Edit3 className="w-4 h-4 mr-2" /> EDIT PROFILE
-              </Button>
-            )}
+            ) : null}
           </div>
         </div>
-      </nav>
+      </section>
 
-      <main className="max-w-[1600px] mx-auto px-8 py-10 grid grid-cols-12 gap-10">
-        
-        {/* 🧬 LEFT SIDEBAR: IDENTITY & ANALYTICS */}
-        <div className="col-span-12 lg:col-span-3 space-y-8">
-          <div className="relative group">
-            <div className="w-full aspect-square rounded-[3rem] bg-white shadow-2xl shadow-slate-200 overflow-hidden border-8 border-white">
-              <img 
-                src={profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.full_name}`} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-              />
-              {isEditing && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
-                  <Camera className="text-white w-8 h-8 mb-2" />
-                  <span className="text-white text-[10px] font-black uppercase tracking-widest">Update Photo</span>
+      {/* CONTENT */}
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        {!me ? (
+          <Card className="border-slate-200">
+            <CardContent className="p-8">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+                  <LogIn className="h-5 w-5 text-slate-900" />
                 </div>
-              )}
-            </div>
-          </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Profilini görmek için giriş yap
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Giriş yapınca hesap bilgilerin ve profil alanların burada görünecek.
+                  </p>
 
-          <div className="space-y-1 px-2">
-            <h1 className="text-3xl font-black tracking-tight italic">{profile?.full_name}</h1>
-            <p className="text-[#C62828] font-black uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" /> {profile?.title || "Executive Talent"}
-            </p>
-          </div>
-
-          <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Profile Strength</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <span className="text-2xl font-black italic">88%</span>
-                <span className="text-[10px] font-bold text-green-500 uppercase">Excellent</span>
+                  <div className="mt-4 flex gap-2 flex-wrap">
+                    <Link to="/login">
+                      <Button className="rounded-xl">Giriş Yap</Button>
+                    </Link>
+                    <Link to="/register">
+                      <Button variant="outline" className="rounded-xl">
+                        Kayıt Ol
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <Progress value={88} className="h-1.5 bg-slate-100 [&>div]:bg-black" />
-            </div>
+            </CardContent>
           </Card>
+        ) : (
+          <>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Account */}
+              <Card className="bg-white border-slate-200 shadow-sm lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <User className="w-4 h-4 text-orange-600" /> Hesap Bilgileri
+                  </CardTitle>
+                </CardHeader>
 
-          <div className="grid grid-cols-1 gap-4">
-            <Card className="p-6 border-none shadow-sm rounded-3xl bg-slate-900 text-white group cursor-pointer hover:bg-black transition-all">
-              <div className="flex justify-between items-start mb-4">
-                <BarChart3 className="w-6 h-6 text-[#C62828]" />
-                <ArrowUpRight className="w-4 h-4 text-slate-500" />
-              </div>
-              <p className="text-2xl font-black italic">2,415</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Monthly Impressions</p>
-            </Card>
-          </div>
-        </div>
-
-        {/* 💻 MAIN WORKSPACE: THE EUROPASS ENGINE */}
-        <div className="col-span-12 lg:col-span-9 space-y-10">
-          
-          <Tabs defaultValue="europass" className="w-full">
-            <TabsList className="bg-white border border-slate-200 p-2 rounded-[2rem] w-fit mb-10 shadow-sm">
-              <TabsTrigger value="europass" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] tracking-widest uppercase data-[state=active]:bg-black data-[state=active]:text-white">
-                <FileText className="w-4 h-4 mr-2" /> Europass Core
-              </TabsTrigger>
-              <TabsTrigger value="experience" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] tracking-widest uppercase data-[state=active]:bg-black data-[state=active]:text-white">
-                <History className="w-4 h-4 mr-2" /> Experience Map
-              </TabsTrigger>
-              <TabsTrigger value="skills" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] tracking-widest uppercase data-[state=active]:bg-black data-[state=active]:text-white">
-                <Zap className="w-4 h-4 mr-2" /> Skill Matrix
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="europass" className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-500">
-              
-              {/* SECTION: PERSONAL STATEMENT */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4 px-2">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border">
-                    <UserCircle2 className="w-6 h-6 text-[#C62828]" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black italic tracking-tight">Executive Manifesto</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Vision & Leadership Philosophy</p>
-                  </div>
-                </div>
-                <Card className="p-10 border-none shadow-sm rounded-[3rem] bg-white overflow-hidden relative">
-                   <div className="absolute top-0 right-0 p-8 opacity-5"><QuoteIcon className="w-32 h-32 text-black" /></div>
-                   {isEditing ? (
-                     <Textarea 
-                       value={formData.manifesto}
-                       onChange={(e) => setFormData({...formData, manifesto: e.target.value})}
-                       className="text-2xl font-bold italic bg-slate-50 border-none rounded-2xl min-h-[150px] p-8 focus-visible:ring-1 focus-visible:ring-[#C62828]"
-                       placeholder="Enter your high-impact vision statement..."
-                     />
-                   ) : (
-                     <p className="text-4xl font-black italic leading-[1.1] tracking-tighter text-slate-800">
-                       "{profile?.manifesto || "Design the future by managing the present with absolute precision."}"
-                     </p>
-                   )}
-                </Card>
-              </section>
-
-              {/* SECTION: EUROPASS FORM GRID */}
-              <section className="grid grid-cols-2 gap-8">
-                <Card className="p-10 border-none shadow-sm rounded-[3rem] bg-white space-y-8">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-6">
-                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#C62828]">Official Identity</h3>
-                    <Badge variant="outline" className="rounded-full font-bold text-[8px] uppercase">EU Standard</Badge>
-                  </div>
-                  <div className="space-y-6">
-                    <div className="grid gap-2">
-                      <label className="text-[9px] font-black uppercase text-slate-400 px-1">Full Name</label>
-                      <Input disabled={!isEditing} value={formData.full_name} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700" />
+                <CardContent className="text-sm text-slate-700">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </div>
+                      <div className="mt-1 font-semibold text-slate-900">{me?.email || "-"}</div>
                     </div>
-                    <div className="grid gap-2">
-                      <label className="text-[9px] font-black uppercase text-slate-400 px-1">Contact Email</label>
-                      <Input disabled={!isEditing} value={formData.email} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700" />
+
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs">
+                        <BadgeCheck className="h-4 w-4" />
+                        User ID
+                      </div>
+                      <div className="mt-1 font-mono text-xs text-slate-900 break-all">
+                        {me?.id || "-"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs">
+                        <ShieldCheck className="h-4 w-4" />
+                        Son giriş
+                      </div>
+                      <div className="mt-1 font-semibold text-slate-900">{lastSignIn}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-slate-500 text-xs">
+                        <Phone className="h-4 w-4" />
+                        Telefon
+                      </div>
+                      <div className="mt-1 font-semibold text-slate-900">
+                        {profile?.phone || "-"}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Telefon / şehir / sektör gibi alanlar profilden gelir.
+                      </p>
                     </div>
                   </div>
-                </Card>
 
-                <Card className="p-10 border-none shadow-sm rounded-[3rem] bg-white space-y-8">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-6">
-                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#C62828]">Location Hub</h3>
-                    <MapPin className="w-4 h-4 text-slate-300" />
-                  </div>
-                  <div className="space-y-6">
-                    <div className="grid gap-2">
-                      <label className="text-[9px] font-black uppercase text-slate-400 px-1">Current City / Country</label>
-                      <Input disabled={!isEditing} value={formData.city} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700" />
-                    </div>
-                    <div className="grid gap-2">
-                      <label className="text-[9px] font-black uppercase text-slate-400 px-1">Primary Industry</label>
-                      <Input disabled={!isEditing} value={formData.sector} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-700" />
-                    </div>
-                  </div>
-                </Card>
-              </section>
-
-              {/* SECTION: WORK EXPERIENCE (THE CORE) */}
-              <section className="space-y-8">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border">
-                      <Briefcase className="w-6 h-6 text-[#C62828]" />
-                    </div>
-                    <h2 className="text-xl font-black italic tracking-tight text-slate-800">Professional Path</h2>
-                  </div>
-                  {isEditing && (
-                    <Button variant="outline" className="rounded-xl border-dashed border-slate-300 font-black text-[10px] tracking-widest uppercase h-12 px-8">
-                      <Plus className="w-4 h-4 mr-2" /> Add Experience
+                  <div className="mt-5 flex gap-2 flex-wrap">
+                    <Button className="rounded-xl" onClick={() => navigate("/user/settings")}>
+                      Ayarlar
                     </Button>
-                  )}
-                </div>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => navigate("/how-it-works")}
+                    >
+                      Nasıl çalışır?
+                    </Button>
 
-                <div className="space-y-6">
-                  {[1, 2].map((i) => (
-                    <Card key={i} className="p-10 border-none shadow-sm rounded-[3rem] bg-white group hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 border-l-0 hover:border-l-[12px] hover:border-[#C62828]">
-                      <div className="flex flex-col md:flex-row gap-10">
-                        <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center shrink-0 border border-slate-100">
-                          <img src={`https://logo.clearbit.com/apple.com?size=100`} className="w-10 h-10 grayscale group-hover:grayscale-0 transition-all" />
-                        </div>
-                        <div className="flex-1 space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="text-2xl font-black tracking-tighter italic">Senior Product Strategist</h4>
-                              <p className="text-[#C62828] font-black text-[10px] tracking-widest uppercase mt-1">Global Tech Solutions • 2018 - Present</p>
-                            </div>
-                            {isEditing && (
-                              <div className="flex gap-2">
-                                <Button size="icon" variant="ghost" className="rounded-xl hover:bg-slate-100"><Edit3 className="w-4 h-4" /></Button>
-                                <Button size="icon" variant="ghost" className="rounded-xl hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-slate-500 font-medium leading-relaxed">
-                            Led a cross-functional team of 45+ designers and engineers to build the next generation of SaaS infrastructure. Increased annual recurring revenue by 140% within the first 18 months through strategic pivot.
+                    <Button variant="outline" className="rounded-xl" onClick={openEdit}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Profili Düzenle
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Profile snapshot */}
+              <Card className="bg-white border-slate-200 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-orange-600" /> Profil Özeti
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-slate-700 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Briefcase className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-slate-500">Unvan</p>
+                      <p className="font-semibold text-slate-900">{profile?.title || "-"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-slate-500">Sektör</p>
+                      <p className="font-semibold text-slate-900">{profile?.sector || "-"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-slate-500">Şehir</p>
+                      <p className="font-semibold text-slate-900">{profile?.city || "-"}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200">
+                    <p className="text-xs text-slate-500">Önerilen</p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      Profilin %{completion}.{" "}
+                      {completion < 70
+                        ? "Biraz daha tamamla, eşleşme kalitesi yükselsin."
+                        : "Gayet iyi. Seans planlamaya hazırsın."}
+                    </p>
+
+                    <div className="mt-4 flex gap-2 flex-wrap">
+                      <Button className="rounded-xl w-full" onClick={() => navigate("/coaches")}>
+                        Koçları İncele <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl w-full"
+                        onClick={() => navigate("/book-session")}
+                      >
+                        Seanslar
+                      </Button>
+                    </div>
+
+                    <div className="mt-3">
+                      <Button variant="outline" className="rounded-xl w-full" onClick={openEdit}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Profili Düzenle
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bottom strip */}
+            <div className="mt-6">
+              <Card className="border-slate-200 bg-slate-50">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-slate-900" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Hızlı akış</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Hedefini netleştir → koçları filtrele → ilk seansı planla → aksiyon planı oluştur.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        className="rounded-xl"
+                        onClick={() => navigate("/coach-selection-process")}
+                      >
+                        Koç seçimi rehberi
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => navigate("/user/dashboard")}
+                      >
+                        Dashboard
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ✅ EDIT MODAL */}
+            {editOpen ? (
+              <div className="fixed inset-0 z-50">
+                <div className="absolute inset-0 bg-black/50" onClick={saving ? undefined : closeEdit} />
+                <div className="absolute inset-x-0 top-10 sm:top-16 mx-auto w-[92%] max-w-2xl">
+                  <Card className="border-slate-200 shadow-2xl overflow-hidden">
+                    <CardHeader className="bg-white">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Pencil className="h-4 w-4 text-orange-600" />
+                            Profili Düzenle
+                          </CardTitle>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Bu bilgiler eşleşme kalitesini ve seans deneyimini etkiler.
                           </p>
-                          <div className="flex gap-2 pt-2">
-                            {['Strategic Planning', 'Leadership', 'SaaS'].map(tag => (
-                              <Badge key={tag} className="bg-slate-50 text-slate-500 border-none font-bold text-[9px] px-3 py-1 rounded-lg uppercase">{tag}</Badge>
+                        </div>
+                        <button
+                          className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50"
+                          onClick={saving ? undefined : closeEdit}
+                          aria-label="Kapat"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="bg-white p-6">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <label className="text-xs text-slate-600">Ad Soyad</label>
+                          <input
+                            value={form.full_name}
+                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                            placeholder="Örn: Salih Gökalp Büyükçelebi"
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-1">
+                          <label className="text-xs text-slate-600">Ünvan</label>
+                          <select
+                            value={form.title}
+                            onChange={(e) => setForm({ ...form, title: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
+                          >
+                            <option value="">Seç</option>
+                            {TITLES.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
                             ))}
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-1">
+                          <label className="text-xs text-slate-600">Sektör</label>
+                          <select
+                            value={form.sector}
+                            onChange={(e) => setForm({ ...form, sector: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
+                          >
+                            <option value="">Seç</option>
+                            {SECTORS.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-1">
+                          <label className="text-xs text-slate-600">Şehir</label>
+                          <input
+                            value={form.city}
+                            onChange={(e) => setForm({ ...form, city: e.target.value })}
+                            placeholder="Örn: İstanbul"
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-1">
+                          <label className="text-xs text-slate-600">Telefon</label>
+                          <div className="mt-1 grid grid-cols-3 gap-2">
+                            <select
+                              value={form.phone_country}
+                              onChange={(e) => setForm({ ...form, phone_country: e.target.value })}
+                              className="col-span-1 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
+                            >
+                              {PHONE_COUNTRIES.map((c) => (
+                                <option key={c.iso} value={c.iso}>
+                                  {c.iso} {c.dial}
+                                </option>
+                              ))}
+                            </select>
+
+                            <input
+                              value={form.phone_local}
+                              onChange={(e) =>
+                                setForm({ ...form, phone_local: e.target.value.replace(/[^\d]/g, "") })
+                              }
+                              placeholder="Sadece rakam"
+                              className="col-span-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
+                            />
                           </div>
+
+                          {(() => {
+                            const c =
+                              PHONE_COUNTRIES.find((x) => x.iso === form.phone_country) ||
+                              PHONE_COUNTRIES[0];
+                            const e164 = buildE164(form.phone_country, form.phone_local);
+                            return (
+                              <div className="mt-2 text-xs text-slate-500">
+                                <div>Örnek format: <span className="font-medium">{c.sample}</span></div>
+                                <div>Kaydedilecek format: <span className="font-mono">{e164 || "-"}</span></div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
-                    </Card>
-                  ))}
+
+                      <div className="mt-6 flex flex-col sm:flex-row gap-2">
+                        <Button
+                          className="rounded-xl bg-orange-600 hover:bg-orange-500"
+                          onClick={saveProfile}
+                          disabled={saving}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          {saving ? "Kaydediliyor..." : "Kaydet"}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={closeEdit}
+                          disabled={saving}
+                        >
+                          Vazgeç
+                        </Button>
+                      </div>
+
+                      <p className="mt-3 text-xs text-slate-500">
+                        *Kaydet dediğinde veriler <span className="font-medium">profiles</span> tablosuna yazılır.
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-              </section>
-
-            </TabsContent>
-          </Tabs>
-
-        </div>
-      </main>
-
-      {/* 🚀 FIXED UNIVERSAL DOWNLOAD BAR */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] no-print w-full max-w-[600px] px-6">
-        <div className="bg-black/90 backdrop-blur-2xl border border-white/10 p-4 rounded-[2.5rem] shadow-2xl flex items-center justify-between ring-1 ring-white/20">
-           <div className="flex items-center gap-4 pl-4">
-              <div className="w-10 h-10 bg-[#C62828] rounded-full flex items-center justify-center animate-pulse">
-                <FileText className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <p className="text-white font-black text-[10px] uppercase tracking-widest leading-none">Europass Engine</p>
-                <p className="text-white/40 text-[8px] font-bold uppercase tracking-[0.2em] mt-1">Standardized EU Output</p>
-              </div>
-           </div>
-           <Button onClick={() => window.print()} className="bg-white hover:bg-slate-200 text-black rounded-[1.8rem] px-10 h-14 font-black text-xs uppercase tracking-widest transition-all">
-              Generate OFFICIAL PDF
-           </Button>
-        </div>
+            ) : null}
+          </>
+        )}
       </div>
-
     </div>
   );
-};
-
-const QuoteIcon = (props: any) => (
-  <svg {...props} fill="currentColor" viewBox="0 0 24 24">
-    <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V12C14.017 12.5523 13.5693 13 13.017 13H11.017V21H14.017ZM5.017 21L5.017 18C5.017 16.8954 5.91243 16 7.017 16H10.017C10.5693 16 11.017 15.5523 11.017 15V9C11.017 8.44772 10.5693 8 10.017 8H6.017C5.46472 8 5.017 8.44772 5.017 9V12C5.017 12.5523 4.56928 13 4.017 13H2.017V21H5.017Z" />
-  </svg>
-);
-
-const ArrowUpRight = (props: any) => (
-  <svg {...props} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="7" y1="17" x2="17" y2="7"></line>
-    <polyline points="7 7 17 7 17 17"></polyline>
-  </svg>
-);
-
-export default UserProfile;
+}

@@ -14,14 +14,15 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-
 import { supabase } from "@/lib/supabase";
+import { Eye, EyeOff } from "lucide-react"; // İkonları ekledik
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Şifre görünürlüğü için state
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async (e: any) => {
@@ -47,7 +48,6 @@ export default function Login() {
 
       toast.success("Giriş başarılı!");
 
-      // ✅ next param’a dön (seans/checkout akışını kurtarır)
       const qs = new URLSearchParams(location.search);
       const next = qs.get("next");
       if (next) {
@@ -95,16 +95,40 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e: any) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Şifre</Label>
+                {/* Şifremi Unuttum Linki */}
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-[#D32F2F] hover:underline font-medium"
+                >
+                  Şifremi Unuttum
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"} // State'e göre tip değişiyor
+                  required
+                  value={formData.password}
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  className="pr-10" // İkon için sağdan boşluk
+                />
+                {/* Göz İkonu Butonu */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <Button
@@ -117,7 +141,7 @@ export default function Login() {
           </form>
         </CardContent>
 
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex flex-col space-y-2 justify-center">
           <div className="text-sm text-gray-500">
             Hesabınız yok mu?{" "}
             <Link

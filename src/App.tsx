@@ -119,8 +119,8 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ROOT */}
-          <Route path="/" element={<PublicLayout>}>
+          {/* ROOT - Düzenlendi: element={<PublicLayout />} şeklinde olmalı */}
+          <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
 
             {/* SITEMAP */}
@@ -136,14 +136,14 @@ export default function App() {
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ NEW: JOIN SESSION ROUTE (EKLENDİ) */}
+            {/* ✅ NEW: JOIN SESSION ROUTE */}
             <Route path="session/:id/join" element={<SessionJoin />} />
 
-            {/* ✅ PAYTR (NET) */}
+            {/* ✅ PAYTR */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />
             <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* BookSession public değil */}
+            {/* BookSession */}
             <Route
               path="book-session"
               element={<Navigate to="/coaches" replace />}

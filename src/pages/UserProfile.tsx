@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
   Target, Trophy, Zap, MapPin, Camera, Globe, Briefcase, 
   GraduationCap, Edit3, Save, X, CheckCircle2, Award, 
   Star, Share2, ChevronRight, Download, Image as ImageIcon,
   FileText, ShieldCheck, Mail, Phone, Link as LinkIcon, 
-  Linkedin, Twitter, Plus, Trash2, MoreHorizontal, Eye,
-  BarChart3, Settings, Rocket, ShieldAlert, Cpu
+  Linkedin, Twitter, Plus, Trash2, Languages, Heart, MousePointer2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,21 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
-// --- TİPLEMELER ---
-interface Experience {
-  id: string;
-  company: string;
-  role: string;
-  period: string;
-  description: string;
-}
-
 const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
-  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     fetchProfile();
@@ -46,275 +35,199 @@ const UserProfile = () => {
       setProfile(data);
       setFormData(data);
     } catch (error) {
-      console.error("Data Fetch Error:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    const promise = supabase.from("profiles").update(formData).eq("id", profile.id);
-    toast.promise(promise, {
-      loading: 'Unicorn veri motoru güncelleniyor...',
-      success: () => {
-        setProfile(formData);
-        setIsEditing(false);
-        return 'Profil evrensel olarak güncellendi.';
-      },
-      error: 'Senkronizasyon hatası.',
-    });
+    const { error } = await supabase.from("profiles").update(formData).eq("id", profile.id);
+    if (!error) {
+      setProfile(formData);
+      setIsEditing(false);
+      toast.success("Europass verileriniz senkronize edildi.");
+    }
   };
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-slate-900 border-t-[#C62828] rounded-full animate-spin" />
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-slate-500">Initializing Professional Core...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <div className="h-screen flex items-center justify-center font-black tracking-tighter italic">UNICORN LOADING...</div>;
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9]/50 pb-20 font-sans antialiased text-slate-900">
-      
-      {/* 🚀 DİNAMİK EXECUTIVE HEADER */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md bg-white/80">
-        <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-xl">K</div>
-            <div className="h-8 w-px bg-slate-200 mx-2" />
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1 px-3 rounded-lg flex gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mt-1" /> Verified Expert
-            </Badge>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50">
-              <Eye className="w-4 h-4 mr-2" /> Kamu Görünümü
-            </Button>
-            <div className="w-px h-6 bg-slate-200 mx-2" />
-            {isEditing ? (
-              <>
-                <Button onClick={() => setIsEditing(false)} variant="ghost" className="rounded-xl font-bold text-slate-400">İPTAL</Button>
-                <Button onClick={handleSave} className="bg-slate-900 hover:bg-black text-white rounded-xl px-8 font-bold shadow-xl shadow-slate-200 transition-all active:scale-95">
-                  <Save className="w-4 h-4 mr-2" /> DEĞİŞİKLİKLERİ YAYINLA
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)} className="bg-[#C62828] hover:bg-[#a31f1f] text-white rounded-xl px-8 font-bold shadow-xl shadow-red-100 transition-all active:scale-95">
-                <Edit3 className="w-4 h-4 mr-2" /> PROFİLİ YÖNET
-              </Button>
-            )}
+    <div className="min-h-screen bg-[#F8FAFC] pb-32">
+      {/* HEADER & NAV GİBİ ÜST KISIMLAR ÖNCEKİ KODDAKİ GİBİ KALACAK */}
+      <div className="h-48 bg-slate-950 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#C62828]/20 to-transparent" />
+        <div className="max-w-7xl mx-auto px-6 h-full flex items-end pb-8 relative z-10">
+          <div className="flex justify-between items-end w-full">
+            <div className="flex gap-6 items-end">
+                <div className="w-32 h-32 rounded-[2rem] border-4 border-white shadow-2xl bg-slate-100 overflow-hidden">
+                  <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.full_name}`} className="w-full h-full object-cover" />
+                </div>
+                <div className="mb-2">
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter">{profile?.full_name}</h1>
+                    <p className="text-[#C62828] font-bold uppercase text-[10px] tracking-[0.3em]">{profile?.title || "International Professional"}</p>
+                </div>
+            </div>
+            <div className="flex gap-4">
+               <Button onClick={() => setIsEditing(!isEditing)} className={isEditing ? "bg-green-600 hover:bg-green-700" : "bg-white text-black hover:bg-slate-100"}>
+                 {isEditing ? <Save className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
+                 {isEditing ? "SİSTEMİ GÜNCELLE" : "EUROPASS DÜZENLE"}
+               </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <main className="max-w-[1400px] mx-auto px-6 mt-8">
-        <div className="grid grid-cols-12 gap-8">
-          
-          {/* 🧩 SOL PANEL: KİŞİSEL KART (APPLE STYLE) */}
-          <aside className="col-span-12 lg:col-span-4 space-y-6">
-            <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2.5rem] bg-white overflow-hidden">
-              <div className="h-32 bg-gradient-to-br from-slate-800 to-slate-950 relative">
-                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-              </div>
-              <div className="px-8 pb-8">
-                <div className="relative -mt-16 mb-6">
-                  <div className="w-32 h-32 rounded-[2rem] border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group">
-                    <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.full_name}`} className="w-full h-full object-cover" />
-                    {isEditing && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <Camera className="text-white w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                    {profile?.full_name} <ShieldCheck className="w-5 h-5 text-blue-500" />
-                  </h2>
-                  <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] italic">
-                    {profile?.title || "EXECUTIVE ADVISOR"}
-                  </p>
-                </div>
+      <main className="max-w-7xl mx-auto px-6 mt-12">
+        <Tabs defaultValue="europass" className="space-y-12">
+          <TabsList className="bg-white border p-1 rounded-2xl w-fit shadow-sm">
+            <TabsTrigger value="europass" className="rounded-xl px-10 font-black text-xs">EUROPASS CV ENGINE</TabsTrigger>
+            <TabsTrigger value="portfolio" className="rounded-xl px-10 font-black text-xs">PORTFOLIO</TabsTrigger>
+          </TabsList>
 
-                <div className="mt-8 pt-8 border-t border-slate-50 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Profil Doluluğu</span>
-                    <span className="text-xs font-black text-[#C62828]">85%</span>
-                  </div>
-                  <Progress value={85} className="h-1.5 bg-slate-100 [&>div]:bg-[#C62828]" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="p-4 bg-slate-50 rounded-2xl text-center">
-                    <p className="text-xl font-black italic">1.2k</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Görüntülenme</p>
-                  </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl text-center">
-                    <p className="text-xl font-black italic">48</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Mentörlük</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-slate-900 text-white overflow-hidden relative">
-              <Zap className="absolute -right-8 -bottom-8 w-40 h-40 text-white/5 rotate-12" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#C62828] mb-6 flex items-center gap-2">
-                <Cpu className="w-4 h-4" /> AI Kariyer Analizi
-              </h3>
-              <p className="text-sm font-medium text-slate-300 leading-relaxed mb-6">
-                Mevcut profilin "Üst Düzey Yönetici" rolleri için %92 uyumluluk gösteriyor.
-              </p>
-              <Button className="w-full bg-white/10 hover:bg-white/20 border-white/10 rounded-xl font-bold py-6">
-                RAPORU GÖRÜNTÜLE
-              </Button>
-            </Card>
-          </aside>
-
-          {/* 🛠 SAĞ PANEL: ANA EDİTÖR & DASHBOARD */}
-          <div className="col-span-12 lg:col-span-8 space-y-8">
+          {/* 🇪🇺 EUROPASS CV ENGINE CONTENT */}
+          <TabsContent value="europass" className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
             
-            {/* TABS SİSTEMİ (STRIPE STYLE) */}
-            <Tabs defaultValue="overview" onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent h-auto p-0 gap-8 border-b border-slate-200 w-full justify-start rounded-none">
-                <TabsTrigger value="overview" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-[#C62828] data-[state=active]:text-[#C62828] rounded-none px-0 py-4 font-black text-xs uppercase tracking-widest transition-all">GENEL BAKIŞ</TabsTrigger>
-                <TabsTrigger value="experience" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-[#C62828] data-[state=active]:text-[#C62828] rounded-none px-0 py-4 font-black text-xs uppercase tracking-widest transition-all">DENEYİM & EĞİTİM</TabsTrigger>
-                <TabsTrigger value="credentials" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-[#C62828] data-[state=active]:text-[#C62828] rounded-none px-0 py-4 font-black text-xs uppercase tracking-widest transition-all">SERTİFİKALAR</TabsTrigger>
-                <TabsTrigger value="settings" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-[#C62828] data-[state=active]:text-[#C62828] rounded-none px-0 py-4 font-black text-xs uppercase tracking-widest transition-all">HESAP AYARLARI</TabsTrigger>
-              </TabsList>
-
-              {/* OVERVIEW CONTENT */}
-              <TabsContent value="overview" className="mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <Card className="p-10 border-none shadow-sm rounded-[2.5rem] bg-white">
-                  <div className="flex justify-between items-start mb-8">
-                    <h3 className="text-xl font-black italic tracking-tight">Executive Manifesto</h3>
-                    <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center"><BarChart3 className="w-4 h-4 text-slate-300" /></div>
+            <div className="grid grid-cols-12 gap-8">
+              
+              {/* SOL KOLON: KİŞİSEL VERİ VE DİLLER */}
+              <div className="col-span-12 lg:col-span-4 space-y-8">
+                <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-8 flex items-center gap-2">
+                    <Languages className="w-4 h-4 text-[#C62828]" /> Dil Yetkinlikleri
+                  </h3>
+                  <div className="space-y-6">
+                    <div>
+                        <div className="flex justify-between mb-2"><span className="text-sm font-bold italic">Türkçe</span> <Badge variant="secondary">Ana Dil</Badge></div>
+                        <Progress value={100} className="h-1 bg-slate-100 [&>div]:bg-slate-900" />
+                    </div>
+                    <div>
+                        <div className="flex justify-between mb-2"><span className="text-sm font-bold italic">İngilizce</span> <Badge variant="outline" className="text-[#C62828]">C1 - Professional</Badge></div>
+                        <Progress value={85} className="h-1 bg-slate-100 [&>div]:bg-[#C62828]" />
+                    </div>
                   </div>
-                  {isEditing ? (
-                    <Textarea 
-                      className="text-2xl font-bold italic bg-slate-50 border-none rounded-2xl min-h-[120px] p-6 focus-visible:ring-1 focus-visible:ring-[#C62828]"
-                      value={formData.manifesto}
-                      onChange={e => setFormData({...formData, manifesto: e.target.value})}
-                      placeholder="Vizyonunuzu dünya ile paylaşın..."
-                    />
-                  ) : (
-                    <p className="text-3xl font-black italic text-slate-800 leading-tight tracking-tighter">
-                      "{profile?.manifesto || "Geleceği inşa etmek, bugünü doğru yönetmekten geçer."}"
-                    </p>
-                  )}
                 </Card>
 
-                <div className="grid grid-cols-2 gap-8">
-                   <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white">
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#C62828] mb-6">İletişim Hub</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                          <Mail className="w-4 h-4 text-slate-400" />
-                          <Input disabled={!isEditing} value={formData.email} className="bg-transparent border-none p-0 h-auto font-bold text-sm" />
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                          <Phone className="w-4 h-4 text-slate-400" />
-                          <Input disabled={!isEditing} value={formData.phone} className="bg-transparent border-none p-0 h-auto font-bold text-sm" />
-                        </div>
-                      </div>
-                   </Card>
+                <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-slate-900 text-white relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-4 bg-[#C62828] rounded-bl-[2rem] font-black text-[10px] tracking-widest">EU</div>
+                   <h3 className="text-xs font-black uppercase tracking-widest mb-6">Dijital Beceriler</h3>
+                   <div className="flex flex-wrap gap-2">
+                      {["Project Management", "FinTech", "SaaS Strategy", "Agile", "UI/UX Design"].map(skill => (
+                        <span key={skill} className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-bold border border-white/10 hover:border-[#C62828] transition-colors">{skill}</span>
+                      ))}
+                   </div>
+                </Card>
+              </div>
 
-                   <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white">
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#C62828] mb-6">Sosyal Otorite</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                          <Linkedin className="w-4 h-4 text-[#0077b5]" />
-                          <Input disabled={!isEditing} placeholder="linkedin.com/in/..." className="bg-transparent border-none p-0 h-auto font-bold text-sm" />
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
-                          <Twitter className="w-4 h-4 text-[#1DA1F2]" />
-                          <Input disabled={!isEditing} placeholder="twitter.com/..." className="bg-transparent border-none p-0 h-auto font-bold text-sm" />
-                        </div>
-                      </div>
-                   </Card>
-                </div>
-              </TabsContent>
+              {/* SAĞ KOLON: DENEYİM VE EĞİTİM (TAM FORM) */}
+              <div className="col-span-12 lg:col-span-8 space-y-8">
+                
+                {/* İŞ DENEYİMİ BÖLÜMÜ */}
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <h2 className="text-xl font-black italic flex items-center gap-3">
+                      <Briefcase className="w-6 h-6 text-[#C62828]" /> İş Deneyimi
+                    </h2>
+                    {isEditing && <Button size="sm" variant="outline" className="rounded-xl border-dashed"><Plus className="w-4 h-4 mr-2" /> Deneyim Ekle</Button>}
+                  </div>
 
-              {/* EXPERIENCE CONTENT (ADVANCED LIST) */}
-              <TabsContent value="experience" className="mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-black italic">Profesyonel Geçmiş</h3>
-                  <Button variant="outline" className="rounded-xl border-slate-200 font-bold bg-white shadow-sm">
-                    <Plus className="w-4 h-4 mr-2" /> YENİ DENEYİM
-                  </Button>
-                </div>
-
-                {[1, 2].map((i) => (
-                  <Card key={i} className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white group hover:shadow-md transition-all">
-                    <div className="flex gap-6">
-                      <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
-                        <Briefcase className="w-8 h-8 text-slate-300" />
+                  {/* ÖRNEK DENEYİM KARTI (FORM HALİ) */}
+                  <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white group hover:shadow-xl transition-all duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Pozisyon / Ünvan</label>
+                        <Input disabled={!isEditing} defaultValue="Senior Executive Coach" className="border-slate-100 rounded-xl font-bold bg-slate-50 focus:bg-white transition-all" />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="text-lg font-black tracking-tight">Global Director of Operations</h4>
-                            <p className="text-sm font-bold text-[#C62828]">Tech Unicorn Inc. • 2020 - Halen</p>
-                          </div>
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="icon" variant="ghost" className="rounded-lg"><Edit3 className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="rounded-lg text-red-500"><Trash2 className="w-4 h-4" /></Button>
-                          </div>
-                        </div>
-                        <p className="mt-4 text-slate-500 text-sm leading-relaxed font-medium">
-                          150+ kişilik ekibin yönetimi ve yıllık 50M$ bütçe operasyonlarının dijital dönüşüm süreçlerini yönettim. 
-                          Stratejik planlama ve çevik metodolojiler ile verimlilikte %40 artış sağlandı.
-                        </p>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">İşveren / Şirket</label>
+                        <Input disabled={!isEditing} defaultValue="KariyeerUP Global" className="border-slate-100 rounded-xl font-bold bg-slate-50" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Şehir / Ülke</label>
+                        <Input disabled={!isEditing} defaultValue="Londra, Birleşik Krallık" className="border-slate-100 rounded-xl font-bold bg-slate-50" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Tarih Aralığı</label>
+                        <Input disabled={!isEditing} defaultValue="Ocak 2021 - Günümüz" className="border-slate-100 rounded-xl font-bold bg-slate-50" />
+                      </div>
+                      <div className="col-span-1 md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Ana Sorumluluklar ve Başarılar</label>
+                        <Textarea disabled={!isEditing} defaultValue="Üst düzey yöneticilere liderlik gelişimi ve stratejik yönetim konularında koçluk desteği sağlamak. Global ağın genişletilmesi ve dijital dönüşüm süreçlerinin yönetimi." className="border-slate-100 rounded-xl min-h-[100px] font-medium leading-relaxed bg-slate-50" />
                       </div>
                     </div>
                   </Card>
-                ))}
-              </TabsContent>
+                </section>
 
-              {/* CREDENTIALS CONTENT (GALLERY) */}
-              <TabsContent value="credentials" className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="aspect-square bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center group cursor-pointer hover:bg-white hover:border-[#C62828] transition-all">
-                    <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Plus className="text-[#C62828]" />
-                    </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sertifika Yükle</p>
+                {/* EĞİTİM VE ÖĞRETİM BÖLÜMÜ */}
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <h2 className="text-xl font-black italic flex items-center gap-3">
+                      <GraduationCap className="w-6 h-6 text-[#C62828]" /> Eğitim ve Öğretim
+                    </h2>
+                    {isEditing && <Button size="sm" variant="outline" className="rounded-xl border-dashed"><Plus className="w-4 h-4 mr-2" /> Eğitim Ekle</Button>}
                   </div>
-                  {[1, 2].map(i => (
-                    <Card key={i} className="aspect-square border-none shadow-sm rounded-[2rem] bg-white p-6 flex flex-col justify-between group overflow-hidden relative">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end p-6">
-                         <Button className="w-full bg-white text-black font-black text-xs rounded-xl">DOSYAYI GÖR</Button>
-                      </div>
-                      <Trophy className="w-10 h-10 text-yellow-500" />
-                      <div>
-                        <h5 className="font-black text-sm leading-tight mb-1">Advanced Executive Coaching</h5>
-                        <p className="text-[10px] font-bold text-slate-400">Harvard Business School • 2023</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
 
-          </div>
-        </div>
+                  <Card className="p-8 border-none shadow-sm rounded-[2.5rem] bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Eğitim Seviyesi / Alanı</label>
+                        <Input disabled={!isEditing} defaultValue="Yüksek Lisans - İşletme Yönetimi (MBA)" className="border-slate-100 rounded-xl font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Kurum / Üniversite</label>
+                        <Input disabled={!isEditing} defaultValue="Stanford University" className="border-slate-100 rounded-xl font-bold" />
+                      </div>
+                    </div>
+                  </Card>
+                </section>
+
+                {/* SERTİFİKALAR (DİNAMİK GALERİ) */}
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <h2 className="text-xl font-black italic flex items-center gap-3">
+                      <Award className="w-6 h-6 text-[#C62828]" /> Sertifikalar & Onaylar
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    {[1, 2].map(i => (
+                      <div key={i} className="group relative aspect-[4/3] bg-white rounded-[2rem] border shadow-sm overflow-hidden flex flex-col items-center justify-center p-6 text-center hover:border-[#C62828] transition-all">
+                        <Trophy className="w-10 h-10 text-yellow-500 mb-4" />
+                        <h4 className="text-[10px] font-black uppercase leading-tight">Advanced Global Leadership Certification</h4>
+                        <p className="text-[8px] font-bold text-slate-400 mt-2">ID: 48593-EU</p>
+                        {isEditing && <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-red-400"><Trash2 className="w-4 h-4" /></Button>}
+                      </div>
+                    ))}
+                    <div className="aspect-[4/3] border-4 border-dashed rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-all group">
+                      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Plus className="text-slate-400 group-hover:text-[#C62828]" />
+                      </div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 mt-4 tracking-widest">Belge Ekle</span>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* PORTFOLIO CONTENT (DİNAMİK MASONRY) */}
+          <TabsContent value="portfolio" className="h-96 flex flex-col items-center justify-center border-4 border-dashed rounded-[3rem] bg-white">
+             <MousePointer2 className="w-12 h-12 text-slate-200 mb-4 animate-bounce" />
+             <p className="text-xl font-black italic text-slate-400 uppercase tracking-tighter">Proje Galerisi Yakında...</p>
+          </TabsContent>
+        </Tabs>
       </main>
 
-      {/* 🔮 FLOATING GLOBAL ACTION BAR (UNIVERSE STYLE) */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] no-print">
-        <div className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 px-6 py-3 rounded-[2rem] shadow-2xl flex items-center gap-6">
-           <div className="flex -space-x-3">
-             {[1,2,3].map(i => (
-               <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px] text-white font-bold italic">GP</div>
-             ))}
+      {/* 🔮 EUROPASS SMART CV DOWNLOAD BAR */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] no-print">
+        <div className="bg-slate-950/95 backdrop-blur-2xl px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-8 border border-white/10 ring-4 ring-[#C62828]/10">
+           <div className="flex flex-col">
+             <span className="text-white font-black italic text-sm tracking-tight">Europass Engine v2.0</span>
+             <span className="text-[#C62828] text-[8px] font-black uppercase tracking-[0.4em]">Ready for EU Standards</span>
            </div>
-           <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Ağındaki 42 lider seni izliyor</p>
-           <div className="w-px h-6 bg-white/10" />
-           <Button onClick={() => window.print()} size="sm" className="bg-[#C62828] hover:bg-[#a31f1f] text-white rounded-xl font-black text-[10px] h-10 px-6">
-              EXECUTIVE CV İNDİR (.PDF)
+           <div className="w-px h-8 bg-white/10" />
+           <Button onClick={() => window.print()} className="bg-[#C62828] hover:bg-[#a31f1f] text-white rounded-2xl font-black px-10 h-12 shadow-xl shadow-red-900/20 active:scale-95 transition-all">
+              OFFICIAL EUROPASS CV (.PDF)
            </Button>
         </div>
       </div>

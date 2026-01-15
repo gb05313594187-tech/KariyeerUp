@@ -84,6 +84,10 @@ import BireyselPremium from "@/pages/BireyselPremium";
 // ✅ NEW: SESSION JOIN (EKLENDİ)
 import SessionJoin from "@/pages/SessionJoin";
 
+// ✅ AUTH EXTRA PAGES
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -116,7 +120,7 @@ export default function App() {
           </Route>
 
           {/* ROOT */}
-          <Route path="/" element={<PublicLayout />}>
+          <Route path="/" element={<PublicLayout>}>
             <Route index element={<Home />} />
 
             {/* SITEMAP */}
@@ -198,6 +202,8 @@ export default function App() {
             {/* AUTH */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
 
             {/* LEGACY */}
             <Route

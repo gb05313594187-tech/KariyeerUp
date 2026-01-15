@@ -1,816 +1,280 @@
-
-// src/pages/UserProfile.tsx
-// @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  Building2,
-  BadgeCheck,
-  ShieldCheck,
-  Calendar,
-  ArrowRight,
-  LogIn,
-  Pencil,
-  Save,
-  X,
+import { 
+  Target, Trophy, Zap, MapPin, Camera, 
+  Globe, Briefcase, GraduationCap, Edit3, Save, X, CheckCircle2,
+  Award, Star, Share2, ChevronRight, Download, Image as ImageIcon,
+  FileText, ShieldCheck, Mail, Phone
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
-/** ✅ timeout wrapper (askıda kalma fix) */
-function withTimeout(promise: any, ms = 12000, label = "request") {
-  return Promise.race([
-    promise,
-    new Promise((_, rej) =>
-      setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms)
-    ),
-  ]);
-}
-
-/** ✅ Telefon ülke kodları + format örnekleri */
-const PHONE_COUNTRIES = [
-  { iso: "TR", name: "Türkiye", dial: "+90", sample: "10 hane (5xx xxx xx xx)" },
-  { iso: "TN", name: "Tunus", dial: "+216", sample: "8 hane (xx xxx xxx)" },
-  { iso: "DE", name: "Almanya", dial: "+49", sample: "10-11 hane (15xx xxxxxx)" },
-  { iso: "FR", name: "Fransa", dial: "+33", sample: "9 hane (6 xx xx xx xx)" },
-  { iso: "NL", name: "Hollanda", dial: "+31", sample: "9 hane (6 xxxxxxxx)" },
-  { iso: "GB", name: "İngiltere", dial: "+44", sample: "10 hane (7xxx xxxxxx)" },
-  { iso: "US", name: "ABD", dial: "+1", sample: "10 hane (555 123 4567)" },
-  { iso: "AE", name: "BAE", dial: "+971", sample: "9 hane (5x xxx xxxx)" },
-  { iso: "SA", name: "Suudi Arabistan", dial: "+966", sample: "9 hane (5x xxx xxxx)" },
-  { iso: "QA", name: "Katar", dial: "+974", sample: "8 hane (xxxx xxxx)" },
-  { iso: "KW", name: "Kuveyt", dial: "+965", sample: "8 hane (xxxx xxxx)" },
-];
-
-/** ✅ Sektör listesi (kapsamlı, genişletilebilir) */
-const SECTORS = [
-  "Yazılım",
-  "Fintech",
-  "E-ticaret",
-  "Sağlık",
-  "Eğitim",
-  "Lojistik",
-  "Üretim",
-  "Danışmanlık",
-  "Pazarlama",
-  "Satış",
-  "İnsan Kaynakları",
-  "Hukuk",
-  "Turizm",
-  "Gıda & İçecek",
-  "Medya",
-  "Telekom",
-  "Enerji",
-  "Perakende",
-  "Otomotiv",
-  "Gayrimenkul",
-  "Kamu",
-  "Sigorta",
-  "Bankacılık",
-  "Siber Güvenlik",
-  "Yapay Zeka",
-  "Oyun",
-  "İnşaat",
-  "Tekstil",
-  "Kimya",
-  "Diğer",
-];
-
-/** ✅ Ünvan listesi (kapsamlı, genişletilebilir) */
-const TITLES = [
-  "CEO / Kurucu",
-  "COO",
-  "CTO",
-  "CFO",
-  "CHRO",
-  "Genel Müdür",
-  "Genel Müdür Yrd.",
-  "Direktör",
-  "Müdür",
-  "Takım Lideri",
-  "Product Manager",
-  "Product Owner",
-  "Project Manager",
-  "Program Manager",
-  "Scrum Master",
-  "Software Engineer",
-  "Frontend Developer",
-  "Backend Developer",
-  "Full Stack Developer",
-  "Mobile Developer",
-  "UI/UX Designer",
-  "Data Analyst",
-  "Data Scientist",
-  "ML Engineer",
-  "DevOps Engineer",
-  "Cloud Engineer",
-  "QA / Test Engineer",
-  "Cybersecurity Specialist",
-  "Sales Manager",
-  "Account Manager",
-  "Marketing Manager",
-  "Growth Manager",
-  "HR Manager",
-  "Recruiter",
-  "Finance Specialist",
-  "Lawyer",
-  "Operations",
-  "Business Development",
-  "Student",
-  "Freelancer",
-  "Diğer",
-];
-
-function splitPhone(raw: string) {
-  if (!raw) return { phone_country: "TR", phone_local: "" };
-  const clean = String(raw).trim();
-  const found = PHONE_COUNTRIES.find((c) => clean.startsWith(c.dial));
-  if (found) {
-    return {
-      phone_country: found.iso,
-      phone_local: clean.replace(found.dial, "").replace(/[^\d]/g, "").trim(),
-    };
-  }
-  return { phone_country: "TR", phone_local: clean.replace(/[^\d]/g, "").trim() };
-}
-
-function buildE164(countryIso: string, phoneLocal: string) {
-  const c = PHONE_COUNTRIES.find((x) => x.iso === countryIso) || PHONE_COUNTRIES[0];
-  const local = String(phoneLocal || "").replace(/[^\d]/g, "");
-  if (!local) return "";
-  return `${c.dial}${local}`;
-}
-
-export default function UserProfile() {
-  const navigate = useNavigate();
-
+const UserProfile = () => {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [me, setMe] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-
-  /** ✅ Modal edit aktif */
-  const [editOpen, setEditOpen] = useState(false);
-
-  /** ✅ Form state (profiles tablosu ile uyumlu) */
-  const [form, setForm] = useState({
-    full_name: "",
-    title: "",
-    sector: "",
-    city: "",
-    phone_country: "TR",
-    phone_local: "",
-  });
+  const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-
-        const { data: sData, error: sErr } = await withTimeout(
-          supabase.auth.getSession(),
-          12000,
-          "auth.getSession"
-        );
-        if (sErr) throw sErr;
-
-        const user = sData?.session?.user || null;
-        if (!mounted) return;
-
-        setMe(user);
-
-        if (!user) {
-          setProfile(null);
-          return;
-        }
-
-        const { data: pData, error: pErr } = await withTimeout(
-          supabase
-            .from("profiles")
-            .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
-            .eq("id", user.id)
-            .maybeSingle(),
-          12000,
-          "profiles.select"
-        );
-
-        if (pErr) {
-          console.error("profiles select error:", pErr);
-          toast.error(`Profil okunamadı: ${pErr.message || "RLS/kolon kontrol et"}`);
-
-          const phoneParts = splitPhone(user?.user_metadata?.phone || "");
-          setProfile(null);
-          setForm({
-            full_name:
-              user?.user_metadata?.display_name ||
-              user?.user_metadata?.full_name ||
-              "",
-            title: "",
-            sector: "",
-            city: "",
-            phone_country: phoneParts.phone_country,
-            phone_local: phoneParts.phone_local,
-          });
-          return;
-        }
-
-        const p = pData || null;
-        setProfile(p);
-
-        const phoneParts = splitPhone(p?.phone || "");
-        setForm({
-          full_name:
-            p?.display_name ||
-            p?.full_name ||
-            user?.user_metadata?.display_name ||
-            user?.user_metadata?.full_name ||
-            "",
-          title: p?.title || "",
-          sector: p?.sector || "",
-          city: p?.city || "",
-          phone_country: phoneParts.phone_country,
-          phone_local: phoneParts.phone_local,
-        });
-      } catch (e: any) {
-        console.error("UserProfile load error:", e);
-        toast.error(e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      mounted = false;
-    };
+    fetchProfile();
   }, []);
 
-  const displayName =
-    profile?.display_name ||
-    profile?.full_name ||
-    me?.user_metadata?.display_name ||
-    me?.user_metadata?.full_name ||
-    me?.email?.split("@")?.[0] ||
-    "Kullanıcı";
-
-  // ✅ PROFİL TAMAMLANMA: Tek şema (name + phone + city + title + sector)
-  const completion = useMemo(() => {
-    if (!me) return 0;
-    const checks = [
-      !!(profile?.display_name || profile?.full_name || me?.user_metadata?.display_name || me?.user_metadata?.full_name),
-      !!profile?.phone,
-      !!profile?.city,
-      !!profile?.title,
-      !!profile?.sector,
-    ];
-    const filled = checks.filter(Boolean).length;
-    return Math.round((filled / checks.length) * 100);
-  }, [me, profile]);
-
-  const lastSignIn = useMemo(() => {
-    const raw = me?.last_sign_in_at;
-    if (!raw) return "-";
+  const fetchProfile = async () => {
     try {
-      const d = new Date(raw);
-      return d.toLocaleString();
-    } catch {
-      return raw;
-    }
-  }, [me]);
-
-  const openEdit = () => {
-    if (!me) {
-      toast.error("Giriş yapmadan profili düzenleyemezsin.");
-      navigate("/login");
-      return;
-    }
-
-    const phoneParts = splitPhone(profile?.phone || "");
-    setForm({
-      full_name:
-        profile?.display_name ||
-        profile?.full_name ||
-        me?.user_metadata?.display_name ||
-        me?.user_metadata?.full_name ||
-        "",
-      title: profile?.title || "",
-      sector: profile?.sector || "",
-      city: profile?.city || "",
-      phone_country: phoneParts.phone_country,
-      phone_local: phoneParts.phone_local,
-    });
-
-    setEditOpen(true);
-  };
-
-  const closeEdit = () => setEditOpen(false);
-
-  const saveProfile = async () => {
-    if (!me?.id) {
-      toast.error("Lütfen giriş yapın.");
-      return;
-    }
-    if (!me?.email) {
-      toast.error("Email bulunamadı. Lütfen çıkış yapıp tekrar giriş yap.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const phoneE164 = buildE164(form.phone_country, form.phone_local);
-      const cleanName = (form.full_name || "").trim();
-
-      // ✅ auth metadata da aynı isimle güncellensin (navbar/role akışı bozulmasın)
-      try {
-        await supabase.auth.updateUser({
-          data: {
-            display_name: cleanName,
-            full_name: cleanName,
-          },
-        });
-      } catch (e) {
-        // auth metadata güncellenemezse bile profiles kaydı devam etsin
-      }
-
-      const payload = {
-        id: me.id,
-        email: me.email,
-        display_name: cleanName, // ✅
-        full_name: cleanName,    // ✅
-        title: (form.title || "").trim(),
-        sector: (form.sector || "").trim(),
-        city: (form.city || "").trim(),
-        phone: phoneE164 || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await withTimeout(
-        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
-        12000,
-        "profiles.upsert"
-      );
-
-      if (error) {
-        console.error("profiles upsert error:", error);
-        toast.error(`Kaydedilemedi: ${error.message || "RLS/kolon kontrol et"}`);
-        return;
-      }
-
-      toast.success("Profil güncellendi.");
-
-      const { data: pData, error: pErr } = await withTimeout(
-        supabase
-          .from("profiles")
-          .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
-          .eq("id", me.id)
-          .maybeSingle(),
-        12000,
-        "profiles.reselect"
-      );
-
-      if (!pErr) setProfile(pData || payload);
-
-      setEditOpen(false);
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu.");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      if (error) throw error;
+      setProfile(data);
+      setFormData(data);
+    } catch (error) {
+      console.error("Profil yüklenirken hata:", error);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
-        Yükleniyor...
-      </div>
-    );
-  }
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase.from("profiles").update(formData).eq("id", profile.id);
+      if (error) throw error;
+      setProfile(formData);
+      setIsEditing(false);
+      toast.success("Profil ve CV verileriniz başarıyla güncellendi!");
+    } catch (error) {
+      toast.error("Güncelleme başarısız oldu.");
+    }
+  };
 
-  return (
-    <div className="bg-white text-slate-900">
-      {/* HERO */}
-      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <p className="text-xs text-white/90">User Profile</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            {me ? displayName : "Profil"}
-          </h1>
-          <p className="mt-2 text-sm text-white/90 max-w-2xl">
-            Profil bilgilerin, koç eşleşmelerini ve seans deneyimini doğrudan etkiler.
-            Ne kadar net olursan, sonuç o kadar hızlı gelir.
-          </p>
+  const handleDownloadCV = () => {
+    // Tarayıcının yazdırma fonksiyonunu kullanarak profesyonel PDF çıktısı alır.
+    // @media print CSS kuralları aşağıda tanımlanmıştır.
+    window.print();
+  };
 
-          {/* Completion */}
-          <div className="mt-6 max-w-xl">
-            <div className="flex items-center justify-between text-xs text-white/90">
-              <span>Profil tamamlanma</span>
-              <span className="font-semibold">%{me ? completion : 0}</span>
-            </div>
-            <div className="mt-2 h-2 rounded-full bg-white/25 overflow-hidden">
-              <div className="h-full bg-white" style={{ width: `${me ? completion : 0}%` }} />
-            </div>
-          </div>
-
-          {/* CTA row */}
-          <div className="mt-6 flex gap-2 flex-wrap">
-            <Button
-              className="rounded-xl bg-white text-slate-900 hover:bg-white/90"
-              onClick={() => navigate("/user/dashboard")}
-            >
-              Dashboard <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-
-            <Button
-              variant="outline"
-              className="rounded-xl border-white/70 text-white hover:bg-white/10"
-              onClick={() => navigate("/coaches")}
-            >
-              Koçları İncele
-            </Button>
-
-            {me ? (
-              <Button
-                variant="outline"
-                className="rounded-xl border-white/70 text-white hover:bg-white/10"
-                onClick={openEdit}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Profili Düzenle
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      {/* CONTENT */}
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        {!me ? (
-          <Card className="border-slate-200">
-            <CardContent className="p-8">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
-                  <LogIn className="h-5 w-5 text-slate-900" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    Profilini görmek için giriş yap
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Giriş yapınca hesap bilgilerin ve profil alanların burada görünecek.
-                  </p>
-
-                  <div className="mt-4 flex gap-2 flex-wrap">
-                    <Link to="/login">
-                      <Button className="rounded-xl">Giriş Yap</Button>
-                    </Link>
-                    <Link to="/register">
-                      <Button variant="outline" className="rounded-xl">
-                        Kayıt Ol
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Account */}
-              <Card className="bg-white border-slate-200 shadow-sm lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="w-4 h-4 text-orange-600" /> Hesap Bilgileri
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="text-sm text-slate-700">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">{me?.email || "-"}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <BadgeCheck className="h-4 w-4" />
-                        User ID
-                      </div>
-                      <div className="mt-1 font-mono text-xs text-slate-900 break-all">
-                        {me?.id || "-"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <ShieldCheck className="h-4 w-4" />
-                        Son giriş
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">{lastSignIn}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <Phone className="h-4 w-4" />
-                        Telefon
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">
-                        {profile?.phone || "-"}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Telefon / şehir / sektör gibi alanlar profilden gelir.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex gap-2 flex-wrap">
-                    <Button className="rounded-xl" onClick={() => navigate("/user/settings")}>
-                      Ayarlar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => navigate("/how-it-works")}
-                    >
-                      Nasıl çalışır?
-                    </Button>
-
-                    <Button variant="outline" className="rounded-xl" onClick={openEdit}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Profili Düzenle
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Profile snapshot */}
-              <Card className="bg-white border-slate-200 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-orange-600" /> Profil Özeti
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-slate-700 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Briefcase className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Unvan</p>
-                      <p className="font-semibold text-slate-900">{profile?.title || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Sektör</p>
-                      <p className="font-semibold text-slate-900">{profile?.sector || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Şehir</p>
-                      <p className="font-semibold text-slate-900">{profile?.city || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-200">
-                    <p className="text-xs text-slate-500">Önerilen</p>
-                    <p className="mt-1 text-sm text-slate-700">
-                      Profilin %{completion}.{" "}
-                      {completion < 70
-                        ? "Biraz daha tamamla, eşleşme kalitesi yükselsin."
-                        : "Gayet iyi. Seans planlamaya hazırsın."}
-                    </p>
-
-                    <div className="mt-4 flex gap-2 flex-wrap">
-                      <Button className="rounded-xl w-full" onClick={() => navigate("/coaches")}>
-                        Koçları İncele <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-xl w-full"
-                        onClick={() => navigate("/book-session")}
-                      >
-                        Seanslar
-                      </Button>
-                    </div>
-
-                    <div className="mt-3">
-                      <Button variant="outline" className="rounded-xl w-full" onClick={openEdit}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Profili Düzenle
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Bottom strip */}
-            <div className="mt-6">
-              <Card className="border-slate-200 bg-slate-50">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-slate-900" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Hızlı akış</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Hedefini netleştir → koçları filtrele → ilk seansı planla → aksiyon planı oluştur.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        className="rounded-xl"
-                        onClick={() => navigate("/coach-selection-process")}
-                      >
-                        Koç seçimi rehberi
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => navigate("/user/dashboard")}
-                      >
-                        Dashboard
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* ✅ EDIT MODAL */}
-            {editOpen ? (
-              <div className="fixed inset-0 z-50">
-                <div className="absolute inset-0 bg-black/50" onClick={saving ? undefined : closeEdit} />
-                <div className="absolute inset-x-0 top-10 sm:top-16 mx-auto w-[92%] max-w-2xl">
-                  <Card className="border-slate-200 shadow-2xl overflow-hidden">
-                    <CardHeader className="bg-white">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <Pencil className="h-4 w-4 text-orange-600" />
-                            Profili Düzenle
-                          </CardTitle>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Bu bilgiler eşleşme kalitesini ve seans deneyimini etkiler.
-                          </p>
-                        </div>
-                        <button
-                          className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50"
-                          onClick={saving ? undefined : closeEdit}
-                          aria-label="Kapat"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="bg-white p-6">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label className="text-xs text-slate-600">Ad Soyad</label>
-                          <input
-                            value={form.full_name}
-                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                            placeholder="Örn: Salih Gökalp Büyükçelebi"
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Ünvan</label>
-                          <select
-                            value={form.title}
-                            onChange={(e) => setForm({ ...form, title: e.target.value })}
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                          >
-                            <option value="">Seç</option>
-                            {TITLES.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Sektör</label>
-                          <select
-                            value={form.sector}
-                            onChange={(e) => setForm({ ...form, sector: e.target.value })}
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                          >
-                            <option value="">Seç</option>
-                            {SECTORS.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Şehir</label>
-                          <input
-                            value={form.city}
-                            onChange={(e) => setForm({ ...form, city: e.target.value })}
-                            placeholder="Örn: İstanbul"
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Telefon</label>
-                          <div className="mt-1 grid grid-cols-3 gap-2">
-                            <select
-                              value={form.phone_country}
-                              onChange={(e) => setForm({ ...form, phone_country: e.target.value })}
-                              className="col-span-1 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                            >
-                              {PHONE_COUNTRIES.map((c) => (
-                                <option key={c.iso} value={c.iso}>
-                                  {c.iso} {c.dial}
-                                </option>
-                              ))}
-                            </select>
-
-                            <input
-                              value={form.phone_local}
-                              onChange={(e) =>
-                                setForm({ ...form, phone_local: e.target.value.replace(/[^\d]/g, "") })
-                              }
-                              placeholder="Sadece rakam"
-                              className="col-span-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                            />
-                          </div>
-
-                          {(() => {
-                            const c =
-                              PHONE_COUNTRIES.find((x) => x.iso === form.phone_country) ||
-                              PHONE_COUNTRIES[0];
-                            const e164 = buildE164(form.phone_country, form.phone_local);
-                            return (
-                              <div className="mt-2 text-xs text-slate-500">
-                                <div>Örnek format: <span className="font-medium">{c.sample}</span></div>
-                                <div>Kaydedilecek format: <span className="font-mono">{e164 || "-"}</span></div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                        <Button
-                          className="rounded-xl bg-orange-600 hover:bg-orange-500"
-                          onClick={saveProfile}
-                          disabled={saving}
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {saving ? "Kaydediliyor..." : "Kaydet"}
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          className="rounded-xl"
-                          onClick={closeEdit}
-                          disabled={saving}
-                        >
-                          Vazgeç
-                        </Button>
-                      </div>
-
-                      <p className="mt-3 text-xs text-slate-500">
-                        *Kaydet dediğinde veriler <span className="font-medium">profiles</span> tablosuna yazılır.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-slate-900">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#C62828] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-white font-black tracking-widest animate-pulse">KARIYEERUP PREPARING...</p>
       </div>
     </div>
   );
-}
+
+  return (
+    <div className="min-h-screen bg-[#FDFDFD] print:bg-white">
+      {/* 🛠 PDF & PRINT CSS: CV Formatını Uluslararası Standartlara Getirir */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          nav, footer, .no-print, button { display: none !important; }
+          .print-only { display: block !important; }
+          body { font-size: 11pt; color: black; background: white !important; }
+          .card-shadow { box-shadow: none !important; border: 1px solid #eee !important; border-radius: 0 !important; }
+          .bg-slate-950 { background: white !important; color: black !important; border-bottom: 3px solid #C62828 !important; height: auto !important; padding: 20px 0 !important; }
+          .text-white { color: black !important; }
+          .main-grid { display: block !important; }
+          .aside-col { width: 100% !important; margin-bottom: 20px; }
+          .content-col { width: 100% !important; }
+          .manifesto-text { font-size: 18pt !important; line-height: 1.2 !important; }
+        }
+      `}} />
+
+      {/* HEADER SECTION (Dijital Görünüm) */}
+      <header className="relative h-[400px] bg-slate-950 overflow-hidden no-print">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#C62828]/40 via-black/90 to-black z-0" />
+        <div className="max-w-7xl mx-auto px-6 h-full flex flex-col justify-end pb-12 relative z-10">
+          <div className="flex flex-col md:flex-row items-end gap-10">
+            <div className="relative group">
+              <div className="w-48 h-48 rounded-[2.5rem] border-8 border-white/10 shadow-2xl overflow-hidden bg-white">
+                <img 
+                  src={profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.full_name}`} 
+                  className="w-full h-full object-cover" 
+                  alt={profile?.full_name} 
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-2">
+              <h1 className="text-6xl font-black text-white tracking-tighter italic">
+                {isEditing ? (
+                  <Input 
+                    className="bg-white/10 text-white border-white/20 text-4xl h-16 rounded-2xl" 
+                    value={formData.full_name} 
+                    onChange={e => setFormData({...formData, full_name: e.target.value})}
+                  />
+                ) : profile?.full_name}
+              </h1>
+              <div className="flex items-center gap-4 text-[#C62828] font-black tracking-[0.3em] uppercase text-sm">
+                <ShieldCheck className="w-5 h-5" />
+                {isEditing ? (
+                  <Input 
+                    className="bg-white/5 text-white border-white/10 h-8" 
+                    value={formData.title} 
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    placeholder="Ünvan (Örn: Kariyer Koçu)"
+                  />
+                ) : (profile?.title || "International Career Coach")}
+              </div>
+            </div>
+
+            <div className="flex gap-4 pb-2">
+              <Button 
+                onClick={handleDownloadCV}
+                className="bg-white text-black hover:bg-slate-100 rounded-2xl px-6 h-14 font-black shadow-xl transition-transform hover:scale-105"
+              >
+                <Download className="mr-2 w-5 h-5" /> CV İNDİR (PDF)
+              </Button>
+              <Button 
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`${isEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-[#C62828] hover:bg-[#a31f1f]'} text-white rounded-2xl px-8 h-14 font-black shadow-2xl transition-all`}
+              >
+                {isEditing ? <><Save className="mr-2 w-5 h-5" /> KAYDET</> : <><Edit3 className="mr-2 w-5 h-5" /> DÜZENLE</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* 📄 PDF-ONLY CV HEADER (Yalnızca çıktı alınırken görünür) */}
+      <div className="hidden print-only p-10 border-b-4 border-[#C62828] mb-10">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-5xl font-bold uppercase tracking-tighter">{profile?.full_name}</h1>
+            <p className="text-[#C62828] text-xl font-bold mt-2 tracking-widest">{profile?.title || "CAREER COACH"}</p>
+          </div>
+          <div className="text-right text-sm font-bold text-slate-500">
+            <p className="flex items-center justify-end gap-2"><MapPin className="w-4 h-4" /> {profile?.city}</p>
+            <p className="flex items-center justify-end gap-2 mt-1"><Briefcase className="w-4 h-4" /> {profile?.sector}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT AREA */}
+      <main className="max-w-7xl mx-auto px-6 -mt-10 pb-24 grid grid-cols-12 gap-10 main-grid relative z-20">
+        
+        {/* LEFT ASIDE */}
+        <aside className="col-span-12 lg:col-span-4 space-y-10 aside-col">
+          {/* JOURNEY CARD */}
+          <Card className="p-10 border-none shadow-2xl rounded-[3rem] bg-white card-shadow">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
+              <Target className="w-5 h-5 text-[#C62828]" /> Kariyer Yolculuğum
+            </h2>
+            <div className="space-y-10 relative before:absolute before:left-5 before:w-0.5 before:bg-slate-50 before:h-full">
+              <div className="relative pl-12">
+                <div className="absolute left-0 w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-100">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <h3 className="font-black text-sm uppercase italic">KariyeerUP Doğrulaması</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Uluslararası Onaylı Profil</p>
+              </div>
+              <div className="relative pl-12">
+                <div className="absolute left-0 w-10 h-10 bg-[#C62828] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-100 animate-pulse">
+                  <Star className="w-5 h-5" />
+                </div>
+                <h3 className="font-black text-sm uppercase italic">Aktif Hedefler</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Üst Düzey Yönetici Mentörlüğü</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* 🏆 SERTİFİKA GALERİSİ (SEO Etkileşim Odaklı) */}
+          <Card className="p-10 border-none shadow-2xl rounded-[3rem] bg-slate-950 text-white card-shadow no-print">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-6 flex items-center gap-3">
+              <Award className="w-5 h-5 text-yellow-400" /> Sertifika & Başarı Galerisi
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-square bg-white/5 rounded-2xl border border-white/10 flex flex-col items-center justify-center group cursor-pointer hover:bg-white/10 transition-all">
+                  <ImageIcon className="w-8 h-8 text-slate-700 group-hover:text-[#C62828] transition-colors" />
+                  <span className="text-[8px] font-black mt-2 text-slate-600 uppercase">Belge Ekle</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 font-bold italic text-center mt-6">
+              * Sertifikalarınız uluslararası işe alım algoritmalarına (ATS) uygun olarak indekslenir.
+            </p>
+          </Card>
+        </aside>
+
+        {/* RIGHT CONTENT */}
+        <section className="col-span-12 lg:col-span-8 space-y-10 content-col">
+          {/* MANIFESTO */}
+          <Card className="p-12 border-none shadow-2xl rounded-[3rem] bg-white card-shadow relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 opacity-5 no-print"><FileText className="w-64 h-64" /></div>
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#C62828] mb-8">Professional Manifesto</h2>
+            {isEditing ? (
+              <Textarea 
+                className="text-2xl font-bold italic bg-slate-50 border-none rounded-2xl h-40 p-6"
+                value={formData.manifesto}
+                onChange={e => setFormData({...formData, manifesto: e.target.value})}
+                placeholder="Dünya görüşünüzü ve koçluk felsefenizi buraya yazın..."
+              />
+            ) : (
+              <p className="text-4xl font-black italic text-slate-800 leading-[1.1] tracking-tighter manifesto-text">
+                "{profile?.manifesto || "Sınırları zorlayan, vizyoner bir liderlik manifestosu ekleyerek etkileşiminizi 10 katına çıkarın."}"
+              </p>
+            )}
+          </Card>
+
+          {/* SUMMARY / CV BODY */}
+          <Card className="border-none shadow-2xl rounded-[3rem] bg-white card-shadow overflow-hidden">
+            <div className="bg-slate-50 px-12 py-8 border-b border-slate-100 flex justify-between items-center no-print">
+              <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Professional Executive Summary</h2>
+              <Globe className="w-5 h-5 text-[#C62828]" />
+            </div>
+            <div className="p-12">
+              {isEditing ? (
+                <Textarea 
+                  className="text-xl leading-relaxed text-slate-600 bg-slate-50 border-none rounded-[2rem] h-64 p-8"
+                  value={formData.summary}
+                  onChange={e => setFormData({...formData, summary: e.target.value})}
+                  placeholder="Deneyimlerinizi, başarılarınızı ve uzmanlık alanlarınızı detaylandırın..."
+                />
+              ) : (
+                <div className="space-y-8">
+                  <p className="text-2xl leading-[1.6] text-slate-600 font-medium italic">
+                    {profile?.summary || "Uluslararası geçerliliği olan, sonuç odaklı ve profesyonel bir kariyer özeti buraya gelecek."}
+                  </p>
+                  
+                  <div className="pt-10 border-t border-slate-50 grid grid-cols-2 gap-10">
+                    <div className="space-y-2">
+                      <h4 className="text-[10px] font-black uppercase text-[#C62828] tracking-[0.2em]">Primary Industry</h4>
+                      <p className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">
+                        {isEditing ? (
+                          <Input value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} />
+                        ) : (profile?.sector || "Global Business")}
+                      </p>
+                    </div>
+                    <div className="space-y-2 text-right">
+                      <h4 className="text-[10px] font-black uppercase text-[#C62828] tracking-[0.2em]">Service Location</h4>
+                      <p className="text-lg font-black text-slate-900 uppercase tracking-tighter italic">
+                         {isEditing ? (
+                          <Input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                        ) : (profile?.city || "Worldwide")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* 📄 PDF-ONLY FOOTER */}
+          <div className="hidden print-only mt-20 text-center border-t border-slate-100 pt-10">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.5em]">Verified by KariyeerUP Executive Network</p>
+            <div className="flex justify-center gap-10 mt-4 text-[10px] font-bold text-slate-400 uppercase">
+              <span>www.kariyeerup.com</span>
+              <span>Official Professional Document</span>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  );
+};
+
+export default UserProfile;

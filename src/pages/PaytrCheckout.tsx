@@ -15,8 +15,24 @@ const PAYTR_FUNCTION_URL =
 // ✅ Timeout (ms) - edge function cevap vermezse UI kilitlenmesin
 const REQUEST_TIMEOUT_MS = 20000;
 
+// ✅ Auth session get timeout (ms) - supabase bazen takılıyor
+const SESSION_TIMEOUT_MS = 20000;
+
 // ✅ Iframe yüksekliği (buton aşağıda kalmasın)
 const IFRAME_MIN_HEIGHT_PX = 1300;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label = "timeout"): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    p.then((v) => {
+      clearTimeout(t);
+      resolve(v);
+    }).catch((e) => {
+      clearTimeout(t);
+      reject(e);
+    });
+  });
+}
 
 export default function PaytrCheckout() {
   const [searchParams] = useSearchParams();
@@ -28,12 +44,42 @@ export default function PaytrCheckout() {
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [debug, setDebug] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
   const safeSet = (fn: Function) => {
     if (mountedRef.current) fn();
+  };
+
+  // ✅ Daha stabil access token çekme (getSession_timeout fix)
+  const getAccessTokenSafe = async (): Promise<string | null> => {
+    try {
+      const sessRes = await withTimeout(
+        supabase.auth.getSession(),
+        SESSION_TIMEOUT_MS,
+        "getSession_timeout"
+      );
+
+      const access = sessRes?.data?.session?.access_token;
+      if (access) return access;
+
+      // Fallback 1: getUser() (session bozulmuş olabilir)
+      const u = await withTimeout(supabase.auth.getUser(), SESSION_TIMEOUT_MS, "getUser_timeout");
+      if (!u?.data?.user) return null;
+
+      // Fallback 2: getSession tekrar dene
+      const sessRes2 = await withTimeout(
+        supabase.auth.getSession(),
+        SESSION_TIMEOUT_MS,
+        "getSession_timeout_2"
+      );
+      return sessRes2?.data?.session?.access_token || null;
+    } catch (e) {
+      // burada yakaladığımız şey senin konsoldaki getSession_timeout
+      return null;
+    }
   };
 
   const start = async () => {
@@ -51,6 +97,10 @@ export default function PaytrCheckout() {
         at: new Date().toISOString(),
         requestId,
         phase: "start",
+        env: {
+          hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
+          functionUrl: PAYTR_FUNCTION_URL,
+        },
       });
     });
 
@@ -63,12 +113,11 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ Session + access token
-      const { data: sess } = await supabase.auth.getSession();
-      const access = sess?.session?.access_token;
+      // ✅ Session + access token (timeout + fallback)
+      const access = await getAccessTokenSafe();
 
       if (!access) {
-        toast.error("Ödeme için giriş yapmalısın.");
+        toast.error("Ödeme için giriş yapmalısın. (Session alınamadı)");
         navigate(
           `/login?returnTo=${encodeURIComponent(
             window.location.pathname + window.location.search
@@ -77,7 +126,7 @@ export default function PaytrCheckout() {
         return;
       }
 
-      // ✅ timeout kurgusu
+      // ✅ timeout kurgusu (fetch)
       const timeoutId = setTimeout(() => {
         try {
           abortRef.current?.abort();
@@ -89,12 +138,15 @@ export default function PaytrCheckout() {
         signal: abortRef.current.signal,
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           // ✅ Supabase edge function çağrısı için kritik
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           Authorization: `Bearer ${access}`,
         },
         body: JSON.stringify({
           request_id: requestId, // ✅ edge function bunu bekliyor
+          // ✅ token reuse ihtimaline karşı trace
+          client_ts: Date.now(),
         }),
       }).finally(() => clearTimeout(timeoutId));
 
@@ -119,6 +171,7 @@ export default function PaytrCheckout() {
         safeSet(() => {
           setError(msg);
           setLoading(false);
+          setShowDebug(true);
         });
         return;
       }
@@ -127,6 +180,7 @@ export default function PaytrCheckout() {
         safeSet(() => {
           setError(json?.error || "Ödeme başlatılamadı (success=false).");
           setLoading(false);
+          setShowDebug(true);
         });
         return;
       }
@@ -157,10 +211,9 @@ export default function PaytrCheckout() {
       }
 
       safeSet(() => {
-        setError(
-          "Function token/iframe_url döndürmüyor. Edge Function halen test response dönüyor olabilir."
-        );
+        setError("Function token/iframe_url döndürmüyor.");
         setLoading(false);
+        setShowDebug(true);
       });
     } catch (e: any) {
       const isAbort =
@@ -170,10 +223,11 @@ export default function PaytrCheckout() {
       safeSet(() => {
         setError(
           isAbort
-            ? `İstek çok uzun sürdü (${REQUEST_TIMEOUT_MS / 1000}s). Edge Function cevap vermiyor olabilir.`
-            : "Beklenmeyen bir hata oluştu."
+            ? `İstek çok uzun sürdü (${REQUEST_TIMEOUT_MS / 1000}s).`
+            : String(e?.message || e || "Beklenmeyen bir hata oluştu.")
         );
         setLoading(false);
+        setShowDebug(true);
         setDebug((d: any) => ({
           ...(d || {}),
           phase: "catch",
@@ -195,14 +249,33 @@ export default function PaytrCheckout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
+  // Debug’dan hızlı okunabilir “kanıt” alanları
+  const proof = useMemo(() => {
+    const j = debug?.json || {};
+    return {
+      status: debug?.status,
+      success: j?.success,
+      test_mode: j?.test_mode || j?.sent?.test_mode || j?.paytr?.test_mode,
+      merchant_oid: j?.merchant_oid || j?.sent?.merchant_oid,
+      token: j?.token || j?.data?.token,
+      paytr_status: j?.paytr?.status,
+      paytr_reason: j?.paytr?.reason,
+    };
+  }, [debug]);
+
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
       <Card className="p-4 md:p-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-lg font-semibold">Güvenli Ödeme (PayTR)</h1>
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            Geri Dön
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowDebug((v) => !v)}>
+              Debug {showDebug ? "Kapat" : "Aç"}
+            </Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Geri Dön
+            </Button>
+          </div>
         </div>
 
         {loading && (
@@ -224,13 +297,6 @@ export default function PaytrCheckout() {
                 Dashboard’a Dön
               </Button>
             </div>
-
-            <div className="text-xs text-gray-500 border rounded p-3 bg-gray-50 overflow-auto">
-              <div className="font-semibold mb-2">Debug</div>
-              <pre className="whitespace-pre-wrap">
-                {JSON.stringify(debug, null, 2)}
-              </pre>
-            </div>
           </div>
         )}
 
@@ -240,10 +306,6 @@ export default function PaytrCheckout() {
               Token alındı, iframe yükleniyor…
             </div>
 
-            {/* ✅ KRİTİK DÜZELTME:
-                - scrolling="yes" -> PayTR formunun altındaki ÖDE/TAMAMLA butonu görünür
-                - min-height yükseltildi -> buton aşağıda kalmasın
-            */}
             <iframe
               src={iframeUrl}
               title="PayTR Güvenli Ödeme"
@@ -260,6 +322,37 @@ export default function PaytrCheckout() {
             >
               Dashboard’a Dön
             </Button>
+          </div>
+        )}
+
+        {/* ✅ Debug: hata olsa da olmasa da açılabilir */}
+        {showDebug && (
+          <div className="text-xs text-gray-700 border rounded p-3 bg-gray-50 overflow-auto space-y-2">
+            <div className="font-semibold">Debug</div>
+
+            {/* hızlı kanıt satırı */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="font-semibold">status</div>
+                <div className="font-mono">{String(proof.status ?? "-")}</div>
+              </div>
+              <div>
+                <div className="font-semibold">test_mode</div>
+                <div className="font-mono">{String(proof.test_mode ?? "-")}</div>
+              </div>
+              <div>
+                <div className="font-semibold">merchant_oid</div>
+                <div className="font-mono break-all">{String(proof.merchant_oid ?? "-")}</div>
+              </div>
+              <div>
+                <div className="font-semibold">paytr_status</div>
+                <div className="font-mono">{String(proof.paytr_status ?? "-")}</div>
+              </div>
+            </div>
+
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify(debug, null, 2)}
+            </pre>
           </div>
         )}
       </Card>

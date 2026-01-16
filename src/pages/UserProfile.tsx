@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   User, Building2, Pencil, History, X, Award, Briefcase, Trash2, Target, Rocket, Lightbulb, MapPin, ChevronDown, Globe
-} from "lucide-center"; // Lucide-react yerine genel kullanım
+} from "lucide-react"; // BURASI DÜZELTİLDİ: lucide-react
 
 const SECTORS = ["Yazılım", "Sağlık", "Eğitim", "Finans", "Pazarlama", "Üretim", "E-Ticaret", "Diğer"];
 const TITLES = ["Engineer", "Manager", "Designer", "Consultant", "Specialist", "Executive", "Diğer"];
@@ -103,8 +103,8 @@ const translations = {
 
 export default function UserProfile() {
   const navigate = useNavigate();
-  const [lang, setLang] = useState("TR"); // Dil state'i
-  const t = translations[lang]; // Seçili dil objesi
+  const [lang, setLang] = useState("TR");
+  const t = translations[lang];
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -199,7 +199,7 @@ export default function UserProfile() {
   return (
     <div className={`bg-[#f8fafc] min-h-screen font-sans pb-20 ${lang === 'AR' ? 'text-right' : 'text-left'}`} dir={lang === 'AR' ? 'rtl' : 'ltr'}>
       
-      {/* NAVBAR / DİL SEÇİCİ */}
+      {/* NAVBAR */}
       <nav className="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-[60]">
         <div className="font-black italic text-xl text-rose-600 tracking-tighter uppercase">Kariyeer</div>
         <div className="flex items-center gap-4">
@@ -207,10 +207,10 @@ export default function UserProfile() {
             <button className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl font-bold text-xs uppercase italic border border-slate-200">
               <Globe size={14} className="text-rose-500" /> {lang} <ChevronDown size={14}/>
             </button>
-            <div className="absolute right-0 hidden group-hover:block bg-white shadow-2xl rounded-2xl border p-2 z-[70] min-w-[100px] animate-in slide-in-from-top-2">
+            <div className="absolute right-0 hidden group-hover:block bg-white shadow-2xl rounded-2xl border p-2 z-[70] min-w-[120px]">
               {Object.keys(translations).map(l => (
                 <button key={l} onClick={() => setLang(l)} className="block w-full text-left px-4 py-2 hover:bg-rose-50 rounded-lg font-bold text-[10px] uppercase">
-                  {l === 'TR' ? '🇹🇷 Türkçe' : l === 'EN' ? '🇺🇸 English' : l === 'AR' ? '🇸🇦 العربية' : '🇫🇷 Français'}
+                   {l === 'TR' ? '🇹🇷 TR' : l === 'EN' ? '🇺🇸 EN' : l === 'AR' ? '🇸🇦 AR' : '🇫🇷 FR'}
                 </button>
               ))}
             </div>
@@ -306,7 +306,7 @@ export default function UserProfile() {
         </div>
       </main>
 
-      {/* MODAL: PROFİL */}
+      {/* MODAL */}
       {editOpen && (
         <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-[50px] shadow-2xl animate-in zoom-in-95">

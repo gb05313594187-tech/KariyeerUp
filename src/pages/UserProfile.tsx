@@ -83,7 +83,7 @@ export default function UserProfile() {
     try {
       const { error } = await supabase.from("profiles").upsert({
         id: me.id,
-        email: formData.email || me.email, // Email null gitmemeli
+        email: formData.email || me.email,
         full_name: formData.full_name,
         city: formData.city,
         phone: `${formData.phone_code} ${formData.phone_number}`,
@@ -131,10 +131,8 @@ export default function UserProfile() {
         </div>
       </section>
 
-      {/* ANA İÇERİK (Görüntüleme kısımları aynı kalıyor...) */}
       <main className="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-10">
-          {/* Kariyer Vizyonu */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
              <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 uppercase italic">
                <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center"><Target size={24} /></div>
@@ -154,7 +152,6 @@ export default function UserProfile() {
              </div>
           </section>
           
-          {/* İş Deneyimleri Listesi */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
              <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
                <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center"><History size={24} /></div>
@@ -172,7 +169,6 @@ export default function UserProfile() {
           </section>
         </div>
         
-        {/* İletişim Kartı */}
         <div className="lg:col-span-4">
            <Card className="rounded-[40px] bg-[#0f172a] text-white p-10 border-none shadow-2xl">
               <h3 className="text-xs font-black uppercase text-rose-500 italic mb-8 flex items-center gap-2"><MapPin size={14}/> İletişim</h3>
@@ -185,7 +181,6 @@ export default function UserProfile() {
         </div>
       </main>
 
-      {/* MODAL: PROFİL MİMARI */}
       {editOpen && (
         <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-[50px] shadow-2xl animate-in zoom-in-95">
@@ -198,16 +193,10 @@ export default function UserProfile() {
             </div>
 
             <div className="p-12 space-y-12">
-              
-              {/* 1. SEKTÖR VE UNVAN GÜNCELLEME (EKSİK OLAN KISIM) */}
               <div className="grid md:grid-cols-2 gap-8 bg-rose-50 p-10 rounded-[40px] border border-rose-100">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-rose-400 ml-2">MEVCUT SEKTÖR</label>
-                  <select 
-                    value={formData.sector} 
-                    onChange={(e) => setFormData({...formData, sector: e.target.value})}
-                    className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic outline-none appearance-none bg-white"
-                  >
+                  <select value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic outline-none appearance-none bg-white">
                     <option value="">Sektör Seçin</option>
                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -217,11 +206,7 @@ export default function UserProfile() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-rose-400 ml-2">MEVCUT UNVAN</label>
-                  <select 
-                    value={formData.title} 
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic outline-none appearance-none bg-white"
-                  >
+                  <select value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic outline-none appearance-none bg-white">
                     <option value="">Unvan Seçin</option>
                     {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -231,7 +216,6 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* 2. KARİYER HEDEFLERİ */}
               <div className="bg-orange-50 p-10 rounded-[40px] space-y-6 border border-orange-100">
                 <h3 className="text-xl font-black text-orange-700 uppercase italic flex items-center gap-2"><Lightbulb size={24}/> Kariyer Hedeflerini Belirle</h3>
                 <div className="grid md:grid-cols-2 gap-6">
@@ -254,7 +238,6 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* 3. KİŞİSEL BİLGİLER */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 bg-slate-50 p-10 rounded-[40px]">
                 <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">AD SOYAD</label><input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" /></div>
                 <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">E-POSTA</label><input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" /></div>
@@ -267,7 +250,6 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* 4. İŞ DENEYİMLERİ (Önceki kodun aynısı korunarak) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black text-slate-800 uppercase italic">İş Deneyimleri</h3>
@@ -285,6 +267,37 @@ export default function UserProfile() {
                     <textarea placeholder="Görevler" value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl h-40 font-medium outline-none focus:ring-2 ring-rose-200" />
                   </div>
                 ))}
+              </div>
+
+              {/* SERTİFİKALAR BÖLÜMÜ - YENİ EKLENDİ */}
+              <div className="space-y-8">
+                <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
+                  <h3 className="text-xl font-black text-slate-800 uppercase italic flex items-center gap-2"><Award className="text-rose-500" size={24} /> Sertifikalar & Başarılar</h3>
+                  <Button onClick={() => setFormData({...formData, certificates: [...formData.certificates, { name: "", issuer: "", date: "" }]})} variant="outline" className="text-rose-600 border-rose-200 rounded-xl font-black italic uppercase">Sertifika Ekle</Button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {formData.certificates.map((cert, i) => (
+                    <div key={i} className="p-8 bg-white border-2 border-slate-100 rounded-[40px] shadow-sm relative group hover:border-rose-200 transition-all">
+                      <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="absolute top-6 right-6 text-slate-300 hover:text-rose-500"><Trash2 size={20} /></button>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-rose-500 ml-2 italic">Sertifika Adı</label>
+                          <input placeholder="Örn: CFA Level 1" value={cert.name} onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Kurum</label>
+                            <input placeholder="Kurum" value={cert.issuer} onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Tarih</label>
+                            <input placeholder="Tarih" value={cert.date} onChange={(e) => { const n = [...formData.certificates]; n[i].date = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 

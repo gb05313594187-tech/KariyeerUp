@@ -37,7 +37,7 @@ export default function UserProfile() {
       short_term_plan: ""
     },
     work_experience: [],
-    certificates: [],
+    certificates: [], // Veri yapısı hazır
   });
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function UserProfile() {
           custom_title: TITLES.includes(p.title) ? "" : p.title,
           career_goals: p.cv_data?.career_goals || { target_title: "", target_sector: "", vision: "", short_term_plan: "" },
           work_experience: p.cv_data?.work_experience || [],
-          certificates: p.cv_data?.certificates || [],
+          certificates: p.cv_data?.certificates || [], // Veritabanından yükleme
         });
       }
     } catch (err) { console.error("Yükleme hatası:", err); } finally { setLoading(false); }
@@ -92,7 +92,7 @@ export default function UserProfile() {
         cv_data: {
           career_goals: formData.career_goals,
           work_experience: formData.work_experience,
-          certificates: formData.certificates,
+          certificates: formData.certificates, // Veritabanına kayıt
         },
         updated_at: new Date().toISOString()
       });
@@ -167,6 +167,24 @@ export default function UserProfile() {
                ))}
              </div>
           </section>
+
+          {/* ANA SAYFA SERTİFİKA GÖRÜNÜMÜ */}
+          {formData.certificates.length > 0 && (
+            <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
+              <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center"><Award size={24} /></div>
+                Sertifikalar
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {formData.certificates.map((cert, i) => (
+                  <div key={i} className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <h3 className="font-black text-slate-800 uppercase italic text-sm">{cert.name}</h3>
+                    <p className="text-xs font-bold text-slate-500 uppercase">{cert.issuer} • {cert.date}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
         
         <div className="lg:col-span-4">
@@ -181,6 +199,7 @@ export default function UserProfile() {
         </div>
       </main>
 
+      {/* MODAL: PROFİL MİMARI */}
       {editOpen && (
         <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-[50px] shadow-2xl animate-in zoom-in-95">
@@ -193,6 +212,7 @@ export default function UserProfile() {
             </div>
 
             <div className="p-12 space-y-12">
+              {/* 1. SEKTÖR / UNVAN */}
               <div className="grid md:grid-cols-2 gap-8 bg-rose-50 p-10 rounded-[40px] border border-rose-100">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-rose-400 ml-2">MEVCUT SEKTÖR</label>
@@ -200,9 +220,6 @@ export default function UserProfile() {
                     <option value="">Sektör Seçin</option>
                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {formData.sector === "Diğer" && (
-                    <input placeholder="Sektörünüzü yazın..." value={formData.custom_sector} onChange={(e) => setFormData({...formData, custom_sector: e.target.value})} className="w-full p-4 mt-2 rounded-xl bg-white/50 border-2 border-rose-200 font-bold italic" />
-                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-rose-400 ml-2">MEVCUT UNVAN</label>
@@ -210,46 +227,27 @@ export default function UserProfile() {
                     <option value="">Unvan Seçin</option>
                     {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  {formData.title === "Diğer" && (
-                    <input placeholder="Unvanınızı yazın..." value={formData.custom_title} onChange={(e) => setFormData({...formData, custom_title: e.target.value})} className="w-full p-4 mt-2 rounded-xl bg-white/50 border-2 border-rose-200 font-bold italic" />
-                  )}
                 </div>
               </div>
 
+              {/* 2. HEDEFLER */}
               <div className="bg-orange-50 p-10 rounded-[40px] space-y-6 border border-orange-100">
                 <h3 className="text-xl font-black text-orange-700 uppercase italic flex items-center gap-2"><Lightbulb size={24}/> Kariyer Hedeflerini Belirle</h3>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-orange-400 ml-2">HEDEF UNVAN</label>
-                    <input placeholder="Örn: Senior Software Architect" value={formData.career_goals.target_title} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, target_title: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-orange-400 ml-2">HEDEF SEKTÖR</label>
-                    <input placeholder="Örn: Global Finans" value={formData.career_goals.target_sector} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, target_sector: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-orange-400 ml-2">GELECEK VİZYONU</label>
-                  <textarea placeholder="5 yıl sonra..." value={formData.career_goals.vision} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, vision: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-medium h-32" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-orange-400 ml-2">KISA VADELİ AKSİYON</label>
-                  <input placeholder="İlk somut adım..." value={formData.career_goals.short_term_plan} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, short_term_plan: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic" />
+                  <input placeholder="HEDEF UNVAN" value={formData.career_goals.target_title} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, target_title: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic" />
+                  <input placeholder="HEDEF SEKTÖR" value={formData.career_goals.target_sector} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, target_sector: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-bold italic" />
                 </div>
               </div>
 
+              {/* 3. KİŞİSEL BİLGİLER */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 bg-slate-50 p-10 rounded-[40px]">
-                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">AD SOYAD</label><input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" /></div>
-                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">E-POSTA</label><input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" /></div>
-                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-rose-500 ml-2 italic tracking-widest">ŞEHİR</label><input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic border-2 border-rose-100 outline-none" /></div>
-                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">TELEFON</label>
-                  <div className="flex gap-2">
-                    <input className="w-16 p-4 rounded-2xl shadow-sm font-bold italic text-center" value={formData.phone_code} onChange={(e) => setFormData({...formData, phone_code: e.target.value})} />
-                    <input className="flex-1 p-4 rounded-2xl shadow-sm font-bold italic" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} />
-                  </div>
-                </div>
+                <input placeholder="AD SOYAD" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" />
+                <input placeholder="E-POSTA" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" />
+                <input placeholder="ŞEHİR" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" />
+                <input placeholder="TELEFON" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} className="w-full p-4 rounded-2xl shadow-sm font-bold italic" />
               </div>
 
+              {/* 4. İŞ DENEYİMLERİ */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black text-slate-800 uppercase italic">İş Deneyimleri</h3>
@@ -259,53 +257,65 @@ export default function UserProfile() {
                   <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-6">
                     <button onClick={() => setFormData({...formData, work_experience: formData.work_experience.filter((_, idx) => idx !== i)})} className="absolute top-8 right-8 text-red-400 hover:text-red-600"><Trash2 size={24} /></button>
                     <div className="grid md:grid-cols-2 gap-6">
-                      <input placeholder="Pozisyon" value={work.role} onChange={(e) => { const n = [...formData.work_experience]; n[i].role = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                      <input placeholder="Şirket" value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                      <input placeholder="Başlangıç" value={work.start} onChange={(e) => { const n = [...formData.work_experience]; n[i].start = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                      <input placeholder="Bitiş" value={work.end} onChange={(e) => { const n = [...formData.work_experience]; n[i].end = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                      <input placeholder="Pozisyon" value={work.role} onChange={(e) => { const n = [...formData.work_experience]; n[i].role = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic" />
+                      <input placeholder="Şirket" value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic" />
                     </div>
-                    <textarea placeholder="Görevler" value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl h-40 font-medium outline-none focus:ring-2 ring-rose-200" />
                   </div>
                 ))}
               </div>
 
-              {/* SERTİFİKALAR BÖLÜMÜ - YENİ EKLENDİ */}
-              <div className="space-y-8">
-                <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
-                  <h3 className="text-xl font-black text-slate-800 uppercase italic flex items-center gap-2"><Award className="text-rose-500" size={24} /> Sertifikalar & Başarılar</h3>
-                  <Button onClick={() => setFormData({...formData, certificates: [...formData.certificates, { name: "", issuer: "", date: "" }]})} variant="outline" className="text-rose-600 border-rose-200 rounded-xl font-black italic uppercase">Sertifika Ekle</Button>
+              {/* 5. SERTİFİKALAR (ARADIĞIN BÖLÜM BURASI) */}
+              <div className="space-y-8 border-t-2 border-slate-100 pt-12">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-black text-slate-800 uppercase italic flex items-center gap-2">
+                    <Award className="text-amber-500" size={24}/> Sertifikalar & Eğitimler
+                  </h3>
+                  <Button 
+                    onClick={() => setFormData({...formData, certificates: [...formData.certificates, {name: "", issuer: "", date: ""}]})} 
+                    variant="outline" 
+                    className="text-amber-600 border-amber-200 rounded-xl font-black italic uppercase"
+                  >
+                    Yeni Sertifika Ekle
+                  </Button>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   {formData.certificates.map((cert, i) => (
-                    <div key={i} className="p-8 bg-white border-2 border-slate-100 rounded-[40px] shadow-sm relative group hover:border-rose-200 transition-all">
-                      <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="absolute top-6 right-6 text-slate-300 hover:text-rose-500"><Trash2 size={20} /></button>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-rose-500 ml-2 italic">Sertifika Adı</label>
-                          <input placeholder="Örn: CFA Level 1" value={cert.name} onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Kurum</label>
-                            <input placeholder="Kurum" value={cert.issuer} onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Tarih</label>
-                            <input placeholder="Tarih" value={cert.date} onChange={(e) => { const n = [...formData.certificates]; n[i].date = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-100" />
-                          </div>
-                        </div>
+                    <div key={i} className="p-8 bg-amber-50/30 border-2 border-amber-100 rounded-[40px] relative space-y-4">
+                      <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="absolute top-6 right-6 text-amber-400 hover:text-rose-600"><Trash2 size={20} /></button>
+                      <input 
+                        placeholder="SERTİFİKA ADI (Örn: CFA Level 1)" 
+                        value={cert.name} 
+                        onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} 
+                        className="w-full p-4 rounded-2xl border-none shadow-sm font-bold italic" 
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input 
+                          placeholder="KURUM" 
+                          value={cert.issuer} 
+                          onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} 
+                          className="w-full p-4 rounded-2xl border-none shadow-sm font-bold italic text-sm" 
+                        />
+                        <input 
+                          placeholder="YIL" 
+                          value={cert.date} 
+                          onChange={(e) => { const n = [...formData.certificates]; n[i].date = e.target.value; setFormData({...formData, certificates: n}); }} 
+                          className="w-full p-4 rounded-2xl border-none shadow-sm font-bold italic text-sm text-center" 
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+
             </div>
 
+            {/* MODAL FOOTER */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-md p-10 border-t flex gap-6 z-20">
               <Button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-[25px] h-20 text-xl font-black shadow-2xl uppercase italic">
                 {saving ? "STRATEJİ İŞLENİYOR..." : "TÜM DEĞİŞİKLİKLERİ KAYDET VE VİZYONU GÜNCELLE"}
               </Button>
-              <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-20 px-12 rounded-[25px] font-black text-slate-400 uppercase italic border border-slate-100">VAZGEÇ</Button>
+              <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-20 px-12 rounded-[25px] font-black text-slate-400 uppercase italic">VAZGEÇ</Button>
             </div>
           </div>
         </div>

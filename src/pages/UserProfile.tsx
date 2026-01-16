@@ -1,291 +1,274 @@
 // src/pages/UserProfile.tsx
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  Building2,
-  BadgeCheck,
-  ShieldCheck,
-  Calendar,
-  ArrowRight,
-  Pencil,
-  GraduationCap,
-  Languages,
-  Code2,
-  Globe,
-  Plus,
-  Trash2,
-  History
+  User, Mail, Phone, MapPin, Building2, Pencil, GraduationCap,
+  Languages, Code2, Globe, Plus, Trash2, History, X, Save, ArrowRight, Award
 } from "lucide-react";
+
+// --- SABİTLER ---
+const SECTORS = ["Yazılım", "Sağlık", "Eğitim", "Finans", "Pazarlama", "Üretim", "Diğer"];
+const TITLES = ["Engineer", "Manager", "Designer", "Consultant", "Specialist", "Diğer"];
+const PHONE_CODES = [
+  { code: "+90", country: "TR" },
+  { code: "+1", country: "US" },
+  { code: "+44", country: "UK" },
+  { code: "+49", country: "DE" }
+];
 
 export default function UserProfile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [me, setMe] = useState(null);
-  const [profile, setProfile] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  // Europass Veri Yapısı (Başlangıç Değerleri)
-  const [cvData, setCvData] = useState({
+  // --- FORM STATE ---
+  const [formData, setFormData] = useState({
+    full_name: "",
+    city: "",
+    phone_code: "+90",
+    phone_number: "",
+    sector: "",
+    custom_sector: "",
+    title: "",
+    custom_title: "",
     work_experience: [],
-    education: [],
+    education: [], // Üniversiteler burada tutulur
+    certificates: [], // Sertifikalar için yeni alan
     languages: [],
-    digital_skills: [],
-    projects: []
+    digital_skills: []
   });
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        setLoading(true);
-        const { data: sData } = await supabase.auth.getSession();
-        const user = sData?.session?.user || null;
-        if (!mounted) return;
-        setMe(user);
+  useEffect(() => { loadProfile(); }, []);
 
-        if (user) {
-          const { data: pData } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-          
-          setProfile(pData);
-          if (pData?.cv_data) {
-            setCvData(pData.cv_data);
-          }
-        }
-      } catch (e) {
-        toast.error("Yüklenirken bir hata oluştu.");
-      } finally {
-        if (mounted) setLoading(false);
+  const loadProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setMe(session.user);
+      const { data: p } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+      if (p) {
+        setFormData({
+          ...formData,
+          full_name: p.full_name || "",
+          city: p.city || "",
+          phone_number: p.phone?.replace(/^\+\d+/, "") || "",
+          sector: SECTORS.includes(p.sector) ? p.sector : (p.sector ? "Diğer" : ""),
+          custom_sector: SECTORS.includes(p.sector) ? "" : p.sector,
+          title: TITLES.includes(p.title) ? p.title : (p.title ? "Diğer" : ""),
+          custom_title: TITLES.includes(p.title) ? "" : p.title,
+          ...p.cv_data 
+        });
       }
-    };
-    load();
-    return () => { mounted = false; };
-  }, []);
+    } finally { setLoading(false); }
+  };
 
-  const displayName = profile?.full_name || me?.email?.split("@")[0] || "Kullanıcı";
-  const completion = useMemo(() => {
-    const sections = [profile?.full_name, profile?.city, cvData.work_experience.length > 0, cvData.education.length > 0];
-    return Math.round((sections.filter(Boolean).length / sections.length) * 100);
-  }, [profile, cvData]);
+  const handleSave = async () => {
+    setSaving(true);
+    const finalSector = formData.sector === "Diğer" ? formData.custom_sector : formData.sector;
+    const finalTitle = formData.title === "Diğer" ? formData.custom_title : formData.title;
+    
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: me.id,
+        full_name: formData.full_name,
+        city: formData.city,
+        phone: `${formData.phone_code}${formData.phone_number}`,
+        sector: finalSector,
+        title: finalTitle,
+        cv_data: {
+          work_experience: formData.work_experience,
+          education: formData.education,
+          certificates: formData.certificates,
+          languages: formData.languages,
+          digital_skills: formData.digital_skills
+        }
+      });
+      if (error) throw error;
+      toast.success("Güncellendi");
+      setEditOpen(false);
+      loadProfile();
+    } catch (e) { toast.error("Hata"); } finally { setSaving(false); }
+  };
 
   return (
-    <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
-      {/* --- HERO SECTION (MEVCUT YAPI KORUNDU) --- */}
-      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <p className="text-xs text-white/90 uppercase tracking-widest">Europass CV Profile</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            {displayName}
-          </h1>
-          <p className="mt-2 text-sm text-white/90 max-w-2xl font-light">
-            Avrupa standartlarında özgeçmişiniz. Bilgileriniz koç eşleşmeleri ve kariyer yolculuğunuz için optimize edilmiştir.
-          </p>
-
-          <div className="mt-6 max-w-xl">
-            <div className="flex items-center justify-between text-xs text-white/90 mb-2">
-              <span>Profil Tamamlanma Oranı</span>
-              <span className="font-bold">%{completion}</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-              <div className="h-full bg-white transition-all duration-500" style={{ width: `${completion}%` }} />
-            </div>
+    <div className="bg-slate-50 min-h-screen">
+      {/* HERO SECTION (Sadeleştirilmiş Görünüm) */}
+      <section className="bg-gradient-to-br from-slate-900 to-slate-800 py-16 text-white">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-end gap-6">
+          <div>
+            <h1 className="text-5xl font-black tracking-tight">{formData.full_name || "Profiliniz"}</h1>
+            <p className="mt-4 text-orange-400 font-medium flex items-center gap-2">
+              <Building2 size={18} /> {formData.sector === "Diğer" ? formData.custom_sector : formData.sector} 
+              <span className="text-slate-500">|</span> 
+              <User size={18} /> {formData.title === "Diğer" ? formData.custom_title : formData.title}
+            </p>
           </div>
-
-          <div className="mt-8 flex gap-3 flex-wrap">
-            <Button className="rounded-full bg-white text-slate-900 hover:bg-slate-100 px-6" onClick={() => navigate("/user/dashboard")}>
-              Dashboard <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-            <Button variant="outline" className="rounded-full border-white/40 text-white hover:bg-white/10 px-6" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4 mr-2" /> Profili Düzenle
-            </Button>
-          </div>
+          <Button onClick={() => setEditOpen(true)} className="bg-orange-500 hover:bg-orange-600 rounded-2xl h-14 px-8 shadow-lg shadow-orange-500/20">
+            <Pencil size={18} className="mr-2" /> Özgeçmişi Düzenle
+          </Button>
         </div>
       </section>
 
-      {/* --- EUROPASS CONTENT --- */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid gap-8 lg:grid-cols-12">
+      {/* ANA AKIŞ */}
+      <main className="max-w-6xl mx-auto px-4 py-12 grid lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 space-y-12">
           
-          {/* SOL TARAF: ANA CV AKIŞI */}
-          <div className="lg:col-span-8 space-y-8">
-            
-            {/* İŞ DENEYİMİ */}
-            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800">
-                  <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><History size={20} /></div>
-                  İş Deneyimi
-                </h2>
-                <Button variant="ghost" size="sm" className="text-orange-600 hover:bg-orange-50 rounded-full">
-                  <Plus size={18} className="mr-1" /> Ekle
-                </Button>
+          {/* İŞ DENEYİMİ */}
+          <section>
+            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3"><History className="text-orange-500" /> Deneyim</h2>
+            <div className="space-y-8 border-l-2 border-slate-200 ml-4">
+              {formData.work_experience?.map((work, i) => (
+                <div key={i} className="relative pl-10">
+                  <div className="absolute -left-[11px] top-1.5 w-5 h-5 rounded-full bg-white border-4 border-orange-500" />
+                  <h3 className="text-xl font-bold">{work.role}</h3>
+                  <p className="text-slate-600 font-semibold">{work.company} • <span className="text-sm font-normal text-slate-400">{work.start} - {work.end}</span></p>
+                  <p className="mt-3 text-slate-500 leading-relaxed text-sm">{work.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* EĞİTİM & ÜNİVERSİTE */}
+          <section>
+            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3"><GraduationCap className="text-blue-500" /> Eğitim</h2>
+            <div className="grid gap-4">
+              {formData.education?.map((edu, i) => (
+                <div key={i} className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                  <h3 className="font-bold text-lg">{edu.school}</h3>
+                  <p className="text-blue-600 text-sm font-medium">{edu.degree}</p>
+                  <p className="text-slate-400 text-xs mt-1">{edu.year}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* SERTİFİKALAR */}
+          <section>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"><Award className="text-yellow-500" /> Sertifikalar</h2>
+            <div className="flex flex-wrap gap-3">
+              {formData.certificates?.map((cert, i) => (
+                <div key={i} className="px-4 py-3 bg-white border rounded-2xl flex items-center gap-3 shadow-sm">
+                   <div className="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center text-yellow-600"><Award size={16}/></div>
+                   <div>
+                     <p className="text-sm font-bold">{cert.name}</p>
+                     <p className="text-[10px] text-slate-400">{cert.issuer} • {cert.year}</p>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* SAĞ PANEL */}
+        <aside className="space-y-6">
+           <Card className="rounded-[32px] p-8 bg-slate-900 text-white border-none">
+              <h3 className="font-bold text-lg mb-6">İletişim</h3>
+              <div className="space-y-4 opacity-90 text-sm">
+                <div className="flex items-center gap-3"><Mail size={16} className="text-orange-400"/> {me?.email}</div>
+                <div className="flex items-center gap-3"><Phone size={16} className="text-orange-400"/> {formData.phone_code} {formData.phone_number}</div>
+                <div className="flex items-center gap-3"><MapPin size={16} className="text-orange-400"/> {formData.city}</div>
+              </div>
+           </Card>
+        </aside>
+      </main>
+
+      {/* --- MODAL: DÜZENLEME --- */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-[40px] shadow-2xl shadow-black/50">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md p-8 border-b flex justify-between items-center z-20">
+              <h2 className="text-2xl font-black">Özgeçmiş Verilerini Güncelle</h2>
+              <button onClick={() => setEditOpen(false)} className="w-10 h-10 bg-slate-100 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><X/></button>
+            </div>
+
+            <div className="p-10 space-y-12">
+              {/* Bölüm: Temel & Sektör */}
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="text-sm font-bold ml-1">Sektör</label>
+                  <select value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-2xl outline-orange-500">
+                    <option value="">Seçiniz</option>
+                    {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  {formData.sector === "Diğer" && (
+                    <input placeholder="Kendi Sektörünüzü Yazın" value={formData.custom_sector} onChange={(e) => setFormData({...formData, custom_sector: e.target.value})} className="w-full p-4 bg-orange-50 border border-orange-200 rounded-2xl animate-in fade-in duration-300"/>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <label className="text-sm font-bold ml-1">Ünvan</label>
+                  <select value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-2xl outline-orange-500">
+                    <option value="">Seçiniz</option>
+                    {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  {formData.title === "Diğer" && (
+                    <input placeholder="Kendi Ünvanınızı Yazın" value={formData.custom_title} onChange={(e) => setFormData({...formData, custom_title: e.target.value})} className="w-full p-4 bg-orange-50 border border-orange-200 rounded-2xl animate-in fade-in duration-300"/>
+                  )}
+                </div>
               </div>
 
-              {cvData.work_experience.length > 0 ? (
-                <div className="space-y-10 relative before:absolute before:inset-y-0 before:left-[15px] before:w-px before:bg-slate-200">
-                  {cvData.work_experience.map((exp, i) => (
-                    <div key={i} className="relative pl-12 group">
-                      <div className="absolute left-0 top-1 w-[31px] h-[31px] bg-white border-2 border-orange-500 rounded-full z-10 flex items-center justify-center">
-                         <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                      </div>
-                      <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
-                        <h3 className="text-lg font-bold text-slate-900">{exp.role}</h3>
-                        <span className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                          {exp.start} — {exp.end}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-600 font-medium mb-3">
-                        <Building2 size={16} /> {exp.company} | <MapPin size={14} /> {exp.location}
-                      </div>
-                      <p className="text-slate-500 text-sm leading-relaxed">{exp.description}</p>
+              {/* Bölüm: Telefon (Kod + Numara) */}
+              <div className="space-y-4">
+                  <label className="text-sm font-bold ml-1">İletişim Numarası</label>
+                  <div className="flex gap-3">
+                    <select value={formData.phone_code} onChange={(e) => setFormData({...formData, phone_code: e.target.value})} className="w-24 p-4 bg-slate-50 border rounded-2xl">
+                      {PHONE_CODES.map(p => <option key={p.code} value={p.code}>{p.code} ({p.country})</option>)}
+                    </select>
+                    <input placeholder="5xx xxx xx xx" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} className="flex-1 p-4 bg-slate-50 border rounded-2xl outline-orange-500" />
+                  </div>
+              </div>
+
+              {/* Bölüm: Üniversiteler */}
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-xl font-bold">Üniversite & Eğitim</h3>
+                   <Button onClick={() => setFormData({...formData, education: [...formData.education, {school: "", degree: "", year: ""}]})} variant="ghost" className="text-orange-600 font-bold hover:bg-orange-50"><Plus size={18}/> Yeni Okul</Button>
+                </div>
+                <div className="space-y-4">
+                  {formData.education.map((edu, i) => (
+                    <div key={i} className="grid md:grid-cols-3 gap-3 p-6 border rounded-3xl relative group">
+                      <input placeholder="Üniversite Adı" value={edu.school} onChange={(e) => { const n = [...formData.education]; n[i].school = e.target.value; setFormData({...formData, education: n}); }} className="p-3 bg-slate-50 rounded-xl border"/>
+                      <input placeholder="Bölüm/Derece" value={edu.degree} onChange={(e) => { const n = [...formData.education]; n[i].degree = e.target.value; setFormData({...formData, education: n}); }} className="p-3 bg-slate-50 rounded-xl border"/>
+                      <input placeholder="Yıl" value={edu.year} onChange={(e) => { const n = [...formData.education]; n[i].year = e.target.value; setFormData({...formData, education: n}); }} className="p-3 bg-slate-50 rounded-xl border"/>
+                      <button onClick={() => setFormData({...formData, education: formData.education.filter((_, idx) => idx !== i)})} className="absolute -right-2 -top-2 w-8 h-8 bg-red-50 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-center py-10 text-slate-400 text-sm italic border-2 border-dashed border-slate-100 rounded-2xl">Henüz iş deneyimi eklenmemiş.</p>
-              )}
-            </section>
-
-            {/* EĞİTİM */}
-            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800 mb-8">
-                <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><GraduationCap size={20} /></div>
-                Eğitim ve Öğretim
-              </h2>
-              <div className="grid gap-6">
-                {cvData.education.map((edu, i) => (
-                  <div key={i} className="flex gap-4 p-4 rounded-2xl border border-slate-50 hover:bg-slate-50 transition-colors">
-                    <div className="text-slate-400"><Calendar size={20} /></div>
-                    <div>
-                      <h3 className="font-bold text-slate-900">{edu.degree}</h3>
-                      <p className="text-slate-600 text-sm">{edu.school}</p>
-                      <p className="text-xs text-slate-400 mt-1">{edu.year}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
-            </section>
 
-            {/* PROJELER */}
-            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800 mb-6">
-                <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><Code2 size={20} /></div>
-                Projeler
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {cvData.projects.map((proj, i) => (
-                  <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                    <h4 className="font-bold text-slate-800 mb-2">{proj.name}</h4>
-                    <p className="text-xs text-slate-500 line-clamp-3">{proj.desc}</p>
-                  </div>
-                ))}
+              {/* Bölüm: Sertifikalar */}
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-xl font-bold">Sertifikalar</h3>
+                   <Button onClick={() => setFormData({...formData, certificates: [...formData.certificates, {name: "", issuer: "", year: ""}]})} variant="ghost" className="text-yellow-600 font-bold hover:bg-yellow-50"><Plus size={18}/> Yeni Sertifika</Button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {formData.certificates.map((cert, i) => (
+                    <div key={i} className="p-4 border rounded-2xl bg-slate-50/30 flex gap-2">
+                      <input placeholder="Sertifika Adı" value={cert.name} onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} className="flex-1 p-2 bg-white border rounded-lg text-sm"/>
+                      <input placeholder="Kurum" value={cert.issuer} onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} className="w-24 p-2 bg-white border rounded-lg text-sm"/>
+                      <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="text-red-400 p-1"><Trash2 size={16}/></button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </section>
-          </div>
+            </div>
 
-          {/* SAĞ TARAF: KİŞİSEL BİLGİLER VE DİLLER */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* KART: İletişim */}
-            <Card className="rounded-3xl border-slate-100 shadow-sm overflow-hidden">
-              <CardHeader className="bg-slate-900 text-white">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <User size={16} /> İletişim Bilgileri
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Mail size={16} /></div>
-                  <span className="text-slate-700 truncate">{me?.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Phone size={16} /></div>
-                  <span className="text-slate-700">{profile?.phone || "Belirtilmedi"}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><MapPin size={16} /></div>
-                  <span className="text-slate-700">{profile?.city || "Lokasyon girilmedi"}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* KART: Diller */}
-            <Card className="rounded-3xl border-slate-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
-                  <Languages size={18} className="text-orange-600" /> Dil Becerileri
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {cvData.languages.map((lang, i) => (
-                  <div key={i} className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold">
-                      <span>{lang.name}</span>
-                      <span className="text-orange-600">{lang.level}</span>
-                    </div>
-                    <div className="h-1 bg-slate-100 rounded-full">
-                       <div className="h-full bg-orange-400 rounded-full" style={{ width: lang.percent + '%' }}></div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* KART: Dijital Yetkinlikler */}
-            <Card className="rounded-3xl border-slate-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
-                  <Globe size={18} className="text-orange-600" /> Dijital Yetkinlikler
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 flex flex-wrap gap-2">
-                {cvData.digital_skills.map((skill, i) => (
-                  <span key={i} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium border border-slate-200">
-                    {skill}
-                  </span>
-                ))}
-              </CardContent>
-            </Card>
-
+            <div className="sticky bottom-0 bg-white p-8 border-t flex gap-4 z-20">
+              <Button onClick={handleSave} disabled={saving} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-[20px] h-14 text-lg font-bold shadow-xl shadow-orange-500/20">
+                {saving ? "Güncelleniyor..." : "Bilgileri Kaydet"}
+              </Button>
+              <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-14 px-8 rounded-[20px] font-bold">İptal</Button>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* --- FOOTER STRIP (MEVCUT YAPI KORUNDU) --- */}
-      <footer className="max-w-6xl mx-auto px-4 pb-12">
-        <Card className="border-slate-200 bg-slate-900 text-white rounded-3xl">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 text-center md:text-left">
-                <div className="h-12 w-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                  <ShieldCheck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold">Verileriniz Güvende</h4>
-                  <p className="text-slate-400 text-sm">Europass formatındaki bilgileriniz sadece eşleştiğiniz koçlar tarafından görülebilir.</p>
-                </div>
-              </div>
-              <Button className="rounded-full bg-orange-500 hover:bg-orange-600 px-8" onClick={() => navigate("/coaches")}>
-                Koçları Keşfet
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </footer>
+      )}
     </div>
   );
 }

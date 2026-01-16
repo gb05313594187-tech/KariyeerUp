@@ -37,14 +37,31 @@ export default function UserProfile() {
     digital_skills: []
   });
 
-  useEffect(() => { loadProfile(); }, []);
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   const loadProfile = async () => {
     try {
+      setLoading(true);
+      // Güncel session kontrolü
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
       setMe(session.user);
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+
+      const { data: p, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
       if (p) {
         setFormData({
           full_name: p.full_name || "",
@@ -62,15 +79,34 @@ export default function UserProfile() {
           digital_skills: p.cv_data?.digital_skills || []
         });
       }
-    } finally { setLoading(false); }
+    } catch (err) {
+      console.error("Profil yükleme hatası:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
+    // 1. Güvenlik Kontrolü: id'nin null olma riskini burada bitiriyoruz
+    if (!me || !me.id) {
+      toast.error("Oturum bilgileriniz doğrulanamadı. Lütfen sayfayı yenileyip tekrar giriş yapın.");
+      return;
+    }
+
     setSaving(true);
     const finalSector = formData.sector === "Diğer" ? formData.custom_sector : formData.sector;
     const finalTitle = formData.title === "Diğer" ? formData.custom_title : formData.title;
     
     try {
+      // 2. Veri Hazırlığı: JSON yapısını garantiye al
+      const cleanCvData = {
+        work_experience: formData.work_experience || [],
+        education: formData.education || [],
+        certificates: formData.certificates || [],
+        languages: formData.languages || [],
+        digital_skills: formData.digital_skills || []
+      };
+
       const { error } = await supabase.from("profiles").upsert({
         id: me.id,
         full_name: formData.full_name,
@@ -78,25 +114,24 @@ export default function UserProfile() {
         phone: `${formData.phone_code} ${formData.phone_number}`,
         sector: finalSector,
         title: finalTitle,
-        cv_data: {
-          work_experience: formData.work_experience,
-          education: formData.education,
-          certificates: formData.certificates,
-          languages: formData.languages,
-          digital_skills: formData.digital_skills
-        },
+        cv_data: cleanCvData,
         updated_at: new Date().toISOString()
       });
+
       if (error) throw error;
+
       toast.success("Profil başarıyla güncellendi");
       setEditOpen(false);
-      loadProfile();
+      await loadProfile(); // Verileri tazelemek için bekle
     } catch (e) { 
-      toast.error("Kaydedilirken bir hata oluştu: " + e.message); 
-    } finally { setSaving(false); }
+      console.error("Kayıt Hatası:", e);
+      toast.error("Hata: " + (e.message || "Kaydedilirken bir problem oluştu.")); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black italic text-rose-500">SİSTEM YÜKLENİYOR...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black italic text-rose-500 bg-slate-50">SİSTEM YÜKLENİYOR...</div>;
 
   return (
     <div className="bg-[#f8fafc] min-h-screen font-sans">
@@ -106,9 +141,9 @@ export default function UserProfile() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex-1 text-center md:text-left">
               <span className="bg-white/20 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4 inline-block backdrop-blur-sm italic">
-                Verified Career Coach Profile
+                Verified Profile
               </span>
-              <h1 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-md tracking-tighter italic">
+              <h1 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-md tracking-tighter italic uppercase">
                 {formData.full_name || "AD SOYAD BELİRTİLMEDİ"}
               </h1>
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-white/90 font-bold uppercase text-xs tracking-widest">
@@ -138,7 +173,6 @@ export default function UserProfile() {
         
         {/* SOL KOLON */}
         <div className="lg:col-span-8 space-y-10">
-          {/* DENEYİM */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 tracking-tighter uppercase italic">
               <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shadow-inner"><History size={24} /></div>
@@ -165,31 +199,29 @@ export default function UserProfile() {
             </div>
           </section>
 
-          {/* EĞİTİM */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 tracking-tighter uppercase italic">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner"><GraduationCap size={24} /></div>
               Eğitim ve Öğretim
             </h2>
             <div className="grid sm:grid-cols-2 gap-6">
-              {formData.education?.map((edu, i) => (
+              {formData.education?.length > 0 ? formData.education.map((edu, i) => (
                 <div key={i} className="p-8 bg-slate-50 rounded-[30px] border-2 border-transparent hover:border-blue-200 transition-all hover:bg-white hover:shadow-xl">
                   <h3 className="font-black text-slate-900 mb-1 uppercase text-sm italic">{edu.school}</h3>
                   <p className="text-blue-600 text-xs font-black uppercase tracking-wider">{edu.degree}</p>
                   <p className="text-slate-400 text-[10px] mt-4 font-black uppercase tracking-[0.2em]">{edu.year}</p>
                 </div>
-              ))}
+              )) : <p className="text-slate-400 italic text-sm">Eğitim bilgisi girilmedi.</p>}
             </div>
           </section>
 
-          {/* SERTİFİKALAR */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 tracking-tighter uppercase italic">
               <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner"><Award size={24} /></div>
               Sertifikalar ve Başarılar
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              {formData.certificates?.map((cert, i) => (
+              {formData.certificates?.length > 0 ? formData.certificates.map((cert, i) => (
                 <div key={i} className="flex items-center gap-4 bg-slate-50 p-5 rounded-2xl border border-transparent hover:border-amber-200 transition-all">
                   <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm"><Award size={24}/></div>
                   <div>
@@ -197,14 +229,13 @@ export default function UserProfile() {
                     <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">{cert.issuer} • {cert.year}</p>
                   </div>
                 </div>
-              ))}
+              )) : <p className="text-slate-400 italic text-sm">Sertifika bilgisi girilmedi.</p>}
             </div>
           </section>
         </div>
 
         {/* SAĞ KOLON */}
         <div className="lg:col-span-4 space-y-8">
-          {/* İletişim Kartı - Siyah Tasarım */}
           <Card className="rounded-[40px] overflow-hidden border-none shadow-2xl bg-[#0f172a] text-white">
             <CardHeader className="border-b border-white/5 pb-6 pt-10 px-10">
               <CardTitle className="text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3 text-rose-500 italic">
@@ -227,18 +258,17 @@ export default function UserProfile() {
             </CardContent>
           </Card>
 
-          {/* Diller */}
           <Card className="rounded-[40px] border-none shadow-sm bg-white p-10">
             <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3 text-slate-400 italic">
               Dil Becerileri
             </h3>
             <div className="space-y-6">
-              {formData.languages?.map((l, i) => (
+              {formData.languages?.length > 0 ? formData.languages.map((l, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <span className="text-sm font-black text-slate-700 uppercase italic">{l.name}</span>
                   <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-lg uppercase border border-rose-100">{l.level}</span>
                 </div>
-              ))}
+              )) : <p className="text-slate-400 italic text-sm">Dil bilgisi girilmedi.</p>}
             </div>
           </Card>
         </div>
@@ -257,8 +287,20 @@ export default function UserProfile() {
             </div>
 
             <div className="p-12 space-y-12">
+              {/* Temel Bilgiler */}
+              <div className="grid md:grid-cols-2 gap-6 bg-slate-50 p-8 rounded-[40px]">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 italic">Ad Soyad</label>
+                  <input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl border-none shadow-sm font-bold uppercase" placeholder="Örn: Göktuğ Büyükçelebi"/>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 italic">Şehir</label>
+                  <input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-2xl border-none shadow-sm font-bold uppercase" placeholder="Örn: İstanbul"/>
+                </div>
+              </div>
+
               {/* Sektör ve Unvan */}
-              <div className="grid md:grid-cols-2 gap-8 bg-slate-50 p-10 rounded-[40px]">
+              <div className="grid md:grid-cols-2 gap-8 bg-slate-100/50 p-10 rounded-[40px]">
                 <div className="space-y-4">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 italic">Sektör Bilgisi</label>
                   <select value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-5 bg-white border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none shadow-sm font-bold">
@@ -301,7 +343,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* Sertifika Düzenleme (YENİ EKLENDİ) */}
+              {/* Sertifika Düzenleme */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black text-slate-800 uppercase italic">Sertifikalar</h3>

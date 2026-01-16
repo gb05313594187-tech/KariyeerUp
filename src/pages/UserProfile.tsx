@@ -7,11 +7,22 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  User, Building2, Pencil, History, X, Award, Briefcase, Trash2, Target, Lightbulb, MapPin, ChevronDown, Globe, GraduationCap, Calendar, Languages
+  User, Building2, Pencil, History, X, Award, Briefcase, Trash2, Target, Lightbulb, MapPin, ChevronDown, Globe, GraduationCap, Calendar, Languages, Cpu, Heart, CheckCircle2
 } from "lucide-react";
 
 const SECTORS = ["Yazılım", "Sağlık", "Eğitim", "Finans", "Pazarlama", "Üretim", "E-Ticaret", "Diğer"];
 const LANGUAGES_LIST = ["Türkçe", "English", "Deutsch", "Français", "العربية", "Español", "Italiano"];
+
+// TEKNİK YETENEK HAVUZU
+const TECH_SKILLS_POOL = ["Java", "Python", "React", "Tableau", "Agile", "Scrum", "SQL", "AWS", "Docker", "Node.js", "SAP", "Salesforce", "Project Management", "UI/UX Design", "Kotlin", "Swift", "C#", "Machine Learning", "Kubernetes", "Power BI", "Go", "Figma", "Excel", "AutoCAD"];
+
+// HOBİ HAVUZU (30+ SEÇENEK - ÇEVİRİLERLE SENKRON)
+const HOBBIES_DATA = {
+  TR: ["Yüzme", "Satranç", "Kampçılık", "Fotoğrafçılık", "Yelken", "Tenis", "Yoga", "Binicilik", "Dağcılık", "Gastronomi", "Gitar", "Piyano", "Resim", "Bahçecilik", "Koşu", "Bisiklet", "E-Spor", "Seyahat", "Okçuluk", "Dalış", "Kodlama", "Podcast", "Gönüllülük", "Astronomi", "Balerin", "Tiyatro", "Koleksiyonculuk", "Felsefe", "Meditasyon", "Kitesurf"],
+  EN: ["Swimming", "Chess", "Camping", "Photography", "Sailing", "Tennis", "Yoga", "Horse Riding", "Hiking", "Gastronomy", "Guitar", "Piano", "Painting", "Gardening", "Running", "Cycling", "E-Sports", "Traveling", "Archery", "Diving", "Coding", "Podcasting", "Volunteering", "Astronomy", "Ballet", "Theater", "Collecting", "Philosophy", "Meditation", "Kitesurfing"],
+  AR: ["السباحة", "الشطرنج", "التخييم", "التصوير", "الإبحار", "التنس", "اليوجا", "ركوب الخيل", "التنزه", "فن الطهي", "الغيتار", "البيانو", "الرسم", "البستنة", "الجري", "ركوب الدراجات", "الرياضات الإلكترونية", "السفر", "الرماية", "الغوص", "البرمجة", "البودكاست", "التطوع", "علم الفلك", "الباليه", "المسرح", "الجمع", "الفلسفة", "التأمل", "التزلج الشراعي"],
+  FR: ["Natation", "Échecs", "Camping", "Photographie", "Voile", "Tennis", "Yoga", "Équitation", "Randonnée", "Gastronomie", "Guitare", "Piano", "Peinture", "Jardinage", "Course", "Cyclisme", "E-Sports", "Voyage", "Tir à l'arc", "Plongée", "Codage", "Podcast", "Bénévolat", "Astronomie", "Ballet", "Théâtre", "Collection", "Philosophie", "Méditation", "Kitesurf"]
+};
 
 const translations = {
   TR: {
@@ -24,6 +35,8 @@ const translations = {
     edu_title: "Eğitim Bilgileri",
     cert_title: "Sertifikalar",
     lang_title: "Dil Yetkinliği",
+    skill_title: "Teknik Yetkinlikler",
+    hobbies_title: "İlgi Alanları & Hobiler",
     contact_title: "İletişim",
     modal_title: "Profil Mimarı",
     save_btn: "TÜM DEĞİŞİKLİKLERİ KAYDET",
@@ -54,6 +67,8 @@ const translations = {
     edu_title: "Education",
     cert_title: "Certificates",
     lang_title: "Language Skills",
+    skill_title: "Technical Skills",
+    hobbies_title: "Interests & Hobbies",
     contact_title: "Contact",
     modal_title: "Profile Architect",
     save_btn: "SAVE ALL CHANGES",
@@ -84,6 +99,8 @@ const translations = {
     edu_title: "معلومات التعليم",
     cert_title: "شهادات",
     lang_title: "اللغات",
+    skill_title: "المهارات التقنية",
+    hobbies_title: "الهوايات والاهتمامات",
     contact_title: "اتصال",
     modal_title: "مهندس الملف الشخصي",
     save_btn: "حفظ جميع التغييرات",
@@ -114,6 +131,8 @@ const translations = {
     edu_title: "Éducation",
     cert_title: "Certificats",
     lang_title: "Langues",
+    skill_title: "Compétences Techniques",
+    hobbies_title: "Loisirs & Intérêts",
     contact_title: "Contact",
     modal_title: "Architecte de profil",
     save_btn: "ENREGISTRER TOUT",
@@ -157,7 +176,9 @@ export default function UserProfile() {
     work_experience: [],
     education: [],
     certificates: [],
-    languages: []
+    languages: [],
+    skills: [],
+    hobbies_indices: []
   });
 
   useEffect(() => { loadProfile(); }, []);
@@ -182,7 +203,9 @@ export default function UserProfile() {
           work_experience: p.cv_data?.work_experience || [],
           education: p.cv_data?.education || [],
           certificates: p.cv_data?.certificates || [],
-          languages: p.cv_data?.languages || []
+          languages: p.cv_data?.languages || [],
+          skills: p.cv_data?.skills || [],
+          hobbies_indices: p.cv_data?.hobbies_indices || []
         });
       }
     } finally { setLoading(false); }
@@ -204,17 +227,19 @@ export default function UserProfile() {
           education: formData.education,
           certificates: formData.certificates,
           languages: formData.languages,
+          skills: formData.skills,
+          hobbies_indices: formData.hobbies_indices
         },
         updated_at: new Date().toISOString()
       });
       if (error) throw error;
-      toast.success("Başarıyla güncellendi");
+      toast.success("Profil Güncellendi");
       setEditOpen(false);
       loadProfile();
     } catch (e) { toast.error("Hata: " + e.message); } finally { setSaving(false); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-rose-500 animate-pulse uppercase italic">Syncing...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black text-rose-500 animate-pulse uppercase italic">Syncing Profile...</div>;
 
   return (
     <div className={`bg-[#f8fafc] min-h-screen font-sans pb-20 ${lang === 'AR' ? 'text-right' : 'text-left'}`} dir={lang === 'AR' ? 'rtl' : 'ltr'}>
@@ -235,7 +260,7 @@ export default function UserProfile() {
         </div>
       </nav>
 
-      {/* HERO SECTION */}
+      {/* HERO */}
       <section className="bg-gradient-to-r from-[#e11d48] via-[#f43f5e] to-[#fb923c] py-16 text-white shadow-xl">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex-1">
@@ -258,6 +283,7 @@ export default function UserProfile() {
 
       <main className="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-10">
+          
           {/* VİZYON */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
              <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 uppercase italic">
@@ -289,7 +315,22 @@ export default function UserProfile() {
              </div>
           </section>
 
-          {/* DİL YETKİNLİĞİ (YENİ) */}
+          {/* TEKNİK YETKİNLİKLER */}
+          <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
+             <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
+               <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center"><Cpu size={24} /></div>
+               {t.skill_title}
+             </h2>
+             <div className="flex flex-wrap gap-3">
+               {formData.skills.map((skill, i) => (
+                 <span key={i} className="bg-indigo-50 text-indigo-700 px-5 py-3 rounded-2xl font-black text-xs uppercase italic border border-indigo-100 flex items-center gap-2 hover:bg-indigo-600 hover:text-white transition-all">
+                   <CheckCircle2 size={14}/> {skill}
+                 </span>
+               ))}
+             </div>
+          </section>
+
+          {/* DİL YETKİNLİĞİ */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
              <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center"><Languages size={24} /></div>
@@ -309,7 +350,22 @@ export default function UserProfile() {
              </div>
           </section>
 
-          {/* EĞİTİM */}
+          {/* HOBİLER */}
+          <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
+             <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
+               <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center"><Heart size={24} /></div>
+               {t.hobbies_title}
+             </h2>
+             <div className="flex flex-wrap gap-2">
+               {formData.hobbies_indices.map((idx) => (
+                 <span key={idx} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase italic">
+                   # {HOBBIES_DATA[lang][idx]}
+                 </span>
+               ))}
+             </div>
+          </section>
+
+          {/* EĞİTİM BİLGİLERİ */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
              <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center"><GraduationCap size={24} /></div>
@@ -365,8 +421,39 @@ export default function UserProfile() {
               <button onClick={() => setEditOpen(false)} className="w-14 h-14 bg-slate-100 flex items-center justify-center rounded-2xl hover:bg-rose-500 hover:text-white transition-all"><X size={28}/></button>
             </div>
 
-            <div className="p-12 space-y-12">
-              {/* İŞ DENEYİMLERİ */}
+            <div className="p-12 space-y-16">
+              
+              {/* SKILLS SELECTION */}
+              <div className="space-y-6">
+                 <h3 className="text-xl font-black uppercase italic text-slate-800 border-l-4 border-indigo-500 pl-4">{t.skill_title}</h3>
+                 <div className="flex flex-wrap gap-2 bg-slate-50 p-6 rounded-3xl">
+                   {TECH_SKILLS_POOL.map(s => (
+                     <button key={s} onClick={() => {
+                        const exists = formData.skills.includes(s);
+                        setFormData({...formData, skills: exists ? formData.skills.filter(x => x !== s) : [...formData.skills, s]});
+                     }} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${formData.skills.includes(s) ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                       {s}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+
+              {/* HOBBY SELECTION */}
+              <div className="space-y-6">
+                 <h3 className="text-xl font-black uppercase italic text-slate-800 border-l-4 border-rose-500 pl-4">{t.hobbies_title}</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-50 p-6 rounded-3xl">
+                   {HOBBIES_DATA[lang].map((hobby, idx) => (
+                     <button key={idx} onClick={() => {
+                        const exists = formData.hobbies_indices.includes(idx);
+                        setFormData({...formData, hobbies_indices: exists ? formData.hobbies_indices.filter(x => x !== idx) : [...formData.hobbies_indices, idx]});
+                     }} className={`p-3 rounded-xl text-[9px] font-bold uppercase text-center transition-all ${formData.hobbies_indices.includes(idx) ? 'bg-rose-500 text-white' : 'bg-white text-slate-400 border'}`}>
+                       {hobby}
+                     </button>
+                   ))}
+                 </div>
+              </div>
+
+              {/* İŞ DENEYİMLERİ (FULL) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black uppercase italic text-slate-800">{t.exp_title}</h3>
@@ -380,19 +467,15 @@ export default function UserProfile() {
                       <input placeholder={t.company} value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic border-none text-black" />
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase ml-2">{t.start_date}</label>
-                        <input type="date" value={work.start_date} onChange={(e) => { const n = [...formData.work_experience]; n[i].start_date = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl font-bold border-none text-black" />
-                      </div>
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase ml-2">{t.end_date}</label>
-                        <input type="date" value={work.end_date} onChange={(e) => { const n = [...formData.work_experience]; n[i].end_date = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl font-bold border-none text-black" />
-                      </div>
+                      <input type="date" value={work.start_date} onChange={(e) => { const n = [...formData.work_experience]; n[i].start_date = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold border-none text-black" />
+                      <input type="date" value={work.end_date} onChange={(e) => { const n = [...formData.work_experience]; n[i].end_date = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold border-none text-black" />
                     </div>
-                    <textarea placeholder="Deneyim detayları..." value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl font-bold italic border-none min-h-[120px] text-black" />
+                    <textarea placeholder="Açıklama" value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 rounded-2xl font-bold italic border-none min-h-[120px] text-black" />
                   </div>
                 ))}
               </div>
 
-              {/* DİL BİLGİSİ (YENİ MODAL BÖLÜMÜ) */}
+              {/* DİLLER (FULL) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black uppercase italic text-slate-800">{t.lang_title}</h3>
@@ -402,7 +485,7 @@ export default function UserProfile() {
                   {formData.languages.map((l, i) => (
                     <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-4">
                       <button onClick={() => setFormData({...formData, languages: formData.languages.filter((_, idx) => idx !== i)})} className="absolute top-8 right-8 text-red-400"><Trash2 size={20} /></button>
-                      <select value={l.name} onChange={(e) => { const n = [...formData.languages]; n[i].name = e.target.value; setFormData({...formData, languages: n}); }} className="w-full p-4 bg-slate-50 rounded-xl font-black italic">
+                      <select value={l.name} onChange={(e) => { const n = [...formData.languages]; n[i].name = e.target.value; setFormData({...formData, languages: n}); }} className="w-full p-4 bg-slate-50 rounded-xl font-black italic text-black">
                         {LANGUAGES_LIST.map(langName => <option key={langName} value={langName}>{langName}</option>)}
                       </select>
                       {['reading_idx', 'writing_idx', 'speaking_idx'].map((key) => (
@@ -410,7 +493,7 @@ export default function UserProfile() {
                           <label className="text-[10px] font-black uppercase text-slate-400 ml-2">{t[key.replace('_idx', '')]}</label>
                           <div className="flex gap-1">
                             {t.levels.map((lvl, idx) => (
-                              <button key={idx} onClick={() => { const n = [...formData.languages]; n[i][key] = idx; setFormData({...formData, languages: n}); }} className={`flex-1 py-2 rounded-lg text-[8px] font-black transition-all ${l[key] === idx ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                              <button key={idx} onClick={() => { const n = [...formData.languages]; n[i][key] = idx; setFormData({...formData, languages: n}); }} className={`flex-1 py-2 rounded-lg text-[8px] font-black transition-all ${l[key] === idx ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                 {lvl}
                               </button>
                             ))}
@@ -422,7 +505,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* EĞİTİM BÖLÜMÜ */}
+              {/* EĞİTİM (FULL) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black uppercase italic text-slate-800">{t.edu_title}</h3>
@@ -431,10 +514,8 @@ export default function UserProfile() {
                 {formData.education.map((edu, i) => (
                   <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-6">
                     <button onClick={() => setFormData({...formData, education: formData.education.filter((_, idx) => idx !== i)})} className="absolute top-8 right-8 text-red-400"><Trash2 size={24} /></button>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <input placeholder={t.school_name} value={edu.school} onChange={(e) => { const n = [...formData.education]; n[i].school = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic text-black" />
-                      <input placeholder={t.degree} value={edu.degree} onChange={(e) => { const n = [...formData.education]; n[i].degree = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic text-black" />
-                    </div>
+                    <input placeholder={t.school_name} value={edu.school} onChange={(e) => { const n = [...formData.education]; n[i].school = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic w-full text-black" />
+                    <input placeholder={t.degree} value={edu.degree} onChange={(e) => { const n = [...formData.education]; n[i].degree = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold italic w-full text-black" />
                     <div className="grid md:grid-cols-2 gap-6">
                       <input type="date" value={edu.start_date} onChange={(e) => { const n = [...formData.education]; n[i].start_date = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold text-black" />
                       <input type="date" value={edu.end_date} onChange={(e) => { const n = [...formData.education]; n[i].end_date = e.target.value; setFormData({...formData, education: n}); }} className="p-5 bg-slate-50 rounded-2xl font-bold text-black" />
@@ -443,7 +524,7 @@ export default function UserProfile() {
                 ))}
               </div>
 
-              {/* SERTİFİKALAR */}
+              {/* SERTİFİKALAR (FULL) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black uppercase italic text-slate-800">{t.cert_title}</h3>
@@ -454,6 +535,7 @@ export default function UserProfile() {
                     <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative space-y-4 bg-slate-50">
                       <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="absolute top-6 right-6 text-red-400"><Trash2 size={20} /></button>
                       <input placeholder="Sertifika Adı" value={cert.name} onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 rounded-xl font-bold italic text-black" />
+                      <input placeholder="Kurum" value={cert.issuer} onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 rounded-xl font-bold italic text-black" />
                       <input type="date" value={cert.date} onChange={(e) => { const n = [...formData.certificates]; n[i].date = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 rounded-xl font-bold text-black" />
                     </div>
                   ))}
@@ -463,7 +545,7 @@ export default function UserProfile() {
 
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-md p-10 border-t flex gap-6 z-20">
               <Button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-[25px] h-20 text-xl font-black shadow-2xl uppercase italic">
-                {saving ? "İŞLENİYOR..." : t.save_btn}
+                {saving ? "SAVING..." : t.save_btn}
               </Button>
               <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-20 px-12 rounded-[25px] font-black text-slate-400 uppercase italic">{t.cancel}</Button>
             </div>

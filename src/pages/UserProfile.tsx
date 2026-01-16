@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  User, Building2, Pencil, History, X, Award, Briefcase, Trash2, Target, Lightbulb, MapPin, ChevronDown, Globe, GraduationCap, Calendar, Languages, Cpu, Heart, CheckCircle2, Star, Rocket, Palette, Video, BarChart3, FileSpreadsheet, Monitor, Presentation, PenTool, Layout
+  User, Building2, Pencil, History, X, Award, Briefcase, Trash2, Target, Lightbulb, MapPin, ChevronDown, Globe, GraduationCap, Calendar, Languages, Cpu, Heart, CheckCircle2, Star, Rocket, Palette, Video, BarChart3, FileSpreadsheet, Monitor, Presentation, PenTool, Layout, Linkedin, Github, Instagram, Link
 } from "lucide-react";
 
 // GENİŞLETİLMİŞ VE EKSİKSİZ TEKNİK YETENEK HAVUZU
@@ -53,6 +53,8 @@ const translations = {
     reading: "Okuma",
     writing: "Yazma",
     speaking: "Konuşma",
+    social_title: "Sosyal Medya",
+    avatar_prompt: "Profil Fotoğrafı URL'si giriniz:",
     levels: ["Az", "Orta", "İyi", "Çok İyi", "Anadil"]
   },
   EN: {
@@ -81,6 +83,8 @@ const translations = {
     reading: "Reading",
     writing: "Writing",
     speaking: "Speaking",
+    social_title: "Social Media",
+    avatar_prompt: "Enter Profile Photo URL:",
     levels: ["Beginner", "Intermediate", "Good", "Fluent", "Native"]
   },
   AR: {
@@ -109,6 +113,8 @@ const translations = {
     reading: "قراءة",
     writing: "كتابة",
     speaking: "تحدث",
+    social_title: "وسائل التواصل الاجتماعي",
+    avatar_prompt: "أدخل رابط الصورة الشخصية:",
     levels: ["ضعيف", "متوسط", "جيد", "جيد جداً", "اللغة الأم"]
   },
   FR: {
@@ -137,6 +143,8 @@ const translations = {
     reading: "Lire",
     writing: "Écrire",
     speaking: "Parler",
+    social_title: "Médias Sociaux",
+    avatar_prompt: "Entrez l'URL de la photo de profil:",
     levels: ["Débutant", "Intermédiaire", "Bien", "Très Bien", "Maternelle"]
   }
 };
@@ -159,6 +167,8 @@ export default function UserProfile() {
     city: "",
     phone_number: "",
     sector: "",
+    avatar_url: "",
+    social_links: { linkedin: "", github: "", instagram: "" },
     career_goals: { target_title: "", vision: "", short_term_plan: "" },
     achievements: [],
     work_experience: [],
@@ -186,6 +196,8 @@ export default function UserProfile() {
           city: p.city || "",
           phone_number: p.phone || "",
           sector: p.sector || "",
+          avatar_url: p.avatar_url || "",
+          social_links: p.social_links || { linkedin: "", github: "", instagram: "" },
           career_goals: p.cv_data?.career_goals || { target_title: "", vision: "", short_term_plan: "" },
           achievements: p.cv_data?.achievements || [],
           work_experience: p.cv_data?.work_experience || [],
@@ -208,6 +220,8 @@ export default function UserProfile() {
         city: formData.city,
         phone: formData.phone_number,
         sector: formData.sector,
+        avatar_url: formData.avatar_url,
+        social_links: formData.social_links,
         cv_data: {
           career_goals: formData.career_goals,
           achievements: formData.achievements,
@@ -255,15 +269,36 @@ export default function UserProfile() {
       <section className="bg-gradient-to-br from-[#e11d48] via-[#f43f5e] to-[#fb923c] py-24 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
-          <div className="flex-1 space-y-6">
+          
+          {/* FOTOĞRAF KISMI */}
+          <div className="relative group cursor-pointer" onClick={() => {
+            const url = prompt(t.avatar_prompt, formData.avatar_url);
+            if(url !== null) setFormData({...formData, avatar_url: url});
+          }}>
+            <div className="w-44 h-44 md:w-64 md:h-64 rounded-[50px] border-8 border-white/20 overflow-hidden shadow-2xl relative group-hover:scale-105 transition-all duration-500">
+              {formData.avatar_url ? (
+                <img src={formData.avatar_url} className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700" alt="Profile" />
+              ) : (
+                <div className="w-full h-full bg-black/20 flex items-center justify-center text-white/50 backdrop-blur-md">
+                   <User size={80} strokeWidth={1}/>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                <Pencil size={32} className="text-white" />
+              </div>
+            </div>
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white text-rose-600 px-4 py-1 rounded-full text-[9px] font-black uppercase shadow-xl border border-rose-100">Değiştir</div>
+          </div>
+
+          <div className="flex-1 space-y-6 text-center md:text-left">
             <span className="bg-white/20 px-6 py-2 rounded-full text-[11px] font-black uppercase backdrop-blur-xl italic border border-white/30 tracking-widest">{t.verified}</span>
             <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.9]">{formData.full_name || "İsim Soyisim"}</h1>
-            <div className="flex flex-wrap gap-5 pt-4">
+            <div className="flex flex-wrap gap-5 pt-4 justify-center md:justify-start">
                <span className="bg-black/20 px-6 py-3 rounded-2xl backdrop-blur-md border border-white/10 text-[11px] font-black uppercase italic flex items-center gap-3">
                  <Briefcase size={16}/> {formData.sector || "SEKTÖR BELİRTİLMEDİ"}
                </span>
                <span className="bg-black/20 px-6 py-3 rounded-2xl backdrop-blur-md border border-white/10 text-[11px] font-black uppercase italic flex items-center gap-3">
-                 <Target size={16}/> {formData.career_goals.target_title || "HEDEF POZİSYON BELİRTİLMEDİ"}
+                 <Target size={16}/> {formData.career_goals.target_title || "HEDEF BELİRTİLMEDİ"}
                </span>
             </div>
           </div>
@@ -383,7 +418,7 @@ export default function UserProfile() {
              </div>
           </section>
 
-          {/* 6. TEKNİK YETKİNLİKLER (OFFICE, ADOBE, CANVA DAHİL) */}
+          {/* 6. TEKNİK YETKİNLİKLER */}
           <section className="bg-white rounded-[60px] p-14 shadow-sm border border-slate-100">
              <h2 className="text-4xl font-black mb-12 flex items-center gap-5 text-slate-800 uppercase italic">
                <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-[25px] flex items-center justify-center shadow-inner"><Cpu size={34} /></div>
@@ -420,16 +455,39 @@ export default function UserProfile() {
           </section>
         </div>
 
-        {/* SAĞ TARAF - İLETİŞİM */}
+        {/* SAĞ TARAF - İLETİŞİM & SOSYAL MEDYA */}
         <div className="lg:col-span-4">
            <Card className="rounded-[60px] bg-[#0f172a] text-white p-14 border-none shadow-2xl sticky top-36 overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-rose-500 to-orange-500"></div>
               <h3 className="text-[11px] font-black uppercase text-rose-500 italic mb-12 flex items-center gap-4 tracking-[0.3em]"><MapPin size={20}/> {t.contact_title}</h3>
+              
               <div className="space-y-10">
-                <div className="group cursor-pointer"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">E-posta</p><p className="font-black italic text-lg break-all">{formData.email}</p></div>
-                <div className="group cursor-pointer"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">Telefon</p><p className="font-black italic text-xl">{formData.phone_number || "Girilmedi"}</p></div>
-                <div className="group cursor-pointer"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">Şehir</p><p className="font-black italic text-2xl uppercase tracking-tighter">{formData.city || "Girilmedi"}</p></div>
+                <div className="group"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">E-posta</p><p className="font-black italic text-lg break-all">{formData.email}</p></div>
+                <div className="group"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">Telefon</p><p className="font-black italic text-xl">{formData.phone_number || "Girilmedi"}</p></div>
+                <div className="group"><p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3 group-hover:text-rose-400 transition-colors">Şehir</p><p className="font-black italic text-2xl uppercase tracking-tighter">{formData.city || "Girilmedi"}</p></div>
               </div>
+
+              {/* SOSYAL MEDYA LİNKLERİ */}
+              <div className="mt-14 pt-10 border-t border-slate-800 space-y-8">
+                 <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{t.social_title}</p>
+                 <div className="flex flex-wrap gap-4">
+                    <button onClick={() => {
+                      const link = prompt("LinkedIn URL:", formData.social_links.linkedin);
+                      if(link !== null) setFormData({...formData, social_links: {...formData.social_links, linkedin: link}});
+                    }} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg ${formData.social_links.linkedin ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500'}`}><Linkedin size={22}/></button>
+                    
+                    <button onClick={() => {
+                      const link = prompt("GitHub URL:", formData.social_links.github);
+                      if(link !== null) setFormData({...formData, social_links: {...formData.social_links, github: link}});
+                    }} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg ${formData.social_links.github ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-500'}`}><Github size={22}/></button>
+                    
+                    <button onClick={() => {
+                      const link = prompt("Instagram URL:", formData.social_links.instagram);
+                      if(link !== null) setFormData({...formData, social_links: {...formData.social_links, instagram: link}});
+                    }} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-lg ${formData.social_links.instagram ? 'bg-gradient-to-tr from-yellow-500 via-rose-500 to-purple-600 text-white' : 'bg-slate-800 text-slate-500'}`}><Instagram size={22}/></button>
+                 </div>
+              </div>
+
               <div className="mt-16 pt-10 border-t border-slate-800">
                 <p className="text-[9px] font-black text-slate-600 uppercase italic leading-relaxed">Bu profil Kariyeer Career Strategy Engine tarafından doğrulanmıştır.</p>
               </div>
@@ -451,9 +509,21 @@ export default function UserProfile() {
 
             <div className="p-16 space-y-24">
               
+              {/* ANA BİLGİLER GÜNCELLEME */}
+              <div className="grid md:grid-cols-2 gap-10 bg-slate-50 p-12 rounded-[55px]">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-5">Ad Soyad</label>
+                  <input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-6 rounded-[25px] border-none font-black text-xl shadow-inner focus:ring-2 ring-rose-500 outline-none" />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-5">Sektör</label>
+                  <input value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-6 rounded-[25px] border-none font-black text-xl shadow-inner focus:ring-2 ring-rose-500 outline-none" />
+                </div>
+              </div>
+
               {/* 1. KARİYER HEDEFLERİ MODAL */}
               <div className="space-y-10 bg-orange-50/50 p-12 rounded-[55px] border border-orange-100">
-                 <h3 className="text-3xl font-black uppercase italic text-orange-700 flex items-center gap-5"><Target size={28}/> Kariyer Hedefleri & Vizyon</h3>
+                 <h3 className="text-3xl font-black uppercase italic text-orange-700 flex items-center gap-5"><Target size={28}/> {t.vision_title}</h3>
                  <div className="grid gap-10">
                    <div className="space-y-4">
                      <label className="text-[11px] font-black uppercase text-orange-600 ml-4 tracking-widest">{t.target_pos}</label>
@@ -558,7 +628,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* 6. YETENEKLER MODAL (EKSİKSİZ LİSTE) */}
+              {/* 6. YETENEKLER MODAL */}
               <div className="space-y-10">
                 <h3 className="text-3xl font-black uppercase italic text-slate-800 border-l-[10px] border-indigo-500 pl-8 leading-none">{t.skill_title}</h3>
                 <div className="flex flex-wrap gap-4 bg-slate-50 p-12 rounded-[60px] border border-slate-100">
@@ -573,7 +643,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* 7. HOBİLER MODAL (EKSİKSİZ LİSTE) */}
+              {/* 7. HOBİLER MODAL */}
               <div className="space-y-10">
                 <h3 className="text-3xl font-black uppercase italic text-slate-800 border-l-[10px] border-rose-500 pl-8 leading-none">{t.hobbies_title}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-slate-50 p-12 rounded-[60px] border border-slate-100">

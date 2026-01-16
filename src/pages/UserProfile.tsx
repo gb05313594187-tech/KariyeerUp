@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -36,7 +36,7 @@ export default function UserProfile() {
       vision: "",
       short_term_plan: ""
     },
-    work_experience: [],
+    work_experience: [], // Buranın dizi olduğundan emin oluyoruz
     certificates: [],
   });
 
@@ -76,7 +76,7 @@ export default function UserProfile() {
           title: TITLES.includes(p.title) ? p.title : (p.title ? "Diğer" : ""),
           custom_title: TITLES.includes(p.title) ? "" : p.title,
           career_goals: p.cv_data?.career_goals || { target_title: "", target_sector: "", vision: "", short_term_plan: "" },
-          work_experience: p.cv_data?.work_experience || [],
+          work_experience: p.cv_data?.work_experience || [], // Veri yoksa boş dizi
           certificates: p.cv_data?.certificates || [],
         });
       }
@@ -107,7 +107,6 @@ export default function UserProfile() {
           career_goals: formData.career_goals,
           work_experience: formData.work_experience,
           certificates: formData.certificates,
-          // Mevcut diğer verileri korumak için (eğer varsa)
           education: formData.education || [],
           languages: formData.languages || [],
           digital_skills: formData.digital_skills || []
@@ -186,7 +185,7 @@ export default function UserProfile() {
             </div>
           </section>
 
-          {/* İŞ DENEYİMİ */}
+          {/* İŞ DENEYİMİ (GÖRÜNTÜLEME) */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-10 flex items-center gap-3 text-slate-800 uppercase italic">
               <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shadow-inner"><History size={24} /></div>
@@ -213,7 +212,7 @@ export default function UserProfile() {
             </div>
           </section>
 
-          {/* SERTİFİKALAR */}
+          {/* SERTİFİKALAR (GÖRÜNTÜLEME) */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 uppercase italic">
               <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner"><Award size={24} /></div>
@@ -233,7 +232,7 @@ export default function UserProfile() {
           </section>
         </div>
 
-        {/* SAĞ KOLON (İletişim) */}
+        {/* SAĞ KOLON */}
         <div className="lg:col-span-4 space-y-8">
           <Card className="rounded-[40px] overflow-hidden border-none shadow-2xl bg-[#0f172a] text-white p-10">
               <h3 className="text-xs font-black uppercase text-rose-500 italic mb-8 tracking-widest flex items-center gap-2">
@@ -272,7 +271,7 @@ export default function UserProfile() {
             </div>
 
             <div className="p-12 space-y-12">
-               {/* KARİYER HEDEFLERİ DÜZENLEME */}
+               {/* KARİYER HEDEFLERİ */}
                <div className="bg-orange-50 p-10 rounded-[40px] space-y-6 border border-orange-100">
                 <h3 className="text-xl font-black text-orange-700 uppercase italic flex items-center gap-2"><Lightbulb size={24}/> Kariyer Hedeflerini Belirle</h3>
                 <div className="grid md:grid-cols-2 gap-6">
@@ -287,7 +286,7 @@ export default function UserProfile() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-orange-400 ml-2">GELECEK VİZYONU</label>
-                  <textarea placeholder="Kendini 5 yıl sonra nerede görüyorsun?" value={formData.career_goals.vision} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, vision: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-medium h-32" />
+                  <textarea placeholder="Kendini İlk 6 ay ve 1 yıl sonra nerede görüyorsun?" value={formData.career_goals.vision} onChange={(e) => setFormData({...formData, career_goals: {...formData.career_goals, vision: e.target.value}})} className="w-full p-5 rounded-2xl border-none shadow-sm font-medium h-32" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-orange-400 ml-2">KISA VADELİ AKSİYON</label>
@@ -295,7 +294,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-               {/* İLETİŞİM & ŞEHİR DÜZENLEME */}
+               {/* GENEL BİLGİLER */}
                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 bg-slate-50 p-10 rounded-[40px]">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">AD SOYAD</label>
@@ -318,15 +317,18 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* İŞ DENEYİMLERİ DÜZENLEME */}
+              {/* İŞ DENEYİMLERİ DÜZENLEME (DÜZELTİLEN KISIM) */}
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black text-slate-800 uppercase italic">İş Deneyimleri Geçmişi</h3>
                   <Button 
-                    onClick={() => setFormData({
-                      ...formData, 
-                      work_experience: [...(formData.work_experience || []), {role: "", company: "", start: "", end: "", description: ""}]
-                    })} 
+                    onClick={() => {
+                      const newWork = { role: "", company: "", start: "", end: "", description: "" };
+                      setFormData({
+                        ...formData, 
+                        work_experience: [...(formData.work_experience || []), newWork]
+                      });
+                    }} 
                     variant="outline" 
                     className="text-rose-600 border-rose-200 hover:bg-rose-50 rounded-xl font-black italic uppercase"
                   >
@@ -334,26 +336,32 @@ export default function UserProfile() {
                   </Button>
                 </div>
                 <div className="space-y-6">
-                  {formData.work_experience?.map((work, i) => (
-                    <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-6 transition-all hover:border-rose-100">
-                      <button 
-                        onClick={() => {
-                          const updated = formData.work_experience.filter((_, idx) => idx !== i);
-                          setFormData({...formData, work_experience: updated});
-                        }} 
-                        className="absolute top-8 right-8 text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={24} />
-                      </button>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <input placeholder="Pozisyon / Unvan" value={work.role} onChange={(e) => { const n = [...formData.work_experience]; n[i].role = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                        <input placeholder="Şirket Adı" value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                        <input placeholder="Başlangıç (Örn: 2020)" value={work.start} onChange={(e) => { const n = [...formData.work_experience]; n[i].start = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
-                        <input placeholder="Bitiş (Örn: Halen veya 2023)" value={work.end} onChange={(e) => { const n = [...formData.work_experience]; n[i].end = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                  {formData.work_experience && formData.work_experience.length > 0 ? (
+                    formData.work_experience.map((work, i) => (
+                      <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-6 transition-all hover:border-rose-100">
+                        <button 
+                          onClick={() => {
+                            const updated = formData.work_experience.filter((_, idx) => idx !== i);
+                            setFormData({...formData, work_experience: updated});
+                          }} 
+                          className="absolute top-8 right-8 text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={24} />
+                        </button>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <input placeholder="Pozisyon / Unvan" value={work.role} onChange={(e) => { const n = [...formData.work_experience]; n[i].role = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                          <input placeholder="Şirket Adı" value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                          <input placeholder="Başlangıç (Örn: 2020)" value={work.start} onChange={(e) => { const n = [...formData.work_experience]; n[i].start = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                          <input placeholder="Bitiş (Örn: Halen veya 2023)" value={work.end} onChange={(e) => { const n = [...formData.work_experience]; n[i].end = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl font-bold italic outline-none focus:ring-2 ring-rose-200" />
+                        </div>
+                        <textarea placeholder="Görev ve Sorumluluklar" value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 border-none rounded-2xl h-40 font-medium text-slate-600 outline-none focus:ring-2 ring-rose-200" />
                       </div>
-                      <textarea placeholder="Görev ve Sorumluluklar" value={work.description} onChange={(e) => { const n = [...formData.work_experience]; n[i].description = e.target.value; setFormData({...formData, work_experience: n}); }} className="w-full p-5 bg-slate-50 border-none rounded-2xl h-40 font-medium text-slate-600 outline-none focus:ring-2 ring-rose-200" />
+                    ))
+                  ) : (
+                    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-[40px] text-slate-400 font-bold italic">
+                      Henüz bir iş deneyimi eklemediniz. "Yeni Deneyim Ekle" butonu ile başlayın.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 

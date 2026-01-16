@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   User, Building2, Pencil, GraduationCap,
-  Languages, History, X, ArrowRight, Award, Briefcase, Plus, Trash2, Download
+  Languages, History, X, ArrowRight, Award, Briefcase, Plus, Trash2, Download, Mail, Phone
 } from "lucide-react";
 
 const SECTORS = ["Yazılım", "Sağlık", "Eğitim", "Finans", "Pazarlama", "Üretim", "Diğer"];
@@ -23,6 +23,7 @@ export default function UserProfile() {
 
   const [formData, setFormData] = useState({
     full_name: "",
+    email: "", // Yeni eklendi
     city: "",
     phone_code: "+90",
     phone_number: "",
@@ -32,7 +33,7 @@ export default function UserProfile() {
     custom_title: "",
     work_experience: [],
     education: [],
-    certificates: [],
+    certificates: [], // Düzenlenebilir hale getirildi
     languages: [],
     digital_skills: []
   });
@@ -44,7 +45,6 @@ export default function UserProfile() {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      // Güncel oturumu çek
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
@@ -55,7 +55,6 @@ export default function UserProfile() {
 
       setMe(session.user);
 
-      // Profil verilerini çek
       const { data: p, error } = await supabase
         .from("profiles")
         .select("*")
@@ -67,6 +66,7 @@ export default function UserProfile() {
       if (p) {
         setFormData({
           full_name: p.full_name || "",
+          email: p.email || session.user.email || "", // Veritabanında yoksa session'dan al
           city: p.city || "",
           phone_code: p.phone?.split(" ")[0] || "+90",
           phone_number: p.phone?.split(" ")[1] || "",
@@ -76,7 +76,7 @@ export default function UserProfile() {
           custom_title: TITLES.includes(p.title) ? "" : p.title,
           work_experience: p.cv_data?.work_experience || [],
           education: p.cv_data?.education || [],
-          certificates: p.cv_data?.certificates || [],
+          certificates: p.cv_data?.certificates || [], // Artık cv_data içinden alıyoruz
           languages: p.cv_data?.languages || [],
           digital_skills: p.cv_data?.digital_skills || []
         });
@@ -89,12 +89,11 @@ export default function UserProfile() {
   };
 
   const handleSave = async () => {
-    // 1. Kritik Hata Çözümü: Güncel session'ı tekrar kontrol et
     const { data: { session } } = await supabase.auth.getSession();
     const currentUser = session?.user || me;
 
     if (!currentUser?.id) {
-      toast.error("Kullanıcı kimliği doğrulanamadı. Lütfen giriş yapın.");
+      toast.error("Kullanıcı kimliği doğrulanamadı.");
       return;
     }
 
@@ -103,19 +102,18 @@ export default function UserProfile() {
     const finalTitle = formData.title === "Diğer" ? formData.custom_title : formData.title;
     
     try {
-      // 2. Not-Null Constraint Hatası Çözümü: "email" alanını ekliyoruz
       const { error } = await supabase.from("profiles").upsert({
         id: currentUser.id,
-        email: currentUser.email, // Veritabanındaki zorunlu alan
+        email: formData.email, // E-posta kaydediliyor
         full_name: formData.full_name,
         city: formData.city,
-        phone: `${formData.phone_code} ${formData.phone_number}`,
+        phone: `${formData.phone_code} ${formData.phone_number}`, // Telefon kaydediliyor
         sector: finalSector,
         title: finalTitle,
         cv_data: {
           work_experience: formData.work_experience || [],
           education: formData.education || [],
-          certificates: formData.certificates || [],
+          certificates: formData.certificates || [], // Sertifikalar kaydediliyor
           languages: formData.languages || [],
           digital_skills: formData.digital_skills || []
         },
@@ -128,7 +126,6 @@ export default function UserProfile() {
       setEditOpen(false);
       loadProfile();
     } catch (e) { 
-      console.error("Kayıt Hatası:", e);
       toast.error("Hata: " + (e.message || "Bilinmeyen bir sorun oluştu")); 
     } finally { 
       setSaving(false); 
@@ -168,9 +165,6 @@ export default function UserProfile() {
                <Button onClick={() => setEditOpen(true)} className="bg-white text-rose-600 hover:bg-rose-50 rounded-2xl h-14 px-10 font-black shadow-xl transition-all active:scale-95 uppercase italic">
                  <Pencil size={18} className="mr-2" /> Özgeçmişi Düzenle
                </Button>
-               <Button variant="outline" className="border-white/40 text-white hover:bg-white/10 rounded-2xl h-14 px-8 backdrop-blur-sm font-bold uppercase italic">
-                 <Download size={18} className="mr-2" /> CV İNDİR
-               </Button>
             </div>
           </div>
         </div>
@@ -208,31 +202,14 @@ export default function UserProfile() {
             </div>
           </section>
 
-          {/* EĞİTİM */}
-          <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
-            <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 tracking-tighter uppercase italic">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner"><GraduationCap size={24} /></div>
-              Eğitim ve Öğretim
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {formData.education?.map((edu, i) => (
-                <div key={i} className="p-8 bg-slate-50 rounded-[30px] border-2 border-transparent hover:border-blue-200 transition-all hover:bg-white hover:shadow-xl">
-                  <h3 className="font-black text-slate-900 mb-1 uppercase text-sm italic">{edu.school}</h3>
-                  <p className="text-blue-600 text-xs font-black uppercase tracking-wider">{edu.degree}</p>
-                  <p className="text-slate-400 text-[10px] mt-4 font-black uppercase tracking-[0.2em]">{edu.year}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* SERTİFİKALAR */}
+          {/* SERTİFİKALAR (Görüntüleme) */}
           <section className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
             <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-slate-800 tracking-tighter uppercase italic">
               <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner"><Award size={24} /></div>
               Sertifikalar ve Başarılar
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              {formData.certificates?.map((cert, i) => (
+              {formData.certificates?.length > 0 ? formData.certificates.map((cert, i) => (
                 <div key={i} className="flex items-center gap-4 bg-slate-50 p-5 rounded-2xl border border-transparent hover:border-amber-200 transition-all">
                   <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm"><Award size={24}/></div>
                   <div>
@@ -240,12 +217,12 @@ export default function UserProfile() {
                     <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">{cert.issuer} • {cert.year}</p>
                   </div>
                 </div>
-              ))}
+              )) : <p className="text-slate-400 italic font-bold">Henüz sertifika eklenmemiş.</p>}
             </div>
           </section>
         </div>
 
-        {/* SAĞ KOLON */}
+        {/* SAĞ KOLON (İletişim) */}
         <div className="lg:col-span-4 space-y-8">
           <Card className="rounded-[40px] overflow-hidden border-none shadow-2xl bg-[#0f172a] text-white">
             <CardHeader className="border-b border-white/5 pb-6 pt-10 px-10">
@@ -256,7 +233,7 @@ export default function UserProfile() {
             <CardContent className="p-10 space-y-8">
               <div className="group">
                 <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">E-posta Adresi</p>
-                <p className="text-sm font-bold truncate text-slate-200 group-hover:text-rose-400 transition-colors italic">{me?.email}</p>
+                <p className="text-sm font-bold truncate text-slate-200 group-hover:text-rose-400 transition-colors italic">{formData.email}</p>
               </div>
               <div className="group">
                 <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Telefon Hattı</p>
@@ -278,33 +255,65 @@ export default function UserProfile() {
             <div className="sticky top-0 bg-white/95 backdrop-blur-md p-10 border-b flex justify-between items-center z-20">
               <div>
                 <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Profil Verilerini Güncelle</h2>
-                <p className="text-rose-500 text-xs font-black uppercase tracking-widest mt-1 italic">Sistem Kaydı ve CV Yapılandırması</p>
               </div>
               <button onClick={() => setEditOpen(false)} className="w-14 h-14 bg-slate-100 flex items-center justify-center rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-inner"><X size={28}/></button>
             </div>
 
             <div className="p-12 space-y-12">
-               {/* Sektör ve Unvan Seçimi */}
-               <div className="grid md:grid-cols-2 gap-8 bg-slate-50 p-10 rounded-[40px]">
+               {/* --- İLETİŞİM DÜZENLEME --- */}
+               <div className="grid md:grid-cols-3 gap-6 bg-slate-50 p-10 rounded-[40px]">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">AD SOYAD</label>
+                  <input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl border-none shadow-sm font-bold italic" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">E-POSTA</label>
+                  <input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full p-4 rounded-2xl border-none shadow-sm font-bold italic" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2">TELEFON NUMARASI</label>
+                  <div className="flex gap-2">
+                    <input className="w-20 p-4 rounded-2xl border-none shadow-sm font-bold italic text-center" value={formData.phone_code} onChange={(e) => setFormData({...formData, phone_code: e.target.value})} />
+                    <input className="flex-1 p-4 rounded-2xl border-none shadow-sm font-bold italic" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sektör ve Unvan Seçimi */}
+              <div className="grid md:grid-cols-2 gap-8 bg-slate-50 p-10 rounded-[40px]">
                 <div className="space-y-4">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 italic">Sektör Bilgisi</label>
-                  <select value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-5 bg-white border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none shadow-sm font-bold">
+                  <select value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} className="w-full p-5 bg-white border-none rounded-2xl shadow-sm font-bold">
                     <option value="">Sektör Seçiniz</option>
                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {formData.sector === "Diğer" && (
-                    <input placeholder="Kendi Sektörünüzü Tanımlayın" value={formData.custom_sector} onChange={(e) => setFormData({...formData, custom_sector: e.target.value})} className="w-full p-5 bg-rose-50 border border-rose-200 rounded-2xl font-bold italic animate-in slide-in-from-top-2"/>
-                  )}
                 </div>
                 <div className="space-y-4">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 italic">Mevcut Ünvan</label>
-                  <select value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-white border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none shadow-sm font-bold">
+                  <select value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-white border-none rounded-2xl shadow-sm font-bold">
                     <option value="">Ünvan Seçiniz</option>
                     {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  {formData.title === "Diğer" && (
-                    <input placeholder="Ünvanınızı Yazın" value={formData.custom_title} onChange={(e) => setFormData({...formData, custom_title: e.target.value})} className="w-full p-5 bg-rose-50 border border-rose-200 rounded-2xl font-bold italic animate-in slide-in-from-top-2"/>
-                  )}
+                </div>
+              </div>
+
+              {/* SERTİFİKALAR DÜZENLEME (Yeni eklendi) */}
+              <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-black text-slate-800 uppercase italic">Sertifikalar ve Başarılar</h3>
+                  <Button onClick={() => setFormData({...formData, certificates: [...formData.certificates, {name: "", issuer: "", year: ""}]})} variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 rounded-xl font-black italic uppercase">Sertifika Ekle</Button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {formData.certificates.map((cert, i) => (
+                    <div key={i} className="p-6 border-2 border-slate-100 rounded-[30px] relative bg-white shadow-lg space-y-4">
+                      <button onClick={() => setFormData({...formData, certificates: formData.certificates.filter((_, idx) => idx !== i)})} className="absolute top-4 right-4 text-red-400 hover:text-red-600"><Trash2 size={20} /></button>
+                      <input placeholder="Sertifika Adı" value={cert.name} onChange={(e) => { const n = [...formData.certificates]; n[i].name = e.target.value; setFormData({...formData, certificates: n}); }} className="w-full p-4 bg-slate-50 border-none rounded-xl font-bold italic" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input placeholder="Veren Kurum" value={cert.issuer} onChange={(e) => { const n = [...formData.certificates]; n[i].issuer = e.target.value; setFormData({...formData, certificates: n}); }} className="p-4 bg-slate-50 border-none rounded-xl font-bold italic" />
+                        <input placeholder="Yıl" value={cert.year} onChange={(e) => { const n = [...formData.certificates]; n[i].year = e.target.value; setFormData({...formData, certificates: n}); }} className="p-4 bg-slate-50 border-none rounded-xl font-bold italic" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -317,7 +326,7 @@ export default function UserProfile() {
                 <div className="space-y-6">
                   {formData.work_experience.map((work, i) => (
                     <div key={i} className="p-8 border-2 border-slate-100 rounded-[40px] relative bg-white shadow-xl space-y-6">
-                      <button onClick={() => setFormData({...formData, work_experience: formData.work_experience.filter((_, idx) => idx !== i)})} className="absolute top-8 right-8 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={24} /></button>
+                      <button onClick={() => setFormData({...formData, work_experience: formData.work_experience.filter((_, idx) => idx !== i)})} className="absolute top-8 right-8 text-red-400 hover:text-red-600"><Trash2 size={24} /></button>
                       <div className="grid md:grid-cols-2 gap-6">
                         <input placeholder="Pozisyon" value={work.role} onChange={(e) => { const n = [...formData.work_experience]; n[i].role = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl outline-none font-bold italic" />
                         <input placeholder="Şirket" value={work.company} onChange={(e) => { const n = [...formData.work_experience]; n[i].company = e.target.value; setFormData({...formData, work_experience: n}); }} className="p-5 bg-slate-50 border-none rounded-2xl outline-none font-bold italic" />
@@ -332,7 +341,7 @@ export default function UserProfile() {
             </div>
 
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-md p-10 border-t flex gap-6 z-20">
-              <Button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-[25px] h-20 text-xl font-black shadow-2xl shadow-rose-500/40 transition-all active:scale-95 uppercase italic tracking-tighter">
+              <Button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-[25px] h-20 text-xl font-black shadow-2xl transition-all uppercase italic tracking-tighter">
                 {saving ? "VERİLER İŞLENİYOR..." : "TÜM DEĞİŞİKLİKLERİ KAYDET VE UYGULA"}
               </Button>
               <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-20 px-12 rounded-[25px] font-black text-slate-400 uppercase italic border border-slate-100">VAZGEÇ</Button>

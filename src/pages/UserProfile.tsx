@@ -17,799 +17,275 @@ import {
   ShieldCheck,
   Calendar,
   ArrowRight,
-  LogIn,
   Pencil,
-  Save,
-  X,
+  GraduationCap,
+  Languages,
+  Code2,
+  Globe,
+  Plus,
+  Trash2,
+  History
 } from "lucide-react";
-
-/** ✅ timeout wrapper (askıda kalma fix) */
-function withTimeout(promise: any, ms = 12000, label = "request") {
-  return Promise.race([
-    promise,
-    new Promise((_, rej) =>
-      setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms)
-    ),
-  ]);
-}
-
-/** ✅ Telefon ülke kodları + format örnekleri */
-const PHONE_COUNTRIES = [
-  { iso: "TR", name: "Türkiye", dial: "+90", sample: "10 hane (5xx xxx xx xx)" },
-  { iso: "TN", name: "Tunus", dial: "+216", sample: "8 hane (xx xxx xxx)" },
-  { iso: "DE", name: "Almanya", dial: "+49", sample: "10-11 hane (15xx xxxxxx)" },
-  { iso: "FR", name: "Fransa", dial: "+33", sample: "9 hane (6 xx xx xx xx)" },
-  { iso: "NL", name: "Hollanda", dial: "+31", sample: "9 hane (6 xxxxxxxx)" },
-  { iso: "GB", name: "İngiltere", dial: "+44", sample: "10 hane (7xxx xxxxxx)" },
-  { iso: "US", name: "ABD", dial: "+1", sample: "10 hane (555 123 4567)" },
-  { iso: "AE", name: "BAE", dial: "+971", sample: "9 hane (5x xxx xxxx)" },
-  { iso: "SA", name: "Suudi Arabistan", dial: "+966", sample: "9 hane (5x xxx xxxx)" },
-  { iso: "QA", name: "Katar", dial: "+974", sample: "8 hane (xxxx xxxx)" },
-  { iso: "KW", name: "Kuveyt", dial: "+965", sample: "8 hane (xxxx xxxx)" },
-];
-
-/** ✅ Sektör listesi (kapsamlı, genişletilebilir) */
-const SECTORS = [
-  "Yazılım",
-  "Fintech",
-  "E-ticaret",
-  "Sağlık",
-  "Eğitim",
-  "Lojistik",
-  "Üretim",
-  "Danışmanlık",
-  "Pazarlama",
-  "Satış",
-  "İnsan Kaynakları",
-  "Hukuk",
-  "Turizm",
-  "Gıda & İçecek",
-  "Medya",
-  "Telekom",
-  "Enerji",
-  "Perakende",
-  "Otomotiv",
-  "Gayrimenkul",
-  "Kamu",
-  "Sigorta",
-  "Bankacılık",
-  "Siber Güvenlik",
-  "Yapay Zeka",
-  "Oyun",
-  "İnşaat",
-  "Tekstil",
-  "Kimya",
-  "Diğer",
-];
-
-/** ✅ Ünvan listesi (kapsamlı, genişletilebilir) */
-const TITLES = [
-  "CEO / Kurucu",
-  "COO",
-  "CTO",
-  "CFO",
-  "CHRO",
-  "Genel Müdür",
-  "Genel Müdür Yrd.",
-  "Direktör",
-  "Müdür",
-  "Takım Lideri",
-  "Product Manager",
-  "Product Owner",
-  "Project Manager",
-  "Program Manager",
-  "Scrum Master",
-  "Software Engineer",
-  "Frontend Developer",
-  "Backend Developer",
-  "Full Stack Developer",
-  "Mobile Developer",
-  "UI/UX Designer",
-  "Data Analyst",
-  "Data Scientist",
-  "ML Engineer",
-  "DevOps Engineer",
-  "Cloud Engineer",
-  "QA / Test Engineer",
-  "Cybersecurity Specialist",
-  "Sales Manager",
-  "Account Manager",
-  "Marketing Manager",
-  "Growth Manager",
-  "HR Manager",
-  "Recruiter",
-  "Finance Specialist",
-  "Lawyer",
-  "Operations",
-  "Business Development",
-  "Student",
-  "Freelancer",
-  "Diğer",
-];
-
-function splitPhone(raw: string) {
-  if (!raw) return { phone_country: "TR", phone_local: "" };
-  const clean = String(raw).trim();
-  const found = PHONE_COUNTRIES.find((c) => clean.startsWith(c.dial));
-  if (found) {
-    return {
-      phone_country: found.iso,
-      phone_local: clean.replace(found.dial, "").replace(/[^\d]/g, "").trim(),
-    };
-  }
-  return { phone_country: "TR", phone_local: clean.replace(/[^\d]/g, "").trim() };
-}
-
-function buildE164(countryIso: string, phoneLocal: string) {
-  const c = PHONE_COUNTRIES.find((x) => x.iso === countryIso) || PHONE_COUNTRIES[0];
-  const local = String(phoneLocal || "").replace(/[^\d]/g, "");
-  if (!local) return "";
-  return `${c.dial}${local}`;
-}
 
 export default function UserProfile() {
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [me, setMe] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-
-  /** ✅ Modal edit aktif */
+  const [me, setMe] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  /** ✅ Form state (profiles tablosu ile uyumlu) */
-  const [form, setForm] = useState({
-    full_name: "",
-    title: "",
-    sector: "",
-    city: "",
-    phone_country: "TR",
-    phone_local: "",
+  // Europass Veri Yapısı (Başlangıç Değerleri)
+  const [cvData, setCvData] = useState({
+    work_experience: [],
+    education: [],
+    languages: [],
+    digital_skills: [],
+    projects: []
   });
 
   useEffect(() => {
     let mounted = true;
-
     const load = async () => {
       try {
         setLoading(true);
-
-        const { data: sData, error: sErr } = await withTimeout(
-          supabase.auth.getSession(),
-          12000,
-          "auth.getSession"
-        );
-        if (sErr) throw sErr;
-
+        const { data: sData } = await supabase.auth.getSession();
         const user = sData?.session?.user || null;
         if (!mounted) return;
-
         setMe(user);
 
-        if (!user) {
-          setProfile(null);
-          return;
-        }
-
-        const { data: pData, error: pErr } = await withTimeout(
-          supabase
+        if (user) {
+          const { data: pData } = await supabase
             .from("profiles")
-            .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
+            .select("*")
             .eq("id", user.id)
-            .maybeSingle(),
-          12000,
-          "profiles.select"
-        );
-
-        if (pErr) {
-          console.error("profiles select error:", pErr);
-          toast.error(`Profil okunamadı: ${pErr.message || "RLS/kolon kontrol et"}`);
-
-          const phoneParts = splitPhone(user?.user_metadata?.phone || "");
-          setProfile(null);
-          setForm({
-            full_name:
-              user?.user_metadata?.display_name ||
-              user?.user_metadata?.full_name ||
-              "",
-            title: "",
-            sector: "",
-            city: "",
-            phone_country: phoneParts.phone_country,
-            phone_local: phoneParts.phone_local,
-          });
-          return;
+            .maybeSingle();
+          
+          setProfile(pData);
+          if (pData?.cv_data) {
+            setCvData(pData.cv_data);
+          }
         }
-
-        const p = pData || null;
-        setProfile(p);
-
-        const phoneParts = splitPhone(p?.phone || "");
-        setForm({
-          full_name:
-            p?.display_name ||
-            p?.full_name ||
-            user?.user_metadata?.display_name ||
-            user?.user_metadata?.full_name ||
-            "",
-          title: p?.title || "",
-          sector: p?.sector || "",
-          city: p?.city || "",
-          phone_country: phoneParts.phone_country,
-          phone_local: phoneParts.phone_local,
-        });
-      } catch (e: any) {
-        console.error("UserProfile load error:", e);
-        toast.error(e?.message ? `Profil yüklenemedi: ${e.message}` : "Profil yüklenemedi.");
+      } catch (e) {
+        toast.error("Yüklenirken bir hata oluştu.");
       } finally {
         if (mounted) setLoading(false);
       }
     };
-
     load();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const displayName =
-    profile?.display_name ||
-    profile?.full_name ||
-    me?.user_metadata?.display_name ||
-    me?.user_metadata?.full_name ||
-    me?.email?.split("@")?.[0] ||
-    "Kullanıcı";
-
-  // ✅ PROFİL TAMAMLANMA: Tek şema (name + phone + city + title + sector)
+  const displayName = profile?.full_name || me?.email?.split("@")[0] || "Kullanıcı";
   const completion = useMemo(() => {
-    if (!me) return 0;
-    const checks = [
-      !!(profile?.display_name || profile?.full_name || me?.user_metadata?.display_name || me?.user_metadata?.full_name),
-      !!profile?.phone,
-      !!profile?.city,
-      !!profile?.title,
-      !!profile?.sector,
-    ];
-    const filled = checks.filter(Boolean).length;
-    return Math.round((filled / checks.length) * 100);
-  }, [me, profile]);
-
-  const lastSignIn = useMemo(() => {
-    const raw = me?.last_sign_in_at;
-    if (!raw) return "-";
-    try {
-      const d = new Date(raw);
-      return d.toLocaleString();
-    } catch {
-      return raw;
-    }
-  }, [me]);
-
-  const openEdit = () => {
-    if (!me) {
-      toast.error("Giriş yapmadan profili düzenleyemezsin.");
-      navigate("/login");
-      return;
-    }
-
-    const phoneParts = splitPhone(profile?.phone || "");
-    setForm({
-      full_name:
-        profile?.display_name ||
-        profile?.full_name ||
-        me?.user_metadata?.display_name ||
-        me?.user_metadata?.full_name ||
-        "",
-      title: profile?.title || "",
-      sector: profile?.sector || "",
-      city: profile?.city || "",
-      phone_country: phoneParts.phone_country,
-      phone_local: phoneParts.phone_local,
-    });
-
-    setEditOpen(true);
-  };
-
-  const closeEdit = () => setEditOpen(false);
-
-  const saveProfile = async () => {
-    if (!me?.id) {
-      toast.error("Lütfen giriş yapın.");
-      return;
-    }
-    if (!me?.email) {
-      toast.error("Email bulunamadı. Lütfen çıkış yapıp tekrar giriş yap.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const phoneE164 = buildE164(form.phone_country, form.phone_local);
-      const cleanName = (form.full_name || "").trim();
-
-      // ✅ auth metadata da aynı isimle güncellensin (navbar/role akışı bozulmasın)
-      try {
-        await supabase.auth.updateUser({
-          data: {
-            display_name: cleanName,
-            full_name: cleanName,
-          },
-        });
-      } catch (e) {
-        // auth metadata güncellenemezse bile profiles kaydı devam etsin
-      }
-
-      const payload = {
-        id: me.id,
-        email: me.email,
-        display_name: cleanName, // ✅
-        full_name: cleanName,    // ✅
-        title: (form.title || "").trim(),
-        sector: (form.sector || "").trim(),
-        city: (form.city || "").trim(),
-        phone: phoneE164 || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await withTimeout(
-        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
-        12000,
-        "profiles.upsert"
-      );
-
-      if (error) {
-        console.error("profiles upsert error:", error);
-        toast.error(`Kaydedilemedi: ${error.message || "RLS/kolon kontrol et"}`);
-        return;
-      }
-
-      toast.success("Profil güncellendi.");
-
-      const { data: pData, error: pErr } = await withTimeout(
-        supabase
-          .from("profiles")
-          .select("id, display_name, full_name, title, sector, city, phone, email, created_at, updated_at")
-          .eq("id", me.id)
-          .maybeSingle(),
-        12000,
-        "profiles.reselect"
-      );
-
-      if (!pErr) setProfile(pData || payload);
-
-      setEditOpen(false);
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message ? `Beklenmeyen hata: ${e.message}` : "Beklenmeyen bir hata oluştu.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
-        Yükleniyor...
-      </div>
-    );
-  }
+    const sections = [profile?.full_name, profile?.city, cvData.work_experience.length > 0, cvData.education.length > 0];
+    return Math.round((sections.filter(Boolean).length / sections.length) * 100);
+  }, [profile, cvData]);
 
   return (
-    <div className="bg-white text-slate-900">
-      {/* HERO */}
+    <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
+      {/* --- HERO SECTION (MEVCUT YAPI KORUNDU) --- */}
       <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
         <div className="max-w-6xl mx-auto px-4 py-10">
-          <p className="text-xs text-white/90">User Profile</p>
+          <p className="text-xs text-white/90 uppercase tracking-widest">Europass CV Profile</p>
           <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">
-            {me ? displayName : "Profil"}
+            {displayName}
           </h1>
-          <p className="mt-2 text-sm text-white/90 max-w-2xl">
-            Profil bilgilerin, koç eşleşmelerini ve seans deneyimini doğrudan etkiler.
-            Ne kadar net olursan, sonuç o kadar hızlı gelir.
+          <p className="mt-2 text-sm text-white/90 max-w-2xl font-light">
+            Avrupa standartlarında özgeçmişiniz. Bilgileriniz koç eşleşmeleri ve kariyer yolculuğunuz için optimize edilmiştir.
           </p>
 
-          {/* Completion */}
           <div className="mt-6 max-w-xl">
-            <div className="flex items-center justify-between text-xs text-white/90">
-              <span>Profil tamamlanma</span>
-              <span className="font-semibold">%{me ? completion : 0}</span>
+            <div className="flex items-center justify-between text-xs text-white/90 mb-2">
+              <span>Profil Tamamlanma Oranı</span>
+              <span className="font-bold">%{completion}</span>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-white/25 overflow-hidden">
-              <div className="h-full bg-white" style={{ width: `${me ? completion : 0}%` }} />
+            <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div className="h-full bg-white transition-all duration-500" style={{ width: `${completion}%` }} />
             </div>
           </div>
 
-          {/* CTA row */}
-          <div className="mt-6 flex gap-2 flex-wrap">
-            <Button
-              className="rounded-xl bg-white text-slate-900 hover:bg-white/90"
-              onClick={() => navigate("/user/dashboard")}
-            >
+          <div className="mt-8 flex gap-3 flex-wrap">
+            <Button className="rounded-full bg-white text-slate-900 hover:bg-slate-100 px-6" onClick={() => navigate("/user/dashboard")}>
               Dashboard <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-
-            <Button
-              variant="outline"
-              className="rounded-xl border-white/70 text-white hover:bg-white/10"
-              onClick={() => navigate("/coaches")}
-            >
-              Koçları İncele
+            <Button variant="outline" className="rounded-full border-white/40 text-white hover:bg-white/10 px-6" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4 mr-2" /> Profili Düzenle
             </Button>
-
-            {me ? (
-              <Button
-                variant="outline"
-                className="rounded-xl border-white/70 text-white hover:bg-white/10"
-                onClick={openEdit}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Profili Düzenle
-              </Button>
-            ) : null}
           </div>
         </div>
       </section>
 
-      {/* CONTENT */}
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        {!me ? (
-          <Card className="border-slate-200">
-            <CardContent className="p-8">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
-                  <LogIn className="h-5 w-5 text-slate-900" />
+      {/* --- EUROPASS CONTENT --- */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid gap-8 lg:grid-cols-12">
+          
+          {/* SOL TARAF: ANA CV AKIŞI */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* İŞ DENEYİMİ */}
+            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800">
+                  <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><History size={20} /></div>
+                  İş Deneyimi
+                </h2>
+                <Button variant="ghost" size="sm" className="text-orange-600 hover:bg-orange-50 rounded-full">
+                  <Plus size={18} className="mr-1" /> Ekle
+                </Button>
+              </div>
+
+              {cvData.work_experience.length > 0 ? (
+                <div className="space-y-10 relative before:absolute before:inset-y-0 before:left-[15px] before:w-px before:bg-slate-200">
+                  {cvData.work_experience.map((exp, i) => (
+                    <div key={i} className="relative pl-12 group">
+                      <div className="absolute left-0 top-1 w-[31px] h-[31px] bg-white border-2 border-orange-500 rounded-full z-10 flex items-center justify-center">
+                         <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                      </div>
+                      <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
+                        <h3 className="text-lg font-bold text-slate-900">{exp.role}</h3>
+                        <span className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                          {exp.start} — {exp.end}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600 font-medium mb-3">
+                        <Building2 size={16} /> {exp.company} | <MapPin size={14} /> {exp.location}
+                      </div>
+                      <p className="text-slate-500 text-sm leading-relaxed">{exp.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-10 text-slate-400 text-sm italic border-2 border-dashed border-slate-100 rounded-2xl">Henüz iş deneyimi eklenmemiş.</p>
+              )}
+            </section>
+
+            {/* EĞİTİM */}
+            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800 mb-8">
+                <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><GraduationCap size={20} /></div>
+                Eğitim ve Öğretim
+              </h2>
+              <div className="grid gap-6">
+                {cvData.education.map((edu, i) => (
+                  <div key={i} className="flex gap-4 p-4 rounded-2xl border border-slate-50 hover:bg-slate-50 transition-colors">
+                    <div className="text-slate-400"><Calendar size={20} /></div>
+                    <div>
+                      <h3 className="font-bold text-slate-900">{edu.degree}</h3>
+                      <p className="text-slate-600 text-sm">{edu.school}</p>
+                      <p className="text-xs text-slate-400 mt-1">{edu.year}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* PROJELER */}
+            <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-bold flex items-center gap-3 text-slate-800 mb-6">
+                <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><Code2 size={20} /></div>
+                Projeler
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {cvData.projects.map((proj, i) => (
+                  <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <h4 className="font-bold text-slate-800 mb-2">{proj.name}</h4>
+                    <p className="text-xs text-slate-500 line-clamp-3">{proj.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* SAĞ TARAF: KİŞİSEL BİLGİLER VE DİLLER */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* KART: İletişim */}
+            <Card className="rounded-3xl border-slate-100 shadow-sm overflow-hidden">
+              <CardHeader className="bg-slate-900 text-white">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <User size={16} /> İletişim Bilgileri
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Mail size={16} /></div>
+                  <span className="text-slate-700 truncate">{me?.email}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Phone size={16} /></div>
+                  <span className="text-slate-700">{profile?.phone || "Belirtilmedi"}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><MapPin size={16} /></div>
+                  <span className="text-slate-700">{profile?.city || "Lokasyon girilmedi"}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* KART: Diller */}
+            <Card className="rounded-3xl border-slate-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                  <Languages size={18} className="text-orange-600" /> Dil Becerileri
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {cvData.languages.map((lang, i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span>{lang.name}</span>
+                      <span className="text-orange-600">{lang.level}</span>
+                    </div>
+                    <div className="h-1 bg-slate-100 rounded-full">
+                       <div className="h-full bg-orange-400 rounded-full" style={{ width: lang.percent + '%' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* KART: Dijital Yetkinlikler */}
+            <Card className="rounded-3xl border-slate-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                  <Globe size={18} className="text-orange-600" /> Dijital Yetkinlikler
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 flex flex-wrap gap-2">
+                {cvData.digital_skills.map((skill, i) => (
+                  <span key={i} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium border border-slate-200">
+                    {skill}
+                  </span>
+                ))}
+              </CardContent>
+            </Card>
+
+          </div>
+        </div>
+      </div>
+
+      {/* --- FOOTER STRIP (MEVCUT YAPI KORUNDU) --- */}
+      <footer className="max-w-6xl mx-auto px-4 pb-12">
+        <Card className="border-slate-200 bg-slate-900 text-white rounded-3xl">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-center md:text-left">
+                <div className="h-12 w-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                  <ShieldCheck className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    Profilini görmek için giriş yap
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Giriş yapınca hesap bilgilerin ve profil alanların burada görünecek.
-                  </p>
-
-                  <div className="mt-4 flex gap-2 flex-wrap">
-                    <Link to="/login">
-                      <Button className="rounded-xl">Giriş Yap</Button>
-                    </Link>
-                    <Link to="/register">
-                      <Button variant="outline" className="rounded-xl">
-                        Kayıt Ol
-                      </Button>
-                    </Link>
-                  </div>
+                  <h4 className="font-bold">Verileriniz Güvende</h4>
+                  <p className="text-slate-400 text-sm">Europass formatındaki bilgileriniz sadece eşleştiğiniz koçlar tarafından görülebilir.</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Account */}
-              <Card className="bg-white border-slate-200 shadow-sm lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="w-4 h-4 text-orange-600" /> Hesap Bilgileri
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="text-sm text-slate-700">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">{me?.email || "-"}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <BadgeCheck className="h-4 w-4" />
-                        User ID
-                      </div>
-                      <div className="mt-1 font-mono text-xs text-slate-900 break-all">
-                        {me?.id || "-"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <ShieldCheck className="h-4 w-4" />
-                        Son giriş
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">{lastSignIn}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <Phone className="h-4 w-4" />
-                        Telefon
-                      </div>
-                      <div className="mt-1 font-semibold text-slate-900">
-                        {profile?.phone || "-"}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Telefon / şehir / sektör gibi alanlar profilden gelir.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex gap-2 flex-wrap">
-                    <Button className="rounded-xl" onClick={() => navigate("/user/settings")}>
-                      Ayarlar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => navigate("/how-it-works")}
-                    >
-                      Nasıl çalışır?
-                    </Button>
-
-                    <Button variant="outline" className="rounded-xl" onClick={openEdit}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Profili Düzenle
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Profile snapshot */}
-              <Card className="bg-white border-slate-200 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-orange-600" /> Profil Özeti
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-slate-700 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Briefcase className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Unvan</p>
-                      <p className="font-semibold text-slate-900">{profile?.title || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Sektör</p>
-                      <p className="font-semibold text-slate-900">{profile?.sector || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Şehir</p>
-                      <p className="font-semibold text-slate-900">{profile?.city || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-200">
-                    <p className="text-xs text-slate-500">Önerilen</p>
-                    <p className="mt-1 text-sm text-slate-700">
-                      Profilin %{completion}.{" "}
-                      {completion < 70
-                        ? "Biraz daha tamamla, eşleşme kalitesi yükselsin."
-                        : "Gayet iyi. Seans planlamaya hazırsın."}
-                    </p>
-
-                    <div className="mt-4 flex gap-2 flex-wrap">
-                      <Button className="rounded-xl w-full" onClick={() => navigate("/coaches")}>
-                        Koçları İncele <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-xl w-full"
-                        onClick={() => navigate("/book-session")}
-                      >
-                        Seanslar
-                      </Button>
-                    </div>
-
-                    <div className="mt-3">
-                      <Button variant="outline" className="rounded-xl w-full" onClick={openEdit}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Profili Düzenle
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <Button className="rounded-full bg-orange-500 hover:bg-orange-600 px-8" onClick={() => navigate("/coaches")}>
+                Koçları Keşfet
+              </Button>
             </div>
-
-            {/* Bottom strip */}
-            <div className="mt-6">
-              <Card className="border-slate-200 bg-slate-50">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-slate-900" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Hızlı akış</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Hedefini netleştir → koçları filtrele → ilk seansı planla → aksiyon planı oluştur.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        className="rounded-xl"
-                        onClick={() => navigate("/coach-selection-process")}
-                      >
-                        Koç seçimi rehberi
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => navigate("/user/dashboard")}
-                      >
-                        Dashboard
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* ✅ EDIT MODAL */}
-            {editOpen ? (
-              <div className="fixed inset-0 z-50">
-                <div className="absolute inset-0 bg-black/50" onClick={saving ? undefined : closeEdit} />
-                <div className="absolute inset-x-0 top-10 sm:top-16 mx-auto w-[92%] max-w-2xl">
-                  <Card className="border-slate-200 shadow-2xl overflow-hidden">
-                    <CardHeader className="bg-white">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <Pencil className="h-4 w-4 text-orange-600" />
-                            Profili Düzenle
-                          </CardTitle>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Bu bilgiler eşleşme kalitesini ve seans deneyimini etkiler.
-                          </p>
-                        </div>
-                        <button
-                          className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50"
-                          onClick={saving ? undefined : closeEdit}
-                          aria-label="Kapat"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="bg-white p-6">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label className="text-xs text-slate-600">Ad Soyad</label>
-                          <input
-                            value={form.full_name}
-                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                            placeholder="Örn: Salih Gökalp Büyükçelebi"
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Ünvan</label>
-                          <select
-                            value={form.title}
-                            onChange={(e) => setForm({ ...form, title: e.target.value })}
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                          >
-                            <option value="">Seç</option>
-                            {TITLES.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Sektör</label>
-                          <select
-                            value={form.sector}
-                            onChange={(e) => setForm({ ...form, sector: e.target.value })}
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                          >
-                            <option value="">Seç</option>
-                            {SECTORS.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Şehir</label>
-                          <input
-                            value={form.city}
-                            onChange={(e) => setForm({ ...form, city: e.target.value })}
-                            placeholder="Örn: İstanbul"
-                            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-1">
-                          <label className="text-xs text-slate-600">Telefon</label>
-                          <div className="mt-1 grid grid-cols-3 gap-2">
-                            <select
-                              value={form.phone_country}
-                              onChange={(e) => setForm({ ...form, phone_country: e.target.value })}
-                              className="col-span-1 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                            >
-                              {PHONE_COUNTRIES.map((c) => (
-                                <option key={c.iso} value={c.iso}>
-                                  {c.iso} {c.dial}
-                                </option>
-                              ))}
-                            </select>
-
-                            <input
-                              value={form.phone_local}
-                              onChange={(e) =>
-                                setForm({ ...form, phone_local: e.target.value.replace(/[^\d]/g, "") })
-                              }
-                              placeholder="Sadece rakam"
-                              className="col-span-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-200"
-                            />
-                          </div>
-
-                          {(() => {
-                            const c =
-                              PHONE_COUNTRIES.find((x) => x.iso === form.phone_country) ||
-                              PHONE_COUNTRIES[0];
-                            const e164 = buildE164(form.phone_country, form.phone_local);
-                            return (
-                              <div className="mt-2 text-xs text-slate-500">
-                                <div>Örnek format: <span className="font-medium">{c.sample}</span></div>
-                                <div>Kaydedilecek format: <span className="font-mono">{e164 || "-"}</span></div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                        <Button
-                          className="rounded-xl bg-orange-600 hover:bg-orange-500"
-                          onClick={saveProfile}
-                          disabled={saving}
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {saving ? "Kaydediliyor..." : "Kaydet"}
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          className="rounded-xl"
-                          onClick={closeEdit}
-                          disabled={saving}
-                        >
-                          Vazgeç
-                        </Button>
-                      </div>
-
-                      <p className="mt-3 text-xs text-slate-500">
-                        *Kaydet dediğinde veriler <span className="font-medium">profiles</span> tablosuna yazılır.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      </footer>
     </div>
   );
 }

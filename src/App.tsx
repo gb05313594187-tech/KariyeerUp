@@ -84,6 +84,11 @@ import BireyselPremium from "@/pages/BireyselPremium";
 // ✅ NEW: SESSION JOIN (EKLENDİ)
 import SessionJoin from "@/pages/SessionJoin";
 
+// ✅ NEW: SESSION ROOM + LISTS (EKLENDİ)
+import SessionRoom from "@/pages/SessionRoom";
+import UserSessions from "@/pages/UserSessions";
+import CoachSessions from "@/pages/CoachSessions";
+
 // ✅ AUTH EXTRA PAGES
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -138,6 +143,15 @@ export default function App() {
 
             {/* ✅ NEW: JOIN SESSION ROUTE */}
             <Route path="session/:id/join" element={<SessionJoin />} />
+
+            {/* ✅ NEW: SESSION ROOM ROUTE */}
+            <Route path="session/:id/room" element={<SessionRoom />} />
+
+            {/* ✅ NEW: USER SESSIONS LIST (legacy /dashboard) */}
+            <Route path="dashboard/sessions" element={<UserSessions />} />
+
+            {/* ✅ NEW: COACH SESSIONS LIST */}
+            <Route path="coach/sessions" element={<CoachSessions />} />
 
             {/* ✅ PAYTR */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />

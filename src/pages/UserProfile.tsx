@@ -62,6 +62,28 @@ const TECH_SKILLS_POOL = [
   "CapCut",
   "WordPress",
   "Google Analytics",
+  "Logo Tiger",
+  "Logo Go3",
+  "Mikro Yazılım",
+  "ETA Muhasebe",
+  "Luca",
+  "Zirve Muhasebe",
+  "Paraşüt",
+  "Akınsoft",
+  "Nebim V3",
+  "Oracle NetSuite",
+  "QuickBooks",
+  "Adobe After Effects",
+  "DaVinci Resolve",
+  "Final Cut Pro",
+  "Sony Vegas Pro",
+  "Filmora",
+  "Adobe Audition",
+  "Avid Media Composer",
+  "Camplitude",
+  "Handbrake",
+  "Color Grading",
+  "Motion Graphics"
 ];
 
 const HOBBIES_DATA = {

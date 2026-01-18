@@ -93,6 +93,10 @@ import CoachSessions from "@/pages/CoachSessions";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 
+// ✅ NEW: SOCIAL HOME + JOB BOARD (EKLENDİ)
+import SocialHome from "@/pages/Home";
+import JobBoard from "@/pages/JobBoard";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -127,6 +131,12 @@ export default function App() {
           {/* ROOT - Düzenlendi: element={<PublicLayout />} şeklinde olmalı */}
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
+
+            {/* ✅ NEW: SOCIAL HOME ROUTE (EKLENDİ) */}
+            <Route path="home" element={<SocialHome />} />
+
+            {/* ✅ NEW: JOB BOARD ROUTE (EKLENDİ) */}
+            <Route path="jobs" element={<JobBoard />} />
 
             {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />

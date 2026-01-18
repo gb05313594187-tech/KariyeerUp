@@ -23,6 +23,8 @@ import {
   Sparkles,
   Video,
   Crown,
+  Home as HomeIcon,
+  Briefcase,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,6 +89,13 @@ export default function Navbar() {
   // ✅ Premium linki ASLA auth/role ile dinamik değil: bu kilitlenmeyi bitirir
   const premiumPath = "/bireysel-premium";
 
+  // ✅ NEW: Social Home + Jobs routes
+  const socialHomePath = "/home";
+  const jobsPath = "/jobs";
+
+  // ✅ NEW: Logo tıklanınca (auth varsa) Social Home'a gitsin
+  const logoPath = me ? socialHomePath : "/";
+
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
   const mobileBtn =
@@ -97,7 +106,8 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
+        {/* ✅ Logo: auth varsa /home, yoksa / */}
+        <Link to={logoPath} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
           </div>
@@ -105,6 +115,38 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-2">
+          {/* ✅ NEW: Ana Akış (auth varsa göster) */}
+          {me && (
+            <Link
+              to={socialHomePath}
+              className={[
+                "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
+                isActive("/home")
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "text-gray-700 hover:bg-gray-50",
+              ].join(" ")}
+            >
+              <HomeIcon className="h-4 w-4 text-red-600" />
+              Ana Akış
+            </Link>
+          )}
+
+          {/* ✅ NEW: İlanlar (auth varsa göster) */}
+          {me && (
+            <Link
+              to={jobsPath}
+              className={[
+                "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
+                isActive("/jobs")
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "text-gray-700 hover:bg-gray-50",
+              ].join(" ")}
+            >
+              <Briefcase className="h-4 w-4 text-red-600" />
+              İlanlar
+            </Link>
+          )}
+
           <Link
             to="/mentor-circle"
             className={[
@@ -206,6 +248,18 @@ export default function Navbar() {
 
                   <DropdownMenuSeparator />
 
+                  {/* ✅ NEW: Ana Akış */}
+                  <DropdownMenuItem onClick={() => navigate(socialHomePath)}>
+                    <HomeIcon className="mr-2 h-4 w-4" />
+                    Ana Akış
+                  </DropdownMenuItem>
+
+                  {/* ✅ NEW: İlanlar */}
+                  <DropdownMenuItem onClick={() => navigate(jobsPath)}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    İlanlar
+                  </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {dashboardLabel}
@@ -257,6 +311,18 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
+            {/* ✅ NEW: Mobile Ana Akış + İlanlar */}
+            {me && (
+              <>
+                <button onClick={() => navigate(socialHomePath)} className={mobileBtn}>
+                  Ana Akış
+                </button>
+                <button onClick={() => navigate(jobsPath)} className={mobileBtn}>
+                  İlanlar
+                </button>
+              </>
+            )}
+
             <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
               MentorCircle
             </button>

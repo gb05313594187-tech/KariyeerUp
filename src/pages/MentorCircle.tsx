@@ -1,6 +1,6 @@
 // src/pages/MentorCircle.tsx
 // @ts-nocheck
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import PostCard from "@/components/PostCard";
 
@@ -9,6 +9,9 @@ export default function MentorCircle() {
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // 🔹 İlk yükleme
   useEffect(() => {
@@ -25,7 +28,7 @@ export default function MentorCircle() {
       .limit(20);
 
     if (error) {
-      console.error("Feed load error:", error);
+      console.error("Initial feed error:", error);
     } else {
       setPosts(data || []);
       if (data && data.length > 0) {
@@ -37,9 +40,9 @@ export default function MentorCircle() {
     setLoading(false);
   };
 
-  // 🔹 Pagination (Load more)
-  const loadMore = async () => {
-    if (!hasMore || loading || !cursor) return;
+  // 🔹 Pagination
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore || !cursor) return;
 
     setLoading(true);
 
@@ -51,7 +54,7 @@ export default function MentorCircle() {
       .limit(20);
 
     if (error) {
-      console.error("Feed pagination error:", error);
+      console.error("Pagination error:", error);
     } else {
       if (data && data.length > 0) {
         setPosts((prev) => [...prev, ...data]);
@@ -63,7 +66,32 @@ export default function MentorCircle() {
     }
 
     setLoading(false);
-  };
+  }, [loading, hasMore, cursor]);
+
+  // 🔹 IntersectionObserver
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting) {
+          loadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0,
+      }
+    );
+
+    observerRef.current.observe(sentinelRef.current);
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [loadMore]);
 
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-4">
@@ -73,15 +101,13 @@ export default function MentorCircle() {
         <PostCard key={post.id} post={post} />
       ))}
 
+      {/* 🔹 Scroll Sentinel */}
       {hasMore && (
-        <div className="flex justify-center py-6">
-          <button
-            onClick={loadMore}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg border text-sm hover:bg-gray-100 disabled:opacity-50"
-          >
-            {loading ? "Yükleniyor..." : "Daha fazla yükle"}
-          </button>
+        <div
+          ref={sentinelRef}
+          className="h-10 flex items-center justify-center text-sm text-gray-400"
+        >
+          {loading ? "Yükleniyor..." : " "}
         </div>
       )}
 

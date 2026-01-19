@@ -1,7 +1,7 @@
 // src/pages/MentorCircleFeed.tsx
 // @ts-nocheck
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import PostCard from "@/components/PostCard";
 
@@ -11,7 +11,11 @@ export default function MentorCircleFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  // 🔹 İLK YÜKLEME
+  const observerRef = useRef(null);
+
+  /* ============================
+     İLK YÜKLEME
+     ============================ */
   useEffect(() => {
     loadInitial();
   }, []);
@@ -23,21 +27,19 @@ export default function MentorCircleFeed() {
       .from("mentor_circle_feed_premium")
       .select("*")
       .order("premium_score", { ascending: false })
-      .range(0, 19); // ✅ İLK 20 POST
+      .range(0, 19); // ilk 20
 
-    if (error) {
-      console.error(error);
-    } else {
+    if (!error) {
       setPosts(data || []);
-      if (!data || data.length < 20) {
-        setHasMore(false);
-      }
+      if (!data || data.length < 20) setHasMore(false);
     }
 
     setLoading(false);
   };
 
-  // 🔹 DEVAMINI YÜKLE (PAGINATION)
+  /* ============================
+     DAHA FAZLA YÜKLE (CURSOR)
+     ============================ */
   const loadMore = async () => {
     if (loadingMore || !hasMore || posts.length === 0) return;
 
@@ -49,12 +51,10 @@ export default function MentorCircleFeed() {
       .from("mentor_circle_feed_premium")
       .select("*")
       .order("premium_score", { ascending: false })
-      .lt("created_at", cursor) // ✅ CURSOR
+      .lt("created_at", cursor)
       .limit(20);
 
-    if (error) {
-      console.error(error);
-    } else {
+    if (!error) {
       if (!data || data.length === 0) {
         setHasMore(false);
       } else {
@@ -65,23 +65,42 @@ export default function MentorCircleFeed() {
     setLoadingMore(false);
   };
 
+  /* ============================
+     INTERSECTION OBSERVER
+     ============================ */
+  useEffect(() => {
+    if (!observerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 1 }
+    );
+
+    observer.observe(observerRef.current);
+
+    return () => observer.disconnect();
+  }, [posts, hasMore, loadingMore]);
+
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-4">
       {loading && <div className="text-center">Yükleniyor…</div>}
 
-      {!loading &&
-        posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+      {posts.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
 
-      {!loading && hasMore && (
-        <button
-          onClick={loadMore}
-          disabled={loadingMore}
-          className="w-full py-3 border rounded-lg text-sm font-medium hover:bg-gray-50"
+      {/* 👇 Scroll tetik noktası */}
+      {hasMore && (
+        <div
+          ref={observerRef}
+          className="h-10 flex items-center justify-center text-sm text-gray-400"
         >
-          {loadingMore ? "Yükleniyor…" : "Daha fazla yükle"}
-        </button>
+          {loadingMore ? "Yükleniyor…" : " "}
+        </div>
       )}
 
       {!hasMore && (

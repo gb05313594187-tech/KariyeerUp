@@ -6,76 +6,97 @@ import { supabase } from "@/lib/supabase";
 const REACTIONS = ["like", "celebrate", "support", "love", "insightful", "funny"];
 
 export default function ReactionBar({ postId }) {
-  const [user, setUser] = useState(null);
+  const [counts, setCounts] = useState({});
   const [myReaction, setMyReaction] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  // 🔐 auth güvenli şekilde al
+  // 🔹 İlk yükleme
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data?.user ?? null);
-    });
-  }, []);
+    loadReactions();
 
-  // 👀 kullanıcının mevcut reaction’ını çek
-  useEffect(() => {
-    if (!user || !postId) return;
+    // 🔴 REALTIME SUBSCRIPTION (TEK CHANNEL)
+    const channel = supabase
+      .channel(`post-reactions-${postId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "post_reactions",
+          filter: `post_id=eq.${postId}`,
+        },
+        () => {
+          loadReactions();
+        }
+      )
+      .subscribe();
 
-    supabase
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [postId]);
+
+  const loadReactions = async () => {
+    const { data, error } = await supabase
       .from("post_reactions")
-      .select("type")
-      .eq("post_id", postId)
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setMyReaction(data?.type ?? null);
-      });
-  }, [user, postId]);
+      .select("type, user_id")
+      .eq("post_id", postId);
 
-  const toggleReaction = async (type) => {
-    if (!user || loading) return;
-    setLoading(true);
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-    // aynı reaction → sil
+    const map = {};
+    let mine = null;
+    const me = (await supabase.auth.getUser()).data?.user?.id;
+
+    data.forEach((r) => {
+      map[r.type] = (map[r.type] || 0) + 1;
+      if (r.user_id === me) mine = r.type;
+    });
+
+    setCounts(map);
+    setMyReaction(mine);
+  };
+
+  // 🔁 TOGGLE REACTION
+  const react = async (type) => {
+    const user = (await supabase.auth.getUser()).data?.user;
+    if (!user) return;
+
     if (myReaction === type) {
       await supabase
         .from("post_reactions")
         .delete()
         .eq("post_id", postId)
+        .eq("user_id", user.id)
+        .eq("type", type);
+    } else {
+      await supabase.from("post_reactions").delete()
+        .eq("post_id", postId)
         .eq("user_id", user.id);
 
-      setMyReaction(null);
-      setLoading(false);
-      return;
+      await supabase.from("post_reactions").insert({
+        post_id: postId,
+        user_id: user.id,
+        type,
+      });
     }
-
-    // farklı reaction → upsert
-    await supabase.from("post_reactions").upsert({
-      post_id: postId,
-      user_id: user.id,
-      type,
-    });
-
-    setMyReaction(type);
-    setLoading(false);
   };
 
-  if (!user) return null;
-
   return (
-    <div className="flex gap-2 flex-wrap pt-2">
+    <div className="flex gap-2 flex-wrap text-sm">
       {REACTIONS.map((r) => (
         <button
           key={r}
-          onClick={() => toggleReaction(r)}
-          className={`px-2 py-1 rounded text-xs border
-            ${
-              myReaction === r
-                ? "bg-black text-white"
-                : "bg-gray-100 hover:bg-gray-200"
-            }`}
+          onClick={() => react(r)}
+          className={`px-3 py-1 rounded-full border transition
+            ${myReaction === r
+              ? "bg-indigo-600 text-white border-indigo-600"
+              : "bg-white hover:bg-gray-100"}
+          `}
         >
-          {r}
+          {r} {counts[r] || 0}
         </button>
       ))}
     </div>

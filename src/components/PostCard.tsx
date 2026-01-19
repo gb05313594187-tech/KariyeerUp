@@ -6,6 +6,8 @@ import EventView from "@/components/EventView";
 import JobDetail from "@/components/JobDetail";
 
 export default function PostCard({ post }) {
+  if (!post) return null;
+
   const name =
     post?.profiles?.full_name ||
     post?.profiles?.fullName ||
@@ -26,7 +28,6 @@ export default function PostCard({ post }) {
             alt={name}
             className="w-10 h-10 rounded-full object-cover"
             onError={(e) => {
-              // fallback
               e.currentTarget.style.display = "none";
             }}
           />
@@ -37,18 +38,22 @@ export default function PostCard({ post }) {
         <div className="min-w-0">
           <div className="font-semibold truncate">{name}</div>
           <div className="text-xs text-gray-500">
-            {post?.created_at ? new Date(post.created_at).toLocaleString() : ""}
+            {post?.created_at
+              ? new Date(post.created_at).toLocaleString()
+              : ""}
           </div>
         </div>
       </div>
 
-      {post?.content && <div className="whitespace-pre-wrap">{post.content}</div>}
+      {post?.content && (
+        <div className="whitespace-pre-wrap">{post.content}</div>
+      )}
 
       {post?.type === "poll" && <PollView postId={post.id} />}
       {post?.type === "event" && <EventView postId={post.id} />}
       {post?.type === "job" && <JobDetail postId={post.id} />}
 
-      <ReactionBar postId={post.id} />
+      {post?.id && <ReactionBar postId={post.id} />}
     </div>
   );
 }

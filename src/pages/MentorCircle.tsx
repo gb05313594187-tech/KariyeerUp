@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import PostCard from "@/components/PostCard";
+import { Crown, Lock, Users } from "lucide-react";
 
 export default function MentorCircle() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -13,7 +14,9 @@ export default function MentorCircle() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔹 İlk yükleme
+  /* -------------------------------
+     INITIAL LOAD
+  -------------------------------- */
   useEffect(() => {
     loadInitial();
   }, []);
@@ -27,22 +30,20 @@ export default function MentorCircle() {
       .order("ai_score", { ascending: false })
       .limit(20);
 
-    if (error) {
-      console.error("Initial feed error:", error);
-    } else {
-      setPosts(data || []);
-      if (data && data.length > 0) {
-        setCursor(data[data.length - 1].created_at);
-        setHasMore(data.length === 20);
-      }
+    if (!error && data) {
+      setPosts(data);
+      setCursor(data.at(-1)?.created_at ?? null);
+      setHasMore(data.length === 20);
     }
 
     setLoading(false);
   };
 
-  // 🔹 Pagination
+  /* -------------------------------
+     PAGINATION
+  -------------------------------- */
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore || !cursor) return;
+    if (!hasMore || loading || !cursor) return;
 
     setLoading(true);
 
@@ -53,61 +54,95 @@ export default function MentorCircle() {
       .order("ai_score", { ascending: false })
       .limit(20);
 
-    if (error) {
-      console.error("Pagination error:", error);
+    if (!error && data?.length) {
+      setPosts((prev) => [...prev, ...data]);
+      setCursor(data.at(-1)?.created_at ?? null);
+      setHasMore(data.length === 20);
     } else {
-      if (data && data.length > 0) {
-        setPosts((prev) => [...prev, ...data]);
-        setCursor(data[data.length - 1].created_at);
-        setHasMore(data.length === 20);
-      } else {
-        setHasMore(false);
-      }
+      setHasMore(false);
     }
 
     setLoading(false);
-  }, [loading, hasMore, cursor]);
+  }, [cursor, hasMore, loading]);
 
-  // 🔹 IntersectionObserver
+  /* -------------------------------
+     INTERSECTION OBSERVER
+  -------------------------------- */
   useEffect(() => {
     if (!sentinelRef.current) return;
 
     observerRef.current = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting) {
-          loadMore();
-        }
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
       },
-      {
-        root: null,
-        rootMargin: "200px",
-        threshold: 0,
-      }
+      { rootMargin: "200px" }
     );
 
     observerRef.current.observe(sentinelRef.current);
-
-    return () => {
-      observerRef.current?.disconnect();
-    };
+    return () => observerRef.current?.disconnect();
   }, [loadMore]);
 
+  /* -------------------------------
+     UI HELPERS
+  -------------------------------- */
+  const renderVisibilityBadge = (post: any) => {
+    if (post.visibility === "private") {
+      return (
+        <span className="flex items-center gap-1 text-xs text-red-600">
+          <Lock size={14} /> Private
+        </span>
+      );
+    }
+    if (post.visibility === "followers") {
+      return (
+        <span className="flex items-center gap-1 text-xs text-indigo-600">
+          <Users size={14} /> Followers
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const premiumWrapper = (post: any, children: any) => {
+    if (!post.is_premium) return children;
+
+    return (
+      <div className="relative rounded-xl border border-yellow-400/40 bg-gradient-to-br from-yellow-50 via-white to-yellow-100 shadow-[0_0_30px_rgba(234,179,8,0.15)]">
+        <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-semibold text-yellow-700">
+          <Crown size={14} /> PREMIUM
+        </div>
+        {children}
+      </div>
+    );
+  };
+
+  /* -------------------------------
+     RENDER
+  -------------------------------- */
   return (
-    <div className="max-w-2xl mx-auto py-6 space-y-4">
-      <h1 className="text-2xl font-bold mb-4">Mentor Circle</h1>
+    <div className="max-w-2xl mx-auto py-6 space-y-6">
+      <h1 className="text-2xl font-bold">Mentor Circle</h1>
 
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
+      {posts.map((post) =>
+        premiumWrapper(
+          post,
+          <div key={post.id} className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="text-sm font-medium">{post.author_name}</div>
+              {renderVisibilityBadge(post)}
+            </div>
 
-      {/* 🔹 Scroll Sentinel */}
+            <PostCard post={post} />
+          </div>
+        )
+      )}
+
       {hasMore && (
         <div
           ref={sentinelRef}
-          className="h-10 flex items-center justify-center text-sm text-gray-400"
+          className="h-12 flex items-center justify-center text-sm text-gray-400"
         >
-          {loading ? "Yükleniyor..." : " "}
+          {loading ? "Yükleniyor…" : ""}
         </div>
       )}
 

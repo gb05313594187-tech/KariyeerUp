@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import PostCard from "@/components/PostCard";
-import { Crown, Lock, Users, Heart } from "lucide-react";
+import { Crown, Lock, Users, Heart, Info } from "lucide-react";
 
 export default function MentorCircle() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -13,13 +13,15 @@ export default function MentorCircle() {
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const viewedRef = useRef<Set<string>>(new Set());
 
-  /* -------------------------------
-     INITIAL LOAD
-  -------------------------------- */
+  /* ---------------- INITIAL LOAD ---------------- */
   useEffect(() => {
     loadInitial();
-    subscribeRealtimeReactions();
+    const channel = subscribeRealtimeReactions();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadInitial = async () => {
@@ -40,9 +42,7 @@ export default function MentorCircle() {
     setLoading(false);
   };
 
-  /* -------------------------------
-     PAGINATION
-  -------------------------------- */
+  /* ---------------- PAGINATION ---------------- */
   const loadMore = useCallback(async () => {
     if (!hasMore || loading || !cursor) return;
 
@@ -66,17 +66,12 @@ export default function MentorCircle() {
     setLoading(false);
   }, [cursor, hasMore, loading]);
 
-  /* -------------------------------
-     INTERSECTION OBSERVER
-     + VIEW EVENT (AI LEARNING)
-  -------------------------------- */
+  /* ---------------- OBSERVER ---------------- */
   useEffect(() => {
     if (!sentinelRef.current) return;
 
     observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) loadMore();
-      },
+      ([entry]) => entry.isIntersecting && loadMore(),
       { rootMargin: "200px" }
     );
 
@@ -84,33 +79,38 @@ export default function MentorCircle() {
     return () => observerRef.current?.disconnect();
   }, [loadMore]);
 
+  /* ---------------- EVENTS ---------------- */
   const trackEvent = async (type: string, postId: string) => {
+    if (type === "view") {
+      if (viewedRef.current.has(postId)) return;
+      viewedRef.current.add(postId);
+    }
+
     await supabase.from("mentor_circle_events").insert({
       post_id: postId,
       event_type: type,
     });
   };
 
-  /* -------------------------------
-     REALTIME REACTIONS
-  -------------------------------- */
+  /* ---------------- REALTIME REACTIONS ---------------- */
   const subscribeRealtimeReactions = () => {
-    supabase
+    return supabase
       .channel("mentor-circle-reactions")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "mentor_circle_reactions",
+          table: "post_reactions",
         },
         (payload) => {
-          const postId = payload.new.post_id;
+          const postId = payload.new?.post_id;
+          if (!postId) return;
 
           setPosts((prev) =>
             prev.map((p) =>
               p.id === postId
-                ? { ...p, reactions_count: payload.new.reactions_count }
+                ? { ...p, reaction_count: (p.reaction_count || 0) + 1 }
                 : p
             )
           );
@@ -119,9 +119,7 @@ export default function MentorCircle() {
       .subscribe();
   };
 
-  /* -------------------------------
-     UI HELPERS
-  -------------------------------- */
+  /* ---------------- UI HELPERS ---------------- */
   const renderVisibilityBadge = (post: any) => {
     if (post.visibility === "private")
       return (
@@ -171,9 +169,7 @@ export default function MentorCircle() {
     );
   };
 
-  /* -------------------------------
-     RENDER
-  -------------------------------- */
+  /* ---------------- RENDER ---------------- */
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-6">
       <h1 className="text-2xl font-bold">Mentor Circle</h1>
@@ -193,9 +189,18 @@ export default function MentorCircle() {
 
             <PostCard post={post} />
 
-            <div className="flex items-center gap-2 text-sm text-gray-500 px-1">
-              <Heart size={14} />
-              {post.reactions_count || 0}
+            <div className="flex items-center justify-between text-sm text-gray-500 px-1">
+              <div className="flex items-center gap-2">
+                <Heart size={14} />
+                {post.reaction_count || 0}
+              </div>
+
+              {post.ai_labels && (
+                <div className="flex items-center gap-1 text-xs text-indigo-600">
+                  <Info size={12} />
+                  Neden üstte?
+                </div>
+              )}
             </div>
           </div>
         )
@@ -207,12 +212,6 @@ export default function MentorCircle() {
           className="h-12 flex items-center justify-center text-sm text-gray-400"
         >
           {loading ? "Yükleniyor…" : ""}
-        </div>
-      )}
-
-      {!hasMore && (
-        <div className="text-center text-sm text-gray-500 py-6">
-          Başka gönderi yok
         </div>
       )}
     </div>

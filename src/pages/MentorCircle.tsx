@@ -27,7 +27,7 @@ export default function MentorCircleFeed() {
       .from("mentor_circle_feed_premium")
       .select("*")
       .order("premium_score", { ascending: false })
-      .range(0, 19); // ilk 20
+      .range(0, 19);
 
     if (!error) {
       setPosts(data || []);
@@ -38,7 +38,7 @@ export default function MentorCircleFeed() {
   };
 
   /* ============================
-     DAHA FAZLA YÜKLE (CURSOR)
+     PAGINATION (CURSOR)
      ============================ */
   const loadMore = async () => {
     if (loadingMore || !hasMore || posts.length === 0) return;
@@ -66,7 +66,7 @@ export default function MentorCircleFeed() {
   };
 
   /* ============================
-     INTERSECTION OBSERVER
+     SCROLL OBSERVER
      ============================ */
   useEffect(() => {
     if (!observerRef.current) return;
@@ -85,6 +85,45 @@ export default function MentorCircleFeed() {
     return () => observer.disconnect();
   }, [posts, hasMore, loadingMore]);
 
+  /* ============================
+     REALTIME SUBSCRIPTION
+     ============================ */
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-feed")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts",
+        },
+        async (payload) => {
+          const postId = payload.new.id;
+
+          // yeni post'u view'dan çek
+          const { data } = await supabase
+            .from("mentor_circle_feed_premium")
+            .select("*")
+            .eq("id", postId)
+            .single();
+
+          if (!data) return;
+
+          setPosts((prev) => {
+            // duplicate engelle
+            if (prev.find((p) => p.id === data.id)) return prev;
+            return [data, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-4">
       {loading && <div className="text-center">Yükleniyor…</div>}
@@ -93,7 +132,6 @@ export default function MentorCircleFeed() {
         <PostCard key={post.id} post={post} />
       ))}
 
-      {/* 👇 Scroll tetik noktası */}
       {hasMore && (
         <div
           ref={observerRef}

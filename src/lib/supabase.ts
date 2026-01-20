@@ -32,32 +32,26 @@ const fetchWithTimeout = async (
 
 // ✅ Supabase internal fetch'leri de timeout'lu yap
 const supabaseFetch: typeof fetch = (input: any, init?: any) => {
-  // Supabase-js bazı yerlerde init undefined geçebilir
   return fetchWithTimeout(input, init || {}, 15000) as any;
 };
 
 /* =========================================================
-   ✅ Supabase Client (stabil)
-   - global.headers'da apikey set ETME: supabase zaten ekler
-   - auth refresh/persist açık
-   - ✅ global.fetch: tüm supabase istekleri timeout'lu
+   ✅ Supabase Client (Stabilize Edilmiş Versiyon)
    ========================================================= */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    storageKey: 'kariyeerup-auth-token', // Çakışmaları önlemek için özel key
   },
   db: { schema: "public" },
-
-  // ✅ KRİTİK: pending kalan istekler navbar/auth'ı kilitlemesin
   global: {
     fetch: supabaseFetch,
   },
 });
 
 async function getAccessToken(): Promise<string | null> {
-  // getSession, refresh olmuş session’ı da döndürür; yoksa null
   const { data, error } = await supabase.auth.getSession();
   if (error) return null;
   return data?.session?.access_token || null;
@@ -109,10 +103,10 @@ interface AIAnalysis {
 export interface PremiumSubscription {
   id: string;
   user_id: string;
-  subscription_type: SubscriptionType; // ✅ individual | corporate | coach
-  status: SubscriptionStatus; // ✅ active | cancelled | expired | pending
+  subscription_type: SubscriptionType; 
+  status: SubscriptionStatus; 
   price: number;
-  currency: string; // default TRY
+  currency: string; 
   start_date: string;
   end_date: string | null;
   auto_renew: boolean | null;
@@ -256,7 +250,6 @@ export const subscriptionService = {
       const result = await res.json();
       return (result.subscriptions || []) as PremiumSubscription[];
     } catch {
-      // abort / network sleep dahil: boş dön
       return [];
     }
   },

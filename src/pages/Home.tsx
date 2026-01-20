@@ -93,10 +93,6 @@ export default function Home() {
 
     setSubmitting(true);
     
-    // Not: Gerçek projede selectedImage önce Supabase Storage'a yüklenmeli
-    // ve dönen URL buraya post_type: 'image' ile kaydedilmeli.
-    // Şimdilik sadece text/genel yapı üzerinden gidiyoruz.
-    
     const { error } = await supabase.from("posts").insert({
       author_id: user.id,
       type: selectedImage ? "image" : "text",
@@ -152,7 +148,8 @@ export default function Home() {
 
         <CardContent>
           <div className="flex items-center justify-between border-t border-gray-50 pt-4 pb-1">
-            <div className="flex gap-2">
+            {/* İkonların olduğu kısım - İstediğin onClick'ler eklendi */}
+            <div className="flex gap-4 text-gray-400">
               {/* Gizli Dosya Girişi */}
               <input 
                 type="file" 
@@ -163,36 +160,36 @@ export default function Home() {
               />
               
               <button 
-                onClick={handleImageClick}
-                className="p-2.5 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-xl transition-all flex items-center gap-2 group"
+                onClick={() => fileInputRef.current?.click()} // Resim seçiciyi açar
+                className="hover:text-blue-500 transition-colors"
                 title="Fotoğraf Ekle"
               >
-                <Image size={22} className="group-active:scale-90 transition-transform" />
+                <Image size={20} />
               </button>
               
               <button 
-                onClick={() => toast.info("Anket özelliği yakında aktif olacak!")}
-                className="p-2.5 hover:bg-orange-50 text-gray-400 hover:text-orange-600 rounded-xl transition-all"
+                onClick={() => toast.info("Anket yakında!")} // Anket uyarısı
+                className="hover:text-blue-500 transition-colors"
                 title="Anket Yap"
               >
-                <BarChart2 size={22} />
+                <BarChart2 size={20} />
               </button>
 
               <button 
                 onClick={() => toast.info("Etkinlik planlayıcı yakında burada!")}
-                className="p-2.5 hover:bg-green-50 text-gray-400 hover:text-green-600 rounded-xl transition-all"
+                className="hover:text-blue-500 transition-colors"
                 title="Etkinlik Planla"
               >
-                <Calendar size={22} />
+                <Calendar size={20} />
               </button>
 
               {user?.role === "corporate" && (
                 <button 
                   onClick={() => toast.success("İş ilanı moduna geçiliyor...")}
-                  className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-[#E63946] rounded-xl transition-all"
+                  className="hover:text-blue-500 transition-colors"
                   title="İş İlanı Yayınla"
                 >
-                  <Briefcase size={22} />
+                  <Briefcase size={20} />
                 </button>
               )}
             </div>

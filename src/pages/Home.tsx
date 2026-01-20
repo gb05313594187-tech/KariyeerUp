@@ -1,89 +1,43 @@
-// src/pages/Home.tsx
 // @ts-nocheck
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ThumbsUp,
-  MessageCircle,
-  Repeat2,
-  Send,
-  Image,
-  BarChart2,
-  Calendar,
-  Briefcase,
-  Globe,
-  Users,
-  Lock,
-} from "lucide-react";
+import { Image, BarChart2, Calendar, Briefcase } from "lucide-react";
 import { toast } from "sonner";
+// Yeni eklediğimiz bileşeni import ediyoruz
+import AIEnhancedPostCard from "@/components/AIEnhancedPostCard";
 
-/* ---------------------------------------------------
- TYPES
---------------------------------------------------- */
-type Post = {
-  id: string;
-  author_id: string;
-  type: string;
-  content: string | null;
-  visibility: "public" | "followers" | "private";
-  created_at: string;
-  profiles: {
-    full_name: string;
-    avatar_url: string | null;
-    role: string;
-  };
-};
-
-/* ---------------------------------------------------
- HOME PAGE
---------------------------------------------------- */
 export default function Home() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Composer state
   const [content, setContent] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "followers" | "private">("public");
+  const [visibility, setVisibility] = useState("public");
   const [submitting, setSubmitting] = useState(false);
 
   /* ---------------------------------------------------
-   FETCH FEED
+    FETCH FEED (AI VIEW KULLANILIYOR)
   --------------------------------------------------- */
   const fetchFeed = async () => {
     setLoading(true);
-
+    // Artık 'posts' tablosundan değil, kurduğumuz AI View'dan çekiyoruz
     const { data, error } = await supabase
-      .from("posts")
-      .select(
-        `
-        id,
-        author_id,
-        type,
-        content,
-        visibility,
-        created_at,
-        profiles:author_id (
-          full_name,
-          avatar_url,
-          role
-        )
-      `
-      )
-      .order("created_at", { ascending: false })
+      .from("mentor_circle_feed_ai")
+      .select("*")
+      .order("ai_score", { ascending: false }) // En yüksek puanlı (AI) en üstte
       .limit(30);
 
     if (error) {
       toast.error("Feed yüklenemedi");
+      console.error(error);
     } else {
       setPosts(data || []);
     }
-
     setLoading(false);
   };
 
@@ -92,7 +46,7 @@ export default function Home() {
   }, []);
 
   /* ---------------------------------------------------
-   CREATE POST (TEXT MVP)
+    CREATE POST
   --------------------------------------------------- */
   const createPost = async () => {
     if (!content.trim()) {
@@ -101,7 +55,6 @@ export default function Home() {
     }
 
     setSubmitting(true);
-
     const { error } = await supabase.from("posts").insert({
       author_id: user.id,
       type: "text",
@@ -114,102 +67,81 @@ export default function Home() {
     } else {
       toast.success("Paylaşıldı");
       setContent("");
-      fetchFeed();
+      fetchFeed(); // Feed'i tazele
     }
-
     setSubmitting(false);
   };
 
-  /* ---------------------------------------------------
-   RENDER
-  --------------------------------------------------- */
   return (
-    <div className="max-w-3xl mx-auto py-6 space-y-6">
-
+    <div className="max-w-3xl mx-auto py-6 space-y-6 px-4">
       {/* ================= COMPOSER ================= */}
-      <Card>
+      <Card className="border-none shadow-lg bg-white/80 backdrop-blur-md rounded-3xl">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200" />
+            <img 
+              src={user?.user_metadata?.avatar_url || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} 
+              className="w-10 h-10 rounded-full border border-gray-100" 
+            />
             <Textarea
-              placeholder="Ne paylaşmak istiyorsun?"
+              placeholder="Fikirlerini dünyayla paylaş..."
+              className="border-none focus-visible:ring-0 text-lg resize-none"
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-3">
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-3 text-gray-500">
-              <Image size={18} />
-              <BarChart2 size={18} />
-              <Calendar size={18} />
-              {user?.role === "corporate" && <Briefcase size={18} />}
+        <CardContent>
+          <div className="flex items-center justify-between border-t pt-3">
+            <div className="flex gap-4 text-gray-400">
+              <button className="hover:text-blue-500 transition-colors"><Image size={20} /></button>
+              <button className="hover:text-blue-500 transition-colors"><BarChart2 size={20} /></button>
+              <button className="hover:text-blue-500 transition-colors"><Calendar size={20} /></button>
+              {user?.role === "corporate" && <button className="hover:text-blue-500 transition-colors"><Briefcase size={20} /></button>}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Visibility */}
+            <div className="flex items-center gap-3">
               <select
-                className="border rounded px-2 py-1 text-sm"
+                className="bg-gray-50 border-none rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-600 outline-none"
                 value={visibility}
-                onChange={(e) => setVisibility(e.target.value as any)}
+                onChange={(e) => setVisibility(e.target.value)}
               >
                 <option value="public">🌍 Herkese Açık</option>
                 <option value="followers">👥 Takipçiler</option>
                 <option value="private">🔒 Özel</option>
               </select>
 
-              <Button onClick={createPost} disabled={submitting}>
-                Paylaş
+              <Button 
+                onClick={createPost} 
+                disabled={submitting}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 font-bold transition-all shadow-md shadow-blue-200"
+              >
+                {submitting ? "..." : "Paylaş"}
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ================= FEED ================= */}
-      {loading ? (
-        <p className="text-center text-gray-400">Yükleniyor...</p>
-      ) : (
-        posts.map((post) => (
-          <Card key={post.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                <div>
-                  <p className="font-semibold">{post.profiles.full_name}</p>
-                  <p className="text-xs text-gray-500">
-                    {post.profiles.role.toUpperCase()} ·{" "}
-                    {new Date(post.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
+      {/* ================= FEED (AI ENHANCED) ================= */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex flex-col items-center py-20 gap-3">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400 font-medium animate-pulse">AI Feed Hazırlanıyor...</p>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <AIEnhancedPostCard key={post.id} post={post} />
+          ))
+        )}
 
-            <CardContent className="space-y-4">
-              <p className="whitespace-pre-wrap">{post.content}</p>
-
-              {/* Actions */}
-              <div className="flex justify-between text-gray-500 pt-2">
-                <button className="flex items-center gap-1">
-                  <ThumbsUp size={16} /> Beğen
-                </button>
-                <button className="flex items-center gap-1">
-                  <MessageCircle size={16} /> Yorum
-                </button>
-                <button className="flex items-center gap-1">
-                  <Repeat2 size={16} /> Paylaş
-                </button>
-                <button className="flex items-center gap-1">
-                  <Send size={16} /> Gönder
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+        {!loading && posts.length === 0 && (
+          <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed">
+            <p className="text-gray-400">Henüz paylaşım yok. İlk adımı sen at!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

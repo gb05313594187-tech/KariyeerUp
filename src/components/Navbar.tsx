@@ -40,7 +40,64 @@ export default function Navbar() {
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
 
-  // ✅ Route değişince mobil menü kapansın
+  // ✅ Çok dilli başlıklar için çeviri objesi
+  const translations = {
+    tr: {
+      jobs: "İlanlar",
+      mentor: "MentorCircle",
+      webinar: "Webinar",
+      premium: "Bireysel Premium",
+      dashboard: "Panel",
+      login: "Giriş Yap",
+      register: "Kayıt Ol",
+      feed: "Ana Akış",
+      profile: "Profil",
+      settings: "Ayarlar",
+      logout: "Çıkış"
+    },
+    en: {
+      jobs: "Jobs",
+      mentor: "MentorCircle",
+      webinar: "Webinars",
+      premium: "Individual Premium",
+      dashboard: "Dashboard",
+      login: "Login",
+      register: "Register",
+      feed: "Feed",
+      profile: "Profile",
+      settings: "Settings",
+      logout: "Logout"
+    },
+    ar: {
+      jobs: "وظائف",
+      mentor: "دائرة المنقذ",
+      webinar: "ندوة عبر الويب",
+      premium: "بريميوم فردي",
+      dashboard: "لوحة القيادة",
+      login: "تسجيل الدخول",
+      register: "سجل الآن",
+      feed: "التغذية الرئيسية",
+      profile: "ملف شخصي",
+      settings: "إعدادات",
+      logout: "تسجيل الخروج"
+    },
+    fr: {
+      jobs: "Emplois",
+      mentor: "Cercle Mentor",
+      webinar: "Webinaire",
+      premium: "Premium Individuel",
+      dashboard: "Tableau de bord",
+      login: "Connexion",
+      register: "S'inscrire",
+      feed: "Flux",
+      profile: "Profil",
+      settings: "Paramètres",
+      logout: "Déconnexion"
+    }
+  };
+
+  const t = translations[language || "tr"];
+
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
@@ -49,20 +106,17 @@ export default function Navbar() {
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   const roleLabel = useMemo(() => {
-    if (role === "coach") return "Koç";
-    if (role === "corporate") return "Şirket";
+    if (role === "coach") return language === "tr" ? "Koç" : "Coach";
+    if (role === "corporate") return language === "tr" ? "Şirket" : "Corporate";
     if (role === "admin") return "Admin";
-    if (role === "user") return "Kullanıcı";
-    return "Hesap";
-  }, [role]);
+    return t.dashboard;
+  }, [role, language, t]);
 
   const dashboardLabel = useMemo(() => {
-    if (role === "coach") return "Koç Paneli";
-    if (role === "corporate") return "Kurumsal Panel";
-    if (role === "admin") return "Admin Paneli";
-    if (role === "user") return "Kullanıcı Paneli";
-    return "Dashboard";
-  }, [role]);
+    if (role === "coach") return `${roleLabel} ${t.dashboard}`;
+    if (role === "corporate") return `${roleLabel} ${t.dashboard}`;
+    return t.dashboard;
+  }, [role, roleLabel, t]);
 
   const dashboardPath = useMemo(() => {
     if (role === "coach") return "/coach/dashboard";
@@ -89,11 +143,9 @@ export default function Navbar() {
   const premiumPath = "/bireysel-premium";
   const socialHomePath = "/home";
   const jobsPath = "/jobs";
-
-  // ✅ LOGO HER ZAMAN İNDEXE GİTSİN
   const logoPath = "/";
 
-  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
+  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
 
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
@@ -104,7 +156,6 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        {/* ✅ Logo: Her zaman "/" (index) sayfasına gider */}
         <Link to={logoPath} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
@@ -113,8 +164,6 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-2">
-          {/* Ana Akış linki buradan kaldırıldı */}
-
           {me && (
             <Link
               to={jobsPath}
@@ -126,7 +175,7 @@ export default function Navbar() {
               ].join(" ")}
             >
               <Briefcase className="h-4 w-4 text-red-600" />
-              İlanlar
+              {t.jobs}
             </Link>
           )}
 
@@ -140,7 +189,7 @@ export default function Navbar() {
             ].join(" ")}
           >
             <Sparkles className="h-4 w-4 text-red-600" />
-            MentorCircle
+            {t.mentor}
           </Link>
 
           <Link
@@ -153,13 +202,13 @@ export default function Navbar() {
             ].join(" ")}
           >
             <Video className="h-4 w-4 text-red-600" />
-            Webinar
+            {t.webinar}
           </Link>
 
           <Link to={premiumPath}>
             <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
               <Crown className="h-4 w-4 mr-2" />
-              Bireysel Premium
+              {t.premium}
             </Button>
           </Link>
         </nav>
@@ -195,12 +244,12 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
-                  Giriş Yap
+                  {t.login}
                 </Button>
               </Link>
               <Link to="/register">
                 <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                  Kayıt Ol
+                  {t.register}
                 </Button>
               </Link>
             </div>
@@ -232,12 +281,12 @@ export default function Navbar() {
 
                   <DropdownMenuItem onClick={() => navigate(socialHomePath)}>
                     <HomeIcon className="mr-2 h-4 w-4" />
-                    Ana Akış
+                    {t.feed}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => navigate(jobsPath)}>
                     <Briefcase className="mr-2 h-4 w-4" />
-                    İlanlar
+                    {t.jobs}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
@@ -245,21 +294,14 @@ export default function Navbar() {
                     {dashboardLabel}
                   </DropdownMenuItem>
 
-                  {role === "admin" && (
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Admin Paneli
-                    </DropdownMenuItem>
-                  )}
-
                   <DropdownMenuItem onClick={() => navigate(profilePath)}>
                     <User className="mr-2 h-4 w-4" />
-                    Profil
+                    {t.profile}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => navigate(settingsPath)}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Ayarlar
+                    {t.settings}
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
@@ -271,7 +313,7 @@ export default function Navbar() {
                     }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Çıkış
+                    {t.logout}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -294,33 +336,33 @@ export default function Navbar() {
             {me && (
               <>
                 <button onClick={() => navigate(socialHomePath)} className={mobileBtn}>
-                  Ana Akış
+                  {t.feed}
                 </button>
                 <button onClick={() => navigate(jobsPath)} className={mobileBtn}>
-                  İlanlar
+                  {t.jobs}
                 </button>
               </>
             )}
 
             <button onClick={() => navigate("/mentor-circle")} className={mobileBtn}>
-              MentorCircle
+              {t.mentor}
             </button>
             <button onClick={() => navigate("/webinars")} className={mobileBtn}>
-              Webinar
+              {t.webinar}
             </button>
 
             <Link to={premiumPath} className="block" onClick={() => setMobileOpen(false)}>
-              <div className={mobilePrimary}>Bireysel Premium</div>
+              <div className={mobilePrimary}>{t.premium}</div>
             </Link>
 
             <div className="pt-2 border-t space-y-2">
-              {auth.loading ? null : !me ? (
+              {!me ? (
                 <>
                   <button onClick={() => navigate("/login")} className={mobileBtn}>
-                    Giriş Yap
+                    {t.login}
                   </button>
                   <button onClick={() => navigate("/register")} className={mobilePrimary}>
-                    Kayıt Ol
+                    {t.register}
                   </button>
                 </>
               ) : (
@@ -328,16 +370,11 @@ export default function Navbar() {
                   <button onClick={() => navigate(dashboardPath)} className={mobileBtn}>
                     {dashboardLabel}
                   </button>
-                  {role === "admin" && (
-                    <button onClick={() => navigate("/admin")} className={mobileBtn}>
-                      Admin Paneli
-                    </button>
-                  )}
                   <button onClick={() => navigate(profilePath)} className={mobileBtn}>
-                    Profil
+                    {t.profile}
                   </button>
                   <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
-                    Ayarlar
+                    {t.settings}
                   </button>
                   <button
                     onClick={async () => {
@@ -346,7 +383,7 @@ export default function Navbar() {
                     }}
                     className={mobileBtn}
                   >
-                    Çıkış
+                    {t.logout}
                   </button>
                 </>
               )}

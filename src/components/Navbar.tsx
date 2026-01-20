@@ -115,21 +115,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-2">
-          {/* ✅ NEW: Ana Akış (auth varsa göster) */}
-          {me && (
-            <Link
-              to={socialHomePath}
-              className={[
-                "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition",
-                isActive("/home")
-                  ? "bg-red-50 text-red-700 border border-red-200"
-                  : "text-gray-700 hover:bg-gray-50",
-              ].join(" ")}
-            >
-              <HomeIcon className="h-4 w-4 text-red-600" />
-              Ana Akış
-            </Link>
-          )}
+          {/* Ana Akış linki buradan kaldırıldı */}
 
           {/* ✅ NEW: İlanlar (auth varsa göster) */}
           {me && (

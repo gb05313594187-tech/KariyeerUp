@@ -40,7 +40,7 @@ export default function Navbar() {
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
 
-  // ✅ Route değişince mobil menü kapansın (render loop yok)
+  // ✅ Route değişince mobil menü kapansın
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
@@ -86,15 +86,12 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  // ✅ Premium linki ASLA auth/role ile dinamik değil: bu kilitlenmeyi bitirir
   const premiumPath = "/bireysel-premium";
-
-  // ✅ NEW: Social Home + Jobs routes
   const socialHomePath = "/home";
   const jobsPath = "/jobs";
 
-  // ✅ NEW: Logo tıklanınca (auth varsa) Social Home'a gitsin
-  const logoPath = me ? socialHomePath : "/";
+  // ✅ LOGO HER ZAMAN İNDEXE GİTSİN
+  const logoPath = "/";
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
@@ -106,7 +103,8 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* ✅ Logo: auth varsa /home, yoksa / */}
+        
+        {/* ✅ Logo: Her zaman "/" (index) sayfasına gider */}
         <Link to={logoPath} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
@@ -117,7 +115,6 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-2">
           {/* Ana Akış linki buradan kaldırıldı */}
 
-          {/* ✅ NEW: İlanlar (auth varsa göster) */}
           {me && (
             <Link
               to={jobsPath}
@@ -159,7 +156,6 @@ export default function Navbar() {
             Webinar
           </Link>
 
-          {/* ✅ Premium her zaman landing */}
           <Link to={premiumPath}>
             <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
               <Crown className="h-4 w-4 mr-2" />
@@ -234,13 +230,11 @@ export default function Navbar() {
 
                   <DropdownMenuSeparator />
 
-                  {/* ✅ NEW: Ana Akış */}
                   <DropdownMenuItem onClick={() => navigate(socialHomePath)}>
                     <HomeIcon className="mr-2 h-4 w-4" />
                     Ana Akış
                   </DropdownMenuItem>
 
-                  {/* ✅ NEW: İlanlar */}
                   <DropdownMenuItem onClick={() => navigate(jobsPath)}>
                     <Briefcase className="mr-2 h-4 w-4" />
                     İlanlar
@@ -297,7 +291,6 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            {/* ✅ NEW: Mobile Ana Akış + İlanlar */}
             {me && (
               <>
                 <button onClick={() => navigate(socialHomePath)} className={mobileBtn}>
@@ -316,7 +309,6 @@ export default function Navbar() {
               Webinar
             </button>
 
-            {/* ✅ Premium sabit */}
             <Link to={premiumPath} className="block" onClick={() => setMobileOpen(false)}>
               <div className={mobilePrimary}>Bireysel Premium</div>
             </Link>

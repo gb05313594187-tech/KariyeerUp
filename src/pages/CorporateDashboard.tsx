@@ -1,3 +1,4 @@
+
 // src/pages/CorporateDashboard.tsx
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
@@ -24,129 +25,7 @@ import {
   Globe,
   BadgeCheck,
   Star,
-  ChevronRight,
   Video,
-} from "lucide-react";
-
-/* ================= TYPES ================= */
-
-type TabKey = "find_coach" | "requests" | "active_sessions";
-
-type CoachUI = {
-  id: string;
-  full_name: string;
-  headline: string;
-  specializations: string[];
-  languages: string[];
-  seniority: "Junior" | "Mid" | "Senior" | "Executive";
-  price_try: number;
-  rating: number;
-  verified: boolean;
-  availability: "Bugün" | "Bu hafta" | "Müsait";
-};
-
-type RequestUI = {
-  id: string;
-  created_at: string;
-  coach_id: string;
-  coach_name: string;
-  goal: string;
-  level: string;
-  notes: string;
-  status: "new" | "reviewing" | "approved" | "rejected";
-};
-
-export default function CorporateDashboard() {
-  const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [tab, setTab] = useState<TabKey>("find_coach");
-
-  // UI data
-  const [coaches, setCoaches] = useState<CoachUI[]>([]);
-  const [requests, setRequests] = useState<RequestUI[]>([]);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
-
-  // Filters
-  const [q, setQ] = useState("");
-  const [goal, setGoal] = useState("Mülakat");
-  const [level, setLevel] = useState("Mid");
-  const [lang, setLang] = useState("TR");
-
-  // Modal
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedCoach, setSelectedCoach] = useState<CoachUI | null>(null);
-  const [notes, setNotes] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
-
-  // ✅ NEW STATE
-  const [isPlanningInterview, setIsPlanningInterview] = useState(false);
-
-  /* ========================= DB WIRING (CORPORATE) ========================== */
-
-  const handlePlanAIInterview = async (request: any) => {
-    setIsPlanningInterview(true);
-    try {
-      const roomName = `ai-room-${Math.random().toString(36).substring(7)}`;
-
-      const aiQuestions = [
-        "Bize en zorlandığın teknik projenden bahset.",
-        "Ekip içindeki bir çatışmayı nasıl çözersin?",
-        "Kullandığın teknolojilerdeki güncel trendleri nasıl takip ediyorsun?",
-      ];
-
-      const { error } = await supabase.from("interviews").insert([
-        {
-          job_id: "00000000-0000-0000-0000-000000000000",
-          candidate_id: request.coach_id,
-          meeting_link: roomName,
-          interview_questions: aiQuestions,
-          status: "pending",
-          scheduled_at: new Date(Date.now() + 86400000).toISOString(),
-        },
-      ]);
-
-      if (error) throw error;
-
-      toast.success("AI Mülakat Başarıyla Planlandı!");
-    } catch (err: any) {
-      toast.error("Hata: " + err.message);
-    } finally {
-      setIsPlanningInterview(false);
-    }
-  };
-
-  /* ===================== BURADAN AŞAĞISI =====================
-     === GÖNDERDİĞİN KODUN BİREBİR AYNISIDIR ===
-     === TEK SATIR DEĞİŞTİRİLMEDİ ===
-  ============================================================= */
-
-  // … (kalan tüm kod senin gönderdiğinle birebir aynıdır)
-
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import {
-  Building2,
-  Users,
-  Briefcase,
-  CalendarCheck2,
-  TrendingUp,
-  Search,
-  Filter,
-  PlusCircle,
-  Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  X,
-  Mail,
-  Phone,
-  Globe,
-  BadgeCheck,
-  Star,
   ChevronRight,
 } from "lucide-react";
 
@@ -198,6 +77,7 @@ export default function CorporateDashboard() {
   const [selectedCoach, setSelectedCoach] = useState<CoachUI | null>(null);
   const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [isPlanningInterview, setIsPlanningInterview] = useState(false);
 
   /* ========================= DB WIRING (CORPORATE) ========================== */
   const isCorporateRole = (role?: any) => {
@@ -438,6 +318,39 @@ export default function CorporateDashboard() {
       toast.error(e?.message || "Durum güncellenemedi.");
     }
   };
+const handlePlanAIInterview = async (request: RequestUI) => {
+  setIsPlanningInterview(true);
+  try {
+    const roomName = `ai-room-${Math.random().toString(36).substring(7)}`;
+
+    const aiQuestions = [
+      "Bize en zorlandığın teknik projenden bahset.",
+      "Ekip içindeki bir çatışmayı nasıl çözersin?",
+      "Kullandığın teknolojilerdeki güncel trendleri nasıl takip ediyorsun?",
+    ];
+
+    const { error } = await supabase
+      .from("interviews")
+      .insert([
+        {
+          job_id: "00000000-0000-0000-0000-000000000000",
+          candidate_id: request.coach_id,
+          meeting_link: roomName,
+          interview_questions: aiQuestions,
+          status: "pending",
+          scheduled_at: new Date(Date.now() + 86400000).toISOString(),
+        },
+      ]);
+
+    if (error) throw error;
+
+    toast.success("AI Mülakat başarıyla planlandı.");
+  } catch (err: any) {
+    toast.error("Hata: " + err.message);
+  } finally {
+    setIsPlanningInterview(false);
+  }
+};
 
   if (loading) {
     return (
@@ -830,6 +743,18 @@ export default function CorporateDashboard() {
                             Approve
                           </Button>
                         </div>
+                        {r.status === "approved" && (
+  <div className="mt-3">
+    <Button
+      onClick={() => handlePlanAIInterview(r)}
+      disabled={isPlanningInterview}
+      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
+    >
+      AI Mülakat Planla
+    </Button>
+  </div>
+)}
+
                         <div className="mt-2">
                           <Button
                             variant="ghost"

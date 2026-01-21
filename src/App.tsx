@@ -97,6 +97,9 @@ import ResetPassword from "@/pages/ResetPassword";
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 
+// ✅ NEW: INTERVIEW PAGE (EKLENDİ)
+import InterviewPage from "@/pages/Interview";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -137,6 +140,9 @@ export default function App() {
 
             {/* ✅ NEW: JOB BOARD ROUTE (EKLENDİ) */}
             <Route path="jobs" element={<JobBoard />} />
+
+            {/* ✅ NEW: INTERVIEW PAGE ROUTE (EKLENDİ) */}
+            <Route path="interview/:roomName" element={<InterviewPage />} />
 
             {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />

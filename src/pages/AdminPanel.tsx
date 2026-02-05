@@ -16,9 +16,13 @@ import {
   ShieldAlert,
   LayoutDashboard,
   ClipboardList,
+  BrainCircuit,
+  TrendingUp,
+  ChevronRight
 } from "lucide-react";
 
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdvancedAnalytics from "@/pages/AdvancedAnalytics"; // Yeni eklenen sekme
 
 type BookingRow = {
   id: string;
@@ -28,13 +32,12 @@ type BookingRow = {
   session_time?: string | null;
   status?: "pending" | "approved" | "rejected" | string | null;
   is_trial?: boolean | null;
-  amount?: number | null; // varsa
-  currency?: string | null; // varsa
+  amount?: number | null;
+  currency?: string | null;
 };
 
 export default function AdminPanel() {
-  const [tab, setTab] = useState<"dashboard" | "bookings">("dashboard");
-
+  const [tab, setTab] = useState<"dashboard" | "bookings" | "ai_intelligence">("dashboard");
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsNote, setBookingsNote] = useState<string | null>(null);
@@ -42,7 +45,6 @@ export default function AdminPanel() {
   const fetchBookings = async () => {
     setBookingsLoading(true);
     setBookingsNote(null);
-
     const { data, error } = await supabase
       .from("bookings")
       .select("id, client_name, client_email, created_at, session_time, status, is_trial, amount, currency")
@@ -50,203 +52,176 @@ export default function AdminPanel() {
       .limit(100);
 
     if (error) {
-      // tablo yoksa / RLS engellediyse / yetki yoksa kırma
       setBookings([]);
       setBookingsNote(error.message);
       setBookingsLoading(false);
       return;
     }
-
     setBookings((data || []) as BookingRow[]);
     setBookingsLoading(false);
   };
 
   useEffect(() => {
     if (tab === "bookings") fetchBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   const bookingStats = useMemo(() => {
     const total = bookings.length;
     const pending = bookings.filter((b) => (b.status || "").toLowerCase() === "pending").length;
     const approved = bookings.filter((b) => (b.status || "").toLowerCase() === "approved").length;
-
-    // gelir: amount varsa onu kullan, yoksa trial=0 değilse 1500 varsay
     const revenueTry = bookings.reduce((sum, b) => {
       const st = (b.status || "").toLowerCase();
       if (st !== "approved") return sum;
       const amount = typeof b.amount === "number" ? b.amount : b.is_trial ? 0 : 1500;
       return sum + amount;
     }, 0);
-
     return { total, pending, approved, revenueTry };
   }, [bookings]);
 
   const handleApprove = async (id: string) => {
     const { error } = await supabase.from("bookings").update({ status: "approved" }).eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Onaylandı");
+    if (error) { toast.error(error.message); return; }
+    toast.success("İşlem Başarılı");
     fetchBookings();
   };
 
   const handleReject = async (id: string) => {
     const { error } = await supabase.from("bookings").update({ status: "rejected" }).eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.error("Reddedildi");
+    if (error) { toast.error(error.message); return; }
+    toast.error("Talep Reddedildi");
     fetchBookings();
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Üst bar */}
-      <div className="border-b bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl border bg-gray-50 flex items-center justify-center">
-              <Activity className="h-5 w-5" />
+    <div className="min-h-screen bg-[#FCFCFD] font-sans text-slate-900">
+      {/* Premium Üst Bar */}
+      <div className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-xl">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl shadow-lg shadow-orange-100">
+              <BrainCircuit className="h-6 w-6 text-white" />
             </div>
             <div>
-              <div className="text-xl font-bold">CEO / Admin Panel</div>
-              <div className="text-sm text-gray-500">
-                Dashboard + Operasyon (bookings) tek yerde
+              <div className="text-2xl font-black tracking-tighter italic uppercase">
+                Unicorn <span className="text-orange-600">Admin</span>
+              </div>
+              <div className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                Control Center & Intelligence
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant={tab === "dashboard" ? "default" : "outline"}
-              onClick={() => setTab("dashboard")}
-              className="gap-2"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </Button>
-
-            <Button
-              variant={tab === "bookings" ? "default" : "outline"}
-              onClick={() => setTab("bookings")}
-              className="gap-2"
-            >
-              <ClipboardList className="h-4 w-4" />
-              Bookings
-            </Button>
-
-            {tab === "bookings" && (
-              <Button onClick={fetchBookings} className="gap-2" variant="outline">
-                <RefreshCw className="h-4 w-4" />
-                Yenile
-              </Button>
-            )}
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
+            {[
+              { id: "dashboard", label: "Genel Bakış", icon: LayoutDashboard },
+              { id: "bookings", label: "Operasyon", icon: ClipboardList },
+              { id: "ai_intelligence", label: "AI Intelligence", icon: TrendingUp },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id as any)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  tab === t.id 
+                    ? "bg-white text-slate-900 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <t.icon className={`h-4 w-4 ${tab === t.id ? "text-orange-600" : ""}`} />
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* İçerik */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {tab === "dashboard" ? (
-          <AdminDashboard />
-        ) : (
-          <div className="space-y-4">
-            {/* Bookings KPI */}
-            <div className="grid gap-4 md:grid-cols-4">
-              <Kpi title="Toplam Booking" value={bookingStats.total} icon={<Calendar className="h-5 w-5" />} />
-              <Kpi title="Bekleyen" value={bookingStats.pending} icon={<ShieldAlert className="h-5 w-5" />} />
-              <Kpi title="Onaylanan" value={bookingStats.approved} icon={<CheckCircle className="h-5 w-5" />} />
-              <Kpi title="Gelir (TRY)" value={formatMoneyTRY(bookingStats.revenueTry)} icon={<Activity className="h-5 w-5" />} />
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
+        {tab === "dashboard" && <AdminDashboard />}
+        
+        {tab === "ai_intelligence" && <AdvancedAnalytics />}
+
+        {tab === "bookings" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* KPI Grid */}
+            <div className="grid gap-6 md:grid-cols-4">
+              <Kpi title="Toplam Talep" value={bookingStats.total} icon={<Calendar className="text-blue-600" />} />
+              <Kpi title="Bekleyen" value={bookingStats.pending} icon={<ShieldAlert className="text-orange-600" />} />
+              <Kpi title="Onaylanan" value={bookingStats.approved} icon={<CheckCircle className="text-emerald-600" />} />
+              <Kpi title="Tahmini Gelir" value={formatMoneyTRY(bookingStats.revenueTry)} icon={<Activity className="text-red-600" />} highlight />
             </div>
 
-            {/* Not / hata */}
-            {bookingsNote && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                <div className="font-semibold flex items-center gap-2">
-                  <ShieldAlert className="h-4 w-4" />
-                  Bookings okunamadı
+            {/* Bookings Table */}
+            <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="bg-white border-b border-slate-100 p-8 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-black italic uppercase tracking-tight text-slate-800">Gelen Rezervasyonlar</CardTitle>
+                  <p className="text-sm text-slate-400 font-medium">Müşteri randevularını ve ödeme durumlarını yönetin</p>
                 </div>
-                <div className="text-sm mt-1">{bookingsNote}</div>
-                <div className="text-sm mt-2">
-                  Bu genelde 2 sebepten olur: <b>bookings tablosu yok</b> veya <b>RLS admin’i engelliyor</b>.
-                </div>
-              </div>
-            )}
-
-            {/* Liste */}
-            <Card className="border rounded-2xl">
-              <CardHeader className="border-b bg-gray-50 rounded-t-2xl">
-                <CardTitle>Gelen Bookings</CardTitle>
+                <Button onClick={fetchBookings} variant="outline" className="rounded-xl border-slate-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all">
+                  <RefreshCw className="h-4 w-4 mr-2" /> Yenile
+                </Button>
               </CardHeader>
 
               <CardContent className="p-0">
                 {bookingsLoading ? (
-                  <div className="p-6 text-sm text-gray-500">Yükleniyor…</div>
+                  <div className="p-20 text-center flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-bold text-slate-400 tracking-widest text-xs uppercase">Veriler Yükleniyor</span>
+                  </div>
                 ) : bookings.length === 0 ? (
-                  <div className="p-6 text-sm text-gray-500">Kayıt yok.</div>
+                  <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">Kayıt Bulunmamaktadır.</div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-white text-gray-500 border-b">
-                        <tr>
-                          <th className="p-4">Müşteri</th>
-                          <th className="p-4">Tarih</th>
-                          <th className="p-4">Durum</th>
-                          <th className="p-4">Tutar</th>
-                          <th className="p-4 text-right">İşlem</th>
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/50 text-slate-400 uppercase text-[10px] font-black tracking-[0.2em] border-b">
+                          <th className="p-6">Müşteri Detayı</th>
+                          <th className="p-6">Oturum Tarihi</th>
+                          <th className="p-6 text-center">Durum</th>
+                          <th className="p-6">Tutar</th>
+                          <th className="p-6 text-right">Aksiyon</th>
                         </tr>
                       </thead>
-
-                      <tbody className="divide-y bg-white">
+                      <tbody className="divide-y divide-slate-50">
                         {bookings.map((b) => (
-                          <tr key={b.id} className="hover:bg-gray-50">
-                            <td className="p-4">
-                              <div className="font-semibold">{b.client_name || "-"}</div>
-                              <div className="text-gray-500">{b.client_email || "-"}</div>
+                          <tr key={b.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="p-6">
+                              <div className="font-black text-slate-800 group-hover:text-orange-600 transition-colors">{b.client_name || "İsimsiz"}</div>
+                              <div className="text-xs text-slate-400 font-bold">{b.client_email || "E-posta Yok"}</div>
                             </td>
-
-                            <td className="p-4">
-                              <div className="font-medium">
+                            <td className="p-6">
+                              <div className="font-bold text-slate-700">
                                 {b.created_at ? new Date(b.created_at).toLocaleDateString("tr-TR") : "-"}
                               </div>
-                              <div className="text-gray-400 text-xs">{b.session_time || ""}</div>
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{b.session_time || ""}</div>
                             </td>
-
-                            <td className="p-4">
-                              <Badge className={badgeClass(b.status)}>
+                            <td className="p-6 text-center">
+                              <Badge className={`${badgeClass(b.status)} rounded-lg px-3 py-1 font-black text-[10px] shadow-none`}>
                                 {labelStatus(b.status)}
                               </Badge>
                             </td>
-
-                            <td className="p-4 font-semibold">
-                              {formatAmount(b)}
+                            <td className="p-6">
+                              <div className="font-black text-slate-800 tracking-tighter italic text-lg">{formatAmount(b)}</div>
                             </td>
-
-                            <td className="p-4 text-right">
+                            <td className="p-6 text-right">
                               {(b.status || "").toLowerCase() === "pending" ? (
                                 <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
+                                  <button
                                     onClick={() => handleApprove(b.id)}
+                                    className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"
                                   >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Onayla
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
+                                    <CheckCircle className="w-5 h-5" />
+                                  </button>
+                                  <button
                                     onClick={() => handleReject(b.id)}
+                                    className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
                                   >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reddet
-                                  </Button>
+                                    <XCircle className="w-5 h-5" />
+                                  </button>
                                 </div>
                               ) : (
-                                <span className="text-xs text-gray-400">—</span>
+                                <div className="text-slate-300 flex justify-end">
+                                   <ChevronRight className="w-5 h-5" />
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -257,6 +232,15 @@ export default function AdminPanel() {
                 )}
               </CardContent>
             </Card>
+
+            {bookingsNote && (
+              <div className="rounded-[1.5rem] border border-orange-200 bg-orange-50 p-6">
+                <div className="font-black text-orange-800 uppercase text-xs tracking-widest flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" /> Sistem Uyarısı
+                </div>
+                <div className="text-sm text-orange-900/70 mt-2 font-medium">{bookingsNote}</div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -264,16 +248,16 @@ export default function AdminPanel() {
   );
 }
 
-function Kpi({ title, value, icon }: { title: string; value: any; icon: JSX.Element }) {
+function Kpi({ title, value, icon, highlight = false }: { title: string; value: any; icon: JSX.Element; highlight?: boolean }) {
   return (
-    <Card className="border rounded-2xl">
-      <CardContent className="pt-6">
+    <Card className={`border-none shadow-lg shadow-slate-200/40 rounded-[2rem] overflow-hidden ${highlight ? 'bg-gradient-to-br from-slate-900 to-slate-800 text-white' : 'bg-white'}`}>
+      <CardContent className="p-8">
         <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-gray-500 font-semibold">{title}</div>
-            <div className="text-3xl font-extrabold mt-1">{value}</div>
+          <div className="space-y-2">
+            <div className={`text-[10px] uppercase tracking-[0.2em] font-black ${highlight ? 'text-orange-400' : 'text-slate-400'}`}>{title}</div>
+            <div className="text-3xl font-black italic tracking-tighter">{value}</div>
           </div>
-          <div className="h-10 w-10 rounded-xl border bg-gray-50 flex items-center justify-center">
+          <div className={`p-4 rounded-2xl ${highlight ? 'bg-white/10' : 'bg-slate-50'}`}>
             {icon}
           </div>
         </div>
@@ -284,9 +268,9 @@ function Kpi({ title, value, icon }: { title: string; value: any; icon: JSX.Elem
 
 function badgeClass(status?: string | null) {
   const s = (status || "").toLowerCase();
-  if (s === "approved") return "bg-green-600";
-  if (s === "rejected") return "bg-red-600";
-  return "bg-yellow-500";
+  if (s === "approved") return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (s === "rejected") return "bg-red-100 text-red-700 border-red-200";
+  return "bg-orange-100 text-orange-700 border-orange-200";
 }
 
 function labelStatus(status?: string | null) {
@@ -297,20 +281,14 @@ function labelStatus(status?: string | null) {
 }
 
 function formatMoneyTRY(n: number) {
-  const val = Number(n || 0);
-  try {
-    return val.toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
-  } catch {
-    return `${val} TRY`;
-  }
+  return n.toLocaleString("tr-TR", { style: "currency", currency: "TRY", minimumFractionDigits: 0 });
 }
 
 function formatAmount(b: any) {
   const hasAmount = typeof b.amount === "number";
   const currency = (b.currency || "TRY").toString().toUpperCase();
   if (hasAmount) {
-    if (currency === "TRY") return formatMoneyTRY(b.amount);
-    return `${b.amount} ${currency}`;
+    return currency === "TRY" ? formatMoneyTRY(b.amount) : `${b.amount} ${currency}`;
   }
-  return b.is_trial ? "0 ₺" : "1500 ₺";
+  return b.is_trial ? "ÜCRETSİZ" : "1.500 ₺";
 }

@@ -1,17 +1,17 @@
 // src/pages/UserProfileEdit.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  ArrowLeft, Save, User, Phone, Briefcase, Building2, MapPin, 
-  Languages, Globe2, Award, Plus, Trash2 
+  ArrowLeft, Save, User, Briefcase, Languages, 
+  Globe2, Award, Plus, Trash2, Sparkles, MapPin 
 } from "lucide-react";
 
-// Şirket panelindeki listeyle birebir aynı ülke listesi
+// Global Matcher için Alfabetik Ülke Listesi
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
   "Bahamas", "Bahrain", "Bangladesh", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Brazil", "Bulgaria",
@@ -26,13 +26,21 @@ const COUNTRIES = [
 
 const LANG_OPTIONS = ["English", "Arabic", "French", "German", "Spanish", "Italian", "Portuguese", "Dutch", "Turkish"];
 
+// Arka plandaki 1-5 değerlerini görsel etiketlerle eşleştiriyoruz
+const LEVEL_LABELS = {
+  1: "Az (Basic)",
+  2: "Orta (Intermediate)",
+  3: "İyi (Upper-Inter)",
+  4: "Çok İyi (Advanced)",
+  5: "Anadil (Native)"
+};
+
 export default function UserProfileEdit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [me, setMe] = useState<any>(null);
 
-  // Form State
   const [form, setForm] = useState({
     display_name: "",
     title: "",
@@ -40,8 +48,8 @@ export default function UserProfileEdit() {
     country: "Turkey",
     city: "",
     work_preference: "Remote (Global)",
-    skills: "", // AI Matcher için anahtar kelimeler
-    languages: [{ lang: "English", level: "3" }] // Array of {lang, level}
+    skills: "", 
+    languages: [{ lang: "English", level: "3" }] 
   });
 
   useEffect(() => {
@@ -80,7 +88,7 @@ export default function UserProfileEdit() {
   }, [navigate]);
 
   const handleAddLang = () => {
-    setForm(s => ({ ...s, languages: [...s.languages, { lang: "Turkish", level: "5" }] }));
+    setForm(s => ({ ...s, languages: [...s.languages, { lang: "English", level: "3" }] }));
   };
 
   const handleRemoveLang = (index: number) => {
@@ -103,7 +111,8 @@ export default function UserProfileEdit() {
           work_preference: form.work_preference,
           skills: form.skills,
           languages: form.languages,
-          is_global_ready: true
+          is_global_ready: true,
+          last_ai_sync: new Date().toISOString()
         },
         updated_at: new Date().toISOString(),
       };
@@ -111,7 +120,7 @@ export default function UserProfileEdit() {
       const { error } = await supabase.from("profiles").upsert(payload);
       if (error) throw error;
 
-      toast.success("Global profiliniz kaydedildi. AI eşleşmeleri güncelleniyor.");
+      toast.success("Global profiliniz kaydedildi. AI sistemleri güncellendi.");
       navigate("/user/profile");
     } catch (e) {
       toast.error("Kaydedilirken bir hata oluştu.");
@@ -120,130 +129,156 @@ export default function UserProfileEdit() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">AI Sistemleri Hazırlanıyor...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-red-600 animate-pulse text-lg">AI Matcher Sistemleri Hazırlanıyor...</div>;
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header */}
-      <section className="bg-gradient-to-r from-red-600 to-orange-500 py-12 px-4">
-        <div className="max-w-4xl mx-auto text-white">
-          <h1 className="text-3xl font-bold">Global AI Profilini Düzenle</h1>
-          <p className="opacity-90 mt-2">Bilgilerin, dünya çapındaki şirketlerle eşleşme skorunu belirler.</p>
-          <div className="mt-6 flex gap-3">
-            <Button variant="outline" className="rounded-xl bg-white/10 border-white/20 text-white" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Geri
+    <div className="bg-[#FCFCFC] min-h-screen pb-20">
+      {/* Global Branding Header */}
+      <section className="bg-gradient-to-r from-[#e11d48] to-[#f59e0b] py-16 px-6 shadow-lg">
+        <div className="max-w-5xl mx-auto text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-5 h-5 text-yellow-300 fill-yellow-300" />
+            <span className="text-sm font-bold tracking-widest uppercase opacity-80">Global Talent Network</span>
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight">Profilini Düzenle</h1>
+          <p className="opacity-90 mt-2 text-lg max-w-2xl font-medium leading-relaxed">
+            Verilerin dünya çapındaki şirketlerle olan eşleşme skorunu belirler. Dil ve yetkinliklerini ne kadar net girersen, o kadar yukarıda çıkarsın.
+          </p>
+          <div className="mt-8 flex gap-4">
+            <Button variant="outline" className="rounded-2xl bg-white/10 border-white/30 text-white backdrop-blur-md hover:bg-white/20 transition-all px-6 py-6 h-auto" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5 mr-2" /> Geri
             </Button>
-            <Button className="rounded-xl bg-white text-red-600 hover:bg-gray-100" onClick={onSave} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" /> {saving ? "Kaydediliyor..." : "Kaydet"}
+            <Button className="rounded-2xl bg-white text-red-600 hover:bg-gray-50 shadow-xl transition-transform active:scale-95 px-8 py-6 h-auto font-bold text-md" onClick={onSave} disabled={saving}>
+              <Save className="w-5 h-5 mr-2" /> {saving ? "Senkronize Ediliyor..." : "Global Profili Kaydet"}
             </Button>
           </div>
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-        {/* Temel Bilgiler */}
-        <Card className="rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="w-4 h-4 text-red-600" /> Kişisel ve Kariyer Bilgileri
+      <div className="max-w-5xl mx-auto px-6 -mt-10 space-y-8">
+        {/* Temel Kariyer Kartı */}
+        <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white">
+          <CardHeader className="bg-gray-50/50 border-b p-8">
+            <CardTitle className="text-lg font-bold flex items-center gap-3 text-gray-800">
+              <div className="p-2 bg-red-100 rounded-xl"><User className="w-5 h-5 text-red-600" /></div>
+              Temel Kariyer Bilgileri
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Ad Soyad</label>
-                <input value={form.display_name} onChange={e => setForm(s => ({...s, display_name: e.target.value}))} className="w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-red-500" />
+          <CardContent className="p-8 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-gray-600 ml-1">Tam Adın</label>
+                <input value={form.display_name} onChange={e => setForm(s => ({...s, display_name: e.target.value}))} className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none focus:ring-2 focus:ring-red-500 transition-all font-medium" />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Ünvan</label>
-                <input value={form.title} onChange={e => setForm(s => ({...s, title: e.target.value}))} className="w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-red-500" />
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-gray-600 ml-1">Profesyonel Ünvan</label>
+                <input value={form.title} onChange={e => setForm(s => ({...s, title: e.target.value}))} className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none focus:ring-2 focus:ring-red-500 transition-all font-medium" />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-red-600 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Yetkinlikler (AI Matcher Anahtarları)
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-red-600 flex items-center gap-2 ml-1">
+                <Sparkles className="w-4 h-4 fill-red-600" /> Teknik Yetkinlikler (AI Matcher Anahtarları)
               </label>
               <textarea 
                 value={form.skills} 
                 onChange={e => setForm(s => ({...s, skills: e.target.value}))} 
-                className="w-full p-3 rounded-xl border outline-none bg-red-50/30"
-                placeholder="Örn: React, Node.js, Project Management, Sales Strategy..."
+                className="w-full p-5 rounded-3xl border border-red-50 bg-red-50/20 outline-none focus:ring-2 focus:ring-red-500 transition-all min-h-[120px] font-medium leading-relaxed"
+                placeholder="Örn: React, Node.js, Project Management, Sales Strategy, Docker, Python..."
               />
+              <p className="text-[11px] text-gray-400 italic">Şirket ilanlarındaki anahtar kelimelerle buradaki kelimelerin eşleşmesi skorunu %500 artırır.</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Global Konum ve Tercih */}
-        <Card className="rounded-[2rem] border-slate-100 shadow-xl">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Globe2 className="w-4 h-4 text-red-600" /> Global Konum ve Çalışma Tercihi
+        {/* Global Lokasyon Kartı */}
+        <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white overflow-hidden">
+          <CardHeader className="bg-gray-50/50 border-b p-8">
+            <CardTitle className="text-lg font-bold flex items-center gap-3 text-gray-800">
+              <div className="p-2 bg-blue-100 rounded-xl"><Globe2 className="w-5 h-5 text-blue-600" /></div>
+              Global Konum & Mobilite Tercihi
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 grid md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500">Ülke</label>
-              <select value={form.country} onChange={e => setForm(s => ({...s, country: e.target.value}))} className="w-full p-3 rounded-xl border bg-white outline-none">
+          <CardContent className="p-8 grid md:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-gray-600 ml-1">Bulunduğun Ülke</label>
+              <select value={form.country} onChange={e => setForm(s => ({...s, country: e.target.value}))} className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none font-medium appearance-none">
                 {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500">Şehir</label>
-              <input value={form.city} onChange={e => setForm(s => ({...s, city: e.target.value}))} className="w-full p-3 rounded-xl border outline-none" placeholder="Örn: İstanbul" />
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-gray-600 ml-1">Şehir</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
+                <input value={form.city} onChange={e => setForm(s => ({...s, city: e.target.value}))} className="w-full p-4 pl-12 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none font-medium" placeholder="Örn: İstanbul" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500">Çalışma Şekli</label>
-              <select value={form.work_preference} onChange={e => setForm(s => ({...s, work_preference: e.target.value}))} className="w-full p-3 rounded-xl border bg-white outline-none">
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-gray-600 ml-1">Çalışma Tercihi</label>
+              <select value={form.work_preference} onChange={e => setForm(s => ({...s, work_preference: e.target.value}))} className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none font-medium">
                 <option>Remote (Global)</option>
-                <option>Remote (Local)</option>
+                <option>Remote (Only Region)</option>
                 <option>Hybrid</option>
-                <option>On-site</option>
+                <option>Office Based</option>
               </select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Diller ve Seviyeler */}
-        <Card className="rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
-          <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Languages className="w-4 h-4 text-red-600" /> Dil Yetkinlikleri (1-5 Seviye)
+        {/* Dil Yetkinlik Kartı */}
+        <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white overflow-hidden">
+          <CardHeader className="bg-gray-50/50 border-b p-8 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-bold flex items-center gap-3 text-gray-800">
+              <div className="p-2 bg-emerald-100 rounded-xl"><Languages className="w-5 h-5 text-emerald-600" /></div>
+              Dil Yetkinlik Skalası (CEFR Uyumlu)
             </CardTitle>
-            <Button size="sm" variant="ghost" className="text-red-600" onClick={handleAddLang}><Plus className="w-4 h-4 mr-1" /> Ekle</Button>
+            <Button size="sm" variant="ghost" className="text-red-600 font-bold hover:bg-red-50 rounded-xl" onClick={handleAddLang}>
+              <Plus className="w-4 h-4 mr-1" /> Yeni Dil Ekle
+            </Button>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-8 space-y-5">
             {form.languages.map((l, index) => (
-              <div key={index} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl">
-                <select 
-                  value={l.lang} 
-                  onChange={e => {
-                    const newList = [...form.languages];
-                    newList[index].lang = e.target.value;
-                    setForm(s => ({...s, languages: newList}));
-                  }}
-                  className="flex-1 p-2 rounded-lg border bg-white outline-none"
-                >
-                  {LANG_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-slate-400" />
+              <div key={index} className="flex flex-col md:flex-row items-center gap-4 bg-gray-50/80 p-5 rounded-3xl border border-gray-100 group transition-all hover:border-red-200">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Dil</label>
                   <select 
-                    value={l.level}
+                    value={l.lang} 
                     onChange={e => {
                       const newList = [...form.languages];
-                      newList[index].level = e.target.value;
+                      newList[index].lang = e.target.value;
                       setForm(s => ({...s, languages: newList}));
                     }}
-                    className="p-2 rounded-lg border bg-white outline-none"
+                    className="w-full p-3 rounded-xl border border-white bg-white outline-none font-bold text-gray-700"
                   >
-                    {[1,2,3,4,5].map(v => <option key={v} value={v}>Seviye {v}</option>)}
+                    {LANG_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
-                <Button size="icon" variant="ghost" className="text-slate-400 hover:text-red-600" onClick={() => handleRemoveLang(index)}>
-                  <Trash2 className="w-4 h-4" />
+                
+                <div className="flex-[2] w-full">
+                  <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block ml-1">Seviye (AI Puanı)</label>
+                  <div className="flex items-center gap-3">
+                    <Award className="w-5 h-5 text-emerald-500 hidden md:block" />
+                    <select 
+                      value={l.level}
+                      onChange={e => {
+                        const newList = [...form.languages];
+                        newList[index].level = e.target.value;
+                        setForm(s => ({...s, languages: newList}));
+                      }}
+                      className="w-full p-3 rounded-xl border border-white bg-white outline-none font-bold text-emerald-600"
+                    >
+                      {[1,2,3,4,5].map(v => <option key={v} value={String(v)}>{LEVEL_LABELS[v]}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <Button size="icon" variant="ghost" className="text-gray-300 hover:text-red-600 mt-5 md:mt-0 transition-colors" onClick={() => handleRemoveLang(index)}>
+                  <Trash2 className="w-5 h-5" />
                 </Button>
               </div>
             ))}
+            <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-[12px] text-emerald-700 font-medium">
+               💡 **İpucu:** Global ilanlarda AI genellikle **Seviye 3 ve üzeri** adayları en üst sıralara taşır.
+            </div>
           </CardContent>
         </Card>
       </div>

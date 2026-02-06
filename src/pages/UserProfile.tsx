@@ -7,12 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { User, Pencil, X, Briefcase, CheckCircle2, MapPin, Camera, Video, Mail, Target } from "lucide-react";
+import { User, Pencil, X, Briefcase, CheckCircle2, MapPin, Camera, Target } from "lucide-react";
 
 // AI FULL LOKASYON VERİSİ
 const COUNTRY_DATA = {
   "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès", "Ariana", "Gafsa", "Monastir", "Ben Arous", "Kasserine", "Médenine", "Nabeul", "Tataouine", "Béja", "Jendouba", "Mahdia", "Sidi Bouzid", "Siliana", "Kebili", "Zaghouan", "Tozeur", "Manouba"],
-  "Turkey": ["Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kilis", "Kırıkkale", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Şanlıurfa", "Siirt", "Sinop", "Sivas", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
+  "Turkey": ["Adana", "Adıyaman", "Afyon", "Ağrı", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir", "K.Maraş", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kilis", "Kırıkkale", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Şanlıurfa", "Siirt", "Sinop", "Sivas", "Şırnak", "Tekirdağ", "Tokat", "Trabzon", "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"]
 };
 
 const COUNTRIES = Object.keys(COUNTRY_DATA).sort();
@@ -60,14 +60,12 @@ export default function UserProfile() {
       setUploading(prev => ({ ...prev, [type]: true }));
       const fileName = `${me.id}-${type}-${Date.now()}.${file.name.split('.').pop()}`;
       const { error: uploadError } = await supabase.storage.from('profiles').upload(`avatars/${fileName}`, file);
-      
-      if (uploadError) throw new Error("Dosya yüklenemedi. Storage ayarlarını tekrar kontrol edin.");
-
+      if (uploadError) throw new Error("Yükleme hatası: profiles bucket'ı public mi?");
       const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(`avatars/${fileName}`);
       const updateData = type === 'avatar' ? { avatar_url: publicUrl } : { cover_url: publicUrl };
       setFormData(prev => ({ ...prev, ...updateData }));
       await supabase.from("profiles").update(updateData).eq("id", me.id);
-      toast.success("Hafıza başarıyla güncellendi.");
+      toast.success("Fotoğraf hafızaya alındı.");
     } catch (error) {
       toast.error(error.message);
     } finally { setUploading(prev => ({ ...prev, [type]: false })); }
@@ -79,12 +77,12 @@ export default function UserProfile() {
         id: me.id, ...formData, cv_data: { career_goals: formData.career_goals }, updated_at: new Date().toISOString(),
       });
       if (error) throw error;
-      toast.success("Profil ve Lokasyon Kaydedildi.");
+      toast.success("Profil ve Lokasyon Bilgileri Kaydedildi.");
       setEditOpen(false);
     } catch (e) { toast.error("Kayıt hatası."); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse uppercase tracking-widest">Global Sistem Yükleniyor...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse uppercase tracking-widest">SİSTEM HAFIZASI YÜKLENİYOR...</div>;
 
   return (
     <div className={`bg-[#F8FAFC] min-h-screen pb-12 font-sans overflow-x-hidden ${lang === 'AR' ? 'text-right' : 'text-left'}`} dir={lang === 'AR' ? 'rtl' : 'ltr'}>
@@ -93,12 +91,12 @@ export default function UserProfile() {
 
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-5xl mx-auto">
-          {/* BANNER AREA */}
+          {/* BANNER (LinkedIn Style Size) */}
           <div className="h-32 md:h-44 bg-gradient-to-r from-[#e11d48] to-[#fb923c] relative cursor-pointer overflow-hidden rounded-b-xl" onClick={() => coverInputRef.current?.click()}>
             {formData.cover_url && <img src={formData.cover_url} className="w-full h-full object-cover" />}
             <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 transition-all flex items-center justify-center text-white"><Camera /></div>
           </div>
-          {/* PROFILE AREA */}
+          {/* PROFILE HEADER */}
           <div className="px-6 pb-6 flex flex-col md:flex-row items-end gap-6 -mt-12 relative z-10">
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-[5px] border-white shadow-xl overflow-hidden bg-slate-100 cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
               <img src={formData.avatar_url || `https://ui-avatars.com/api/?name=${formData.full_name}`} className="w-full h-full object-cover" />
@@ -110,24 +108,24 @@ export default function UserProfile() {
                 <span className="flex items-center gap-1"><MapPin size={12}/> {formData.city}, {formData.country}</span>
               </div>
             </div>
-            <Button onClick={() => setEditOpen(true)} className="mb-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border h-10 px-6 shadow-none">EDIT PROFILE</Button>
+            <Button onClick={() => setEditOpen(true)} className="mb-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 h-10 px-6 shadow-none">EDIT PROFILE</Button>
           </div>
         </div>
       </div>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        <Card className="rounded-2xl border-none shadow-sm bg-white p-8 mb-6">
+        <Card className="rounded-2xl border-none shadow-sm bg-white p-8">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Target size={16} className="text-orange-500" /> Kariyer Vizyonu</h3>
           <p className="text-slate-700 font-bold italic text-lg leading-relaxed">"{formData.career_goals?.vision || "..."}"</p>
         </Card>
       </main>
 
-      {/* MODAL */}
+      {/* MODAL: FULL GLOBAL SYNC */}
       {editOpen && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-lg font-bold text-slate-800 uppercase italic">Global Ayarlar</h2>
+              <h2 className="text-lg font-bold text-slate-800 uppercase italic">Profil Ayarları</h2>
               <button onClick={() => setEditOpen(false)} className="text-slate-400 hover:rotate-90 transition-all"><X size={24} /></button>
             </div>
             <div className="p-8 space-y-8 max-h-[65vh] overflow-y-auto">
@@ -139,7 +137,7 @@ export default function UserProfile() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase">Şehir (81 İl + Tunus)</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Şehir (Tüm Liste)</label>
                     <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none">
                       <option value="">Seçiniz...</option>
                       {COUNTRY_DATA[formData.country]?.map(city => <option key={city} value={city}>{city}</option>)}

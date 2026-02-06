@@ -11,7 +11,7 @@ import {
   Camera, Plus, Trash2, Award, Heart, Phone, MapPin, Star, CheckCircle2 
 } from "lucide-react";
 
-// --- GLOBAL LOKASYON & TELEFON (TAM LİSTE) ---
+// --- GLOBAL AI DATA (KESİNTİSİZ LİSTELER) ---
 const PHONE_CODES = [
   { code: "+90", label: "Turkey (+90)" },
   { code: "+216", label: "Tunisia (+216)" },
@@ -42,7 +42,6 @@ export default function UserProfile() {
   const [me, setMe] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  // --- FULL HR ENGINE DATA MODEL ---
   const [formData, setFormData] = useState({
     full_name: "", country: "Turkey", city: "", about: "",
     phone_code: "+90", phone_number: "",
@@ -94,7 +93,7 @@ export default function UserProfile() {
       const updateData = type === 'avatar' ? { avatar_url: publicUrl } : { cover_url: publicUrl };
       
       setFormData(prev => ({ ...prev, ...updateData }));
-      // VERİTABANINA BETON MÜHÜR
+      // VERİTABANINA BETON MÜHÜRLER (OTURUM KAPATSA DA KALIR)
       await supabase.from("profiles").update(updateData).eq("id", me.id);
       
       toast.success("Görsel veritabanına mühürlendi.");
@@ -116,7 +115,7 @@ export default function UserProfile() {
         updated_at: new Date().toISOString()
       });
       if (error) throw error;
-      toast.success("Hafıza başarıyla mühürlendi!");
+      toast.success("Kariyer verileriniz veritabanına mühürlendi!");
       setEditOpen(false);
     } catch (e) {
       toast.error("Kayıt mühürlenemedi.");
@@ -130,54 +129,54 @@ export default function UserProfile() {
       <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
       <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover')} />
 
-      {/* HEADER SECTION (GENİŞLETİLDİ) */}
+      {/* HEADER SECTION (ULTRA FERAH) */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="h-56 md:h-72 bg-slate-200 relative group overflow-hidden rounded-b-[60px] cursor-pointer" onClick={() => coverInputRef.current?.click()}>
+          <div className="h-64 md:h-80 bg-slate-200 relative group overflow-hidden rounded-b-[70px] cursor-pointer" onClick={() => coverInputRef.current?.click()}>
             {formData.cover_url && <img src={formData.cover_url} className="w-full h-full object-cover" />}
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black uppercase tracking-widest transition-all italic">Kapağı Mühürle</div>
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-black uppercase tracking-[0.3em] transition-all italic text-xl">Kapağı Mühürle</div>
           </div>
-          <div className="px-16 pb-12 flex flex-col md:flex-row items-end gap-10 -mt-24 relative z-10">
-            <div className="w-44 h-44 md:w-56 md:h-56 rounded-[65px] border-[12px] border-white shadow-2xl overflow-hidden bg-slate-100 cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+          <div className="px-20 pb-16 flex flex-col md:flex-row items-end gap-12 -mt-32 relative z-10">
+            <div className="w-48 h-48 md:w-64 md:h-64 rounded-[80px] border-[15px] border-white shadow-2xl overflow-hidden bg-slate-100 cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
               <img src={formData.avatar_url || `https://ui-avatars.com/api/?name=${formData.full_name}`} className="w-full h-full object-cover" />
             </div>
-            <div className="flex-1 pb-6 text-slate-800">
-              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">{formData.full_name || "İSİM SOYİSİM"}</h1>
-              <div className="flex gap-6 mt-4 text-slate-400 font-bold text-xs uppercase tracking-[0.2em]">
-                <span className="text-rose-600 bg-rose-50 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-sm"><CheckCircle2 size={16}/> ONAYLI PRO</span>
-                <span className="flex items-center gap-2"><MapPin size={18}/> {formData.city}, {formData.country}</span>
+            <div className="flex-1 pb-10 text-slate-800">
+              <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9]">{formData.full_name || "İSİM SOYİSİM"}</h1>
+              <div className="flex gap-8 mt-6 text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">
+                <span className="text-rose-600 bg-rose-50 px-5 py-2 rounded-full flex items-center gap-3 shadow-sm"><CheckCircle2 size={20}/> ONAYLI PRO</span>
+                <span className="flex items-center gap-3"><MapPin size={22}/> {formData.city}, {formData.country}</span>
               </div>
             </div>
-            <Button onClick={() => setEditOpen(true)} className="mb-4 bg-slate-900 text-white font-black px-16 h-20 rounded-[35px] shadow-2xl hover:bg-rose-600 transition-all uppercase italic tracking-widest text-lg active:scale-95">DÜZENLE</Button>
+            <Button onClick={() => setEditOpen(true)} className="mb-8 bg-slate-900 text-white font-black px-20 h-24 rounded-[45px] shadow-2xl hover:bg-rose-600 transition-all uppercase italic tracking-[0.2em] text-xl active:scale-95">DÜZENLE</Button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-12 py-20 grid lg:grid-cols-12 gap-16">
-        <div className="lg:col-span-8 space-y-20">
+      <main className="max-w-7xl mx-auto px-16 py-24 grid lg:grid-cols-12 gap-20">
+        <div className="lg:col-span-8 space-y-24">
           <section>
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.5em] mb-10 flex items-center gap-5"><Briefcase size={24} className="text-rose-500" /> Profesyonel Deneyim</h3>
-            <div className="space-y-10">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.6em] mb-12 flex items-center gap-6"><Briefcase size={28} className="text-rose-500" /> Profesyonel Deneyim</h3>
+            <div className="space-y-12">
               {formData.work_experience.map((w, i) => (
-                <Card key={i} className="p-12 rounded-[55px] border-none shadow-sm bg-white border-l-[12px] border-l-rose-500/10">
-                  <h4 className="text-2xl font-black uppercase italic tracking-tight text-slate-800">{w.role}</h4>
-                  <p className="text-rose-600 font-black text-base uppercase mt-2 mb-8 tracking-wider">{w.company} • {w.start} - {w.isCurrent ? "Günümüz" : w.end}</p>
-                  <p className="text-slate-500 italic text-base leading-relaxed pl-8 border-l-2 border-slate-100">"{w.desc}"</p>
+                <Card key={i} className="p-16 rounded-[65px] border-none shadow-sm bg-white border-l-[15px] border-l-rose-500/10">
+                  <h4 className="text-3xl font-black uppercase italic tracking-tight text-slate-800">{w.role}</h4>
+                  <p className="text-rose-600 font-black text-lg uppercase mt-3 mb-10 tracking-widest">{w.company} • {w.start} - {w.isCurrent ? "Günümüz" : w.end}</p>
+                  <p className="text-slate-500 italic text-lg leading-relaxed pl-10 border-l-4 border-slate-50">"{w.desc}"</p>
                 </Card>
               ))}
             </div>
           </section>
         </div>
 
-        <div className="lg:col-span-4 space-y-20">
+        <div className="lg:col-span-4 space-y-24">
           <section>
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.5em] mb-10 flex items-center gap-5"><Languages size={24} className="text-indigo-500" /> Dil Yetkinliği</h3>
-            <div className="space-y-6">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.6em] mb-12 flex items-center gap-6"><Languages size={28} className="text-indigo-500" /> Dil Yetkinliği</h3>
+            <div className="space-y-8">
               {formData.languages.map((l, i) => (
-                <div key={i} className="flex justify-between items-center bg-white p-6 rounded-[30px] shadow-sm border border-slate-50">
-                  <span className="font-black uppercase text-xs text-slate-700 tracking-widest">{l.lang}</span>
-                  <div className="flex gap-1.5">
-                    {[1,2,3,4,5].map(s => <Star key={s} size={16} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-100"} />)}
+                <div key={i} className="flex justify-between items-center bg-white p-8 rounded-[40px] shadow-sm border border-slate-50">
+                  <span className="font-black uppercase text-sm text-slate-700 tracking-widest">{l.lang}</span>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(s => <Star key={s} size={20} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-100"} />)}
                   </div>
                 </div>
               ))}
@@ -186,72 +185,70 @@ export default function UserProfile() {
         </div>
       </main>
 
-      {/* --- PRO MODAL v25 (GENİŞ & RAHAT) --- */}
+      {/* --- ULTRA MODAL v26 (EKSTRA GENİŞ) --- */}
       {editOpen && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/85 backdrop-blur-3xl flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-7xl max-h-[92vh] overflow-y-auto rounded-[80px] shadow-2xl border border-white/20 custom-scrollbar">
-            <div className="sticky top-0 bg-white/95 p-16 border-b z-50 flex justify-between items-center">
+        <div className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-3xl flex items-center justify-center p-10">
+          <div className="bg-white w-full max-w-7xl max-h-[94vh] overflow-y-auto rounded-[100px] shadow-2xl border border-white/30 custom-scrollbar">
+            <div className="sticky top-0 bg-white/95 p-20 border-b z-50 flex justify-between items-center">
               <div>
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-800">Profil Mimarı <span className="text-rose-500">v25 FINAL</span></h2>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Hafıza Senkronizasyonu & Beton Mühür</p>
+                <h2 className="text-4xl font-black uppercase italic tracking-tighter text-slate-800">Profil Mimarı <span className="text-rose-500">v26 ULTRA</span></h2>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-3 italic text-left">Hafıza Senkronizasyonu & Beton Mühürleme Aktif</p>
               </div>
-              <button onClick={() => setEditOpen(false)} className="w-20 h-20 bg-slate-50 rounded-[35px] flex items-center justify-center hover:rotate-90 transition-all shadow-inner"><X size={32} /></button>
+              <button onClick={() => setEditOpen(false)} className="w-24 h-24 bg-slate-50 rounded-[45px] flex items-center justify-center hover:rotate-90 transition-all shadow-inner"><X size={40} /></button>
             </div>
             
-            <div className="p-16 space-y-20 text-left">
-              {/* BÖLÜM 1: GENİŞ GRID */}
-              <div className="grid lg:grid-cols-3 gap-12">
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] ml-4">Tam Ad Soyad</label>
-                  <input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className="w-full p-8 rounded-[35px] bg-slate-50 border-none font-bold text-slate-800 text-lg outline-none focus:ring-8 ring-rose-500/5" />
+            <div className="p-20 space-y-24 text-left">
+              <div className="grid lg:grid-cols-3 gap-16">
+                <div className="space-y-6">
+                  <label className="text-sm font-black text-slate-400 uppercase tracking-[0.4em] ml-6 italic">Tam Ad Soyad</label>
+                  <input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className="w-full p-10 rounded-[45px] bg-slate-50 border-none font-bold text-slate-800 text-xl outline-none focus:ring-[15px] ring-rose-500/5 shadow-inner" />
                 </div>
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] ml-4">Global Lokasyon</label>
-                  <div className="flex gap-4">
-                    <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value, city: ""})} className="flex-1 p-8 rounded-[35px] bg-slate-50 border-none font-bold text-slate-800 text-lg outline-none">
+                <div className="space-y-6">
+                  <label className="text-sm font-black text-slate-400 uppercase tracking-[0.4em] ml-6 italic">Global Lokasyon</label>
+                  <div className="flex gap-6">
+                    <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value, city: ""})} className="flex-1 p-10 rounded-[45px] bg-slate-50 border-none font-bold text-slate-800 text-xl outline-none shadow-inner cursor-pointer">
                       {Object.keys(LOCATION_DATA).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="flex-1 p-8 rounded-[35px] bg-slate-50 border-none font-bold text-slate-800 text-lg outline-none">
+                    <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="flex-1 p-10 rounded-[45px] bg-slate-50 border-none font-bold text-slate-800 text-xl outline-none shadow-inner cursor-pointer">
                       <option value="">Şehir...</option>
                       {LOCATION_DATA[formData.country]?.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] ml-4">Telefon Mührü</label>
-                  <div className="flex gap-4">
-                    <select value={formData.phone_code} onChange={e => setFormData({...formData, phone_code: e.target.value})} className="min-w-[220px] p-8 rounded-[35px] bg-slate-50 border-none font-bold text-slate-800 text-base outline-none">
+                <div className="space-y-6">
+                  <label className="text-sm font-black text-slate-400 uppercase tracking-[0.4em] ml-6 italic">Telefon Mührü</label>
+                  <div className="flex gap-6">
+                    <select value={formData.phone_code} onChange={e => setFormData({...formData, phone_code: e.target.value})} className="min-w-[260px] p-10 rounded-[45px] bg-slate-50 border-none font-bold text-slate-800 text-lg outline-none shadow-inner cursor-pointer">
                       {PHONE_CODES.map(p => <option key={p.code} value={p.code}>{p.label}</option>)}
                     </select>
-                    <input placeholder="5XX..." value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className="flex-1 p-8 rounded-[35px] bg-slate-50 border-none font-bold text-slate-800 text-lg outline-none" />
+                    <input placeholder="5XX..." value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className="flex-1 p-10 rounded-[45px] bg-slate-50 border-none font-bold text-slate-800 text-xl outline-none shadow-inner" />
                   </div>
                 </div>
               </div>
 
-              {/* BÖLÜM 2: DİNAMİK LİSTELER (FERAH TASARIM) */}
-              <div className="space-y-10">
-                <div className="flex justify-between items-center border-b pb-8">
-                  <h3 className="font-black uppercase text-sm tracking-[0.4em] text-slate-400 italic">Dil Yetkinlikleri (1-5 Puan)</h3>
-                  <Button onClick={() => setFormData({...formData, languages: [...formData.languages, { lang: "English", level: 3 }]})} className="bg-indigo-600 text-white rounded-[25px] font-black text-xs px-10 h-14 shadow-xl">EKLE</Button>
+              <div className="space-y-12">
+                <div className="flex justify-between items-center border-b pb-12">
+                  <h3 className="font-black uppercase text-base tracking-[0.5em] text-slate-400 italic">Dil Yetkinlikleri (1-5 Puan)</h3>
+                  <Button onClick={() => setFormData({...formData, languages: [...formData.languages, { lang: "English", level: 3 }]})} className="bg-indigo-600 text-white rounded-[35px] font-black text-sm px-16 h-20 shadow-2xl transition-all active:scale-95">YENİ DİL EKLE</Button>
                 </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
                   {formData.languages.map((l, i) => (
-                    <div key={i} className="p-10 bg-slate-50 rounded-[45px] flex items-center justify-between border-2 border-transparent hover:border-indigo-500/20 transition-all">
+                    <div key={i} className="p-12 bg-slate-50 rounded-[60px] flex items-center justify-between border-4 border-transparent hover:border-indigo-500/10 transition-all shadow-sm">
                       <input placeholder="Dil..." value={l.lang} onChange={e => { const nl = [...formData.languages]; nl[i].lang = e.target.value; setFormData({...formData, languages: nl}); }} className="bg-transparent font-black uppercase text-sm outline-none w-1/3 text-slate-800" />
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         {[1,2,3,4,5].map(v => (
-                          <button key={v} onClick={() => { const nl = [...formData.languages]; nl[i].level = v; setFormData({...formData, languages: nl}); }} className={`w-10 h-10 rounded-2xl font-black text-xs transition-all shadow-md ${l.level === v ? 'bg-indigo-600 text-white' : 'bg-white text-slate-300'}`}>{v}</button>
+                          <button key={v} onClick={() => { const nl = [...formData.languages]; nl[i].level = v; setFormData({...formData, languages: nl}); }} className={`w-12 h-12 rounded-[20px] font-black text-xs transition-all shadow-md ${l.level === v ? 'bg-indigo-600 text-white' : 'bg-white text-slate-300'}`}>{v}</button>
                         ))}
                       </div>
-                      <button onClick={() => setFormData({...formData, languages: formData.languages.filter((_, idx) => idx !== i)})} className="text-red-400 hover:scale-125 transition-all ml-4"><Trash2 size={24}/></button>
+                      <button onClick={() => setFormData({...formData, languages: formData.languages.filter((_, idx) => idx !== i)})} className="text-red-400 hover:scale-125 transition-all ml-6"><Trash2 size={32}/></button>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="sticky bottom-0 p-16 bg-white/95 backdrop-blur-md border-t flex gap-10">
-              <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-28 rounded-[45px] text-3xl font-black uppercase italic text-white shadow-2xl transition-all active:scale-95 shadow-rose-200 tracking-[0.3em]">
+            <div className="sticky bottom-0 p-20 bg-white/98 backdrop-blur-md border-t flex gap-12">
+              <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-32 rounded-[60px] text-4xl font-black uppercase italic text-white shadow-2xl transition-all active:scale-95 shadow-rose-200 tracking-[0.4em]">
                 HAFIZAYI MÜHÜRLE
               </Button>
             </div>

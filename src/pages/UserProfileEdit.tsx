@@ -6,410 +6,244 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, User, Phone, Briefcase, Building2, MapPin } from "lucide-react";
+import { 
+  ArrowLeft, Save, User, Phone, Briefcase, Building2, MapPin, 
+  Languages, Globe2, Award, Plus, Trash2 
+} from "lucide-react";
+
+// Şirket panelindeki listeyle birebir aynı ülke listesi
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Brazil", "Bulgaria",
+  "Canada", "Chile", "China", "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Djibouti", "Dominica", "Egypt", "Estonia", "Ethiopia", "Finland", "France",
+  "Georgia", "Germany", "Greece", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Italy",
+  "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Lebanon", "Libya", "Luxembourg",
+  "Malta", "Mexico", "Monaco", "Morocco", "Netherlands", "New Zealand", "Norway", "Oman",
+  "Pakistan", "Palestine", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saudi Arabia", "Singapore", "Slovakia", "Slovenia", "South Africa", "South Korea", "Spain", "Sweden", "Switzerland", "Syria",
+  "Thailand", "Tunisia", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uzbekistan", "Vietnam", "Worldwide"
+].sort();
+
+const LANG_OPTIONS = ["English", "Arabic", "French", "German", "Spanish", "Italian", "Portuguese", "Dutch", "Turkish"];
 
 export default function UserProfileEdit() {
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [me, setMe] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
 
-  // ---- Telefon ülke kodları ----
-  const PHONE_COUNTRIES = useMemo(
-    () => [
-      { iso: "TR", name: "Türkiye", dial: "+90", placeholder: "5xx xxx xx xx" },
-      { iso: "TN", name: "Tunus", dial: "+216", placeholder: "xx xxx xxx" },
-      { iso: "DE", name: "Almanya", dial: "+49", placeholder: "15xx xxxxxx" },
-      { iso: "FR", name: "Fransa", dial: "+33", placeholder: "6 xx xx xx xx" },
-      { iso: "NL", name: "Hollanda", dial: "+31", placeholder: "6 xxxxxxxx" },
-      { iso: "GB", name: "İngiltere", dial: "+44", placeholder: "7xxx xxxxxx" },
-      { iso: "US", name: "ABD", dial: "+1", placeholder: "555 123 4567" },
-      { iso: "AE", name: "BAE", dial: "+971", placeholder: "5x xxx xxxx" },
-      { iso: "SA", name: "Suudi Arabistan", dial: "+966", placeholder: "5x xxx xxxx" },
-      { iso: "QA", name: "Katar", dial: "+974", placeholder: "xxxx xxxx" },
-      { iso: "KW", name: "Kuveyt", dial: "+965", placeholder: "xxxx xxxx" },
-    ],
-    []
-  );
-
-  // ---- Sektör listesi ----
-  const SECTORS = useMemo(
-    () => [
-      "Yazılım",
-      "Fintech",
-      "E-ticaret",
-      "Sağlık",
-      "Eğitim",
-      "Lojistik",
-      "Üretim",
-      "Danışmanlık",
-      "Pazarlama",
-      "Satış",
-      "İnsan Kaynakları",
-      "Hukuk",
-      "Turizm",
-      "Gıda & İçecek",
-      "Medya",
-      "Telekom",
-      "Enerji",
-      "Perakende",
-      "Otomotiv",
-      "Gayrimenkul",
-      "Kamu",
-      "Diğer",
-    ],
-    []
-  );
-
-  // ---- Ünvan listesi ----
-  const TITLES = useMemo(
-    () => [
-      "CEO / Kurucu",
-      "COO",
-      "CTO",
-      "CFO",
-      "CHRO",
-      "Genel Müdür",
-      "Direktör",
-      "Müdür",
-      "Takım Lideri",
-      "Product Manager",
-      "Project Manager",
-      "Software Engineer",
-      "UI/UX Designer",
-      "Data Analyst",
-      "Data Scientist",
-      "DevOps Engineer",
-      "Sales Manager",
-      "Marketing Manager",
-      "HR Manager",
-      "İş Geliştirme",
-      "Operasyon",
-      "Öğrenci",
-      "Serbest / Freelancer",
-      "Diğer",
-    ],
-    []
-  );
-
-  // ✅ Form state (profiles kolonlarıyla uyumlu) -> display_name kullan
+  // Form State
   const [form, setForm] = useState({
     display_name: "",
     title: "",
     sector: "",
+    country: "Turkey",
     city: "",
-    phone_country: "TR",
-    phone_local: "",
+    work_preference: "Remote (Global)",
+    skills: "", // AI Matcher için anahtar kelimeler
+    languages: [{ lang: "English", level: "3" }] // Array of {lang, level}
   });
 
-  const splitPhone = (raw: string) => {
-    if (!raw) return { phone_country: "TR", phone_local: "" };
-    const clean = String(raw).trim();
-    const found = PHONE_COUNTRIES.find((c) => clean.startsWith(c.dial));
-    if (found) {
-      return {
-        phone_country: found.iso,
-        phone_local: clean.replace(found.dial, "").trim(),
-      };
-    }
-    return { phone_country: "TR", phone_local: clean.replace("+", "").trim() };
-  };
-
-  const buildE164 = () => {
-    const country =
-      PHONE_COUNTRIES.find((c) => c.iso === form.phone_country) || PHONE_COUNTRIES[0];
-    const local = String(form.phone_local || "").replace(/[^\d]/g, "").trim();
-    if (!local) return "";
-    return `${country.dial}${local}`;
-  };
-
   useEffect(() => {
-    let mounted = true;
-
-    const run = async () => {
+    const fetchProfile = async () => {
       try {
         setLoading(true);
-
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-
-        const user = data?.user || null;
-        if (!mounted) return;
-
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { navigate("/login"); return; }
         setMe(user);
 
-        if (!user) {
-          toast.error("Giriş yapmadan profili düzenleyemezsin.");
-          navigate("/login");
-          return;
-        }
-
-        // ✅ profili çek (kolonları açık seçelim)
-        const { data: p, error: pErr } = await supabase
+        const { data: p } = await supabase
           .from("profiles")
-          .select("id, display_name, full_name, role, phone, country, title, sector, city, updated_at")
+          .select("*")
           .eq("id", user.id)
           .maybeSingle();
 
-        if (pErr) {
-          console.error("profiles select error:", pErr);
+        if (p) {
+          setForm({
+            display_name: p.display_name || p.full_name || "",
+            title: p.title || "",
+            sector: p.sector || "",
+            country: p.country || "Turkey",
+            city: p.city || "",
+            work_preference: p.metadata?.work_preference || "Remote (Global)",
+            skills: p.metadata?.skills || "",
+            languages: p.metadata?.languages || [{ lang: "English", level: "3" }]
+          });
         }
-
-        const phoneParts = splitPhone(p?.phone || "");
-
-        setProfile(p || null);
-
-        // ✅ display_name öncelik: profiles -> user_metadata
-        const meta = user?.user_metadata || {};
-        const metaName =
-          meta.display_name || meta.full_name || meta.fullName || meta.name || "";
-
-        setForm({
-          display_name: p?.display_name || p?.full_name || metaName || "",
-          title: p?.title || "",
-          sector: p?.sector || "",
-          city: p?.city || "",
-          phone_country: phoneParts.phone_country,
-          phone_local: phoneParts.phone_local,
-        });
       } catch (e) {
-        console.error(e);
         toast.error("Profil yüklenemedi.");
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
+    fetchProfile();
+  }, [navigate]);
 
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, [navigate, PHONE_COUNTRIES]);
+  const handleAddLang = () => {
+    setForm(s => ({ ...s, languages: [...s.languages, { lang: "Turkish", level: "5" }] }));
+  };
+
+  const handleRemoveLang = (index: number) => {
+    setForm(s => ({ ...s, languages: s.languages.filter((_, i) => i !== index) }));
+  };
 
   const onSave = async () => {
     if (saving) return;
-
-    const display_name = String(form.display_name || "").trim();
-    if (!display_name) {
-      toast.error("Ad Soyad zorunlu.");
-      return;
-    }
-
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const user = u?.user;
-      if (!user) {
-        toast.error("Oturum bulunamadı. Lütfen yeniden giriş yap.");
-        navigate("/login");
-        return;
-      }
-
-      // ✅ Auth metadata da güncellensin (Navbar/AuthContext tutarlı kalsın)
-      await supabase.auth.updateUser({
-        data: {
-          display_name,
-          full_name: display_name, // geriye dönük uyum
-        },
-      });
-
       const payload = {
-        id: user.id, // ✅ kritik (RLS with_check id=auth.uid())
-        display_name,
-        full_name: display_name, // ✅ KRİTİK: profile/dashboard aynı isimden beslensin
-        title: form.title || null,
-        sector: form.sector || null,
-        city: form.city || null,
-        phone: buildE164() || null,
+        id: me.id,
+        display_name: form.display_name,
+        full_name: form.display_name,
+        title: form.title,
+        sector: form.sector,
+        country: form.country,
+        city: form.city,
+        metadata: {
+          work_preference: form.work_preference,
+          skills: form.skills,
+          languages: form.languages,
+          is_global_ready: true
+        },
         updated_at: new Date().toISOString(),
       };
 
-      // ✅ upsert’te conflict açık olsun
-      const { error } = await supabase
-        .from("profiles")
-        .upsert(payload, { onConflict: "id" });
+      const { error } = await supabase.from("profiles").upsert(payload);
+      if (error) throw error;
 
-      if (error) {
-        console.error("profiles upsert error:", error);
-        toast.error("Kaydedilemedi. RLS/policy veya kolonları kontrol et.");
-        return;
-      }
-
-      toast.success("Profil kaydedildi.");
+      toast.success("Global profiliniz kaydedildi. AI eşleşmeleri güncelleniyor.");
       navigate("/user/profile");
     } catch (e) {
-      console.error(e);
-      toast.error("Beklenmeyen bir hata oluştu.");
+      toast.error("Kaydedilirken bir hata oluştu.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-slate-700">
-        Yükleniyor...
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">AI Sistemleri Hazırlanıyor...</div>;
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-white min-h-screen">
       {/* Header */}
-      <section className="border-b border-orange-100 bg-gradient-to-r from-orange-500 via-red-500 to-orange-400">
-        <div className="max-w-4xl mx-auto px-4 py-10">
-          <p className="text-xs text-white/90">User Profile</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold text-white">Profili Düzenle</h1>
-          <p className="mt-2 text-sm text-white/90 max-w-2xl">
-            Bu bilgiler eşleşme kalitesini ve seans deneyimini etkiler. Ne kadar net, o kadar iyi eşleşme.
-          </p>
-
-          <div className="mt-6 flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              className="rounded-xl border-white/70 text-white hover:bg-white/10"
-              onClick={() => navigate("/user/profile")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Geri
+      <section className="bg-gradient-to-r from-red-600 to-orange-500 py-12 px-4">
+        <div className="max-w-4xl mx-auto text-white">
+          <h1 className="text-3xl font-bold">Global AI Profilini Düzenle</h1>
+          <p className="opacity-90 mt-2">Bilgilerin, dünya çapındaki şirketlerle eşleşme skorunu belirler.</p>
+          <div className="mt-6 flex gap-3">
+            <Button variant="outline" className="rounded-xl bg-white/10 border-white/20 text-white" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Geri
             </Button>
-            <Button
-              className="rounded-xl bg-white text-slate-900 hover:bg-white/90"
-              onClick={onSave}
-              disabled={saving}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "Kaydediliyor..." : "Kaydet"}
+            <Button className="rounded-xl bg-white text-red-600 hover:bg-gray-100" onClick={onSave} disabled={saving}>
+              <Save className="w-4 h-4 mr-2" /> {saving ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Form */}
-      <div className="max-w-4xl mx-auto px-4 py-10">
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <User className="w-4 h-4 text-orange-600" />
-              Temel Bilgiler
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+        {/* Temel Bilgiler */}
+        <Card className="rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b">
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="w-4 h-4 text-red-600" /> Kişisel ve Kariyer Bilgileri
             </CardTitle>
           </CardHeader>
-
-          <CardContent className="space-y-5">
-            {/* Ad Soyad */}
-            <div>
-              <label className="text-xs text-slate-600">Ad Soyad</label>
-              <input
-                value={form.display_name}
-                onChange={(e) => setForm((s) => ({ ...s, display_name: e.target.value }))}
-                className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
-                placeholder="Örn: Salih Gökalp Büyükçelebi"
+          <CardContent className="p-6 space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Ad Soyad</label>
+                <input value={form.display_name} onChange={e => setForm(s => ({...s, display_name: e.target.value}))} className="w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Ünvan</label>
+                <input value={form.title} onChange={e => setForm(s => ({...s, title: e.target.value}))} className="w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-red-500" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-red-600 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Yetkinlikler (AI Matcher Anahtarları)
+              </label>
+              <textarea 
+                value={form.skills} 
+                onChange={e => setForm(s => ({...s, skills: e.target.value}))} 
+                className="w-full p-3 rounded-xl border outline-none bg-red-50/30"
+                placeholder="Örn: React, Node.js, Project Management, Sales Strategy..."
               />
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Ünvan + Sektör */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-slate-500" /> Ünvan
-                </label>
-                <select
-                  value={form.title}
-                  onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                >
-                  <option value="">Seçiniz</option>
-                  {TITLES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-slate-500" /> Sektör
-                </label>
-                <select
-                  value={form.sector}
-                  onChange={(e) => setForm((s) => ({ ...s, sector: e.target.value }))}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200 bg-white"
-                >
-                  <option value="">Seçiniz</option>
-                  {SECTORS.map((sct) => (
-                    <option key={sct} value={sct}>
-                      {sct}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {/* Global Konum ve Tercih */}
+        <Card className="rounded-[2rem] border-slate-100 shadow-xl">
+          <CardHeader className="bg-slate-50/50 border-b">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Globe2 className="w-4 h-4 text-red-600" /> Global Konum ve Çalışma Tercihi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 grid md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500">Ülke</label>
+              <select value={form.country} onChange={e => setForm(s => ({...s, country: e.target.value}))} className="w-full p-3 rounded-xl border bg-white outline-none">
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500">Şehir</label>
+              <input value={form.city} onChange={e => setForm(s => ({...s, city: e.target.value}))} className="w-full p-3 rounded-xl border outline-none" placeholder="Örn: İstanbul" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500">Çalışma Şekli</label>
+              <select value={form.work_preference} onChange={e => setForm(s => ({...s, work_preference: e.target.value}))} className="w-full p-3 rounded-xl border bg-white outline-none">
+                <option>Remote (Global)</option>
+                <option>Remote (Local)</option>
+                <option>Hybrid</option>
+                <option>On-site</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Şehir + Telefon */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-slate-500" /> Şehir
-                </label>
-                <input
-                  value={form.city}
-                  onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
-                  placeholder="Örn: İstanbul"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-600 flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-slate-500" /> Telefon
-                </label>
-
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  <select
-                    value={form.phone_country}
-                    onChange={(e) => setForm((s) => ({ ...s, phone_country: e.target.value }))}
-                    className="col-span-1 rounded-xl border border-slate-200 px-3 py-3 outline-none focus:ring-2 focus:ring-orange-200 bg-white"
+        {/* Diller ve Seviyeler */}
+        <Card className="rounded-[2rem] border-slate-100 shadow-xl overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Languages className="w-4 h-4 text-red-600" /> Dil Yetkinlikleri (1-5 Seviye)
+            </CardTitle>
+            <Button size="sm" variant="ghost" className="text-red-600" onClick={handleAddLang}><Plus className="w-4 h-4 mr-1" /> Ekle</Button>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {form.languages.map((l, index) => (
+              <div key={index} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl">
+                <select 
+                  value={l.lang} 
+                  onChange={e => {
+                    const newList = [...form.languages];
+                    newList[index].lang = e.target.value;
+                    setForm(s => ({...s, languages: newList}));
+                  }}
+                  className="flex-1 p-2 rounded-lg border bg-white outline-none"
+                >
+                  {LANG_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-slate-400" />
+                  <select 
+                    value={l.level}
+                    onChange={e => {
+                      const newList = [...form.languages];
+                      newList[index].level = e.target.value;
+                      setForm(s => ({...s, languages: newList}));
+                    }}
+                    className="p-2 rounded-lg border bg-white outline-none"
                   >
-                    {PHONE_COUNTRIES.map((c) => (
-                      <option key={c.iso} value={c.iso}>
-                        {c.iso} {c.dial}
-                      </option>
-                    ))}
+                    {[1,2,3,4,5].map(v => <option key={v} value={v}>Seviye {v}</option>)}
                   </select>
-
-                  <input
-                    value={form.phone_local}
-                    onChange={(e) => setForm((s) => ({ ...s, phone_local: e.target.value }))}
-                    className="col-span-2 rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-orange-200"
-                    placeholder={
-                      PHONE_COUNTRIES.find((c) => c.iso === form.phone_country)?.placeholder || "Telefon"
-                    }
-                    inputMode="tel"
-                  />
                 </div>
-
-                <p className="mt-2 text-xs text-slate-500">
-                  Kaydedilecek format: <span className="font-mono">{buildE164() || "—"}</span>
-                </p>
+                <Button size="icon" variant="ghost" className="text-slate-400 hover:text-red-600" onClick={() => handleRemoveLang(index)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
-            </div>
-
-            <div className="pt-2 flex gap-2 flex-wrap">
-              <Button variant="outline" className="rounded-xl" onClick={() => navigate("/user/profile")}>
-                Vazgeç
-              </Button>
-              <Button className="rounded-xl" onClick={onSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Kaydediliyor..." : "Kaydet"}
-              </Button>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              * Kaydet dediğinde veriler <span className="font-mono">profiles</span> tablosuna yazılır.
-            </p>
+            ))}
           </CardContent>
         </Card>
       </div>

@@ -11,10 +11,13 @@ import {
   User, Pencil, X, Briefcase, CheckCircle2, MapPin, Camera, Video, Mail, Target
 } from "lucide-react";
 
+// Tunus Dahil Global Lokasyon Verisi
 const LOCATION_DATA = {
   "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan"],
   "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa"],
-  "France": ["Paris", "Lyon", "Marseille"]
+  "France": ["Paris", "Lyon", "Marseille"],
+  "Germany": ["Berlin", "Munich", "Hamburg"],
+  "USA": ["New York", "Los Angeles", "Chicago"]
 };
 
 const COUNTRIES = Object.keys(LOCATION_DATA).sort();
@@ -54,7 +57,7 @@ export default function UserProfile() {
         setMe(user);
         const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
         if (p) setFormData(prev => ({ ...prev, ...p, ...p.cv_data }));
-      } catch (err) { console.error("Data error:", err); }
+      } catch (err) { console.error("Veri hatası:", err); }
       finally { setLoading(false); }
     };
     fetchUser();
@@ -93,12 +96,12 @@ export default function UserProfile() {
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
-      toast.success("Profil ve Lokasyon Bilgileri Kaydedildi.");
+      toast.success("Değişiklikler Kaydedildi.");
       setEditOpen(false);
-    } catch (e) { toast.error("Kayıt sırasında bir hata oluştu."); }
+    } catch (e) { toast.error("Kayıt sırasında hata oluştu."); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse">SİSTEM YÜKLENİYOR...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse uppercase tracking-widest">Global Sistem Yükleniyor...</div>;
 
   return (
     <div className={`bg-[#F8FAFC] min-h-screen pb-12 font-sans ${lang === 'AR' ? 'text-right' : 'text-left'}`} dir={lang === 'AR' ? 'rtl' : 'ltr'}>
@@ -135,7 +138,7 @@ export default function UserProfile() {
             
             <div className="flex gap-2 mb-2">
               <Button onClick={() => setEditOpen(true)} className="bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 h-10 px-6 shadow-none">EDIT PROFILE</Button>
-              <Button onClick={() => window.open(`https://meet.jit.si/Kariyeer-${me?.id.slice(0,8)}`, '_blank')} className="bg-[#6366f1] text-white hover:bg-[#4f46e5] rounded-xl font-bold px-6 h-10 shadow-lg flex items-center gap-2 tracking-tighter"><Video size={16}/> INTERVIEW ROOM</Button>
+              <Button onClick={() => window.open(`https://meet.jit.si/Kariyeer-${me?.id.slice(0,8)}`, '_blank')} className="bg-[#6366f1] text-white hover:bg-[#4f46e5] rounded-xl font-bold px-6 h-10 shadow-lg flex items-center gap-2"><Video size={16}/> INTERVIEW ROOM</Button>
             </div>
           </div>
         </div>
@@ -149,7 +152,7 @@ export default function UserProfile() {
             </Card>
          </div>
 
-         <div className="lg:col-span-4">
+         <div className="lg:col-span-4 space-y-6">
             <Card className="rounded-2xl border-none shadow-sm bg-[#0f172a] text-white p-8">
                <h3 className="text-[10px] font-black uppercase text-rose-500 tracking-widest mb-6 flex items-center gap-2"><Mail size={14} /> İletişim</h3>
                <div className="space-y-4 text-xs">
@@ -171,7 +174,7 @@ export default function UserProfile() {
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
             <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight tracking-tighter">Profil Mimarı</h2>
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Profil Mimarı</h2>
               <button onClick={() => setEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-all"><X size={24} /></button>
             </div>
             

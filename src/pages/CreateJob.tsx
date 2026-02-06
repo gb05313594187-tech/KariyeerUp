@@ -13,9 +13,24 @@ import {
   Sparkles, 
   ArrowLeft, 
   Globe2, 
-  Clock, 
-  Languages 
+  Languages,
+  Award
 } from "lucide-react";
+
+// Alfabetik Ülke Listesi (Supa entegrasyonu için)
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Brazil", "Bulgaria",
+  "Canada", "Chile", "China", "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Djibouti", "Dominica", "Egypt", "Estonia", "Ethiopia", "Finland", "France",
+  "Georgia", "Germany", "Greece", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Italy",
+  "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Lebanon", "Libya", "Luxembourg",
+  "Malta", "Mexico", "Monaco", "Morocco", "Netherlands", "New Zealand", "Norway", "Oman",
+  "Pakistan", "Palestine", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saudi Arabia", "Singapore", "Slovakia", "Slovenia", "South Africa", "South Korea", "Spain", "Sweden", "Switzerland", "Syria",
+  "Thailand", "Tunisia", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uzbekistan", "Vietnam", "Worldwide"
+].sort();
+
+const languages = ["English", "Arabic", "French", "German", "Spanish", "Italian", "Portuguese", "Dutch", "Turkish"];
 
 export default function CreateJob() {
   const navigate = useNavigate();
@@ -29,8 +44,8 @@ export default function CreateJob() {
     city: "",
     salary_range: "",
     requirements: "",
-    language_req: "English (Professional)",
-    timezone: "Any Timezone"
+    required_lang: "English",
+    lang_level: "3", // Default: Intermediate
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,19 +56,19 @@ export default function CreateJob() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth?.user) throw new Error("Oturum bulunamadı.");
 
-      // Supabase 'jobs' tablosuna kayıt
       const { error } = await supabase.from("jobs").insert([{
         company_id: auth.user.id,
         title: formData.title,
         description: formData.description,
-        location: `${formData.work_model} - ${formData.country} ${formData.city ? '/ ' + formData.city : ''}`,
+        location: `${formData.work_model} - ${formData.country}`,
         salary_range: formData.salary_range,
         requirements: formData.requirements,
         metadata: {
           work_model: formData.work_model,
           country: formData.country,
-          timezone: formData.timezone,
-          language: formData.language_req
+          required_language: formData.required_lang,
+          language_min_level: parseInt(formData.lang_level),
+          is_global: true
         },
         status: "active",
         created_at: new Date().toISOString()
@@ -61,7 +76,7 @@ export default function CreateJob() {
 
       if (error) throw error;
 
-      toast.success("Global ilan başarıyla yayınlandı! AI Match dünya çapında adayları tarıyor.");
+      toast.success("Global ilan yayında! AI motoru dil seviyesine göre adayları tarıyor.");
       navigate("/corporate/dashboard");
     } catch (err: any) {
       toast.error("Hata: " + err.message);
@@ -79,52 +94,63 @@ export default function CreateJob() {
       <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white">
         <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white p-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-50 rounded-2xl">
-              <Globe2 className="h-6 w-6 text-red-600" />
+            <div className="p-3 bg-red-50 rounded-2xl text-red-600">
+              <Globe2 className="h-6 w-6" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">Global İş İlanı Oluştur</CardTitle>
-              <p className="text-sm text-gray-500 mt-1">Dünya çapındaki yeteneklere ulaşmak için detayları belirleyin.</p>
+              <CardTitle className="text-2xl font-bold">Global İlan & Dil Matcher</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">Adayların dil seviyelerini (1-5) AI ile otomatik eşleştirin.</p>
             </div>
           </div>
         </CardHeader>
         
         <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Temel Bilgiler */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2 text-gray-700">
+                <label className="text-sm font-semibold flex items-center gap-2">
                   <Briefcase className="h-4 w-4" /> Pozisyon Başlığı
                 </label>
                 <input 
                   required
                   className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none focus:ring-2 focus:ring-red-500 transition"
-                  placeholder="Örn: Senior Full Stack Developer"
+                  placeholder="Örn: Global Sales Manager"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2 text-gray-700">
-                  <Languages className="h-4 w-4" /> Dil Gereksinimi
-                </label>
-                <select 
-                  className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 outline-none"
-                  value={formData.language_req}
-                  onChange={(e) => setFormData({...formData, language_req: e.target.value})}
-                >
-                  <option>English (Professional)</option>
-                  <option>Turkish & English</option>
-                  <option>Multi-Language (EU)</option>
-                  <option>No Language Requirement</option>
-                </select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <Languages className="h-4 w-4" /> Zorunlu Dil
+                  </label>
+                  <select 
+                    className="w-full p-4 rounded-2xl border bg-gray-50/50 outline-none"
+                    value={formData.required_lang}
+                    onChange={(e) => setFormData({...formData, required_lang: e.target.value})}
+                  >
+                    {languages.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <Award className="h-4 w-4" /> Min. Seviye
+                  </label>
+                  <select 
+                    className="w-full p-4 rounded-2xl border bg-gray-50/50 outline-none"
+                    value={formData.lang_level}
+                    onChange={(e) => setFormData({...formData, lang_level: e.target.value})}
+                  >
+                    {[1, 2, 3, 4, 5].map(v => (
+                      <option key={v} value={v}>Seviye {v} {v === 5 ? "(Native)" : v === 1 ? "(Basic)" : ""}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Global Konum Ayarları */}
-            <div className="grid md:grid-cols-3 gap-4 p-6 bg-red-50/30 rounded-[2rem] border border-red-50">
+            <div className="grid md:grid-cols-2 gap-6 p-6 bg-red-50/30 rounded-[2rem] border border-red-50">
               <div className="space-y-2">
                 <label className="text-sm font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-red-600" /> Çalışma Modeli
@@ -143,41 +169,26 @@ export default function CreateJob() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-red-600" /> Hedef Ülke / Bölge
-                </label>
-                <input 
-                  className="w-full p-3 rounded-xl border bg-white outline-none"
-                  placeholder="Örn: Worldwide veya USA"
-                  value={formData.country}
-                  onChange={(e) => setFormData({...formData, country: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-red-600" /> Saat Dilimi (Timezone)
+                  <MapPin className="h-4 w-4 text-red-600" /> Hedef Ülke (Alfabetik)
                 </label>
                 <select 
                   className="w-full p-3 rounded-xl border bg-white outline-none"
-                  value={formData.timezone}
-                  onChange={(e) => setFormData({...formData, timezone: e.target.value})}
+                  value={formData.country}
+                  onChange={(e) => setFormData({...formData, country: e.target.value})}
                 >
-                  <option>Any Timezone</option>
-                  <option>UTC+3 (Turkey Time)</option>
-                  <option>UTC-5 (EST - USA)</option>
-                  <option>UTC+1 (CET - Europe)</option>
+                  {countries.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2 text-gray-700">
-                <AlignLeft className="h-4 w-4" /> İş Açıklaması (Global Vision)
+              <label className="text-sm font-semibold flex items-center gap-2">
+                <AlignLeft className="h-4 w-4" /> İş Açıklaması
               </label>
               <textarea 
                 required
-                className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 min-h-[150px] outline-none"
-                placeholder="Şirketinizin global hedeflerinden ve adaydan beklentilerinizden bahsedin..."
+                className="w-full p-4 rounded-2xl border border-gray-100 bg-gray-50/50 min-h-[120px] outline-none"
+                placeholder="Global vizyonunuzdan bahsedin..."
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
               />
@@ -185,12 +196,12 @@ export default function CreateJob() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-red-600 flex items-center gap-2">
-                <Sparkles className="h-4 w-4" /> Global Yetkinlikler (AI Match için kritik)
+                <Sparkles className="h-4 w-4" /> Teknik & Global Yetkinlikler
               </label>
               <textarea 
                 required
-                className="w-full p-4 rounded-2xl border border-red-100 bg-red-50/20 min-h-[100px] outline-none"
-                placeholder="Örn: Cloud Architecture, React, English Communication, Agile, Docker..."
+                className="w-full p-4 rounded-2xl border border-red-100 bg-red-50/20 min-h-[80px] outline-none"
+                placeholder="Örn: Leadership, Strategic Thinking, SAP, Python..."
                 value={formData.requirements}
                 onChange={(e) => setFormData({...formData, requirements: e.target.value})}
               />
@@ -199,9 +210,9 @@ export default function CreateJob() {
             <Button 
               disabled={loading} 
               type="submit" 
-              className="w-full h-16 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-bold shadow-xl shadow-red-200 transition-all active:scale-[0.98]"
+              className="w-full h-16 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-lg font-bold shadow-xl shadow-red-200 transition-all active:scale-[0.95]"
             >
-              {loading ? "Global Sistem Hazırlanıyor..." : "İlanı Tüm Dünyada Yayınla"}
+              {loading ? "AI Matcher Hazırlanıyor..." : "İlanı Globalde Yayınla"}
             </Button>
           </form>
         </CardContent>

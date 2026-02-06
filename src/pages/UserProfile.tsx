@@ -1,170 +1,228 @@
 // src/pages/UserProfile.tsx
 // @ts-nocheck
 import { useEffect, useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useLanguage } from "@/contexts/LanguageContext"; // Navbar ile senkronize dil context'i
-import { 
-  MapPin, CheckCircle2, Briefcase, Pencil, X, Target, 
-  Mail, Camera, Plus, Trash2, Award, Cpu, Languages, Sparkles, Rocket, Video, Send
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  User, Pencil, X, Briefcase, Trash2, Target, MapPin, GraduationCap,
+  Languages, Cpu, Heart, CheckCircle2, Star, Linkedin, Github, Instagram,
+  Globe2, Camera, Mail, Phone, UploadCloud, Video
 } from "lucide-react";
 
+// Tunus Dahil Global Lokasyon Verisi
 const LOCATION_DATA = {
-  "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan"],
-  "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa"],
-  "USA": ["New York", "Los Angeles", "Chicago"],
-  "France": ["Paris", "Lyon", "Marseille"]
+  "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès", "Ariana", "Gafsa", "Monastir", "Ben Arous"],
+  "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya", "Adana", "Gaziantep", "Konya", "Mersin", "Diyarbakir"],
+  "France": ["Paris", "Lyon", "Marseille"],
+  "Germany": ["Berlin", "Munich", "Hamburg"],
+  "UAE": ["Dubai", "Abu Dhabi"],
+  "USA": ["New York", "Los Angeles", "Chicago"]
 };
 
-const GLOBAL_SKILL_POOL = ["React", "Python", "Java", "SQL", "Docker", "AWS", "SAP", "Figma"];
 const COUNTRIES = Object.keys(LOCATION_DATA).sort();
 
-// --- MULTILINGUAL TRANSLATIONS ---
-const UI_STRINGS = {
-  TR: { 
-    verified: "ONAYLI", edit: "PROFİLİ DÜZENLE", boost: "AI BOOST AKTİF ET", 
-    sync: "VERİLERİ MÜHÜRLE & SYNC ET", interview: "MÜLAKAT ODASI", 
-    email_sent: "Profil güncellendi, Resend e-postası gönderildi.", rtl: false 
-  },
-  EN: { 
-    verified: "VERIFIED", edit: "EDIT PROFILE", boost: "ACTIVATE AI BOOST", 
-    sync: "SEAL DATA & SYNC", interview: "INTERVIEW ROOM", 
-    email_sent: "Profile updated, Resend notification sent.", rtl: false 
-  },
-  FR: { 
-    verified: "VÉRIFIÉ", edit: "MODIFIER LE PROFIL", boost: "ACTIVER AI BOOST", 
-    sync: "SCELLER ET SYNCHRONISER", interview: "SALLE D'ENTRETIEN", 
-    email_sent: "Profil mis à jour, e-mail Resend envoyé.", rtl: false 
-  },
-  AR: { 
-    verified: "موثق", edit: "تعديل الملف الشخصي", boost: "تفعيل تعزيز الذكاء الاصطناعي", 
-    sync: "ختم البيانات والمزامنة", interview: "غرفة المقابلة", 
-    email_sent: "تم تحديث الملف الشخصي، تم إرسال بريد Resend.", rtl: true 
-  }
-};
-
 export default function UserProfile() {
-  const { lang } = useLanguage(); // Navbar'daki seçim burayı otomatik günceller
-  const t = UI_STRINGS[lang] || UI_STRINGS.EN;
+  const navigate = useNavigate();
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+  const { lang } = useLanguage() || { lang: 'TR' };
+  
   const [loading, setLoading] = useState(true);
-  const [editOpen, setEditOpen] = useState(false);
+  const [uploading, setUploading] = useState({ avatar: false, cover: false });
   const [me, setMe] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     full_name: "", email: "", country: "Tunisia", city: "", sector: "", about: "",
-    is_boosted: false, languages: [], skills: [], certifications: []
+    avatar_url: "", cover_url: "", 
+    career_goals: { vision: "", short_term_plan: "" },
+    languages: [], skills: [], certifications: []
   });
 
   useEffect(() => {
-    const init = async () => {
+    const fetchUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setMe(user);
-          const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-          if (p) setFormData({ ...formData, ...p, ...p.cv_data });
-        }
-      } finally { setLoading(false); }
+        if (!user) { navigate("/login"); return; }
+        setMe(user);
+        const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        if (p) setFormData({ ...formData, ...p, ...p.cv_data });
+      } catch (err) { console.error("Fetch error:", err); }
+      finally { setLoading(false); }
     };
-    init();
-  }, []);
+    fetchUser();
+  }, [navigate]);
+
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(prev => ({ ...prev, [type]: true }));
+      const fileName = `${me.id}-${type}-${Date.now()}.${file.name.split('.').pop()}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profiles') // ⚠️ Supabase panelinde bu isimde bir PUBLIC bucket açmalısın
+        .upload(`avatars/${fileName}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(`avatars/${fileName}`);
+      
+      const updateField = type === 'avatar' ? { avatar_url: publicUrl } : { cover_url: publicUrl };
+      setFormData(prev => ({ ...prev, ...updateField }));
+      await supabase.from("profiles").update(updateField).eq("id", me.id);
+      
+      toast.success("Fotoğraf başarıyla güncellendi.");
+    } catch (error) {
+      toast.error("Yükleme hatası: Supabase Storage/Bucket ayarlarını kontrol edin.");
+    } finally { setUploading(prev => ({ ...prev, [type]: false })); }
+  };
 
   const handleSave = async () => {
     try {
       const { error } = await supabase.from("profiles").upsert({
         id: me.id, ...formData, 
-        cv_data: { ...formData, ai_sync_date: new Date().toISOString() },
-        updated_at: new Date().toISOString()
+        cv_data: { career_goals: formData.career_goals, languages: formData.languages, skills: formData.skills },
+        updated_at: new Date().toISOString(),
       });
-      
       if (error) throw error;
-
-      // ✅ RESEND ENTEGRASYONU: Edge Function Tetikleme
-      await supabase.functions.invoke('resend-email-sync', {
-        body: { email: formData.email, name: formData.full_name, type: 'profile_update' }
-      });
-
-      toast.success(t.email_sent);
+      toast.success("Profil Kararlılıkla Güncellendi.");
       setEditOpen(false);
-    } catch (e) { toast.error("Error syncing profile."); }
+    } catch (e) { toast.error("Kayıt hatası."); }
   };
 
-  // ✅ JITSI MEET ENTEGRASYONU: Dinamik Oda Oluşturma
-  const startInterview = () => {
-    const roomName = `Kariyeer-${me.id.substring(0, 8)}`;
-    window.open(`https://meet.jit.si/${roomName}`, '_blank');
-    toast.info(`${t.interview}: ${roomName}`);
-  };
-
-  if (loading) return <div className="h-screen flex items-center justify-center font-black animate-pulse">SYNCING GLOBAL DATA...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse">SİSTEM YÜKLENİYOR...</div>;
 
   return (
-    <div className={`bg-[#F8FAFC] min-h-screen pb-20 ${t.rtl ? 'text-right' : 'text-left'}`} dir={t.rtl ? 'rtl' : 'ltr'}>
-      {/* HEADER AREA */}
-      <div className="h-64 bg-gradient-to-r from-red-600 to-orange-500 relative rounded-b-[40px] overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
-      </div>
+    <div className="bg-[#F8FAFC] min-h-screen pb-12 font-sans overflow-x-hidden text-left">
+      <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
+      <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover')} />
 
-      <div className="max-w-6xl mx-auto px-6 -mt-32 relative z-10">
-        <div className="bg-white/70 backdrop-blur-2xl p-8 rounded-[40px] border border-white/40 shadow-2xl flex flex-col md:flex-row items-center gap-6">
-          <div className="w-40 h-40 rounded-[40px] border-[10px] border-white shadow-2xl overflow-hidden bg-slate-100">
-            <img src={formData.avatar_url || `https://ui-avatars.com/api/?name=${formData.full_name}`} className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-black text-slate-800 uppercase">{formData.full_name || "NAME"}</h1>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <span className="bg-rose-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black">{t.verified}</span>
-              <span className="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-[10px] font-black flex items-center gap-1"><MapPin size={10} /> {formData.city}</span>
+      {/* HEADER: COMPACT & CLEAN DESIGN */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 md:px-0">
+          {/* Banner Area (Sadeleştirilmiş Boyut) */}
+          <div 
+            className="h-32 md:h-44 bg-gradient-to-r from-[#e11d48] to-[#f59e0b] relative cursor-pointer group rounded-b-xl overflow-hidden"
+            onClick={() => coverInputRef.current?.click()}
+          >
+            {formData.cover_url && <img src={formData.cover_url} className="w-full h-full object-cover" />}
+            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+              <Camera className="text-white" size={24} />
             </div>
+            {uploading.cover && <div className="absolute inset-0 bg-white/60 flex items-center justify-center font-bold text-rose-600 animate-pulse">Banner Güncelleniyor...</div>}
           </div>
-          <div className="flex flex-col gap-3">
-            <Button onClick={() => setEditOpen(true)} className="bg-white text-slate-900 font-bold px-8 h-12 rounded-2xl shadow-xl">{t.edit}</Button>
-            <Button onClick={startInterview} className="bg-indigo-600 text-white font-bold px-8 h-12 rounded-2xl shadow-xl flex items-center gap-2">
-              <Video size={18} /> {t.interview}
-            </Button>
+
+          {/* Profile Details */}
+          <div className="px-6 pb-6 flex flex-col md:flex-row items-end gap-6 -mt-12 relative z-10">
+            <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+              <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-[5px] border-white overflow-hidden shadow-xl bg-slate-100 relative">
+                <img src={formData.avatar_url || `https://ui-avatars.com/api/?name=${formData.full_name}`} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white"><Camera size={24} /></div>
+              </div>
+              {uploading.avatar && <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center"><div className="w-6 h-6 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" /></div>}
+            </div>
+            
+            <div className="flex-1 pb-2">
+              <h1 className="text-xl md:text-2xl font-bold text-slate-800 uppercase tracking-tight">{formData.full_name || "İSİM SOYİSİM"}</h1>
+              <div className="flex gap-3 mt-1 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md flex items-center gap-1"><CheckCircle2 size={10}/> VERIFIED</span>
+                <span className="flex items-center gap-1"><Briefcase size={12}/> {formData.sector || "Sektör"}</span>
+                <span className="flex items-center gap-1"><MapPin size={12}/> {formData.country}</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mb-2">
+              <Button onClick={() => setEditOpen(true)} className="bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 h-10 px-6 shadow-none">EDIT PROFILE</Button>
+              <Button onClick={() => window.open(`https://meet.jit.si/Kariyeer-${me?.id.slice(0,8)}`, '_blank')} className="bg-[#6366f1] text-white hover:bg-[#4f46e5] rounded-xl font-bold px-6 h-10 shadow-lg flex items-center gap-2"><Video size={16}/> INTERVIEW ROOM</Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* --- SYNCED MODAL --- */}
+      <main className="max-w-5xl mx-auto px-6 py-8 grid lg:grid-cols-12 gap-8 text-left">
+         <div className="lg:col-span-8 space-y-6">
+            <Card className="rounded-2xl border-none shadow-sm bg-white p-8">
+               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><Target size={16} className="text-orange-500" /> Vision & Strategy</h3>
+               <p className="text-slate-700 font-bold italic leading-relaxed text-lg">"{formData.career_goals?.vision || "..."}"</p>
+               <div className="mt-4 p-4 bg-slate-50 rounded-xl border-l-4 border-orange-400 text-xs font-medium text-slate-500">{formData.career_goals?.short_term_plan || "Action plan not set."}</div>
+            </Card>
+
+            <Card className="rounded-2xl border-none shadow-sm bg-white p-8">
+               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><Briefcase size={16} className="text-rose-500" /> Experience</h3>
+               <div className="space-y-6">
+                  {formData.work_experience?.map((w, i) => (
+                    <div key={i} className="border-l-2 border-slate-100 pl-6 relative">
+                       <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-rose-500" />
+                       <h4 className="font-bold text-slate-800 text-sm uppercase">{w.role}</h4>
+                       <p className="text-rose-600 font-bold text-xs">{w.company}</p>
+                       <p className="text-sm text-slate-500 mt-2 italic">"{w.description}"</p>
+                    </div>
+                  ))}
+               </div>
+            </Card>
+         </div>
+
+         <div className="lg:col-span-4 space-y-6">
+            <Card className="rounded-2xl border-none shadow-sm bg-[#0f172a] text-white p-8">
+               <h3 className="text-[10px] font-black uppercase text-rose-500 tracking-widest mb-6 flex items-center gap-2"><Mail size={14} /> Contact Sync</h3>
+               <div className="space-y-5 text-xs">
+                  <div>
+                     <span className="text-slate-500 font-bold uppercase text-[9px] block mb-1">Professional Email</span>
+                     <span className="font-bold tracking-tight block truncate">{formData.email}</span>
+                  </div>
+                  <div>
+                     <span className="text-slate-500 font-bold uppercase text-[9px] block mb-1">Phone (Resend Sync)</span>
+                     <span className="font-bold tracking-tight block">{formData.phone_number || "---"}</span>
+                  </div>
+               </div>
+            </Card>
+         </div>
+      </main>
+
+      {/* MODAL: PROFIL MIMARI v6 */}
       {editOpen && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-[60px] shadow-2xl relative">
-            <div className="p-10 border-b flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-10">
-              <h2 className="text-2xl font-black italic tracking-tighter text-slate-800">
-                {lang.toUpperCase()} SYSTEM SYNC <span className="text-rose-500">v5.0</span>
-              </h2>
-              <button onClick={() => setEditOpen(false)} className="w-12 h-12 bg-slate-100 flex items-center justify-center rounded-2xl hover:bg-rose-500 hover:text-white transition-all transform hover:rotate-90"><X /></button>
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+            <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Profile Architect Global</h2>
+              <button onClick={() => setEditOpen(false)} className="text-slate-400 hover:text-slate-600 transition-all"><X size={24} /></button>
             </div>
             
-            <div className="p-12 space-y-10">
-               {/* FORM CONTENT (SYNCED WITH MULTI-LANG) */}
-               <div className="grid md:grid-cols-2 gap-8">
+            <div className="p-8 space-y-8 max-h-[65vh] overflow-y-auto custom-scrollbar">
+               <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Email (Resend Target)</label>
-                    <input value={formData.email} disabled className="w-full p-4 rounded-2xl bg-slate-100 text-slate-400 font-bold cursor-not-allowed border-none" />
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Country (AI Matching)</label>
+                    <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value, city: ""})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none">
+                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Full Name</label>
-                    <input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 border-none font-bold outline-none focus:ring-2 ring-rose-500" />
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">City (Region)</label>
+                    <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none">
+                      <option value="">Select City...</option>
+                      {LOCATION_DATA[formData.country]?.map(city => <option key={city} value={city}>{city}</option>)}
+                    </select>
                   </div>
                </div>
 
-               <div className="space-y-6 pt-6 border-t">
-                  <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 flex items-center gap-2"><Send size={14} className="text-blue-500"/> Integration Control</h3>
-                  <div className="p-6 bg-blue-50 rounded-[35px] border border-blue-100 flex items-center justify-between">
-                     <span className="text-sm font-bold text-blue-800">Resend & Jitsi API Sync: Active</span>
-                     <CheckCircle2 className="text-blue-600" size={24} />
-                  </div>
+               <div className="grid md:grid-cols-2 gap-6">
+                  {["full_name", "sector", "phone_number"].map(f => (
+                    <div key={f} className="space-y-2">
+                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">{f.replace('_', ' ')}</label>
+                       <input value={formData[f]} onChange={e => setFormData({...formData, [f]: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none focus:ring-2 ring-rose-500" />
+                    </div>
+                  ))}
                </div>
             </div>
 
-            <div className="sticky bottom-0 p-10 bg-white/90 backdrop-blur-md border-t flex gap-6">
-               <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-20 rounded-[30px] text-2xl font-black uppercase italic text-white shadow-2xl shadow-rose-200 transition-all active:scale-95">
-                 {t.sync}
-               </Button>
-               <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-20 px-12 rounded-[30px] font-black uppercase text-slate-400 border-2 border-slate-100">CANCEL</Button>
+            <div className="p-8 bg-slate-50 border-t flex gap-4">
+               <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl font-black text-white shadow-xl transition-all uppercase tracking-widest italic">Save & Sync AI</Button>
+               <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-14 px-8 rounded-2xl font-black text-slate-400 uppercase">Cancel</Button>
             </div>
           </div>
         </div>

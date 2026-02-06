@@ -97,6 +97,9 @@ import ResetPassword from "@/pages/ResetPassword";
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 
+// ✅ NEW: CREATE JOB (EKLENDİ)
+import CreateJob from "@/pages/CreateJob";
+
 // ✅ NEW: INTERVIEW PAGE (EKLENDİ)
 import InterviewPage from "@/pages/Interview";
 
@@ -140,6 +143,9 @@ export default function App() {
 
             {/* ✅ NEW: JOB BOARD ROUTE (EKLENDİ) */}
             <Route path="jobs" element={<JobBoard />} />
+
+            {/* ✅ NEW: CREATE JOB ROUTE (EKLENDİ) */}
+            <Route path="jobs/new" element={<CreateJob />} />
 
             {/* ✅ NEW: INTERVIEW PAGE ROUTE (EKLENDİ) */}
             <Route path="interview/:roomName" element={<InterviewPage />} />

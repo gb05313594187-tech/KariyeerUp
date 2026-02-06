@@ -11,13 +11,10 @@ import {
   User, Pencil, X, Briefcase, CheckCircle2, MapPin, Camera, Video, Mail, Target
 } from "lucide-react";
 
-// Tunus Dahil Global Lokasyon Verisi
 const LOCATION_DATA = {
   "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan"],
   "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa"],
-  "France": ["Paris", "Lyon", "Marseille"],
-  "Germany": ["Berlin", "Munich", "Hamburg"],
-  "USA": ["New York", "Los Angeles", "Chicago"]
+  "France": ["Paris", "Lyon", "Marseille"]
 };
 
 const COUNTRIES = Object.keys(LOCATION_DATA).sort();
@@ -27,7 +24,7 @@ export default function UserProfile() {
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
   
-  // ✅ ÇÖKMEYİ ENGELLEYEN GÜVENLİ DİL KONTROLÜ
+  // ✅ UYGULAMANIN ÇÖKMESİNİ ENGELLEYEN GÜVENLİ DİL KONTROLÜ
   const langCtx = useLanguage();
   const lang = useMemo(() => {
     try {
@@ -82,7 +79,7 @@ export default function UserProfile() {
       setFormData(prev => ({ ...prev, ...updateField }));
       await supabase.from("profiles").update(updateField).eq("id", me.id);
       
-      toast.success("Görsel güncellendi ve hafızaya alındı.");
+      toast.success("Görsel başarıyla güncellendi ve kaydedildi.");
     } catch (error) {
       toast.error("Yükleme hatası: Storage ayarlarını kontrol edin.");
     } finally { setUploading(prev => ({ ...prev, [type]: false })); }
@@ -101,14 +98,14 @@ export default function UserProfile() {
     } catch (e) { toast.error("Kayıt sırasında hata oluştu."); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse uppercase tracking-widest">Global Sistem Yükleniyor...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-rose-500 animate-pulse">SİSTEM YÜKLENİYOR...</div>;
 
   return (
     <div className={`bg-[#F8FAFC] min-h-screen pb-12 font-sans ${lang === 'AR' ? 'text-right' : 'text-left'}`} dir={lang === 'AR' ? 'rtl' : 'ltr'}>
       <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
       <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover')} />
 
-      {/* SADE TASARIM HEADER */}
+      {/* SADE TASARIM HEADER (TURUNCU ALAN KÜÇÜLTÜLDÜ) */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 md:px-0">
           <div 
@@ -137,8 +134,8 @@ export default function UserProfile() {
             </div>
             
             <div className="flex gap-2 mb-2">
-              <Button onClick={() => setEditOpen(true)} className="bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 h-10 px-6 shadow-none">EDIT PROFILE</Button>
-              <Button onClick={() => window.open(`https://meet.jit.si/Kariyeer-${me?.id.slice(0,8)}`, '_blank')} className="bg-[#6366f1] text-white hover:bg-[#4f46e5] rounded-xl font-bold px-6 h-10 shadow-lg flex items-center gap-2"><Video size={16}/> INTERVIEW ROOM</Button>
+              <Button onClick={() => setEditOpen(true)} className="bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold border border-slate-200 h-10 px-6 shadow-none uppercase text-[11px]">Edit Profile</Button>
+              <Button onClick={() => window.open(`https://meet.jit.si/Kariyeer-${me?.id.slice(0,8)}`, '_blank')} className="bg-[#6366f1] text-white hover:bg-[#4f46e5] rounded-xl font-bold px-6 h-10 shadow-lg flex items-center gap-2 uppercase text-[11px] tracking-tighter"><Video size={16}/> Interview Room</Button>
             </div>
           </div>
         </div>
@@ -152,17 +149,18 @@ export default function UserProfile() {
             </Card>
          </div>
 
-         <div className="lg:col-span-4 space-y-6">
-            <Card className="rounded-2xl border-none shadow-sm bg-[#0f172a] text-white p-8">
+         <div className="lg:col-span-4">
+            <Card className="rounded-2xl border-none shadow-sm bg-[#0f172a] text-white p-8 overflow-hidden relative">
+               <div className="absolute top-0 right-0 p-4 opacity-5"><CheckCircle2 size={120} /></div>
                <h3 className="text-[10px] font-black uppercase text-rose-500 tracking-widest mb-6 flex items-center gap-2"><Mail size={14} /> İletişim</h3>
                <div className="space-y-4 text-xs">
-                  <div className="flex flex-col gap-1">
-                     <span className="text-slate-500 font-bold uppercase text-[9px]">Email</span>
-                     <span className="font-bold tracking-tight truncate">{formData.email}</span>
+                  <div>
+                     <span className="text-slate-500 font-bold uppercase text-[9px] block mb-1">Email</span>
+                     <span className="font-bold tracking-tight block truncate">{formData.email}</span>
                   </div>
-                  <div className="flex flex-col gap-1">
-                     <span className="text-slate-500 font-bold uppercase text-[9px]">Telefon</span>
-                     <span className="font-bold tracking-tight">{formData.phone_number || "---"}</span>
+                  <div>
+                     <span className="text-slate-500 font-bold uppercase text-[9px] block mb-1">Telefon</span>
+                     <span className="font-bold tracking-tight block">{formData.phone_number || "---"}</span>
                   </div>
                </div>
             </Card>
@@ -181,15 +179,15 @@ export default function UserProfile() {
             <div className="p-8 space-y-8 max-h-[65vh] overflow-y-auto">
                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Ülke</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Ülke</label>
                     <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value, city: ""})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none">
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Şehir (Otomatik)</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Şehir</label>
                     <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none">
-                      <option value="">Şehir Seçin...</option>
+                      <option value="">Seçiniz...</option>
                       {LOCATION_DATA[formData.country]?.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
                   </div>
@@ -198,7 +196,7 @@ export default function UserProfile() {
                <div className="grid md:grid-cols-2 gap-6">
                   {["full_name", "sector", "phone_number"].map(f => (
                     <div key={f} className="space-y-2">
-                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1">{f.replace('_', ' ')}</label>
+                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">{f.replace('_', ' ')}</label>
                        <input value={formData[f]} onChange={e => setFormData({...formData, [f]: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-slate-700 outline-none focus:ring-2 ring-rose-500" />
                     </div>
                   ))}
@@ -206,12 +204,10 @@ export default function UserProfile() {
             </div>
 
             <div className="p-8 bg-slate-50 border-t flex gap-4">
-               <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl font-black text-white shadow-xl transition-all uppercase tracking-widest italic">Save & Sync</Button>
+               <Button onClick={handleSave} className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl font-black text-white shadow-xl transition-all uppercase tracking-widest italic">Save Changes</Button>
                <Button onClick={() => setEditOpen(false)} variant="ghost" className="h-14 px-8 rounded-2xl font-black text-slate-400 uppercase">Cancel</Button>
             </div>
           </div>
         </div>
       )}
     </div>
-  );
-}

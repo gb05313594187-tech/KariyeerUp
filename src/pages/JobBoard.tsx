@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Briefcase,
   MapPin,
@@ -22,6 +23,235 @@ import {
   ExternalLink,
   GraduationCap,
 } from "lucide-react";
+/* =========================================================
+   ÇOK DİLLİ ÇEVİRİ SİSTEMİ (TR / EN / AR / FR)
+   ========================================================= */
+const JOB_TRANSLATIONS = {
+  tr: {
+    // Header
+    headerTitle1: "Kariyerini",
+    headerTitle2: "Yeniden Tanımla",
+    headerSubtitle: "AI motoru ile en uygun ilanları keşfet ve hemen başvur",
+    searchPlaceholder: "Pozisyon, şirket veya lokasyon ara...",
+    searchButton: "Ara",
+    // Filters
+    filters: "Filtreler",
+    workType: "Çalışma Tipi",
+    level: "Seviye",
+    activeJobs: "Aktif İlan",
+    all: "Tümü",
+    // Job Card
+    detail: "Detay",
+    close: "Kapat",
+    boost: "Boost",
+    apply: "Başvur",
+    applied: "Başvuruldu",
+    expired: "Süre Doldu",
+    jobDescription: "İlan Açıklaması",
+    levelLabel: "Seviye",
+    workTypeLabel: "Çalışma Tipi",
+    experienceLabel: "Deneyim",
+    locationLabel: "Lokasyon",
+    salaryRange: "Maaş Aralığı",
+    salaryFrom: "'den başlayan",
+    salaryUpTo: "'ye kadar",
+    // Deadline
+    deadlineExpired: "Süre doldu",
+    lastDay: "Son gün!",
+    daysLeft: " gün kaldı",
+    // Loading & Empty
+    loadingJobs: "İlanlar Yükleniyor...",
+    noFilterMatch: "Filtrelerle eşleşen ilan bulunamadı",
+    noActiveJobs: "Aktif ilan yok",
+    tryDifferentKeywords: "Farklı anahtar kelimeler deneyin.",
+    newJobsSoon: "Yeni ilanlar yakında eklenecek.",
+    // Apply Modal
+    applyToJob: "İlana Başvur",
+    coverNoteLabel: "Ön Yazı (Opsiyonel)",
+    coverNotePlaceholder: "Neden bu pozisyon için uygun olduğunuzu kısaca açıklayın...",
+    coverNoteWarning: "Başvurunuz profilinizdeki bilgilerle (yetenekler, deneyim, eğitim) birlikte iletilecektir. Profilinizi güncel tutmayı unutmayın.",
+    cancel: "Vazgeç",
+    sending: "GÖNDERİLİYOR...",
+    applyButton: "BAŞVUR",
+    // Premium Boost Modal
+    premiumBoost: "PREMIUM BOOST",
+    boostBenefit1: "AI Skoru %500 artar",
+    boostBenefit2: "Sponsorlu Rozet",
+    boostBenefit3: "30 gün üst sıralarda",
+    amount: "Tutar",
+    processing: "İşleniyor...",
+    upgradeNow: "Şimdi Yükselt",
+    // Toast messages
+    applicationSuccess: "Başvurunuz başarıyla gönderildi! 🎉",
+    alreadyApplied: "Bu ilana zaten başvurdunuz.",
+    applicationError: "Başvuru hatası: ",
+    unknownError: "Bilinmeyen hata",
+    loginRequired: "Başvuru yapabilmek için giriş yapmalısınız.",
+    premiumBoostActive: "Premium Boost aktif! 🚀",
+  },
+  en: {
+    headerTitle1: "Redefine",
+    headerTitle2: "Your Career",
+    headerSubtitle: "Discover the most suitable jobs with AI engine and apply now",
+    searchPlaceholder: "Search position, company or location...",
+    searchButton: "Search",
+    filters: "Filters",
+    workType: "Work Type",
+    level: "Level",
+    activeJobs: "Active Jobs",
+    all: "All",
+    detail: "Detail",
+    close: "Close",
+    boost: "Boost",
+    apply: "Apply",
+    applied: "Applied",
+    expired: "Expired",
+    jobDescription: "Job Description",
+    levelLabel: "Level",
+    workTypeLabel: "Work Type",
+    experienceLabel: "Experience",
+    locationLabel: "Location",
+    salaryRange: "Salary Range",
+    salaryFrom: " starting",
+    salaryUpTo: " max",
+    deadlineExpired: "Expired",
+    lastDay: "Last day!",
+    daysLeft: " days left",
+    loadingJobs: "Loading Jobs...",
+    noFilterMatch: "No jobs found matching filters",
+    noActiveJobs: "No active jobs",
+    tryDifferentKeywords: "Try different keywords.",
+    newJobsSoon: "New jobs will be added soon.",
+    applyToJob: "Apply to Job",
+    coverNoteLabel: "Cover Note (Optional)",
+    coverNotePlaceholder: "Briefly explain why you are suitable for this position...",
+    coverNoteWarning: "Your application will be submitted along with your profile information (skills, experience, education). Make sure to keep your profile up to date.",
+    cancel: "Cancel",
+    sending: "SENDING...",
+    applyButton: "APPLY",
+    premiumBoost: "PREMIUM BOOST",
+    boostBenefit1: "AI Score increases by 500%",
+    boostBenefit2: "Sponsored Badge",
+    boostBenefit3: "Top ranked for 30 days",
+    amount: "Amount",
+    processing: "Processing...",
+    upgradeNow: "Upgrade Now",
+    applicationSuccess: "Your application has been sent successfully! 🎉",
+    alreadyApplied: "You have already applied to this job.",
+    applicationError: "Application error: ",
+    unknownError: "Unknown error",
+    loginRequired: "You must log in to apply.",
+    premiumBoostActive: "Premium Boost activated! 🚀",
+  },
+  ar: {
+    headerTitle1: "أعد تعريف",
+    headerTitle2: "مسيرتك المهنية",
+    headerSubtitle: "اكتشف الوظائف الأنسب بمحرك الذكاء الاصطناعي وقدّم الآن",
+    searchPlaceholder: "ابحث عن منصب، شركة أو موقع...",
+    searchButton: "بحث",
+    filters: "الفلاتر",
+    workType: "نوع العمل",
+    level: "المستوى",
+    activeJobs: "وظائف نشطة",
+    all: "الكل",
+    detail: "تفاصيل",
+    close: "إغلاق",
+    boost: "تعزيز",
+    apply: "تقديم",
+    applied: "تم التقديم",
+    expired: "منتهي",
+    jobDescription: "وصف الوظيفة",
+    levelLabel: "المستوى",
+    workTypeLabel: "نوع العمل",
+    experienceLabel: "الخبرة",
+    locationLabel: "الموقع",
+    salaryRange: "نطاق الراتب",
+    salaryFrom: " كحد أدنى",
+    salaryUpTo: " كحد أقصى",
+    deadlineExpired: "انتهت المهلة",
+    lastDay: "!آخر يوم",
+    daysLeft: " يوم متبقي",
+    loadingJobs: "...جارٍ تحميل الوظائف",
+    noFilterMatch: "لم يتم العثور على وظائف تطابق الفلاتر",
+    noActiveJobs: "لا توجد وظائف نشطة",
+    tryDifferentKeywords: "جرّب كلمات مفتاحية مختلفة.",
+    newJobsSoon: "سيتم إضافة وظائف جديدة قريباً.",
+    applyToJob: "التقدم للوظيفة",
+    coverNoteLabel: "رسالة تقديمية (اختياري)",
+    coverNotePlaceholder: "اشرح بإيجاز لماذا أنت مناسب لهذا المنصب...",
+    coverNoteWarning: "سيتم إرسال طلبك مع معلومات ملفك الشخصي (المهارات، الخبرة، التعليم). تأكد من تحديث ملفك الشخصي.",
+    cancel: "إلغاء",
+    sending: "...جارٍ الإرسال",
+    applyButton: "تقديم",
+    premiumBoost: "تعزيز بريميوم",
+    boostBenefit1: "يزيد نقاط AI بنسبة 500%",
+    boostBenefit2: "شارة مُموَّلة",
+    boostBenefit3: "في أعلى الترتيب لمدة 30 يوماً",
+    amount: "المبلغ",
+    processing: "...جارٍ المعالجة",
+    upgradeNow: "ترقية الآن",
+    applicationSuccess: "🎉 !تم إرسال طلبك بنجاح",
+    alreadyApplied: "لقد تقدمت بالفعل لهذه الوظيفة.",
+    applicationError: "خطأ في التقديم: ",
+    unknownError: "خطأ غير معروف",
+    loginRequired: "يجب تسجيل الدخول للتقديم.",
+    premiumBoostActive: "🚀 !تم تفعيل التعزيز البريميوم",
+  },
+  fr: {
+    headerTitle1: "Redéfinissez",
+    headerTitle2: "Votre Carrière",
+    headerSubtitle: "Découvrez les offres les plus adaptées grâce à l'IA et postulez maintenant",
+    searchPlaceholder: "Rechercher un poste, une entreprise ou un lieu...",
+    searchButton: "Rechercher",
+    filters: "Filtres",
+    workType: "Type de travail",
+    level: "Niveau",
+    activeJobs: "Offres actives",
+    all: "Tous",
+    detail: "Détail",
+    close: "Fermer",
+    boost: "Boost",
+    apply: "Postuler",
+    applied: "Postulé",
+    expired: "Expiré",
+    jobDescription: "Description du poste",
+    levelLabel: "Niveau",
+    workTypeLabel: "Type de travail",
+    experienceLabel: "Expérience",
+    locationLabel: "Localisation",
+    salaryRange: "Fourchette salariale",
+    salaryFrom: " minimum",
+    salaryUpTo: " maximum",
+    deadlineExpired: "Expiré",
+    lastDay: "Dernier jour !",
+    daysLeft: " jours restants",
+    loadingJobs: "Chargement des offres...",
+    noFilterMatch: "Aucune offre ne correspond aux filtres",
+    noActiveJobs: "Aucune offre active",
+    tryDifferentKeywords: "Essayez d'autres mots-clés.",
+    newJobsSoon: "De nouvelles offres seront bientôt ajoutées.",
+    applyToJob: "Postuler à l'offre",
+    coverNoteLabel: "Lettre de motivation (Optionnel)",
+    coverNotePlaceholder: "Expliquez brièvement pourquoi vous êtes adapté(e) à ce poste...",
+    coverNoteWarning: "Votre candidature sera envoyée avec les informations de votre profil (compétences, expérience, formation). N'oubliez pas de tenir votre profil à jour.",
+    cancel: "Annuler",
+    sending: "ENVOI EN COURS...",
+    applyButton: "POSTULER",
+    premiumBoost: "PREMIUM BOOST",
+    boostBenefit1: "Score IA augmenté de 500%",
+    boostBenefit2: "Badge sponsorisé",
+    boostBenefit3: "En tête de liste pendant 30 jours",
+    amount: "Montant",
+    processing: "Traitement...",
+    upgradeNow: "Mettre à niveau",
+    applicationSuccess: "Votre candidature a été envoyée avec succès ! 🎉",
+    alreadyApplied: "Vous avez déjà postulé à cette offre.",
+    applicationError: "Erreur de candidature : ",
+    unknownError: "Erreur inconnue",
+    loginRequired: "Vous devez être connecté(e) pour postuler.",
+    premiumBoostActive: "Premium Boost activé ! 🚀",
+  },
+};
 /* =========================================================
    TOAST SİSTEMİ
    ========================================================= */
@@ -65,7 +295,7 @@ function useToast() {
 /* =========================================================
    PREMIUM BOOST MODAL
    ========================================================= */
-function PremiumBoostModal({ job, onClose, onSuccess }) {
+function PremiumBoostModal({ job, onClose, onSuccess, jt }) {
   const [loading, setLoading] = useState(false);
   const handlePayment = async () => {
     setLoading(true);
@@ -88,20 +318,20 @@ function PremiumBoostModal({ job, onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[120] flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-[40px] p-10 space-y-6 text-center">
         <Rocket size={60} className="mx-auto text-[#E63946]" />
-        <h2 className="text-3xl font-black italic">PREMIUM BOOST</h2>
+        <h2 className="text-3xl font-black italic">{jt.premiumBoost}</h2>
         <div className="space-y-3 text-left">
           <div className="flex gap-3 font-bold text-gray-600">
-            <CheckCircle2 className="text-green-500 shrink-0" /> AI Skoru %500 artar
+            <CheckCircle2 className="text-green-500 shrink-0" /> {jt.boostBenefit1}
           </div>
           <div className="flex gap-3 font-bold text-gray-600">
-            <CheckCircle2 className="text-green-500 shrink-0" /> Sponsorlu Rozet
+            <CheckCircle2 className="text-green-500 shrink-0" /> {jt.boostBenefit2}
           </div>
           <div className="flex gap-3 font-bold text-gray-600">
-            <CheckCircle2 className="text-green-500 shrink-0" /> 30 gün üst sıralarda
+            <CheckCircle2 className="text-green-500 shrink-0" /> {jt.boostBenefit3}
           </div>
         </div>
         <div className="bg-gray-50 p-6 rounded-3xl flex justify-between items-center">
-          <span className="font-bold text-gray-400">Tutar</span>
+          <span className="font-bold text-gray-400">{jt.amount}</span>
           <span className="text-3xl font-black">₺499</span>
         </div>
         <button
@@ -111,17 +341,17 @@ function PremiumBoostModal({ job, onClose, onSuccess }) {
         >
           {loading ? (
             <>
-              <Loader2 size={20} className="animate-spin" /> İşleniyor...
+              <Loader2 size={20} className="animate-spin" /> {jt.processing}
             </>
           ) : (
-            "Şimdi Yükselt"
+            jt.upgradeNow
           )}
         </button>
         <button
           onClick={onClose}
           className="text-gray-400 font-bold text-sm cursor-pointer hover:text-gray-600 transition-colors"
         >
-          Vazgeç
+          {jt.cancel}
         </button>
       </div>
     </div>
@@ -130,7 +360,7 @@ function PremiumBoostModal({ job, onClose, onSuccess }) {
 /* =========================================================
    BAŞVURU MODALI
    ========================================================= */
-function ApplyModal({ job, onClose, onSuccess, userId }) {
+function ApplyModal({ job, onClose, onSuccess, userId, jt }) {
   const [coverNote, setCoverNote] = useState("");
   const [loading, setLoading] = useState(false);
   const handleApply = async () => {
@@ -168,7 +398,7 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-xl font-black uppercase italic tracking-tight">
-                İlana Başvur
+                {jt.applyToJob}
               </h2>
               <p className="text-slate-400 text-xs mt-1">{job.position}</p>
             </div>
@@ -209,12 +439,12 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
         <div className="px-8 py-6 space-y-4">
           <div className="space-y-2">
             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-              Ön Yazı (Opsiyonel)
+              {jt.coverNoteLabel}
             </label>
             <textarea
               value={coverNote}
               onChange={(e) => setCoverNote(e.target.value)}
-              placeholder="Neden bu pozisyon için uygun olduğunuzu kısaca açıklayın..."
+              placeholder={jt.coverNotePlaceholder}
               rows={4}
               className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 resize-none"
             />
@@ -222,8 +452,7 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
             <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 font-bold">
-              Başvurunuz profilinizdeki bilgilerle (yetenekler, deneyim, eğitim) birlikte iletilecektir.
-              Profilinizi güncel tutmayı unutmayın.
+              {jt.coverNoteWarning}
             </p>
           </div>
         </div>
@@ -233,7 +462,7 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
             onClick={onClose}
             className="px-6 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
           >
-            Vazgeç
+            {jt.cancel}
           </button>
           <button
             onClick={handleApply}
@@ -242,11 +471,11 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
           >
             {loading ? (
               <>
-                <Loader2 size={20} className="animate-spin" /> GÖNDERİLİYOR...
+                <Loader2 size={20} className="animate-spin" /> {jt.sending}
               </>
             ) : (
               <>
-                <Send size={20} /> BAŞVUR
+                <Send size={20} /> {jt.applyButton}
               </>
             )}
           </button>
@@ -258,12 +487,17 @@ function ApplyModal({ job, onClose, onSuccess, userId }) {
 /* =========================================================
    FİLTRE SEÇENEKLERİ
    ========================================================= */
-const WORK_TYPE_FILTERS = ["Tümü", "Remote", "Hybrid", "On-site"];
-const LEVEL_FILTERS = ["Tümü", "Junior", "Mid", "Senior", "Executive"];
+const WORK_TYPE_OPTIONS = ["Remote", "Hybrid", "On-site"];
+const LEVEL_OPTIONS = ["Junior", "Mid", "Senior", "Executive"];
 /* =========================================================
    ANA KOMPONENT — JOB BOARD
    ========================================================= */
 export default function JobBoard() {
+  // ─── DİL DESTEĞİ ───
+  const { language } = useLanguage();
+  const jt = JOB_TRANSLATIONS[language] || JOB_TRANSLATIONS.tr;
+  const WORK_TYPE_FILTERS = [jt.all, ...WORK_TYPE_OPTIONS];
+  const LEVEL_FILTERS = [jt.all, ...LEVEL_OPTIONS];
   const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState(new Set());
@@ -271,12 +505,18 @@ export default function JobBoard() {
   const [expandedJob, setExpandedJob] = useState(null);
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [workTypeFilter, setWorkTypeFilter] = useState("Tümü");
-  const [levelFilter, setLevelFilter] = useState("Tümü");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [workTypeFilter, setWorkTypeFilter] = useState(jt.all);
+  const [levelFilter, setLevelFilter] = useState(jt.all);
   // Modals
   const [selectedJobForBoost, setSelectedJobForBoost] = useState(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState(null);
   const { show: toast, ToastContainer } = useToast();
+  // Reset filters when language changes so "All" text stays in sync
+  useEffect(() => {
+    setWorkTypeFilter(jt.all);
+    setLevelFilter(jt.all);
+  }, [language, jt.all]);
   /* ----- Auth & Data ----- */
   useEffect(() => {
     const init = async () => {
@@ -316,18 +556,35 @@ export default function JobBoard() {
     };
     init();
   }, []);
+  /* ----- Search Handler ----- */
+  const handleSearch = () => {
+    setActiveSearch(searchQuery.trim());
+  };
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+  // Also update activeSearch reactively as user types
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setActiveSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   /* ----- Filtered Jobs ----- */
   const filteredJobs = jobs.filter((job) => {
-    const needle = searchQuery.toLowerCase().trim();
+    const needle = activeSearch.toLowerCase();
     if (needle) {
       const haystack = `${job.position || ""} ${job.description || ""} ${job.location_text || ""} ${job.custom_title || ""}`.toLowerCase();
       if (!haystack.includes(needle)) return false;
     }
-    if (workTypeFilter !== "Tümü") {
+    if (workTypeFilter !== jt.all) {
       const wt = (job.work_type || "").toLowerCase();
       if (!wt.includes(workTypeFilter.toLowerCase())) return false;
     }
-    if (levelFilter !== "Tümü") {
+    if (levelFilter !== jt.all) {
       const lv = (job.level || "").toLowerCase();
       if (!lv.includes(levelFilter.toLowerCase())) return false;
     }
@@ -336,28 +593,28 @@ export default function JobBoard() {
   /* ----- Başvuru Sonucu ----- */
   const handleApplyResult = (result, errorMsg) => {
     if (result === "success") {
-      toast("Başvurunuz başarıyla gönderildi! 🎉", "success");
+      toast(jt.applicationSuccess, "success");
       // Applied jobs set'ine ekle
       if (selectedJobForApply) {
         setAppliedJobs((prev) => new Set([...prev, selectedJobForApply.post_id]));
       }
     } else if (result === "already") {
-      toast("Bu ilana zaten başvurdunuz.", "warning");
+      toast(jt.alreadyApplied, "warning");
       if (selectedJobForApply) {
         setAppliedJobs((prev) => new Set([...prev, selectedJobForApply.post_id]));
       }
     } else {
-      toast("Başvuru hatası: " + (errorMsg || "Bilinmeyen hata"), "error");
+      toast(jt.applicationError + (errorMsg || jt.unknownError), "error");
     }
   };
   /* ----- Başvur Butonu Handler ----- */
   const handleApplyClick = (job) => {
     if (!user) {
-      toast("Başvuru yapabilmek için giriş yapmalısınız.", "warning");
+      toast(jt.loginRequired, "warning");
       return;
     }
     if (appliedJobs.has(job.post_id)) {
-      toast("Bu ilana zaten başvurdunuz.", "warning");
+      toast(jt.alreadyApplied, "warning");
       return;
     }
     setSelectedJobForApply(job);
@@ -372,11 +629,12 @@ export default function JobBoard() {
     const d = new Date(deadline);
     const now = new Date();
     const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
-    if (diff < 0) return { text: "Süre doldu", urgent: true };
-    if (diff === 0) return { text: "Son gün!", urgent: true };
-    if (diff <= 3) return { text: `${diff} gün kaldı`, urgent: true };
-    if (diff <= 7) return { text: `${diff} gün kaldı`, urgent: false };
-    return { text: d.toLocaleDateString("tr-TR"), urgent: false };
+    if (diff < 0) return { text: jt.deadlineExpired, urgent: true };
+    if (diff === 0) return { text: jt.lastDay, urgent: true };
+    if (diff <= 3) return { text: `${diff}${jt.daysLeft}`, urgent: true };
+    if (diff <= 7) return { text: `${diff}${jt.daysLeft}`, urgent: false };
+    const locale = language === "ar" ? "ar-SA" : language === "fr" ? "fr-FR" : language === "en" ? "en-US" : "tr-TR";
+    return { text: d.toLocaleDateString(locale), urgent: false };
   };
   /* =========================================================
      RENDER
@@ -388,9 +646,10 @@ export default function JobBoard() {
       {selectedJobForBoost && (
         <PremiumBoostModal
           job={selectedJobForBoost}
+          jt={jt}
           onClose={() => setSelectedJobForBoost(null)}
           onSuccess={() => {
-            toast("Premium Boost aktif! 🚀", "success");
+            toast(jt.premiumBoostActive, "success");
           }}
         />
       )}
@@ -398,6 +657,7 @@ export default function JobBoard() {
         <ApplyModal
           job={selectedJobForApply}
           userId={user?.id}
+          jt={jt}
           onClose={() => setSelectedJobForApply(null)}
           onSuccess={handleApplyResult}
         />
@@ -406,24 +666,34 @@ export default function JobBoard() {
       <div className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-12 md:py-16">
           <h1 className="text-4xl md:text-5xl font-black tracking-tighter">
-            Kariyerini{" "}
-            <span className="text-[#E63946] italic">Yeniden Tanımla</span>
+            {jt.headerTitle1}{" "}
+            <span className="text-[#E63946] italic">{jt.headerTitle2}</span>
           </h1>
           <p className="text-gray-500 mt-3 text-lg italic">
-            AI motoru ile en uygun ilanları keşfet ve hemen başvur
+            {jt.headerSubtitle}
           </p>
           {/* Arama */}
-          <div className="mt-8 relative max-w-xl">
-            <Search
-              size={20}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Pozisyon, şirket veya lokasyon ara..."
-              className="w-full pl-14 pr-6 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-[#E63946] transition-all"
-            />
+          <div className="mt-8 relative max-w-xl flex gap-2">
+            <div className="flex-1 relative">
+              <Search
+                size={20}
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={jt.searchPlaceholder}
+                className="w-full pl-14 pr-6 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-[#E63946] transition-all"
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="bg-[#E63946] hover:bg-[#d32f3d] text-white font-black px-6 h-14 rounded-2xl text-sm uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95 cursor-pointer shadow-lg shadow-red-100 shrink-0"
+            >
+              <Search size={18} />
+              {jt.searchButton}
+            </button>
           </div>
         </div>
       </div>
@@ -432,12 +702,12 @@ export default function JobBoard() {
         <div className="lg:col-span-3">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-6 space-y-6">
             <h3 className="font-black text-sm flex items-center gap-2 text-slate-800">
-              <Filter size={18} className="text-[#E63946]" /> Filtreler
+              <Filter size={18} className="text-[#E63946]" /> {jt.filters}
             </h3>
             {/* Çalışma Tipi */}
             <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                Çalışma Tipi
+                {jt.workType}
               </label>
               <div className="space-y-1.5">
                 {WORK_TYPE_FILTERS.map((wt) => (
@@ -458,7 +728,7 @@ export default function JobBoard() {
             {/* Seviye */}
             <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                Seviye
+                {jt.level}
               </label>
               <div className="space-y-1.5">
                 {LEVEL_FILTERS.map((lv) => (
@@ -481,7 +751,7 @@ export default function JobBoard() {
               <div className="text-center">
                 <p className="text-3xl font-black text-slate-800">{filteredJobs.length}</p>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                  Aktif İlan
+                  {jt.activeJobs}
                 </p>
               </div>
             </div>
@@ -493,19 +763,19 @@ export default function JobBoard() {
             <div className="py-20 text-center">
               <div className="w-12 h-12 border-4 border-[#E63946] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="font-black text-slate-400 text-sm uppercase tracking-widest animate-pulse">
-                İlanlar Yükleniyor...
+                {jt.loadingJobs}
               </p>
             </div>
           ) : filteredJobs.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-slate-100">
               <Briefcase size={64} className="mx-auto text-slate-200 mb-4" />
               <h3 className="font-black text-slate-400 text-lg uppercase tracking-wider mb-2">
-                {searchQuery || workTypeFilter !== "Tümü" || levelFilter !== "Tümü"
-                  ? "Filtrelerle eşleşen ilan bulunamadı"
-                  : "Aktif ilan yok"}
+                {activeSearch || workTypeFilter !== jt.all || levelFilter !== jt.all
+                  ? jt.noFilterMatch
+                  : jt.noActiveJobs}
               </h3>
               <p className="text-slate-400 text-sm">
-                {searchQuery ? "Farklı anahtar kelimeler deneyin." : "Yeni ilanlar yakında eklenecek."}
+                {activeSearch ? jt.tryDifferentKeywords : jt.newJobsSoon}
               </p>
             </div>
           ) : (
@@ -567,7 +837,7 @@ export default function JobBoard() {
                                     ? `${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()} ₺`
                                     : job.salary_min
                                     ? `${job.salary_min.toLocaleString()} ₺+`
-                                    : `${job.salary_max?.toLocaleString()} ₺'ye kadar`}
+                                    : `${job.salary_max?.toLocaleString()} ₺${jt.salaryUpTo}`}
                                 </span>
                               )}
                             </div>
@@ -596,11 +866,11 @@ export default function JobBoard() {
                             >
                               {isExpanded ? (
                                 <>
-                                  <ChevronUp size={14} /> Kapat
+                                  <ChevronUp size={14} /> {jt.close}
                                 </>
                               ) : (
                                 <>
-                                  <ChevronDown size={14} /> Detay
+                                  <ChevronDown size={14} /> {jt.detail}
                                 </>
                               )}
                             </button>
@@ -612,24 +882,24 @@ export default function JobBoard() {
                                 onClick={() => setSelectedJobForBoost(job)}
                                 className="bg-orange-500 hover:bg-orange-600 text-white px-4 h-10 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition-colors cursor-pointer"
                               >
-                                <Rocket size={14} /> Boost
+                                <Rocket size={14} /> {jt.boost}
                               </button>
                             )}
                             {/* BAŞVUR BUTONU */}
                             {hasApplied ? (
                               <span className="bg-emerald-100 text-emerald-700 px-6 h-10 rounded-xl text-xs font-black uppercase flex items-center gap-1.5">
-                                <CheckCircle2 size={14} /> Başvuruldu
+                                <CheckCircle2 size={14} /> {jt.applied}
                               </span>
                             ) : expired ? (
                               <span className="bg-slate-100 text-slate-400 px-6 h-10 rounded-xl text-xs font-black uppercase flex items-center gap-1.5">
-                                Süre Doldu
+                                {jt.expired}
                               </span>
                             ) : (
                               <button
                                 onClick={() => handleApplyClick(job)}
                                 className="bg-[#E63946] hover:bg-[#d32f3d] text-white px-6 h-10 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 transition-all active:scale-95 shadow-lg shadow-red-100 cursor-pointer"
                               >
-                                <Send size={14} /> Başvur
+                                <Send size={14} /> {jt.apply}
                               </button>
                             )}
                           </div>
@@ -644,7 +914,7 @@ export default function JobBoard() {
                         {job.description && (
                           <div>
                             <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                              İlan Açıklaması
+                              {jt.jobDescription}
                             </h4>
                             <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                               {job.description}
@@ -655,7 +925,7 @@ export default function JobBoard() {
                           {job.level && (
                             <div className="bg-slate-50 p-3 rounded-xl">
                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                Seviye
+                                {jt.levelLabel}
                               </p>
                               <p className="text-sm font-black text-slate-700 mt-1">
                                 {job.level}
@@ -665,7 +935,7 @@ export default function JobBoard() {
                           {job.work_type && (
                             <div className="bg-slate-50 p-3 rounded-xl">
                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                Çalışma Tipi
+                                {jt.workTypeLabel}
                               </p>
                               <p className="text-sm font-black text-slate-700 mt-1">
                                 {job.work_type}
@@ -675,7 +945,7 @@ export default function JobBoard() {
                           {job.experience_range && (
                             <div className="bg-slate-50 p-3 rounded-xl">
                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                Deneyim
+                                {jt.experienceLabel}
                               </p>
                               <p className="text-sm font-black text-slate-700 mt-1">
                                 {job.experience_range}
@@ -685,7 +955,7 @@ export default function JobBoard() {
                           {job.location_text && (
                             <div className="bg-slate-50 p-3 rounded-xl">
                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                Lokasyon
+                                {jt.locationLabel}
                               </p>
                               <p className="text-sm font-black text-slate-700 mt-1">
                                 {job.location_text}
@@ -698,14 +968,14 @@ export default function JobBoard() {
                             <DollarSign size={20} className="text-emerald-600" />
                             <div>
                               <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">
-                                Maaş Aralığı
+                                {jt.salaryRange}
                               </p>
                               <p className="text-lg font-black text-emerald-700">
                                 {job.salary_min && job.salary_max
                                   ? `${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()} ₺`
                                   : job.salary_min
-                                  ? `${job.salary_min.toLocaleString()} ₺'den başlayan`
-                                  : `${job.salary_max?.toLocaleString()} ₺'ye kadar`}
+                                  ? `${job.salary_min.toLocaleString()} ₺${jt.salaryFrom}`
+                                  : `${job.salary_max?.toLocaleString()} ₺${jt.salaryUpTo}`}
                               </p>
                             </div>
                           </div>

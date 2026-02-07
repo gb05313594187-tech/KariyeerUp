@@ -411,33 +411,68 @@ export default function UserProfile() {
       saveToLocal(formData);
 
       if (connectionMode === "supabase" && me) {
-        const payload = {
-          id: me.id,
-          // ✅ Gerçek sütunlar (tabloda var)
+        const cvData = {
+          cover_url: formData.cover_url,
+          phone_code: formData.phone_code,
+          phone_number: formData.phone,
+          about: formData.bio,
+          work_experience: formData.work_experience,
+          education: formData.education,
+          skills: formData.skills,
+          certificates: formData.certificates,
+          languages: formData.languages,
+          interests: formData.interests,
+        };
+
+        const profileFields = {
           full_name: formData.full_name.trim(),
           avatar_url: formData.avatar_url,
           country: formData.country,
           city: formData.city,
           bio: formData.bio,
-          phone: formData.phone_code + " " + formData.phone,
-          // ✅ cv_data JSON (cover_url dahil her şey burada)
-          cv_data: {
-            cover_url: formData.cover_url,
-            phone_code: formData.phone_code,
-            phone_number: formData.phone,
-            about: formData.bio,
-            work_experience: formData.work_experience,
-            education: formData.education,
-            skills: formData.skills,
-            certificates: formData.certificates,
-            languages: formData.languages,
-            interests: formData.interests,
-          },
+          phone: (formData.phone_code + " " + formData.phone).trim(),
+          cv_data: cvData,
           updated_at: new Date().toISOString(),
         };
 
-        const { error } = await supabase.from("profiles").upsert(payload);
-        if (error) throw error;
+        // 1) Önce profil var mı kontrol et
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", me.id)
+          .maybeSingle();
+
+        if (existing) {
+          // ✅ Profil VAR → sadece UPDATE (email'e dokunma)
+          const { error } = await supabase
+            .from("profiles")
+            .update(profileFields)
+            .eq("id", me.id);
+
+          if (error) {
+            console.error("Update hatası:", error);
+            throw error;
+          }
+        } else {
+          // ✅ Profil YOK → INSERT (email dahil)
+          const userEmail = me.email
+            || me.user_metadata?.email
+            || me.app_metadata?.email
+            || "";
+
+          const { error } = await supabase
+            .from("profiles")
+            .insert({
+              id: me.id,
+              email: userEmail,
+              ...profileFields,
+            });
+
+          if (error) {
+            console.error("Insert hatası:", error);
+            throw error;
+          }
+        }
 
         toast("Tüm veriler Supabase'e mühürlendi!", "success");
       } else {
@@ -447,8 +482,7 @@ export default function UserProfile() {
       setEditOpen(false);
     } catch (e) {
       console.error("Kayıt hatası:", e);
-      toast("Hata: " + (e.message || "Bilinmeyen hata") + " — Yerel kayıt yapıldı.", "warning");
-      setEditOpen(false);
+      toast("Kayıt mühürlenemedi: " + (e.message || "Bilinmeyen hata"), "error");
     } finally {
       setSaving(false);
     }

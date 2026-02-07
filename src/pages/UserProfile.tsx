@@ -41,9 +41,9 @@ const DEFAULT_FORM = {
   full_name: "",
   country: "Turkey",
   city: "",
-  about: "",
+  bio: "",
   phone_code: "+90",
-  phone_number: "",
+  phone: "",
   avatar_url: "",
   cover_url: "",
   work_experience: [],
@@ -59,8 +59,6 @@ const STORAGE_KEY = "kariyerup-profile-data";
 /* =========================================================
    YARDIMCI FONKSİYONLAR
    ========================================================= */
-
-// Dosyayı sıkıştırıp base64'e çevir
 function compressImageToBase64(file, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -87,7 +85,6 @@ function compressImageToBase64(file, maxWidth = 800, quality = 0.7) {
   });
 }
 
-// localStorage
 function loadFromLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -185,16 +182,17 @@ export default function UserProfile() {
 
   const { show: toast, ToastContainer } = useToast();
 
-  /* ----- Profil Yükleme ----- */
+  /* ─────────────────────────────────────────────────────────
+     PROFİL YÜKLEME
+     ───────────────────────────────────────────────────────── */
   useEffect(() => {
     const fetchProfile = async () => {
       if (isSupabaseConfigured) {
         try {
-          // getUser yerine getSession kullan — timeout sorunu çözer
           const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
 
           if (sessErr || !sessionData?.session?.user) {
-            console.warn("Supabase oturum yok, localStorage moduna geçiliyor...", sessErr?.message);
+            console.warn("Oturum yok, localStorage moduna geçiliyor...", sessErr?.message);
             setConnectionMode("local");
             setFormData(loadFromLocal());
             setLoading(false);
@@ -221,12 +219,15 @@ export default function UserProfile() {
               full_name: p.full_name || "",
               country: p.country || "Turkey",
               city: p.city || "",
-              // ✅ avatar_url ve cover_url artık cv_data içinden okunuyor
-              avatar_url: cv.avatar_url || "",
+              // ✅ avatar_url → profiles tablosundaki gerçek sütundan oku
+              avatar_url: p.avatar_url || "",
+              // ✅ cover_url → sütun YOK, cv_data içinden oku
               cover_url: cv.cover_url || "",
+              // ✅ bio → profiles tablosundaki gerçek sütundan oku
+              bio: p.bio || cv.about || "",
+              // ✅ phone → profiles tablosundaki gerçek sütundan oku
               phone_code: cv.phone_code || "+90",
-              phone_number: cv.phone_number || "",
-              about: cv.about || "",
+              phone: p.phone || cv.phone_number || "",
               work_experience: Array.isArray(cv.work_experience) ? cv.work_experience : [],
               education: Array.isArray(cv.education) ? cv.education : [],
               skills: Array.isArray(cv.skills) ? cv.skills : [],
@@ -253,7 +254,12 @@ export default function UserProfile() {
     fetchProfile();
   }, []);
 
-  /* ----- FOTOĞRAF YÜKLEME ----- */
+  /* ─────────────────────────────────────────────────────────
+     FOTOĞRAF YÜKLEME
+     
+     avatar → avatar_url sütununa (gerçek sütun)
+     cover  → cv_data.cover_url içine (sütun yok)
+     ───────────────────────────────────────────────────────── */
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -270,77 +276,86 @@ export default function UserProfile() {
       return;
     }
 
-    const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
     setUploading(true);
 
     try {
       let finalUrl = "";
 
-      // ─── YÖNTEM 1: Supabase Storage ───
+      // ─── Supabase Storage ───
       if (connectionMode === "supabase" && me) {
+        let storageSuccess = false;
+
         try {
           const ext = file.name.split(".").pop() || "jpg";
           const fileName = `${me.id}/${type}-${Date.now()}.${ext}`;
 
-          // Basit upload — AbortController yok, signal yok
           const { error: upErr } = await supabase.storage
             .from("profiles")
-            .upload(fileName, file, {
-              upsert: true,
-              contentType: file.type,
-            });
+            .upload(fileName, file, { upsert: true });
 
           if (upErr) {
-            console.warn("Storage upload hatası, base64 fallback yapılıyor:", upErr.message);
-            throw upErr; // catch bloğuna düşsün, base64 fallback yapsın
+            console.warn("Storage upload hatası:", upErr.message);
+            throw upErr;
           }
 
-          // Public URL al
           const { data: urlData } = supabase.storage
             .from("profiles")
             .getPublicUrl(fileName);
 
           if (urlData?.publicUrl) {
             finalUrl = urlData.publicUrl + "?t=" + Date.now();
+            storageSuccess = true;
           } else {
             throw new Error("Public URL alınamadı");
           }
         } catch (storageErr) {
           console.warn("Storage başarısız, base64'e dönülüyor:", storageErr);
-          // Storage çalışmıyorsa base64 fallback
           finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         }
 
-        // ✅ cv_data içine kaydet — cover_url/avatar_url sütunu KULLANMA
+        // ─── DB'ye Kaydet ───
         try {
-          // Önce mevcut cv_data'yı çek
-          const { data: currentProfile } = await supabase
-            .from("profiles")
-            .select("cv_data")
-            .eq("id", me.id)
-            .maybeSingle();
+          if (type === "avatar") {
+            // ✅ avatar_url → doğrudan profiles.avatar_url sütununa yaz
+            const { error: dbErr } = await supabase
+              .from("profiles")
+              .update({
+                avatar_url: finalUrl,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", me.id);
 
-          const currentCv = currentProfile?.cv_data || {};
-
-          // cv_data'yı güncelle — sadece ilgili url'yi değiştir
-          const updatedCvData = {
-            ...currentCv,
-            [uploadKey]: finalUrl,
-          };
-
-          const { error: dbErr } = await supabase
-            .from("profiles")
-            .update({
-              cv_data: updatedCvData,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", me.id);
-
-          if (dbErr) {
-            console.error("DB güncelleme hatası:", dbErr);
-            toast("Veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
+            if (dbErr) {
+              console.error("Avatar DB hatası:", dbErr);
+              toast("Avatar veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
+            } else {
+              toast("Profil fotoğrafı mühürlendi!", "success");
+            }
           } else {
-            toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} mühürlendi!`, "success");
+            // ✅ cover_url → cv_data JSON içine yaz (sütun yok!)
+            const { data: currentProfile } = await supabase
+              .from("profiles")
+              .select("cv_data")
+              .eq("id", me.id)
+              .maybeSingle();
+
+            const currentCv = currentProfile?.cv_data || {};
+            const updatedCvData = { ...currentCv, cover_url: finalUrl };
+
+            const { error: dbErr } = await supabase
+              .from("profiles")
+              .update({
+                cv_data: updatedCvData,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", me.id);
+
+            if (dbErr) {
+              console.error("Cover DB hatası:", dbErr);
+              toast("Banner veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
+            } else {
+              toast("Banner mühürlendi!", "success");
+            }
           }
         } catch (dbError) {
           console.error("DB kayıt hatası:", dbError);
@@ -348,12 +363,13 @@ export default function UserProfile() {
         }
 
       } else {
-        // ─── YÖNTEM 2: localStorage (Base64) ───
+        // ─── localStorage modu ───
         finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} kaydedildi!`, "success");
       }
 
       // State güncelle
+      const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
       setFormData((prev) => {
         const updated = { ...prev, [uploadKey]: finalUrl };
         saveToLocal(updated);
@@ -362,9 +378,8 @@ export default function UserProfile() {
 
     } catch (error) {
       console.error("Upload hatası:", error);
-
-      // Son çare: base64
       try {
+        const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
         const base64 = await compressImageToBase64(file, type === "avatar" ? 400 : 1200);
         setFormData((prev) => {
           const updated = { ...prev, [uploadKey]: base64 };
@@ -381,27 +396,36 @@ export default function UserProfile() {
     }
   };
 
-  /* ----- Tüm Profili Kaydet ----- */
+  /* ─────────────────────────────────────────────────────────
+     TÜM PROFİLİ KAYDET
+     
+     Tablo sütunları:
+       full_name, avatar_url, country, city, bio, phone → gerçek sütunlar
+       cover_url, phone_code, work_experience, education,
+       skills, certificates, languages, interests → cv_data içinde
+     ───────────────────────────────────────────────────────── */
   const handleSave = async () => {
     setSaving(true);
 
     try {
-      // Her zaman localStorage'a kaydet
       saveToLocal(formData);
 
       if (connectionMode === "supabase" && me) {
-        // ✅ avatar_url ve cover_url cv_data İÇİNDE — ayrı sütun olarak GÖNDERMİYORUZ
         const payload = {
           id: me.id,
+          // ✅ Gerçek sütunlar (tabloda var)
           full_name: formData.full_name.trim(),
+          avatar_url: formData.avatar_url,
           country: formData.country,
           city: formData.city,
+          bio: formData.bio,
+          phone: formData.phone_code + " " + formData.phone,
+          // ✅ cv_data JSON (cover_url dahil her şey burada)
           cv_data: {
-            avatar_url: formData.avatar_url,
             cover_url: formData.cover_url,
             phone_code: formData.phone_code,
-            phone_number: formData.phone_number,
-            about: formData.about,
+            phone_number: formData.phone,
+            about: formData.bio,
             work_experience: formData.work_experience,
             education: formData.education,
             skills: formData.skills,
@@ -423,7 +447,7 @@ export default function UserProfile() {
       setEditOpen(false);
     } catch (e) {
       console.error("Kayıt hatası:", e);
-      toast("Supabase hatası: " + (e.message || "Bilinmeyen hata") + " — Yerel kayıt yapıldı.", "warning");
+      toast("Hata: " + (e.message || "Bilinmeyen hata") + " — Yerel kayıt yapıldı.", "warning");
       setEditOpen(false);
     } finally {
       setSaving(false);
@@ -492,7 +516,7 @@ export default function UserProfile() {
   const cities = LOCATION_DATA[formData.country] || [];
 
   const hasContent =
-    formData.about ||
+    formData.bio ||
     formData.work_experience.length > 0 ||
     formData.education.length > 0 ||
     formData.certificates.length > 0 ||
@@ -591,9 +615,9 @@ export default function UserProfile() {
                     <MapPin size={12} /> {[formData.city, formData.country].filter(Boolean).join(", ")}
                   </span>
                 )}
-                {formData.phone_number && (
+                {formData.phone && (
                   <span className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                    <Phone size={12} /> {formData.phone_code} {formData.phone_number}
+                    <Phone size={12} /> {formData.phone_code} {formData.phone}
                   </span>
                 )}
               </div>
@@ -633,13 +657,13 @@ export default function UserProfile() {
           <div className="grid lg:grid-cols-12 gap-10">
             {/* SOL KOLON */}
             <div className="lg:col-span-8 space-y-10">
-              {formData.about && (
+              {formData.bio && (
                 <section className="bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <Target size={18} className="text-rose-500" /> Kariyer Vizyonu
                   </h3>
                   <p className="text-slate-700 font-bold italic text-lg leading-relaxed">
-                    &ldquo;{formData.about}&rdquo;
+                    &ldquo;{formData.bio}&rdquo;
                   </p>
                 </section>
               )}
@@ -762,7 +786,7 @@ export default function UserProfile() {
             {/* MODAL HEADER */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-6 md:px-8 py-6 border-b border-slate-100 z-50 flex justify-between items-center rounded-t-[32px]">
               <h2 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
-                Profil Mimarı <span className="text-rose-500">v31</span>
+                Profil Mimarı <span className="text-rose-500">v32</span>
               </h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -882,21 +906,21 @@ export default function UserProfile() {
                   </select>
                   <input
                     placeholder="5XX XXX XX XX"
-                    value={formData.phone_number}
-                    onChange={(e) => updateField("phone_number", e.target.value)}
+                    value={formData.phone}
+                    onChange={(e) => updateField("phone", e.target.value)}
                     className="sm:col-span-2 w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500"
                   />
                 </div>
               </div>
 
-              {/* HAKKIMDA */}
+              {/* HAKKIMDA / BIO */}
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Target size={12} /> Hakkımda / Kariyer Vizyonu
                 </label>
                 <textarea
-                  value={formData.about}
-                  onChange={(e) => updateField("about", e.target.value)}
+                  value={formData.bio}
+                  onChange={(e) => updateField("bio", e.target.value)}
                   placeholder="Kendinizi ve kariyer hedefinizi tanımlayın..."
                   rows={4}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 resize-none"

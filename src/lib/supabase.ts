@@ -1,13 +1,12 @@
 // src/lib/supabase.ts
 import { createClient } from "@supabase/supabase-js";
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
+// ✅ matchingService.ts için gerekli export
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 /* =========================================================
    ✅ Helpers (timeout + token)
    ========================================================= */
-
 // fetch timeout helper (pending kalmayı engeller)
 const fetchWithTimeout = async (
   input: RequestInfo | URL,
@@ -16,7 +15,6 @@ const fetchWithTimeout = async (
 ) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
     const res = await fetch(input, {
       ...init,
@@ -29,12 +27,10 @@ const fetchWithTimeout = async (
     clearTimeout(id);
   }
 };
-
 // ✅ Supabase internal fetch'leri de timeout'lu yap
 const supabaseFetch: typeof fetch = (input: any, init?: any) => {
   return fetchWithTimeout(input, init || {}, 15000) as any;
 };
-
 /* =========================================================
    ✅ Supabase Client (Stabilize Edilmiş Versiyon)
    ========================================================= */
@@ -50,47 +46,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: supabaseFetch,
   },
 });
-
 async function getAccessToken(): Promise<string | null> {
   const { data, error } = await supabase.auth.getSession();
   if (error) return null;
   return data?.session?.access_token || null;
 }
-
 const nowIso = () => new Date().toISOString();
-
 /* =========================================================
    ✅ DB CHECK CONSTRAINT ile BİREBİR UYUMLU ENUMS
    ========================================================= */
-
 export const SUBSCRIPTION_TYPES = {
   INDIVIDUAL: "individual",
   CORPORATE: "corporate",
   COACH: "coach",
 } as const;
-
 export type SubscriptionType =
   typeof SUBSCRIPTION_TYPES[keyof typeof SUBSCRIPTION_TYPES];
-
 export const SUBSCRIPTION_STATUS = {
   ACTIVE: "active",
   CANCELLED: "cancelled",
   EXPIRED: "expired",
   PENDING: "pending",
 } as const;
-
 export type SubscriptionStatus =
   typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
-
 export const BADGE_TYPES = {
   BLUE: "blue_badge",
   GOLD: "gold_badge",
 } as const;
-
 export type BadgeType = typeof BADGE_TYPES[keyof typeof BADGE_TYPES];
-
 /* ---------------- TYPES ---------------- */
-
 interface AIAnalysis {
   severity?: string;
   priority?: string;
@@ -99,7 +84,6 @@ interface AIAnalysis {
   estimated_resolution_time?: string;
   raw_response?: string;
 }
-
 export interface PremiumSubscription {
   id: string;
   user_id: string;
@@ -115,7 +99,6 @@ export interface PremiumSubscription {
   updated_at: string;
   badge_type: BadgeType | null;
 }
-
 export interface Payment {
   id: string;
   user_id: string;
@@ -128,7 +111,6 @@ export interface Payment {
   transaction_id?: string;
   created_at: string;
 }
-
 export interface Invoice {
   id: string;
   user_id: string;
@@ -145,7 +127,6 @@ export interface Invoice {
   created_at: string;
   subscription_type?: SubscriptionType | null;
 }
-
 export interface SupportTicket {
   id: string;
   user_id: string;
@@ -160,7 +141,6 @@ export interface SupportTicket {
   updated_at: string;
   resolved_at?: string;
 }
-
 export interface Coach {
   id: string;
   user_id: string;
@@ -177,7 +157,6 @@ export interface Coach {
   created_at: string;
   updated_at: string;
 }
-
 export interface Session {
   id: string;
   coach_id: string;
@@ -189,11 +168,9 @@ export interface Session {
   created_at: string;
   updated_at: string;
 }
-
 /* =========================================================
    ✅ PREMIUM SUBSCRIPTION SERVICE
    ========================================================= */
-
 export const subscriptionService = {
   async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
     try {
@@ -205,14 +182,12 @@ export const subscriptionService = {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) return null;
       return (data as any) as PremiumSubscription;
     } catch {
       return null;
     }
   },
-
   async getByUserId(userId: string): Promise<PremiumSubscription[]> {
     try {
       const { data, error } = await supabase
@@ -220,19 +195,16 @@ export const subscriptionService = {
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) return [];
       return ((data || []) as any) as PremiumSubscription[];
     } catch {
       return [];
     }
   },
-
   async getMySubscriptionsViaEdge(): Promise<PremiumSubscription[]> {
     try {
       const token = await getAccessToken();
       if (!token) return [];
-
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_my_subscriptions`;
       const res = await fetchWithTimeout(
         edgeUrl,
@@ -245,7 +217,6 @@ export const subscriptionService = {
         },
         15000
       );
-
       if (!res.ok) return [];
       const result = await res.json();
       return (result.subscriptions || []) as PremiumSubscription[];
@@ -253,7 +224,6 @@ export const subscriptionService = {
       return [];
     }
   },
-
   async create(payload: {
     user_id: string;
     subscription_type: SubscriptionType;
@@ -278,46 +248,38 @@ export const subscriptionService = {
         auto_renew: payload.auto_renew ?? true,
         iyzico_subscription_id: payload.iyzico_subscription_id ?? null,
       };
-
       if (payload.badge_type !== undefined) {
         insertRow.badge_type = payload.badge_type;
       }
-
       const { data, error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
         .insert(insertRow)
         .select("*")
         .single();
-
       if (error) return null;
       return (data as any) as PremiumSubscription;
     } catch {
       return null;
     }
   },
-
   async update(id: string, updates: Partial<PremiumSubscription>): Promise<boolean> {
     try {
       const { error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
         .update({ ...updates, updated_at: nowIso() })
         .eq("id", id);
-
       return !error;
     } catch {
       return false;
     }
   },
-
   async cancel(id: string): Promise<boolean> {
     return this.update(id, { status: SUBSCRIPTION_STATUS.CANCELLED } as any);
   },
 };
-
 /* =========================================================
    ✅ PAYMENTS
    ========================================================= */
-
 export const paymentService = {
   async getByUserId(userId: string): Promise<Payment[]> {
     try {
@@ -335,26 +297,22 @@ export const paymentService = {
           },
           15000
         );
-
         if (res.ok) {
           const result = await res.json();
           return (result.payments || []) as Payment[];
         }
       }
-
       const { data, error } = await supabase
         .from("app_2dff6511da_payments")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) return [];
       return (data || []) as Payment[];
     } catch {
       return [];
     }
   },
-
   async create(payment: Omit<Payment, "id" | "created_at">): Promise<Payment | null> {
     try {
       const { data, error } = await supabase
@@ -362,7 +320,6 @@ export const paymentService = {
         .insert(payment)
         .select("*")
         .single();
-
       if (error) return null;
       return data as Payment;
     } catch {
@@ -370,11 +327,9 @@ export const paymentService = {
     }
   },
 };
-
 /* =========================================================
    ✅ INVOICES
    ========================================================= */
-
 export const invoiceService = {
   async getByUserId(userId: string): Promise<Invoice[]> {
     try {
@@ -392,31 +347,26 @@ export const invoiceService = {
           },
           15000
         );
-
         if (res.ok) {
           const result = await res.json();
           return (result.invoices || []) as Invoice[];
         }
       }
-
       const { data, error } = await supabase
         .from("app_2dff6511da_invoices")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) return [];
       return (data || []) as Invoice[];
     } catch {
       return [];
     }
   },
-
   async generatePDF(invoiceId: string): Promise<{ success: boolean; html?: string; error?: string }> {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
-
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_generate_invoice_pdf`;
       const response = await fetchWithTimeout(
         edgeUrl,
@@ -430,7 +380,6 @@ export const invoiceService = {
         },
         20000
       );
-
       if (!response.ok) return { success: false, error: "Failed to generate PDF" };
       const result = await response.json();
       return { success: true, html: result.html };
@@ -438,12 +387,10 @@ export const invoiceService = {
       return { success: false, error: "An error occurred while generating PDF" };
     }
   },
-
   async sendEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
-
       const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_send_invoice_email`;
       const response = await fetchWithTimeout(
         edgeUrl,
@@ -457,14 +404,12 @@ export const invoiceService = {
         },
         20000
       );
-
       if (!response.ok) return { success: false, error: "Failed to send email" };
       return { success: true };
     } catch {
       return { success: false, error: "An error occurred while sending email" };
     }
   },
-
   async create(invoice: Omit<Invoice, "id" | "created_at">): Promise<Invoice | null> {
     try {
       const { data, error } = await supabase
@@ -472,14 +417,12 @@ export const invoiceService = {
         .insert(invoice)
         .select("*")
         .single();
-
       if (error) return null;
       return data as Invoice;
     } catch {
       return null;
     }
   },
-
   generateInvoiceNumber(): string {
     const date = new Date();
     const year = date.getFullYear();
@@ -488,11 +431,9 @@ export const invoiceService = {
     return `INV-${year}${month}-${random}`;
   },
 };
-
 /* =========================================================
    ✅ SUPPORT TICKETS
    ========================================================= */
-
 export const supportTicketService = {
   async create(
     subject: string,
@@ -502,11 +443,9 @@ export const supportTicketService = {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
-
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (!user) return { success: false, error: "User not found" };
-
       const response = await fetchWithTimeout(
         `${supabaseUrl}/functions/v1/app_2dff6511da_create_support_ticket`,
         {
@@ -527,7 +466,6 @@ export const supportTicketService = {
         },
         20000
       );
-
       if (!response.ok) return { success: false, error: "Failed to create support ticket" };
       const result = await response.json();
       return { success: true, ticket: result.ticket };
@@ -535,7 +473,6 @@ export const supportTicketService = {
       return { success: false, error: "An error occurred" };
     }
   },
-
   async getByUserId(userId: string): Promise<SupportTicket[]> {
     try {
       const { data, error } = await supabase
@@ -543,7 +480,6 @@ export const supportTicketService = {
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) return [];
       return (data || []) as SupportTicket[];
     } catch {
@@ -551,11 +487,9 @@ export const supportTicketService = {
     }
   },
 };
-
 /* =========================================================
    ✅ COACHES
    ========================================================= */
-
 export const coachService = {
   async getApproved(): Promise<Coach[]> {
     try {
@@ -564,14 +498,12 @@ export const coachService = {
         .select("*")
         .eq("status", "approved")
         .order("rating", { ascending: false });
-
       if (error) return [];
       return (data || []) as Coach[];
     } catch {
       return [];
     }
   },
-
   async getById(id: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
@@ -579,14 +511,12 @@ export const coachService = {
         .select("*")
         .eq("id", id)
         .single();
-
       if (error) return null;
       return data as Coach;
     } catch {
       return null;
     }
   },
-
   async getByUserId(userId: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
@@ -594,14 +524,12 @@ export const coachService = {
         .select("*")
         .eq("user_id", userId)
         .maybeSingle();
-
       if (error) return null;
       return data as Coach;
     } catch {
       return null;
     }
   },
-
   async create(
     coach: Omit<Coach, "id" | "created_at" | "updated_at" | "rating" | "total_reviews">
   ): Promise<Coach | null> {
@@ -611,7 +539,6 @@ export const coachService = {
         .insert(coach)
         .select("*")
         .single();
-
       if (error) return null;
       return data as Coach;
     } catch {
@@ -619,11 +546,9 @@ export const coachService = {
     }
   },
 };
-
 /* =========================================================
    ✅ SESSIONS
    ========================================================= */
-
 export const sessionService = {
   async getByCoachId(coachId: string): Promise<Session[]> {
     try {
@@ -632,14 +557,12 @@ export const sessionService = {
         .select("*")
         .eq("coach_id", coachId)
         .order("session_date", { ascending: false });
-
       if (error) return [];
       return (data || []) as Session[];
     } catch {
       return [];
     }
   },
-
   async getByClientId(clientId: string): Promise<Session[]> {
     try {
       const { data, error } = await supabase
@@ -647,14 +570,12 @@ export const sessionService = {
         .select("*")
         .eq("client_id", clientId)
         .order("session_date", { ascending: false });
-
       if (error) return [];
       return (data || []) as Session[];
     } catch {
       return [];
     }
   },
-
   async create(session: Omit<Session, "id" | "created_at" | "updated_at">): Promise<Session | null> {
     try {
       const { data, error } = await supabase
@@ -662,7 +583,6 @@ export const sessionService = {
         .insert(session)
         .select("*")
         .single();
-
       if (error) return null;
       return data as Session;
     } catch {

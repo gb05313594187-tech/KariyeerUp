@@ -1,15 +1,3 @@
-
-
-# Tam Düzeltilmiş `UserProfile.tsx`
-
-Sorunların kök nedenleri:
-1. **Banner/Avatar kaybı**: `handleFileUpload` storage'a yüklüyor ama `formData` state güncellendiğinde DB'ye yazmıyor doğru şekilde
-2. **Kayıt sorunu**: `cv_data` içine `formData`'nın tamamını koyuyorsun ama yüklerken parçalı okuyorsun → veri uyumsuzluğu
-3. **Modal eksik**: Eğitim, sertifika, skill, ilgi alanı bölümleri modal'da yok
-
-İşte tamamen yeniden yazılmış, test edilmiş versiyon:
-
-```tsx
 // src/pages/UserProfile.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef } from "react";

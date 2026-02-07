@@ -102,6 +102,7 @@ import CreateJob from "@/pages/CreateJob";
 
 // ✅ NEW: INTERVIEW PAGE (EKLENDİ)
 import InterviewPage from "@/pages/Interview";
+import CorporateJobs from "@/pages/CorporateJobs";
 
 /* -------------------------------------------------
    Public Layout
@@ -220,6 +221,8 @@ export default function App() {
               path="corporate/settings"
               element={<CorporateSettings />}
             />
+            <Route path="corporate/jobs" element={<CorporateJobs />} />
+
 
             {/* COACH */}
             <Route path="coach/dashboard" element={<CoachDashboard />} />

@@ -1,3 +1,4 @@
+// src/pages/UserProfile.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -8,12 +9,438 @@ import {
   fetchAllJobs,
   isGeminiConfigured,
 } from "@/lib/matchingService";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   X, Briefcase, GraduationCap, Cpu, Languages, Target,
   Plus, Trash2, Award, Heart, Phone, MapPin, Star, CheckCircle2,
   Camera, ImagePlus, Save, Edit3, AlertTriangle, Wifi, WifiOff,
   Zap, Search, Sparkles, TrendingUp, Building2, Clock, ChevronDown, ChevronUp
 } from "lucide-react";
+
+/* =========================================================
+   ÇOK DİLLİ METİNLER
+   ========================================================= */
+const TRANSLATIONS = {
+  tr: {
+    // Header & Status
+    connectionSupabase: "Supabase Bağlantısı Aktif",
+    connectionLocal: "Yerel Mod — Veriler localStorage'da Saklanıyor",
+    verified: "ONAYLI",
+    editProfile: "PROFİLİ DÜZENLE",
+    
+    // Empty State
+    profileEmpty: "Profiliniz Boş",
+    profileEmptyDesc: "Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.",
+    createProfile: "PROFİLİ OLUŞTUR",
+    
+    // Sections
+    careerVision: "Kariyer Vizyonu",
+    workExperience: "İş Deneyimi",
+    education: "Eğitim",
+    certificates: "Sertifikalar",
+    languages: "Diller",
+    skills: "Yetenekler",
+    interests: "İlgi Alanları",
+    
+    // Job Matching
+    jobMatches: "İş Eşleşmelerim",
+    jobMatchesDesc: "Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör",
+    standard: "Standard",
+    aiBoost: "AI Boost",
+    scanning: "Taranıyor...",
+    aiAnalyzing: "AI Analiz Ediliyor...",
+    noMatches: "Henüz Eşleşme Yok",
+    noMatchesDesc: "\"Standard\" veya \"AI Boost\" butonuna tıklayarak profilinizi aktif ilanlarla eşleştirin.",
+    fillProfileFirst: "Önce profilinizi doldurun, ardından ilanlarla eşleşme yapabilirsiniz.",
+    highMatch: "Yüksek Uyum",
+    mediumMatch: "Orta Uyum",
+    lowMatch: "Düşük Uyum",
+    strengths: "Güçlü Yönler",
+    improvements: "Gelişim Alanları",
+    detailedScores: "Detaylı Skor Dağılımı",
+    jobDescription: "İlan Açıklaması",
+    salary: "Maaş",
+    skillScore: "Yetenek",
+    locationScore: "Lokasyon",
+    experienceScore: "Deneyim",
+    languageScore: "Dil",
+    standardDesc: "Standard = Kelime bazlı eşleşme",
+    boostDesc: "Boost = Gemini AI semantik analiz",
+    addGeminiKey: "AI Boost için .env'ye VITE_GEMINI_API_KEY ekleyin",
+    
+    // Modal
+    profileArchitect: "Profil Mimarı",
+    profilePhotos: "Profil Görselleri",
+    profilePhoto: "Profil Fotoğrafı",
+    bannerImage: "Banner Görseli",
+    uploading: "Görsel yükleniyor...",
+    fullName: "Ad Soyad",
+    fullNamePlaceholder: "Adınız ve Soyadınız",
+    location: "Lokasyon",
+    selectCountry: "Ülke Seçin",
+    selectCity: "Şehir Seçin",
+    internationalPhone: "Uluslararası Telefon",
+    aboutMe: "Hakkımda / Kariyer Vizyonu",
+    aboutMePlaceholder: "Kendinizi ve kariyer hedefinizi tanımlayın...",
+    add: "EKLE",
+    position: "Pozisyon / Ünvan",
+    company: "Şirket Adı",
+    startYear: "Başlangıç (2020)",
+    endYear: "Bitiş (2023)",
+    current: "Devam Ediyor",
+    ongoing: "Devam",
+    delete: "SİL",
+    jobDescription2: "Görev tanımı ve başarılarınız...",
+    educationInfo: "Eğitim Bilgileri",
+    school: "Okul / Üniversite",
+    department: "Bölüm / Alan",
+    degree: "Derece",
+    highSchool: "Lise",
+    associate: "Ön Lisans",
+    bachelor: "Lisans",
+    master: "Yüksek Lisans",
+    doctorate: "Doktora",
+    languageSkills: "Dil Yetkinliği",
+    selectLanguage: "Dil Seçin",
+    certificateName: "Sertifika Adı",
+    institution: "Kurum",
+    year: "Yıl",
+    technicalSkills: "Teknik Programlar & Yetenekler",
+    skillPlaceholder: "Yetenek yazıp Enter'a basın...",
+    interestPlaceholder: "İlgi alanı yazıp Enter'a basın...",
+    cancel: "İPTAL",
+    saveMemory: "HAFIZAYI MÜHÜRLE",
+    saving: "MÜHÜRLENİYOR...",
+    
+    // Toasts
+    syncingMemory: "Hafıza Senkronize Ediliyor...",
+    photoSaved: "Profil fotoğrafı mühürlendi!",
+    bannerSaved: "Banner mühürlendi!",
+    savedLocal: "kaydedildi!",
+    localBackup: "Yerel yedek kayıt oluşturuldu.",
+    uploadFailed: "Yükleme tamamen başarısız oldu.",
+    fileTooLarge: "Dosya 5MB'den küçük olmalı.",
+    selectImage: "Lütfen bir resim dosyası seçin.",
+    dataSavedSupabase: "Tüm veriler Supabase'e mühürlendi!",
+    dataSavedLocal: "Veriler yerel olarak mühürlendi!",
+    saveFailed: "Kayıt mühürlenemedi:",
+    supabaseRequired: "Eşleştirme için Supabase bağlantısı gerekli.",
+    noJobsFound: "Henüz aktif ilan bulunamadı.",
+    standardComplete: "ilan ile standart eşleşme tamamlandı!",
+    boostComplete: "AI Boost ile ilan analiz edildi!",
+    matchError: "Eşleştirme hatası:",
+    boostError: "AI Boost hatası:",
+    change: "Değiştir",
+    changeBanner: "Banner Değiştir",
+    present: "Günümüz",
+  },
+  en: {
+    connectionSupabase: "Supabase Connection Active",
+    connectionLocal: "Local Mode — Data Stored in localStorage",
+    verified: "VERIFIED",
+    editProfile: "EDIT PROFILE",
+    profileEmpty: "Your Profile is Empty",
+    profileEmptyDesc: "Start your career journey by adding your profile information. Fill in your profile to match with job listings.",
+    createProfile: "CREATE PROFILE",
+    careerVision: "Career Vision",
+    workExperience: "Work Experience",
+    education: "Education",
+    certificates: "Certificates",
+    languages: "Languages",
+    skills: "Skills",
+    interests: "Interests",
+    jobMatches: "My Job Matches",
+    jobMatchesDesc: "Compare your profile with active listings and see your fit score",
+    standard: "Standard",
+    aiBoost: "AI Boost",
+    scanning: "Scanning...",
+    aiAnalyzing: "AI Analyzing...",
+    noMatches: "No Matches Yet",
+    noMatchesDesc: "Click \"Standard\" or \"AI Boost\" to match your profile with active listings.",
+    fillProfileFirst: "First fill in your profile, then you can match with listings.",
+    highMatch: "High Match",
+    mediumMatch: "Medium Match",
+    lowMatch: "Low Match",
+    strengths: "Strengths",
+    improvements: "Areas for Improvement",
+    detailedScores: "Detailed Score Breakdown",
+    jobDescription: "Job Description",
+    salary: "Salary",
+    skillScore: "Skills",
+    locationScore: "Location",
+    experienceScore: "Experience",
+    languageScore: "Language",
+    standardDesc: "Standard = Keyword-based matching",
+    boostDesc: "Boost = Gemini AI semantic analysis",
+    addGeminiKey: "Add VITE_GEMINI_API_KEY to .env for AI Boost",
+    profileArchitect: "Profile Architect",
+    profilePhotos: "Profile Images",
+    profilePhoto: "Profile Photo",
+    bannerImage: "Banner Image",
+    uploading: "Uploading image...",
+    fullName: "Full Name",
+    fullNamePlaceholder: "Your Full Name",
+    location: "Location",
+    selectCountry: "Select Country",
+    selectCity: "Select City",
+    internationalPhone: "International Phone",
+    aboutMe: "About Me / Career Vision",
+    aboutMePlaceholder: "Describe yourself and your career goals...",
+    add: "ADD",
+    position: "Position / Title",
+    company: "Company Name",
+    startYear: "Start (2020)",
+    endYear: "End (2023)",
+    current: "Currently Working",
+    ongoing: "Ongoing",
+    delete: "DELETE",
+    jobDescription2: "Job description and achievements...",
+    educationInfo: "Education Information",
+    school: "School / University",
+    department: "Department / Field",
+    degree: "Degree",
+    highSchool: "High School",
+    associate: "Associate",
+    bachelor: "Bachelor's",
+    master: "Master's",
+    doctorate: "Doctorate",
+    languageSkills: "Language Skills",
+    selectLanguage: "Select Language",
+    certificateName: "Certificate Name",
+    institution: "Institution",
+    year: "Year",
+    technicalSkills: "Technical Programs & Skills",
+    skillPlaceholder: "Type a skill and press Enter...",
+    interestPlaceholder: "Type an interest and press Enter...",
+    cancel: "CANCEL",
+    saveMemory: "SAVE PROFILE",
+    saving: "SAVING...",
+    syncingMemory: "Syncing Memory...",
+    photoSaved: "Profile photo saved!",
+    bannerSaved: "Banner saved!",
+    savedLocal: "saved!",
+    localBackup: "Local backup created.",
+    uploadFailed: "Upload completely failed.",
+    fileTooLarge: "File must be smaller than 5MB.",
+    selectImage: "Please select an image file.",
+    dataSavedSupabase: "All data saved to Supabase!",
+    dataSavedLocal: "Data saved locally!",
+    saveFailed: "Save failed:",
+    supabaseRequired: "Supabase connection required for matching.",
+    noJobsFound: "No active listings found.",
+    standardComplete: "listings matched with standard!",
+    boostComplete: "listings analyzed with AI Boost!",
+    matchError: "Matching error:",
+    boostError: "AI Boost error:",
+    change: "Change",
+    changeBanner: "Change Banner",
+    present: "Present",
+  },
+  fr: {
+    connectionSupabase: "Connexion Supabase Active",
+    connectionLocal: "Mode Local — Données Stockées dans localStorage",
+    verified: "VÉRIFIÉ",
+    editProfile: "MODIFIER LE PROFIL",
+    profileEmpty: "Votre Profil est Vide",
+    profileEmptyDesc: "Commencez votre parcours professionnel en ajoutant vos informations de profil. Remplissez votre profil pour correspondre aux offres d'emploi.",
+    createProfile: "CRÉER LE PROFIL",
+    careerVision: "Vision de Carrière",
+    workExperience: "Expérience Professionnelle",
+    education: "Formation",
+    certificates: "Certificats",
+    languages: "Langues",
+    skills: "Compétences",
+    interests: "Centres d'Intérêt",
+    jobMatches: "Mes Correspondances d'Emploi",
+    jobMatchesDesc: "Comparez votre profil avec les offres actives et voyez votre score de compatibilité",
+    standard: "Standard",
+    aiBoost: "AI Boost",
+    scanning: "Analyse en cours...",
+    aiAnalyzing: "Analyse IA en cours...",
+    noMatches: "Aucune Correspondance",
+    noMatchesDesc: "Cliquez sur \"Standard\" ou \"AI Boost\" pour faire correspondre votre profil avec les offres actives.",
+    fillProfileFirst: "Remplissez d'abord votre profil, puis vous pourrez faire des correspondances avec les offres.",
+    highMatch: "Haute Compatibilité",
+    mediumMatch: "Compatibilité Moyenne",
+    lowMatch: "Faible Compatibilité",
+    strengths: "Points Forts",
+    improvements: "Axes d'Amélioration",
+    detailedScores: "Répartition Détaillée des Scores",
+    jobDescription: "Description du Poste",
+    salary: "Salaire",
+    skillScore: "Compétences",
+    locationScore: "Localisation",
+    experienceScore: "Expérience",
+    languageScore: "Langue",
+    standardDesc: "Standard = Correspondance par mots-clés",
+    boostDesc: "Boost = Analyse sémantique Gemini AI",
+    addGeminiKey: "Ajoutez VITE_GEMINI_API_KEY à .env pour AI Boost",
+    profileArchitect: "Architecte de Profil",
+    profilePhotos: "Images de Profil",
+    profilePhoto: "Photo de Profil",
+    bannerImage: "Image de Bannière",
+    uploading: "Téléchargement en cours...",
+    fullName: "Nom Complet",
+    fullNamePlaceholder: "Votre Nom Complet",
+    location: "Localisation",
+    selectCountry: "Sélectionner un Pays",
+    selectCity: "Sélectionner une Ville",
+    internationalPhone: "Téléphone International",
+    aboutMe: "À Propos / Vision de Carrière",
+    aboutMePlaceholder: "Décrivez-vous et vos objectifs de carrière...",
+    add: "AJOUTER",
+    position: "Poste / Titre",
+    company: "Nom de l'Entreprise",
+    startYear: "Début (2020)",
+    endYear: "Fin (2023)",
+    current: "En Poste Actuellement",
+    ongoing: "En cours",
+    delete: "SUPPRIMER",
+    jobDescription2: "Description du poste et réalisations...",
+    educationInfo: "Informations sur la Formation",
+    school: "École / Université",
+    department: "Département / Domaine",
+    degree: "Diplôme",
+    highSchool: "Lycée",
+    associate: "DUT/BTS",
+    bachelor: "Licence",
+    master: "Master",
+    doctorate: "Doctorat",
+    languageSkills: "Compétences Linguistiques",
+    selectLanguage: "Sélectionner une Langue",
+    certificateName: "Nom du Certificat",
+    institution: "Institution",
+    year: "Année",
+    technicalSkills: "Programmes Techniques & Compétences",
+    skillPlaceholder: "Tapez une compétence et appuyez sur Entrée...",
+    interestPlaceholder: "Tapez un centre d'intérêt et appuyez sur Entrée...",
+    cancel: "ANNULER",
+    saveMemory: "ENREGISTRER LE PROFIL",
+    saving: "ENREGISTREMENT...",
+    syncingMemory: "Synchronisation de la Mémoire...",
+    photoSaved: "Photo de profil enregistrée!",
+    bannerSaved: "Bannière enregistrée!",
+    savedLocal: "enregistré!",
+    localBackup: "Sauvegarde locale créée.",
+    uploadFailed: "Échec complet du téléchargement.",
+    fileTooLarge: "Le fichier doit être inférieur à 5 Mo.",
+    selectImage: "Veuillez sélectionner un fichier image.",
+    dataSavedSupabase: "Toutes les données enregistrées sur Supabase!",
+    dataSavedLocal: "Données enregistrées localement!",
+    saveFailed: "Échec de l'enregistrement:",
+    supabaseRequired: "Connexion Supabase requise pour la correspondance.",
+    noJobsFound: "Aucune offre active trouvée.",
+    standardComplete: "offres correspondues en standard!",
+    boostComplete: "offres analysées avec AI Boost!",
+    matchError: "Erreur de correspondance:",
+    boostError: "Erreur AI Boost:",
+    change: "Modifier",
+    changeBanner: "Modifier la Bannière",
+    present: "Présent",
+  },
+  ar: {
+    connectionSupabase: "اتصال Supabase نشط",
+    connectionLocal: "الوضع المحلي — البيانات محفوظة في التخزين المحلي",
+    verified: "موثق",
+    editProfile: "تعديل الملف الشخصي",
+    profileEmpty: "ملفك الشخصي فارغ",
+    profileEmptyDesc: "ابدأ رحلتك المهنية بإضافة معلومات ملفك الشخصي. املأ ملفك الشخصي للتوافق مع إعلانات الوظائف.",
+    createProfile: "إنشاء الملف الشخصي",
+    careerVision: "الرؤية المهنية",
+    workExperience: "الخبرة العملية",
+    education: "التعليم",
+    certificates: "الشهادات",
+    languages: "اللغات",
+    skills: "المهارات",
+    interests: "الاهتمامات",
+    jobMatches: "تطابقات الوظائف",
+    jobMatchesDesc: "قارن ملفك الشخصي مع الإعلانات النشطة واعرف درجة توافقك",
+    standard: "قياسي",
+    aiBoost: "تعزيز الذكاء الاصطناعي",
+    scanning: "جاري المسح...",
+    aiAnalyzing: "جاري تحليل الذكاء الاصطناعي...",
+    noMatches: "لا توجد تطابقات بعد",
+    noMatchesDesc: "انقر على \"قياسي\" أو \"تعزيز الذكاء الاصطناعي\" لمطابقة ملفك الشخصي مع الإعلانات النشطة.",
+    fillProfileFirst: "أولاً املأ ملفك الشخصي، ثم يمكنك المطابقة مع الإعلانات.",
+    highMatch: "توافق عالي",
+    mediumMatch: "توافق متوسط",
+    lowMatch: "توافق منخفض",
+    strengths: "نقاط القوة",
+    improvements: "مجالات التحسين",
+    detailedScores: "توزيع النقاط التفصيلي",
+    jobDescription: "وصف الوظيفة",
+    salary: "الراتب",
+    skillScore: "المهارات",
+    locationScore: "الموقع",
+    experienceScore: "الخبرة",
+    languageScore: "اللغة",
+    standardDesc: "قياسي = مطابقة بالكلمات المفتاحية",
+    boostDesc: "تعزيز = تحليل دلالي بالذكاء الاصطناعي",
+    addGeminiKey: "أضف VITE_GEMINI_API_KEY إلى .env لتعزيز الذكاء الاصطناعي",
+    profileArchitect: "مهندس الملف الشخصي",
+    profilePhotos: "صور الملف الشخصي",
+    profilePhoto: "صورة الملف الشخصي",
+    bannerImage: "صورة الغلاف",
+    uploading: "جاري رفع الصورة...",
+    fullName: "الاسم الكامل",
+    fullNamePlaceholder: "اسمك الكامل",
+    location: "الموقع",
+    selectCountry: "اختر الدولة",
+    selectCity: "اختر المدينة",
+    internationalPhone: "الهاتف الدولي",
+    aboutMe: "نبذة عني / الرؤية المهنية",
+    aboutMePlaceholder: "صف نفسك وأهدافك المهنية...",
+    add: "إضافة",
+    position: "المنصب / اللقب",
+    company: "اسم الشركة",
+    startYear: "البداية (2020)",
+    endYear: "النهاية (2023)",
+    current: "أعمل حالياً",
+    ongoing: "مستمر",
+    delete: "حذف",
+    jobDescription2: "وصف الوظيفة والإنجازات...",
+    educationInfo: "معلومات التعليم",
+    school: "المدرسة / الجامعة",
+    department: "القسم / المجال",
+    degree: "الدرجة",
+    highSchool: "الثانوية",
+    associate: "دبلوم",
+    bachelor: "بكالوريوس",
+    master: "ماجستير",
+    doctorate: "دكتوراه",
+    languageSkills: "المهارات اللغوية",
+    selectLanguage: "اختر اللغة",
+    certificateName: "اسم الشهادة",
+    institution: "المؤسسة",
+    year: "السنة",
+    technicalSkills: "البرامج التقنية والمهارات",
+    skillPlaceholder: "اكتب مهارة واضغط Enter...",
+    interestPlaceholder: "اكتب اهتمام واضغط Enter...",
+    cancel: "إلغاء",
+    saveMemory: "حفظ الملف الشخصي",
+    saving: "جاري الحفظ...",
+    syncingMemory: "جاري مزامنة الذاكرة...",
+    photoSaved: "تم حفظ صورة الملف الشخصي!",
+    bannerSaved: "تم حفظ الغلاف!",
+    savedLocal: "تم الحفظ!",
+    localBackup: "تم إنشاء نسخة احتياطية محلية.",
+    uploadFailed: "فشل الرفع بالكامل.",
+    fileTooLarge: "يجب أن يكون الملف أصغر من 5 ميجابايت.",
+    selectImage: "يرجى اختيار ملف صورة.",
+    dataSavedSupabase: "تم حفظ جميع البيانات في Supabase!",
+    dataSavedLocal: "تم حفظ البيانات محلياً!",
+    saveFailed: "فشل الحفظ:",
+    supabaseRequired: "مطلوب اتصال Supabase للمطابقة.",
+    noJobsFound: "لم يتم العثور على إعلانات نشطة.",
+    standardComplete: "إعلانات متطابقة بالطريقة القياسية!",
+    boostComplete: "إعلانات تم تحليلها بتعزيز الذكاء الاصطناعي!",
+    matchError: "خطأ في المطابقة:",
+    boostError: "خطأ في تعزيز الذكاء الاصطناعي:",
+    change: "تغيير",
+    changeBanner: "تغيير الغلاف",
+    present: "الحالي",
+  },
+};
 
 /* =========================================================
    GLOBAL VERİ SETLERİ
@@ -39,7 +466,7 @@ const LOCATION_DATA = {
 };
 
 const LANGUAGE_LIST = [
-  "Türkçe", "English", "العربية", "Français", "Deutsch", "Español", "Русский", "中文", "日本語", "한국어",
+  "Türkçe", "English", "العربية", "Français"
 ];
 
 /* =========================================================
@@ -109,10 +536,10 @@ function saveToLocal(data) {
   }
 }
 
-function getScoreColor(score) {
-  if (score >= 80) return { bg: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50", border: "border-emerald-200", label: "Yüksek Uyum" };
-  if (score >= 50) return { bg: "bg-amber-500", text: "text-amber-600", light: "bg-amber-50", border: "border-amber-200", label: "Orta Uyum" };
-  return { bg: "bg-red-500", text: "text-red-600", light: "bg-red-50", border: "border-red-200", label: "Düşük Uyum" };
+function getScoreColor(score, t) {
+  if (score >= 80) return { bg: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50", border: "border-emerald-200", label: t.highMatch };
+  if (score >= 50) return { bg: "bg-amber-500", text: "text-amber-600", light: "bg-amber-50", border: "border-amber-200", label: t.mediumMatch };
+  return { bg: "bg-red-500", text: "text-red-600", light: "bg-red-50", border: "border-red-200", label: t.lowMatch };
 }
 
 /* =========================================================
@@ -180,6 +607,10 @@ function SectionTitle({ icon: Icon, color, title, onAdd, addLabel = "EKLE" }) {
    ANA KOMPONENT
    ========================================================= */
 export default function UserProfile() {
+  const { language } = useLanguage();
+  const t = TRANSLATIONS[language] || TRANSLATIONS.tr;
+  const isRTL = language === "ar";
+  
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
@@ -197,8 +628,8 @@ export default function UserProfile() {
   // ─── MATCHING STATE ───
   const [matches, setMatches] = useState([]);
   const [matching, setMatching] = useState(false);
-  const [matchMode, setMatchMode] = useState(null); // "standard" | "boost" | null
-  const [expandedMatch, setExpandedMatch] = useState(null); // expanded match index
+  const [matchMode, setMatchMode] = useState(null);
+  const [expandedMatch, setExpandedMatch] = useState(null);
 
   const { show: toast, ToastContainer } = useToast();
 
@@ -212,7 +643,6 @@ export default function UserProfile() {
           const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
 
           if (sessErr || !sessionData?.session?.user) {
-            console.warn("Oturum yok, localStorage moduna geçiliyor...", sessErr?.message);
             setConnectionMode("local");
             setFormData(loadFromLocal());
             setLoading(false);
@@ -319,13 +749,13 @@ export default function UserProfile() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast("Dosya 5MB'den küçük olmalı.", "error");
+      toast(t.fileTooLarge, "error");
       e.target.value = "";
       return;
     }
 
     if (!file.type.startsWith("image/")) {
-      toast("Lütfen bir resim dosyası seçin.", "error");
+      toast(t.selectImage, "error");
       e.target.value = "";
       return;
     }
@@ -367,7 +797,7 @@ export default function UserProfile() {
               .update({ avatar_url: finalUrl, updated_at: new Date().toISOString() })
               .eq("id", me.id);
             if (dbErr) console.error("Avatar DB hatası:", dbErr);
-            else toast("Profil fotoğrafı mühürlendi!", "success");
+            else toast(t.photoSaved, "success");
           } else {
             const { data: currentProfile } = await supabase
               .from("profiles")
@@ -383,14 +813,14 @@ export default function UserProfile() {
               })
               .eq("id", me.id);
             if (dbErr) console.error("Cover DB hatası:", dbErr);
-            else toast("Banner mühürlendi!", "success");
+            else toast(t.bannerSaved, "success");
           }
         } catch (dbError) {
           console.error("DB kayıt hatası:", dbError);
         }
       } else {
         finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
-        toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} kaydedildi!`, "success");
+        toast(`${type === "avatar" ? t.profilePhoto : t.bannerImage} ${t.savedLocal}`, "success");
       }
 
       const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
@@ -409,9 +839,9 @@ export default function UserProfile() {
           saveToLocal(updated);
           return updated;
         });
-        toast("Yerel yedek kayıt oluşturuldu.", "warning");
+        toast(t.localBackup, "warning");
       } catch {
-        toast("Yükleme tamamen başarısız oldu.", "error");
+        toast(t.uploadFailed, "error");
       }
     } finally {
       setUploading(false);
@@ -474,15 +904,15 @@ export default function UserProfile() {
           if (error) throw error;
         }
 
-        toast("Tüm veriler Supabase'e mühürlendi!", "success");
+        toast(t.dataSavedSupabase, "success");
       } else {
-        toast("Veriler yerel olarak mühürlendi!", "success");
+        toast(t.dataSavedLocal, "success");
       }
 
       setEditOpen(false);
     } catch (e) {
       console.error("Kayıt hatası:", e);
-      toast("Kayıt mühürlenemedi: " + (e.message || "Bilinmeyen hata"), "error");
+      toast(`${t.saveFailed} ${e.message || ""}`, "error");
     } finally {
       setSaving(false);
     }
@@ -508,7 +938,7 @@ export default function UserProfile() {
 
   const handleStandardMatch = async () => {
     if (!me || connectionMode !== "supabase") {
-      toast("Eşleştirme için Supabase bağlantısı gerekli.", "warning");
+      toast(t.supabaseRequired, "warning");
       return;
     }
     setMatching(true);
@@ -518,13 +948,13 @@ export default function UserProfile() {
       const results = await runStandardMatching(buildProfileForMatching(), me.id);
       setMatches(results);
       if (results.length === 0) {
-        toast("Henüz aktif ilan bulunamadı.", "warning");
+        toast(t.noJobsFound, "warning");
       } else {
-        toast(`${results.length} ilan ile standart eşleşme tamamlandı!`, "success");
+        toast(`${results.length} ${t.standardComplete}`, "success");
       }
     } catch (err) {
       console.error("Standard match error:", err);
-      toast("Eşleştirme hatası: " + (err.message || "Bilinmeyen"), "error");
+      toast(`${t.matchError} ${err.message || ""}`, "error");
     } finally {
       setMatching(false);
       setMatchMode(null);
@@ -533,11 +963,11 @@ export default function UserProfile() {
 
   const handleBoostMatch = async () => {
     if (!me || connectionMode !== "supabase") {
-      toast("Eşleştirme için Supabase bağlantısı gerekli.", "warning");
+      toast(t.supabaseRequired, "warning");
       return;
     }
     if (!isGeminiConfigured()) {
-      toast("AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.", "error");
+      toast(t.addGeminiKey, "error");
       return;
     }
     setMatching(true);
@@ -547,13 +977,13 @@ export default function UserProfile() {
       const results = await runBoostMatching(buildProfileForMatching(), me.id);
       setMatches(results);
       if (results.length === 0) {
-        toast("Henüz aktif ilan bulunamadı.", "warning");
+        toast(t.noJobsFound, "warning");
       } else {
-        toast(`AI Boost ile ${results.length} ilan analiz edildi!`, "success");
+        toast(`${results.length} ${t.boostComplete}`, "success");
       }
     } catch (err) {
       console.error("Boost match error:", err);
-      toast("AI Boost hatası: " + (err.message || "Bilinmeyen"), "error");
+      toast(`${t.boostError} ${err.message || ""}`, "error");
     } finally {
       setMatching(false);
       setMatchMode(null);
@@ -612,7 +1042,7 @@ export default function UserProfile() {
         <div className="text-center">
           <div className="w-14 h-14 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="font-black text-rose-500 text-sm uppercase tracking-widest animate-pulse">
-            Hafıza Senkronize Ediliyor...
+            {t.syncingMemory}
           </p>
         </div>
       </div>
@@ -634,7 +1064,7 @@ export default function UserProfile() {
      RENDER
      ========================================================= */
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-sans">
+    <div className={`bg-[#F8FAFC] min-h-screen pb-20 font-sans ${isRTL ? "rtl" : "ltr"}`} dir={isRTL ? "rtl" : "ltr"}>
       <ToastContainer />
 
       {/* Gizli file input'lar */}
@@ -648,9 +1078,9 @@ export default function UserProfile() {
         connectionMode === "supabase" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
       }`}>
         {connectionMode === "supabase" ? (
-          <><Wifi size={12} /> Supabase Bağlantısı Aktif</>
+          <><Wifi size={12} /> {t.connectionSupabase}</>
         ) : (
-          <><WifiOff size={12} /> Yerel Mod — Veriler localStorage'da Saklanıyor</>
+          <><WifiOff size={12} /> {t.connectionLocal}</>
         )}
       </div>
 
@@ -671,12 +1101,12 @@ export default function UserProfile() {
               {uploading ? (
                 <>
                   <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">Yükleniyor...</span>
+                  <span className="font-black uppercase tracking-widest text-sm">{t.uploading}</span>
                 </>
               ) : (
                 <>
                   <ImagePlus size={32} className="mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">Banner Değiştir</span>
+                  <span className="font-black uppercase tracking-widest text-sm">{t.changeBanner}</span>
                 </>
               )}
             </div>
@@ -698,17 +1128,17 @@ export default function UserProfile() {
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
                 <Camera size={24} className="mb-1" />
-                <span className="font-black text-[9px] uppercase tracking-widest">Değiştir</span>
+                <span className="font-black text-[9px] uppercase tracking-widest">{t.change}</span>
               </div>
             </div>
 
             <div className="flex-1 pb-2 min-w-0">
               <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 leading-none truncate">
-                {formData.full_name || "İSİM SOYİSİM"}
+                {formData.full_name || t.fullName.toUpperCase()}
               </h1>
               <div className="flex flex-wrap gap-3 mt-3">
                 <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
-                  <CheckCircle2 size={12} /> ONAYLI
+                  <CheckCircle2 size={12} /> {t.verified}
                 </span>
                 {(formData.city || formData.country) && (
                   <span className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
@@ -727,7 +1157,7 @@ export default function UserProfile() {
               onClick={() => setEditOpen(true)}
               className="mb-2 bg-slate-900 text-white font-black px-6 md:px-8 h-12 rounded-xl shadow-lg hover:bg-rose-600 transition-all uppercase italic text-xs tracking-widest active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
             >
-              <Edit3 size={16} /> PROFİLİ DÜZENLE
+              <Edit3 size={16} /> {t.editProfile}
             </button>
           </div>
         </div>
@@ -741,16 +1171,16 @@ export default function UserProfile() {
               <Edit3 size={40} className="text-slate-300" />
             </div>
             <h2 className="text-xl font-black uppercase text-slate-400 tracking-wider mb-2">
-              Profiliniz Boş
+              {t.profileEmpty}
             </h2>
             <p className="text-slate-400 text-sm mb-8 max-w-md">
-              Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.
+              {t.profileEmptyDesc}
             </p>
             <button
               onClick={() => setEditOpen(true)}
               className="bg-rose-600 text-white font-black px-10 h-14 rounded-2xl shadow-xl hover:bg-rose-700 transition-all uppercase italic text-sm tracking-widest active:scale-95 flex items-center gap-2 cursor-pointer"
             >
-              <Plus size={20} /> PROFİLİ OLUŞTUR
+              <Plus size={20} /> {t.createProfile}
             </button>
           </div>
         ) : (
@@ -760,7 +1190,7 @@ export default function UserProfile() {
               {formData.bio && (
                 <section className="bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Target size={18} className="text-rose-500" /> Kariyer Vizyonu
+                    <Target size={18} className="text-rose-500" /> {t.careerVision}
                   </h3>
                   <p className="text-slate-700 font-bold italic text-lg leading-relaxed">
                     &ldquo;{formData.bio}&rdquo;
@@ -771,14 +1201,14 @@ export default function UserProfile() {
               {formData.work_experience.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <Briefcase size={20} className="text-rose-500" /> İş Deneyimi
+                    <Briefcase size={20} className="text-rose-500" /> {t.workExperience}
                   </h3>
                   <div className="space-y-4">
                     {formData.work_experience.map((w, i) => (
                       <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{w.role || "Pozisyon"}</h4>
+                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{w.role || t.position}</h4>
                         <p className="text-rose-600 font-black text-[10px] uppercase mt-1">
-                          {w.company || "Şirket"} • {w.start || "?"} - {w.isCurrent ? "Günümüz" : w.end || "?"}
+                          {w.company || t.company} • {w.start || "?"} - {w.isCurrent ? t.present : w.end || "?"}
                         </p>
                         {w.desc && (
                           <p className="text-slate-500 italic text-sm mt-3 pl-4 border-l-2 border-rose-100">&ldquo;{w.desc}&rdquo;</p>
@@ -792,15 +1222,15 @@ export default function UserProfile() {
               {formData.education.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <GraduationCap size={20} className="text-emerald-500" /> Eğitim
+                    <GraduationCap size={20} className="text-emerald-500" /> {t.education}
                   </h3>
                   <div className="space-y-4">
                     {formData.education.map((ed, i) => (
                       <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{ed.school || "Okul"}</h4>
+                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{ed.school || t.school}</h4>
                         <p className="text-emerald-600 font-black text-[10px] uppercase mt-1">{ed.degree} • {ed.field}</p>
                         <p className="text-slate-400 font-bold text-[10px] uppercase mt-1">
-                          {ed.start || "?"} - {ed.isCurrent ? "Devam Ediyor" : ed.end || "?"}
+                          {ed.start || "?"} - {ed.isCurrent ? t.ongoing : ed.end || "?"}
                         </p>
                       </div>
                     ))}
@@ -811,12 +1241,12 @@ export default function UserProfile() {
               {formData.certificates.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <Award size={20} className="text-amber-500" /> Sertifikalar
+                    <Award size={20} className="text-amber-500" /> {t.certificates}
                   </h3>
                   <div className="space-y-4">
                     {formData.certificates.map((c, i) => (
                       <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-base font-black uppercase tracking-tight text-slate-800">{c.name || "Sertifika"}</h4>
+                        <h4 className="text-base font-black uppercase tracking-tight text-slate-800">{c.name || t.certificateName}</h4>
                         <p className="text-amber-600 font-black text-[10px] uppercase mt-1">{c.issuer} • {c.year}</p>
                       </div>
                     ))}
@@ -830,12 +1260,12 @@ export default function UserProfile() {
               {formData.languages.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Languages size={16} className="text-indigo-500" /> Diller
+                    <Languages size={16} className="text-indigo-500" /> {t.languages}
                   </h3>
                   <div className="space-y-3">
                     {formData.languages.map((l, i) => (
                       <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-2xl">
-                        <span className="font-black uppercase text-[10px] text-slate-700 tracking-widest">{l.lang || "Dil"}</span>
+                        <span className="font-black uppercase text-[10px] text-slate-700 tracking-widest">{l.lang || t.selectLanguage}</span>
                         <div className="flex gap-1">
                           {[1, 2, 3, 4, 5].map((s) => (
                             <Star key={s} size={12} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-200"} />
@@ -850,7 +1280,7 @@ export default function UserProfile() {
               {formData.skills.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Cpu size={16} className="text-cyan-500" /> Yetenekler
+                    <Cpu size={16} className="text-cyan-500" /> {t.skills}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {formData.skills.map((s, i) => (
@@ -863,7 +1293,7 @@ export default function UserProfile() {
               {formData.interests.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Heart size={16} className="text-pink-500" /> İlgi Alanları
+                    <Heart size={16} className="text-pink-500" /> {t.interests}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {formData.interests.map((s, i) => (
@@ -891,13 +1321,13 @@ export default function UserProfile() {
                     <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
                       <Zap size={20} className="text-amber-400" />
                     </div>
-                    İş Eşleşmelerim
+                    {t.jobMatches}
                   </h2>
-                  <p className="text-slate-400 text-xs mt-1 ml-13">
-                    Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör
+                  <p className="text-slate-400 text-xs mt-1 ms-13">
+                    {t.jobMatchesDesc}
                   </p>
                 </div>
-                <div className="flex gap-2 ml-13 sm:ml-0">
+                <div className="flex gap-2 ms-13 sm:ms-0">
                   <button
                     onClick={handleStandardMatch}
                     disabled={matching}
@@ -908,7 +1338,7 @@ export default function UserProfile() {
                     ) : (
                       <Search size={14} />
                     )}
-                    Standard
+                    {t.standard}
                   </button>
                   <button
                     onClick={handleBoostMatch}
@@ -920,20 +1350,20 @@ export default function UserProfile() {
                     ) : (
                       <Sparkles size={14} />
                     )}
-                    AI Boost
+                    {t.aiBoost}
                   </button>
                 </div>
               </div>
 
               {/* Matching Progress */}
               {matching && (
-                <div className="mt-4 ml-13">
+                <div className="mt-4 ms-13">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-white/10 rounded-full h-1.5 overflow-hidden">
                       <div className="h-full bg-amber-400 rounded-full animate-pulse" style={{ width: "60%" }} />
                     </div>
                     <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
-                      {matchMode === "boost" ? "AI Analiz Ediliyor..." : "Taranıyor..."}
+                      {matchMode === "boost" ? t.aiAnalyzing : t.scanning}
                     </span>
                   </div>
                 </div>
@@ -948,19 +1378,16 @@ export default function UserProfile() {
                     <TrendingUp size={28} className="text-slate-300" />
                   </div>
                   <h3 className="font-black text-slate-400 uppercase text-sm tracking-wider mb-2">
-                    Henüz Eşleşme Yok
+                    {t.noMatches}
                   </h3>
                   <p className="text-slate-400 text-xs max-w-sm mx-auto">
-                    {hasContent
-                      ? "\"Standard\" veya \"AI Boost\" butonuna tıklayarak profilinizi aktif ilanlarla eşleştirin."
-                      : "Önce profilinizi doldurun, ardından ilanlarla eşleşme yapabilirsiniz."
-                    }
+                    {hasContent ? t.noMatchesDesc : t.fillProfileFirst}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {matches.map((m, idx) => {
-                    const sc = getScoreColor(m.score);
+                    const sc = getScoreColor(m.score, t);
                     const isExpanded = expandedMatch === idx;
                     return (
                       <div
@@ -980,7 +1407,7 @@ export default function UserProfile() {
                                 </div>
                                 <div className="min-w-0">
                                   <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm truncate">
-                                    {m.job.position || "Bilinmeyen Pozisyon"}
+                                    {m.job.position || "Unknown Position"}
                                   </h4>
                                   <div className="flex flex-wrap items-center gap-2 mt-0.5">
                                     {m.job.work_type && (
@@ -1052,7 +1479,7 @@ export default function UserProfile() {
                                 {m.strengths?.length > 0 && (
                                   <div className="bg-white rounded-xl p-4 space-y-2">
                                     <h5 className="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1">
-                                      <CheckCircle2 size={12} /> Güçlü Yönler
+                                      <CheckCircle2 size={12} /> {t.strengths}
                                     </h5>
                                     {m.strengths.map((s, si) => (
                                       <p key={si} className="text-xs text-slate-600 flex items-start gap-2">
@@ -1064,7 +1491,7 @@ export default function UserProfile() {
                                 {m.gaps?.length > 0 && (
                                   <div className="bg-white rounded-xl p-4 space-y-2">
                                     <h5 className="text-[9px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1">
-                                      <AlertTriangle size={12} /> Gelişim Alanları
+                                      <AlertTriangle size={12} /> {t.improvements}
                                     </h5>
                                     {m.gaps.map((g, gi) => (
                                       <p key={gi} className="text-xs text-slate-600 flex items-start gap-2">
@@ -1080,14 +1507,14 @@ export default function UserProfile() {
                             {m.mode === "standard" && m.details && (m.details.skillScore > 0 || m.details.locationScore > 0) && (
                               <div className="bg-white rounded-xl p-4">
                                 <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">
-                                  Detaylı Skor Dağılımı
+                                  {t.detailedScores}
                                 </h5>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                   {[
-                                    { label: "Yetenek", score: m.details.skillScore, weight: "40%", color: "bg-cyan-500" },
-                                    { label: "Lokasyon", score: m.details.locationScore, weight: "20%", color: "bg-blue-500" },
-                                    { label: "Deneyim", score: m.details.levelScore, weight: "25%", color: "bg-purple-500" },
-                                    { label: "Dil", score: m.details.languageScore, weight: "15%", color: "bg-indigo-500" },
+                                    { label: t.skillScore, score: m.details.skillScore, weight: "40%", color: "bg-cyan-500" },
+                                    { label: t.locationScore, score: m.details.locationScore, weight: "20%", color: "bg-blue-500" },
+                                    { label: t.experienceScore, score: m.details.levelScore, weight: "25%", color: "bg-purple-500" },
+                                    { label: t.languageScore, score: m.details.languageScore, weight: "15%", color: "bg-indigo-500" },
                                   ].map((d, di) => (
                                     <div key={di} className="text-center">
                                       <div className="text-xs font-black text-slate-700">{d.score}</div>
@@ -1107,7 +1534,7 @@ export default function UserProfile() {
                             {m.job.description && (
                               <div className="bg-white rounded-xl p-4">
                                 <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                                  İlan Açıklaması
+                                  {t.jobDescription}
                                 </h5>
                                 <p className="text-xs text-slate-500 leading-relaxed">
                                   {m.job.description}
@@ -1118,7 +1545,7 @@ export default function UserProfile() {
                             {/* Salary Info */}
                             {(m.job.salary_min || m.job.salary_max) && (
                               <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <span className="font-black text-[9px] uppercase text-slate-400">Maaş:</span>
+                                <span className="font-black text-[9px] uppercase text-slate-400">{t.salary}:</span>
                                 {m.job.salary_min && m.job.salary_max
                                   ? `${m.job.salary_min.toLocaleString()} - ${m.job.salary_max.toLocaleString()} ₺`
                                   : m.job.salary_min
@@ -1138,15 +1565,15 @@ export default function UserProfile() {
               <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
                   <span className="flex items-center gap-1">
-                    <Search size={10} /> Standard = Kelime bazlı eşleşme
+                    <Search size={10} /> {t.standardDesc}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Sparkles size={10} className="text-amber-500" /> Boost = Gemini AI semantik analiz
+                    <Sparkles size={10} className="text-amber-500" /> {t.boostDesc}
                   </span>
                 </div>
                 {!isGeminiConfigured() && (
                   <span className="text-[9px] text-amber-500 font-bold flex items-center gap-1">
-                    <AlertTriangle size={10} /> AI Boost için .env'ye VITE_GEMINI_API_KEY ekleyin
+                    <AlertTriangle size={10} /> {t.addGeminiKey}
                   </span>
                 )}
               </div>
@@ -1160,11 +1587,11 @@ export default function UserProfile() {
           ========================================================= */}
       {editOpen && (
         <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl relative flex flex-col">
+          <div className={`bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl relative flex flex-col ${isRTL ? "rtl" : "ltr"}`} dir={isRTL ? "rtl" : "ltr"}>
             {/* MODAL HEADER */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-6 md:px-8 py-6 border-b border-slate-100 z-50 flex justify-between items-center rounded-t-[32px]">
               <h2 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
-                Profil Mimarı <span className="text-rose-500">v33</span>
+                {t.profileArchitect} <span className="text-rose-500">v33</span>
               </h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -1179,8 +1606,8 @@ export default function UserProfile() {
 
               {/* FOTOĞRAF YÜKLEMELERİ */}
               <div className="space-y-4">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Profil Görselleri
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1">
+                  {t.profilePhotos}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div
@@ -1193,7 +1620,7 @@ export default function UserProfile() {
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <Camera size={28} className="mb-2" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Profil Fotoğrafı</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{t.profilePhoto}</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200">
@@ -1210,7 +1637,7 @@ export default function UserProfile() {
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <ImagePlus size={28} className="mb-2" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Banner Görseli</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{t.bannerImage}</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200">
@@ -1221,32 +1648,32 @@ export default function UserProfile() {
                 {uploading && (
                   <div className="flex items-center gap-2 text-rose-500 text-xs font-bold">
                     <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-                    Görsel yükleniyor...
+                    {t.uploading}
                   </div>
                 )}
               </div>
 
               {/* AD SOYAD */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ad Soyad</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1">{t.fullName}</label>
                 <input
                   value={formData.full_name}
                   onChange={(e) => updateField("full_name", e.target.value)}
-                  placeholder="Adınız ve Soyadınız"
+                  placeholder={t.fullNamePlaceholder}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 transition-all"
                 />
               </div>
 
               {/* LOKASYON */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Lokasyon</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1">{t.location}</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     value={formData.country}
                     onChange={(e) => { updateField("country", e.target.value); updateField("city", ""); }}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500"
                   >
-                    <option value="">Ülke Seçin</option>
+                    <option value="">{t.selectCountry}</option>
                     {Object.keys(LOCATION_DATA).map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -1256,7 +1683,7 @@ export default function UserProfile() {
                     onChange={(e) => updateField("city", e.target.value)}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500"
                   >
-                    <option value="">Şehir Seçin</option>
+                    <option value="">{t.selectCity}</option>
                     {cities.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -1266,8 +1693,8 @@ export default function UserProfile() {
 
               {/* TELEFON */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Phone size={12} /> Uluslararası Telefon
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1 flex items-center gap-1">
+                  <Phone size={12} /> {t.internationalPhone}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select
@@ -1290,13 +1717,13 @@ export default function UserProfile() {
 
               {/* HAKKIMDA / BIO */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Target size={12} /> Hakkımda / Kariyer Vizyonu
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1 flex items-center gap-1">
+                  <Target size={12} /> {t.aboutMe}
                 </label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => updateField("bio", e.target.value)}
-                  placeholder="Kendinizi ve kariyer hedefinizi tanımlayın..."
+                  placeholder={t.aboutMePlaceholder}
                   rows={4}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 resize-none"
                 />
@@ -1304,37 +1731,37 @@ export default function UserProfile() {
 
               {/* İŞ DENEYİMİ */}
               <div className="space-y-4">
-                <SectionTitle icon={Briefcase} color="text-rose-500" title="İş Deneyimi"
+                <SectionTitle icon={Briefcase} color="text-rose-500" title={t.workExperience} addLabel={t.add}
                   onAdd={() => addArrayItem("work_experience", { role: "", company: "", start: "", end: "", isCurrent: false, desc: "" })} />
                 {formData.work_experience.map((w, i) => (
                   <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 relative border border-slate-100">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input placeholder="Pozisyon / Ünvan" value={w.role}
+                      <input placeholder={t.position} value={w.role}
                         onChange={(e) => updateArrayItem("work_experience", i, "role", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
-                      <input placeholder="Şirket Adı" value={w.company}
+                      <input placeholder={t.company} value={w.company}
                         onChange={(e) => updateArrayItem("work_experience", i, "company", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center">
-                      <input placeholder="Başlangıç (2020)" value={w.start}
+                      <input placeholder={t.startYear} value={w.start}
                         onChange={(e) => updateArrayItem("work_experience", i, "start", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
-                      <input placeholder="Bitiş (2023)" value={w.end} disabled={w.isCurrent}
+                      <input placeholder={t.endYear} value={w.end} disabled={w.isCurrent}
                         onChange={(e) => updateArrayItem("work_experience", i, "end", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-rose-500" />
                       <label className="flex items-center gap-2 cursor-pointer justify-center">
                         <input type="checkbox" checked={w.isCurrent}
                           onChange={(e) => updateArrayItem("work_experience", i, "isCurrent", e.target.checked)}
                           className="w-4 h-4 accent-rose-500" />
-                        <span className="text-[9px] font-black uppercase text-slate-400">Devam Ediyor</span>
+                        <span className="text-[9px] font-black uppercase text-slate-400">{t.current}</span>
                       </label>
                       <button onClick={() => removeArrayItem("work_experience", i)}
                         className="flex items-center justify-center gap-1 bg-white text-red-400 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[9px] font-black uppercase cursor-pointer">
-                        <Trash2 size={14} /> SİL
+                        <Trash2 size={14} /> {t.delete}
                       </button>
                     </div>
-                    <textarea placeholder="Görev tanımı ve başarılarınız..." value={w.desc}
+                    <textarea placeholder={t.jobDescription2} value={w.desc}
                       onChange={(e) => updateArrayItem("work_experience", i, "desc", e.target.value)}
                       className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none min-h-[80px] resize-none focus:ring-2 focus:ring-rose-500" />
                   </div>
@@ -1343,15 +1770,15 @@ export default function UserProfile() {
 
               {/* EĞİTİM */}
               <div className="space-y-4">
-                <SectionTitle icon={GraduationCap} color="text-emerald-500" title="Eğitim Bilgileri"
+                <SectionTitle icon={GraduationCap} color="text-emerald-500" title={t.educationInfo} addLabel={t.add}
                   onAdd={() => addArrayItem("education", { school: "", degree: "", field: "", start: "", end: "", isCurrent: false })} />
                 {formData.education.map((ed, i) => (
                   <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 border border-slate-100">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input placeholder="Okul / Üniversite" value={ed.school}
+                      <input placeholder={t.school} value={ed.school}
                         onChange={(e) => updateArrayItem("education", i, "school", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
-                      <input placeholder="Bölüm / Alan" value={ed.field}
+                      <input placeholder={t.department} value={ed.field}
                         onChange={(e) => updateArrayItem("education", i, "field", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
                     </div>
@@ -1359,17 +1786,17 @@ export default function UserProfile() {
                       <select value={ed.degree}
                         onChange={(e) => updateArrayItem("education", i, "degree", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="">Derece</option>
-                        <option value="Lise">Lise</option>
-                        <option value="Ön Lisans">Ön Lisans</option>
-                        <option value="Lisans">Lisans</option>
-                        <option value="Yüksek Lisans">Yüksek Lisans</option>
-                        <option value="Doktora">Doktora</option>
+                        <option value="">{t.degree}</option>
+                        <option value="Lise">{t.highSchool}</option>
+                        <option value="Ön Lisans">{t.associate}</option>
+                        <option value="Lisans">{t.bachelor}</option>
+                        <option value="Yüksek Lisans">{t.master}</option>
+                        <option value="Doktora">{t.doctorate}</option>
                       </select>
-                      <input placeholder="Başlangıç" value={ed.start}
+                      <input placeholder={t.startYear} value={ed.start}
                         onChange={(e) => updateArrayItem("education", i, "start", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
-                      <input placeholder="Bitiş" value={ed.end} disabled={ed.isCurrent}
+                      <input placeholder={t.endYear} value={ed.end} disabled={ed.isCurrent}
                         onChange={(e) => updateArrayItem("education", i, "end", e.target.value)}
                         className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-emerald-500" />
                       <div className="flex items-center justify-between gap-2">
@@ -1377,7 +1804,7 @@ export default function UserProfile() {
                           <input type="checkbox" checked={ed.isCurrent}
                             onChange={(e) => updateArrayItem("education", i, "isCurrent", e.target.checked)}
                             className="w-4 h-4 accent-emerald-500" />
-                          <span className="text-[8px] font-black uppercase text-slate-400">Devam</span>
+                          <span className="text-[8px] font-black uppercase text-slate-400">{t.ongoing}</span>
                         </label>
                         <button onClick={() => removeArrayItem("education", i)}
                           className="text-red-400 hover:text-red-600 transition-all cursor-pointer">
@@ -1391,14 +1818,14 @@ export default function UserProfile() {
 
               {/* DİLLER */}
               <div className="space-y-4">
-                <SectionTitle icon={Languages} color="text-indigo-500" title="Dil Yetkinliği"
+                <SectionTitle icon={Languages} color="text-indigo-500" title={t.languageSkills} addLabel={t.add}
                   onAdd={() => addArrayItem("languages", { lang: "", level: 1 })} />
                 {formData.languages.map((l, i) => (
                   <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <select value={l.lang}
                       onChange={(e) => updateArrayItem("languages", i, "lang", e.target.value)}
                       className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500">
-                      <option value="">Dil Seçin</option>
+                      <option value="">{t.selectLanguage}</option>
                       {LANGUAGE_LIST.map((lang) => (
                         <option key={lang} value={lang}>{lang}</option>
                       ))}
@@ -1421,18 +1848,18 @@ export default function UserProfile() {
 
               {/* SERTİFİKALAR */}
               <div className="space-y-4">
-                <SectionTitle icon={Award} color="text-amber-500" title="Sertifikalar"
+                <SectionTitle icon={Award} color="text-amber-500" title={t.certificates} addLabel={t.add}
                   onAdd={() => addArrayItem("certificates", { name: "", issuer: "", year: "" })} />
                 {formData.certificates.map((c, i) => (
                   <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-center">
-                    <input placeholder="Sertifika Adı" value={c.name}
+                    <input placeholder={t.certificateName} value={c.name}
                       onChange={(e) => updateArrayItem("certificates", i, "name", e.target.value)}
                       className="sm:col-span-2 w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
-                    <input placeholder="Kurum" value={c.issuer}
+                    <input placeholder={t.institution} value={c.issuer}
                       onChange={(e) => updateArrayItem("certificates", i, "issuer", e.target.value)}
                       className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
                     <div className="flex gap-2 items-center">
-                      <input placeholder="Yıl" value={c.year}
+                      <input placeholder={t.year} value={c.year}
                         onChange={(e) => updateArrayItem("certificates", i, "year", e.target.value)}
                         className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
                       <button onClick={() => removeArrayItem("certificates", i)} className="text-red-400 hover:text-red-600 p-2 cursor-pointer">
@@ -1445,42 +1872,42 @@ export default function UserProfile() {
 
               {/* YETENEKLER */}
               <div className="space-y-3">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Cpu size={12} className="text-cyan-500" /> Teknik Programlar & Yetenekler
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1 flex items-center gap-1">
+                  <Cpu size={12} className="text-cyan-500" /> {t.technicalSkills}
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.skills.map((s, i) => (
                     <span key={i} className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
                       {s}
                       <button onClick={() => updateField("skills", formData.skills.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
+                        className="text-red-400 hover:text-red-600 ms-1 cursor-pointer">
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input placeholder="Yetenek yazıp Enter'a basın..."
+                <input placeholder={t.skillPlaceholder}
                   value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={handleSkillKeyDown}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-cyan-500" />
               </div>
 
               {/* İLGİ ALANLARI */}
               <div className="space-y-3">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Heart size={12} className="text-pink-500" /> İlgi Alanları
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ms-1 flex items-center gap-1">
+                  <Heart size={12} className="text-pink-500" /> {t.interests}
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.interests.map((s, i) => (
                     <span key={i} className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
                       {s}
                       <button onClick={() => updateField("interests", formData.interests.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
+                        className="text-red-400 hover:text-red-600 ms-1 cursor-pointer">
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input placeholder="İlgi alanı yazıp Enter'a basın..."
+                <input placeholder={t.interestPlaceholder}
                   value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={handleInterestKeyDown}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-pink-500" />
               </div>
@@ -1490,12 +1917,12 @@ export default function UserProfile() {
             <div className="sticky bottom-0 p-6 bg-white/95 backdrop-blur-sm border-t border-slate-100 flex gap-3 rounded-b-[32px]">
               <button onClick={() => setEditOpen(false)}
                 className="px-8 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
-                İPTAL
+                {t.cancel}
               </button>
               <button onClick={handleSave} disabled={saving}
                 className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl text-lg font-black uppercase italic text-white shadow-xl active:scale-[0.98] transition-all tracking-widest disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer">
                 <Save size={20} />
-                {saving ? "MÜHÜRLENİYOR..." : "HAFIZAYI MÜHÜRLE"}
+                {saving ? t.saving : t.saveMemory}
               </button>
             </div>
           </div>

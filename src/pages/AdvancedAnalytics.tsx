@@ -69,7 +69,7 @@ export default function AdvancedAnalytics() {
         { data: interviews },
         { data: matches },
       ] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, role, created_at, city, country, cv_data, is_premium, is_featured, is_verified"),
+        supabase.from("profiles").select("id, full_name, role, created_at, city, country, cv_data, is_premium, is_featured, is_verified, featured_until"),
         supabase.from("coaches").select("*"),
         supabase.from("bookings").select("*"),
         supabase.from("payments").select("*"),
@@ -182,13 +182,18 @@ export default function AdvancedAnalytics() {
       // Öne çıkan koç geliri
       const featuredCoaches = allCoaches.filter(c => {
         const profile = allProfiles.find(p => p.id === c.user_id);
-        return profile?.is_featured;
+        return c.is_featured || profile?.is_featured;
       });
       const FEATURED_FEE = 2500; // öne çıkan koç ücreti
       const featuredRevenue = featuredCoaches.length * FEATURED_FEE;
 
+      // Boost ilan geliri (₺499/ilan)
+      const BOOST_FEE = 499;
+      const boostedJobs = allJobs.filter(j => j.is_boosted);
+      const boostRevenue = boostedJobs.length * BOOST_FEE;
+
       // Toplam platform geliri
-      const totalRevenue = totalPaymentRevenue + totalSubRevenue + totalPlatformCommission + featuredRevenue;
+      const totalRevenue = totalPaymentRevenue + totalSubRevenue + totalPlatformCommission + featuredRevenue + boostRevenue;
 
       // Aylık gelir trendi
       const monthlyRevenue = [];
@@ -216,6 +221,11 @@ export default function AdvancedAnalytics() {
             const coach = allCoaches.find(c => c.id === b.coach_id || c.user_id === b.coach_id);
             rev += (coach?.session_price || 1500) * COMMISSION_RATE;
           }
+        });
+        // Boost gelirleri
+        boostedJobs.forEach(j => {
+          const jd = new Date(j.boosted_at || j.apply_deadline || "2024-01-01");
+          if (jd >= monthStart && jd <= monthEnd) rev += BOOST_FEE;
         });
 
         const monthNames = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
@@ -328,7 +338,8 @@ export default function AdvancedAnalytics() {
         monthlyGrowth, topLocations,
         // Revenue
         totalRevenue, totalPaymentRevenue, totalSubRevenue, totalPlatformCommission,
-        featuredRevenue, monthlyRevenue, COMMISSION_RATE,
+        featuredRevenue, boostRevenue, boostedJobsCount: boostedJobs.length,
+        monthlyRevenue, COMMISSION_RATE, BOOST_FEE, FEATURED_FEE,
         // Subscriptions
         blueTicks, goldTicks, activeBlue, activeGold, activeSubs: activeSubs.length, totalSubs: allSubs.length,
         // Coach
@@ -569,12 +580,13 @@ export default function AdvancedAnalytics() {
       {activeTab === "revenue" && (
         <div className="space-y-8">
           {/* Gelir KPI */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <RevenueKPI label="Toplam Gelir" value={formatMoney(stats.totalRevenue)} icon={Wallet} color="from-emerald-600 to-emerald-500" />
             <RevenueKPI label="Ödeme Gelirleri" value={formatMoney(stats.totalPaymentRevenue)} icon={CreditCard} color="from-blue-600 to-blue-500" />
             <RevenueKPI label="Rozet Gelirleri" value={formatMoney(stats.totalSubRevenue)} icon={Award} color="from-amber-600 to-amber-500" />
             <RevenueKPI label="Koç Komisyonu" value={formatMoney(stats.totalPlatformCommission)} icon={Percent} color="from-purple-600 to-purple-500" />
-            <RevenueKPI label="Öne Çıkan Gelir" value={formatMoney(stats.featuredRevenue)} icon={Star} color="from-pink-600 to-pink-500" />
+            <RevenueKPI label="Boost İlan" value={formatMoney(stats.boostRevenue)} icon={Zap} color="from-orange-600 to-orange-500" />
+            <RevenueKPI label="Öne Çıkan Koç" value={formatMoney(stats.featuredRevenue)} icon={Star} color="from-pink-600 to-pink-500" />
           </div>
 
           {/* Gelir Dağılımı Donut + Aylık Trend */}
@@ -587,7 +599,8 @@ export default function AdvancedAnalytics() {
                   { label: "Ödeme Sistemi (PayTR)", value: stats.totalPaymentRevenue, total: stats.totalRevenue, color: "#3b82f6" },
                   { label: "Premium Rozetler", value: stats.totalSubRevenue, total: stats.totalRevenue, color: "#f59e0b" },
                   { label: "Koç Komisyonu (%20)", value: stats.totalPlatformCommission, total: stats.totalRevenue, color: "#8b5cf6" },
-                  { label: "Öne Çıkan Koçlar", value: stats.featuredRevenue, total: stats.totalRevenue, color: "#ec4899" },
+                  { label: `Boost İlan (${stats.boostedJobsCount} ilan × ₺${stats.BOOST_FEE})`, value: stats.boostRevenue, total: stats.totalRevenue, color: "#f97316" },
+                  { label: `Öne Çıkan Koçlar (× ₺${stats.FEATURED_FEE})`, value: stats.featuredRevenue, total: stats.totalRevenue, color: "#ec4899" },
                 ].map((item, i) => {
                   const pct = item.total > 0 ? Math.round((item.value / item.total) * 100) : 0;
                   return (
@@ -627,8 +640,8 @@ export default function AdvancedAnalytics() {
 
           {/* Komisyon Modeli Açıklaması */}
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 p-6 rounded-2xl">
-            <h3 className="text-sm font-black text-purple-800 mb-3">💰 Gelir Modeli</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <h3 className="text-sm font-black text-purple-800 mb-3">💰 Gelir Modeli (6 Kaynak)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
               <div className="p-3 bg-white rounded-xl border border-purple-100">
                 <p className="font-black text-purple-600">%{Math.round(stats.COMMISSION_RATE * 100)} Komisyon</p>
                 <p className="text-slate-500 mt-1">Her koç seansından platform komisyonu</p>
@@ -638,12 +651,20 @@ export default function AdvancedAnalytics() {
                 <p className="text-slate-500 mt-1">Aylık abonelik rozet satışı</p>
               </div>
               <div className="p-3 bg-white rounded-xl border border-purple-100">
-                <p className="font-black text-pink-600">{formatMoney(2500)}/ay</p>
+                <p className="font-black text-pink-600">{formatMoney(stats.FEATURED_FEE)}/ay</p>
                 <p className="text-slate-500 mt-1">Öne çıkan koç sponsorluk ücreti</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-purple-100">
+                <p className="font-black text-orange-600">{formatMoney(stats.BOOST_FEE)}/ilan</p>
+                <p className="text-slate-500 mt-1">AI Boost ilan üne çıkarma</p>
               </div>
               <div className="p-3 bg-white rounded-xl border border-purple-100">
                 <p className="font-black text-blue-600">Kurumsal Paket</p>
                 <p className="text-slate-500 mt-1">Koltuk + seans bazlı kurumsal satış</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-purple-100">
+                <p className="font-black text-emerald-600">PayTR Ödeme</p>
+                <p className="text-slate-500 mt-1">Doğrudan ödeme gelirleri</p>
               </div>
             </div>
           </div>
@@ -971,7 +992,7 @@ export default function AdvancedAnalytics() {
             ve gerçek zamanlı yatırımcı analitiği.
           </p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 text-center">
           <div>
             <p className="text-2xl font-black text-emerald-400">{formatMoney(stats.totalRevenue)}</p>
             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Toplam Gelir</p>
@@ -983,6 +1004,14 @@ export default function AdvancedAnalytics() {
           <div>
             <p className="text-2xl font-black text-purple-400">{stats.totalCoaches}</p>
             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Koç Sayısı</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-orange-400">{stats.boostedJobsCount}</p>
+            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Boost İlan</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-pink-400">{stats.featuredRevenue > 0 ? (stats.featuredRevenue / stats.FEATURED_FEE) : 0}</p>
+            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Öne Çıkan Koç</p>
           </div>
           <div>
             <p className="text-2xl font-black text-amber-400">{stats.avgAIScore}/100</p>

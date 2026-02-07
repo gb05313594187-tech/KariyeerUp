@@ -2,9 +2,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
+  runStandardMatching,
+  runBoostMatching,
+  fetchExistingMatches,
+  fetchAllJobs,
+  isGeminiConfigured,
+} from "@/lib/matchingService";
+import {
   X, Briefcase, GraduationCap, Cpu, Languages, Target,
   Plus, Trash2, Award, Heart, Phone, MapPin, Star, CheckCircle2,
-  Camera, ImagePlus, Save, Edit3, AlertTriangle, Wifi, WifiOff
+  Camera, ImagePlus, Save, Edit3, AlertTriangle, Wifi, WifiOff,
+  Zap, Search, Sparkles, TrendingUp, Building2, Clock, ChevronDown, ChevronUp
 } from "lucide-react";
 
 /* =========================================================
@@ -101,6 +109,12 @@ function saveToLocal(data) {
   }
 }
 
+function getScoreColor(score) {
+  if (score >= 80) return { bg: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50", border: "border-emerald-200", label: "Yüksek Uyum" };
+  if (score >= 50) return { bg: "bg-amber-500", text: "text-amber-600", light: "bg-amber-50", border: "border-amber-200", label: "Orta Uyum" };
+  return { bg: "bg-red-500", text: "text-red-600", light: "bg-red-50", border: "border-red-200", label: "Düşük Uyum" };
+}
+
 /* =========================================================
    TOAST SİSTEMİ
    ========================================================= */
@@ -180,6 +194,12 @@ export default function UserProfile() {
 
   const [formData, setFormData] = useState({ ...DEFAULT_FORM });
 
+  // ─── MATCHING STATE ───
+  const [matches, setMatches] = useState([]);
+  const [matching, setMatching] = useState(false);
+  const [matchMode, setMatchMode] = useState(null); // "standard" | "boost" | null
+  const [expandedMatch, setExpandedMatch] = useState(null); // expanded match index
+
   const { show: toast, ToastContainer } = useToast();
 
   /* ─────────────────────────────────────────────────────────
@@ -219,13 +239,9 @@ export default function UserProfile() {
               full_name: p.full_name || "",
               country: p.country || "Turkey",
               city: p.city || "",
-              // ✅ avatar_url → profiles tablosundaki gerçek sütundan oku
               avatar_url: p.avatar_url || "",
-              // ✅ cover_url → sütun YOK, cv_data içinden oku
               cover_url: cv.cover_url || "",
-              // ✅ bio → profiles tablosundaki gerçek sütundan oku
               bio: p.bio || cv.about || "",
-              // ✅ phone → profiles tablosundaki gerçek sütundan oku
               phone_code: cv.phone_code || "+90",
               phone: p.phone || cv.phone_number || "",
               work_experience: Array.isArray(cv.work_experience) ? cv.work_experience : [],
@@ -255,10 +271,48 @@ export default function UserProfile() {
   }, []);
 
   /* ─────────────────────────────────────────────────────────
+     KAYITLI EŞLEŞMELERİ YÜKLE
+     ───────────────────────────────────────────────────────── */
+  useEffect(() => {
+    if (me && connectionMode === "supabase") {
+      loadSavedMatches();
+    }
+  }, [me, connectionMode]);
+
+  const loadSavedMatches = async () => {
+    try {
+      const [savedMatches, jobs] = await Promise.all([
+        fetchExistingMatches(me.id),
+        fetchAllJobs(),
+      ]);
+
+      if (savedMatches.length > 0 && jobs.length > 0) {
+        const results = savedMatches
+          .map((m) => {
+            const job = jobs.find((j) => j.post_id === m.job_id);
+            if (!job) return null;
+            const rawExplanation = (m.explanation || "").replace(/^\[(STANDARD|BOOST)\]\s*/i, "");
+            const isBoost = (m.explanation || "").includes("[BOOST]");
+            return {
+              job,
+              score: Number(m.fit_score) || 0,
+              explanation: rawExplanation,
+              mode: isBoost ? "boost" : "standard",
+              strengths: [],
+              gaps: [],
+              details: { skillScore: 0, locationScore: 0, levelScore: 0, languageScore: 0 },
+            };
+          })
+          .filter(Boolean);
+        setMatches(results);
+      }
+    } catch (err) {
+      console.error("Kayıtlı eşleşmeler yüklenemedi:", err);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────
      FOTOĞRAF YÜKLEME
-     
-     avatar → avatar_url sütununa (gerçek sütun)
-     cover  → cv_data.cover_url içine (sütun yok)
      ───────────────────────────────────────────────────────── */
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
@@ -281,10 +335,7 @@ export default function UserProfile() {
     try {
       let finalUrl = "";
 
-      // ─── Supabase Storage ───
       if (connectionMode === "supabase" && me) {
-        let storageSuccess = false;
-
         try {
           const ext = file.name.split(".").pop() || "jpg";
           const fileName = `${me.id}/${type}-${Date.now()}.${ext}`;
@@ -293,10 +344,7 @@ export default function UserProfile() {
             .from("profiles")
             .upload(fileName, file, { upsert: true });
 
-          if (upErr) {
-            console.warn("Storage upload hatası:", upErr.message);
-            throw upErr;
-          }
+          if (upErr) throw upErr;
 
           const { data: urlData } = supabase.storage
             .from("profiles")
@@ -304,7 +352,6 @@ export default function UserProfile() {
 
           if (urlData?.publicUrl) {
             finalUrl = urlData.publicUrl + "?t=" + Date.now();
-            storageSuccess = true;
           } else {
             throw new Error("Public URL alınamadı");
           }
@@ -313,69 +360,45 @@ export default function UserProfile() {
           finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         }
 
-        // ─── DB'ye Kaydet ───
         try {
           if (type === "avatar") {
-            // ✅ avatar_url → doğrudan profiles.avatar_url sütununa yaz
             const { error: dbErr } = await supabase
               .from("profiles")
-              .update({
-                avatar_url: finalUrl,
-                updated_at: new Date().toISOString(),
-              })
+              .update({ avatar_url: finalUrl, updated_at: new Date().toISOString() })
               .eq("id", me.id);
-
-            if (dbErr) {
-              console.error("Avatar DB hatası:", dbErr);
-              toast("Avatar veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
-            } else {
-              toast("Profil fotoğrafı mühürlendi!", "success");
-            }
+            if (dbErr) console.error("Avatar DB hatası:", dbErr);
+            else toast("Profil fotoğrafı mühürlendi!", "success");
           } else {
-            // ✅ cover_url → cv_data JSON içine yaz (sütun yok!)
             const { data: currentProfile } = await supabase
               .from("profiles")
               .select("cv_data")
               .eq("id", me.id)
               .maybeSingle();
-
             const currentCv = currentProfile?.cv_data || {};
-            const updatedCvData = { ...currentCv, cover_url: finalUrl };
-
             const { error: dbErr } = await supabase
               .from("profiles")
               .update({
-                cv_data: updatedCvData,
+                cv_data: { ...currentCv, cover_url: finalUrl },
                 updated_at: new Date().toISOString(),
               })
               .eq("id", me.id);
-
-            if (dbErr) {
-              console.error("Cover DB hatası:", dbErr);
-              toast("Banner veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
-            } else {
-              toast("Banner mühürlendi!", "success");
-            }
+            if (dbErr) console.error("Cover DB hatası:", dbErr);
+            else toast("Banner mühürlendi!", "success");
           }
         } catch (dbError) {
           console.error("DB kayıt hatası:", dbError);
-          toast("Yerel kayıt yapıldı.", "warning");
         }
-
       } else {
-        // ─── localStorage modu ───
         finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} kaydedildi!`, "success");
       }
 
-      // State güncelle
       const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
       setFormData((prev) => {
         const updated = { ...prev, [uploadKey]: finalUrl };
         saveToLocal(updated);
         return updated;
       });
-
     } catch (error) {
       console.error("Upload hatası:", error);
       try {
@@ -398,11 +421,6 @@ export default function UserProfile() {
 
   /* ─────────────────────────────────────────────────────────
      TÜM PROFİLİ KAYDET
-     
-     Tablo sütunları:
-       full_name, avatar_url, country, city, bio, phone → gerçek sütunlar
-       cover_url, phone_code, work_experience, education,
-       skills, certificates, languages, interests → cv_data içinde
      ───────────────────────────────────────────────────────── */
   const handleSave = async () => {
     setSaving(true);
@@ -435,7 +453,6 @@ export default function UserProfile() {
           updated_at: new Date().toISOString(),
         };
 
-        // 1) Önce profil var mı kontrol et
         const { data: existing } = await supabase
           .from("profiles")
           .select("id")
@@ -443,35 +460,18 @@ export default function UserProfile() {
           .maybeSingle();
 
         if (existing) {
-          // ✅ Profil VAR → sadece UPDATE (email'e dokunma)
           const { error } = await supabase
             .from("profiles")
             .update(profileFields)
             .eq("id", me.id);
-
-          if (error) {
-            console.error("Update hatası:", error);
-            throw error;
-          }
+          if (error) throw error;
         } else {
-          // ✅ Profil YOK → INSERT (email dahil)
-          const userEmail = me.email
-            || me.user_metadata?.email
-            || me.app_metadata?.email
-            || "";
-
+          const userEmail =
+            me.email || me.user_metadata?.email || me.app_metadata?.email || "";
           const { error } = await supabase
             .from("profiles")
-            .insert({
-              id: me.id,
-              email: userEmail,
-              ...profileFields,
-            });
-
-          if (error) {
-            console.error("Insert hatası:", error);
-            throw error;
-          }
+            .insert({ id: me.id, email: userEmail, ...profileFields });
+          if (error) throw error;
         }
 
         toast("Tüm veriler Supabase'e mühürlendi!", "success");
@@ -485,6 +485,78 @@ export default function UserProfile() {
       toast("Kayıt mühürlenemedi: " + (e.message || "Bilinmeyen hata"), "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────
+     MATCHING HANDLERS
+     ───────────────────────────────────────────────────────── */
+  const buildProfileForMatching = () => ({
+    full_name: formData.full_name,
+    bio: formData.bio,
+    city: formData.city,
+    country: formData.country,
+    cv_data: {
+      skills: formData.skills,
+      work_experience: formData.work_experience,
+      education: formData.education,
+      languages: formData.languages,
+      certificates: formData.certificates,
+      interests: formData.interests,
+    },
+  });
+
+  const handleStandardMatch = async () => {
+    if (!me || connectionMode !== "supabase") {
+      toast("Eşleştirme için Supabase bağlantısı gerekli.", "warning");
+      return;
+    }
+    setMatching(true);
+    setMatchMode("standard");
+    setExpandedMatch(null);
+    try {
+      const results = await runStandardMatching(buildProfileForMatching(), me.id);
+      setMatches(results);
+      if (results.length === 0) {
+        toast("Henüz aktif ilan bulunamadı.", "warning");
+      } else {
+        toast(`${results.length} ilan ile standart eşleşme tamamlandı!`, "success");
+      }
+    } catch (err) {
+      console.error("Standard match error:", err);
+      toast("Eşleştirme hatası: " + (err.message || "Bilinmeyen"), "error");
+    } finally {
+      setMatching(false);
+      setMatchMode(null);
+    }
+  };
+
+  const handleBoostMatch = async () => {
+    if (!me || connectionMode !== "supabase") {
+      toast("Eşleştirme için Supabase bağlantısı gerekli.", "warning");
+      return;
+    }
+    if (!isGeminiConfigured()) {
+      toast("AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.", "error");
+      return;
+    }
+    setMatching(true);
+    setMatchMode("boost");
+    setExpandedMatch(null);
+    try {
+      const results = await runBoostMatching(buildProfileForMatching(), me.id);
+      setMatches(results);
+      if (results.length === 0) {
+        toast("Henüz aktif ilan bulunamadı.", "warning");
+      } else {
+        toast(`AI Boost ile ${results.length} ilan analiz edildi!`, "success");
+      }
+    } catch (err) {
+      console.error("Boost match error:", err);
+      toast("AI Boost hatası: " + (err.message || "Bilinmeyen"), "error");
+    } finally {
+      setMatching(false);
+      setMatchMode(null);
     }
   };
 
@@ -591,15 +663,10 @@ export default function UserProfile() {
             onClick={() => !uploading && coverInputRef.current?.click()}
           >
             {formData.cover_url ? (
-              <img
-                src={formData.cover_url}
-                className="w-full h-full object-cover"
-                alt="banner"
-                onError={(e) => { e.target.style.display = "none"; }}
-              />
+              <img src={formData.cover_url} className="w-full h-full object-cover" alt="banner"
+                onError={(e) => { e.target.style.display = "none"; }} />
             ) : null}
             <div className={`absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 ${formData.cover_url ? "opacity-0" : "opacity-90"}`} />
-
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
               {uploading ? (
                 <>
@@ -610,7 +677,6 @@ export default function UserProfile() {
                 <>
                   <ImagePlus size={32} className="mb-2" />
                   <span className="font-black uppercase tracking-widest text-sm">Banner Değiştir</span>
-                  <span className="text-xs text-white/70 mt-1">Tıklayarak yeni görsel seçin</span>
                 </>
               )}
             </div>
@@ -678,7 +744,7 @@ export default function UserProfile() {
               Profiliniz Boş
             </h2>
             <p className="text-slate-400 text-sm mb-8 max-w-md">
-              Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın.
+              Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.
             </p>
             <button
               onClick={() => setEditOpen(true)}
@@ -812,6 +878,284 @@ export default function UserProfile() {
       </main>
 
       {/* =========================================================
+          İŞ EŞLEŞMELERİ BÖLÜMÜ
+          ========================================================= */}
+      {connectionMode === "supabase" && (
+        <section className="max-w-6xl mx-auto px-4 md:px-8 pb-16">
+          <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 md:px-8 py-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-black uppercase italic tracking-tight text-white flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Zap size={20} className="text-amber-400" />
+                    </div>
+                    İş Eşleşmelerim
+                  </h2>
+                  <p className="text-slate-400 text-xs mt-1 ml-13">
+                    Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör
+                  </p>
+                </div>
+                <div className="flex gap-2 ml-13 sm:ml-0">
+                  <button
+                    onClick={handleStandardMatch}
+                    disabled={matching}
+                    className="bg-white/10 hover:bg-white/20 text-white font-black px-5 h-11 rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer border border-white/10"
+                  >
+                    {matching && matchMode === "standard" ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Search size={14} />
+                    )}
+                    Standard
+                  </button>
+                  <button
+                    onClick={handleBoostMatch}
+                    disabled={matching}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black px-5 h-11 rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-amber-500/25"
+                  >
+                    {matching && matchMode === "boost" ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Sparkles size={14} />
+                    )}
+                    AI Boost
+                  </button>
+                </div>
+              </div>
+
+              {/* Matching Progress */}
+              {matching && (
+                <div className="mt-4 ml-13">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-white/10 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-amber-400 rounded-full animate-pulse" style={{ width: "60%" }} />
+                    </div>
+                    <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                      {matchMode === "boost" ? "AI Analiz Ediliyor..." : "Taranıyor..."}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Match Results */}
+            <div className="p-6 md:p-8">
+              {matches.length === 0 && !matching ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp size={28} className="text-slate-300" />
+                  </div>
+                  <h3 className="font-black text-slate-400 uppercase text-sm tracking-wider mb-2">
+                    Henüz Eşleşme Yok
+                  </h3>
+                  <p className="text-slate-400 text-xs max-w-sm mx-auto">
+                    {hasContent
+                      ? "\"Standard\" veya \"AI Boost\" butonuna tıklayarak profilinizi aktif ilanlarla eşleştirin."
+                      : "Önce profilinizi doldurun, ardından ilanlarla eşleşme yapabilirsiniz."
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {matches.map((m, idx) => {
+                    const sc = getScoreColor(m.score);
+                    const isExpanded = expandedMatch === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`rounded-2xl border-2 ${sc.border} ${sc.light} overflow-hidden transition-all duration-300`}
+                      >
+                        {/* Match Header */}
+                        <div
+                          className="p-5 cursor-pointer"
+                          onClick={() => setExpandedMatch(isExpanded ? null : idx)}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className={`w-8 h-8 rounded-lg ${sc.bg} bg-opacity-20 flex items-center justify-center`}>
+                                  <Building2 size={16} className={sc.text} />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm truncate">
+                                    {m.job.position || "Bilinmeyen Pozisyon"}
+                                  </h4>
+                                  <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                    {m.job.work_type && (
+                                      <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">
+                                        {m.job.work_type}
+                                      </span>
+                                    )}
+                                    {m.job.level && (
+                                      <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">
+                                        • {m.job.level}
+                                      </span>
+                                    )}
+                                    {m.job.location_text && (
+                                      <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-1">
+                                        • <MapPin size={9} /> {m.job.location_text}
+                                      </span>
+                                    )}
+                                    {m.job.experience_range && (
+                                      <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-1">
+                                        • <Clock size={9} /> {m.job.experience_range}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Score Bar */}
+                              <div className="flex items-center gap-3 mt-3">
+                                <div className="flex-1 bg-white rounded-full h-2.5 overflow-hidden shadow-inner">
+                                  <div
+                                    className={`h-full rounded-full ${sc.bg} transition-all duration-700`}
+                                    style={{ width: `${m.score}%` }}
+                                  />
+                                </div>
+                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${sc.light} ${sc.text}`}>
+                                  {m.mode === "boost" ? "BOOST" : "STANDARD"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Score Circle */}
+                            <div className="flex flex-col items-center shrink-0">
+                              <div className={`w-16 h-16 rounded-2xl ${sc.bg} flex items-center justify-center shadow-lg`}>
+                                <span className="text-white font-black text-xl">{m.score}</span>
+                              </div>
+                              <span className={`text-[8px] font-black uppercase tracking-widest mt-1 ${sc.text}`}>
+                                {sc.label}
+                              </span>
+                              <button className="mt-1 text-slate-400">
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="px-5 pb-5 space-y-4 border-t border-white/50">
+                            {/* Explanation */}
+                            <div className="pt-4">
+                              <p className="text-slate-600 text-sm italic">
+                                &ldquo;{m.explanation}&rdquo;
+                              </p>
+                            </div>
+
+                            {/* Strengths & Gaps */}
+                            {(m.strengths?.length > 0 || m.gaps?.length > 0) && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {m.strengths?.length > 0 && (
+                                  <div className="bg-white rounded-xl p-4 space-y-2">
+                                    <h5 className="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1">
+                                      <CheckCircle2 size={12} /> Güçlü Yönler
+                                    </h5>
+                                    {m.strengths.map((s, si) => (
+                                      <p key={si} className="text-xs text-slate-600 flex items-start gap-2">
+                                        <span className="text-emerald-500 mt-0.5">✓</span> {s}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                                {m.gaps?.length > 0 && (
+                                  <div className="bg-white rounded-xl p-4 space-y-2">
+                                    <h5 className="text-[9px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1">
+                                      <AlertTriangle size={12} /> Gelişim Alanları
+                                    </h5>
+                                    {m.gaps.map((g, gi) => (
+                                      <p key={gi} className="text-xs text-slate-600 flex items-start gap-2">
+                                        <span className="text-amber-500 mt-0.5">!</span> {g}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Detail Scores (Standard only) */}
+                            {m.mode === "standard" && m.details && (m.details.skillScore > 0 || m.details.locationScore > 0) && (
+                              <div className="bg-white rounded-xl p-4">
+                                <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                                  Detaylı Skor Dağılımı
+                                </h5>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  {[
+                                    { label: "Yetenek", score: m.details.skillScore, weight: "40%", color: "bg-cyan-500" },
+                                    { label: "Lokasyon", score: m.details.locationScore, weight: "20%", color: "bg-blue-500" },
+                                    { label: "Deneyim", score: m.details.levelScore, weight: "25%", color: "bg-purple-500" },
+                                    { label: "Dil", score: m.details.languageScore, weight: "15%", color: "bg-indigo-500" },
+                                  ].map((d, di) => (
+                                    <div key={di} className="text-center">
+                                      <div className="text-xs font-black text-slate-700">{d.score}</div>
+                                      <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 mb-1">
+                                        <div className={`h-full rounded-full ${d.color}`} style={{ width: `${d.score}%` }} />
+                                      </div>
+                                      <div className="text-[8px] font-bold text-slate-400 uppercase">
+                                        {d.label} ({d.weight})
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Job Description */}
+                            {m.job.description && (
+                              <div className="bg-white rounded-xl p-4">
+                                <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                                  İlan Açıklaması
+                                </h5>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                  {m.job.description}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Salary Info */}
+                            {(m.job.salary_min || m.job.salary_max) && (
+                              <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <span className="font-black text-[9px] uppercase text-slate-400">Maaş:</span>
+                                {m.job.salary_min && m.job.salary_max
+                                  ? `${m.job.salary_min.toLocaleString()} - ${m.job.salary_max.toLocaleString()} ₺`
+                                  : m.job.salary_min
+                                  ? `${m.job.salary_min.toLocaleString()} ₺+`
+                                  : `${m.job.salary_max?.toLocaleString()} ₺'ye kadar`}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Info Footer */}
+              <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1">
+                    <Search size={10} /> Standard = Kelime bazlı eşleşme
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Sparkles size={10} className="text-amber-500" /> Boost = Gemini AI semantik analiz
+                  </span>
+                </div>
+                {!isGeminiConfigured() && (
+                  <span className="text-[9px] text-amber-500 font-bold flex items-center gap-1">
+                    <AlertTriangle size={10} /> AI Boost için .env'ye VITE_GEMINI_API_KEY ekleyin
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================
           DÜZENLEME MODALI
           ========================================================= */}
       {editOpen && (
@@ -820,7 +1164,7 @@ export default function UserProfile() {
             {/* MODAL HEADER */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-6 md:px-8 py-6 border-b border-slate-100 z-50 flex justify-between items-center rounded-t-[32px]">
               <h2 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
-                Profil Mimarı <span className="text-rose-500">v32</span>
+                Profil Mimarı <span className="text-rose-500">v33</span>
               </h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -839,7 +1183,6 @@ export default function UserProfile() {
                   Profil Görselleri
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Avatar */}
                   <div
                     className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${uploading ? "pointer-events-none opacity-60" : ""}`}
                     onClick={() => avatarInputRef.current?.click()}
@@ -857,8 +1200,6 @@ export default function UserProfile() {
                       <Camera size={24} />
                     </div>
                   </div>
-
-                  {/* Banner */}
                   <div
                     className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${uploading ? "pointer-events-none opacity-60" : ""}`}
                     onClick={() => coverInputRef.current?.click()}

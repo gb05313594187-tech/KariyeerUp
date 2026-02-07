@@ -60,7 +60,7 @@ const STORAGE_KEY = "kariyerup-profile-data";
    YARDIMCI FONKSİYONLAR
    ========================================================= */
 
-// Dosyayı sıkıştırıp base64'e çevir (localStorage fallback için)
+// Dosyayı sıkıştırıp base64'e çevir
 function compressImageToBase64(file, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -87,7 +87,7 @@ function compressImageToBase64(file, maxWidth = 800, quality = 0.7) {
   });
 }
 
-// localStorage kaydet/yükle
+// localStorage
 function loadFromLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -179,7 +179,7 @@ export default function UserProfile() {
   const [editOpen, setEditOpen] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [interestInput, setInterestInput] = useState("");
-  const [connectionMode, setConnectionMode] = useState("checking"); // "supabase" | "local" | "checking"
+  const [connectionMode, setConnectionMode] = useState("checking");
 
   const [formData, setFormData] = useState({ ...DEFAULT_FORM });
 
@@ -188,19 +188,20 @@ export default function UserProfile() {
   /* ----- Profil Yükleme ----- */
   useEffect(() => {
     const fetchProfile = async () => {
-      // 1) Supabase bağlantısını dene
       if (isSupabaseConfigured) {
         try {
-          const { data: { user }, error: authErr } = await supabase.auth.getUser();
+          // getUser yerine getSession kullan — timeout sorunu çözer
+          const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
 
-          if (authErr || !user) {
-            console.warn("Supabase auth yok, localStorage moduna geçiliyor...", authErr?.message);
+          if (sessErr || !sessionData?.session?.user) {
+            console.warn("Supabase oturum yok, localStorage moduna geçiliyor...", sessErr?.message);
             setConnectionMode("local");
             setFormData(loadFromLocal());
             setLoading(false);
             return;
           }
 
+          const user = sessionData.session.user;
           setMe(user);
           setConnectionMode("supabase");
 
@@ -220,8 +221,9 @@ export default function UserProfile() {
               full_name: p.full_name || "",
               country: p.country || "Turkey",
               city: p.city || "",
-              avatar_url: p.avatar_url || "",
-              cover_url: p.cover_url || "",
+              // ✅ avatar_url ve cover_url artık cv_data içinden okunuyor
+              avatar_url: cv.avatar_url || "",
+              cover_url: cv.cover_url || "",
               phone_code: cv.phone_code || "+90",
               phone_number: cv.phone_number || "",
               about: cv.about || "",
@@ -233,7 +235,7 @@ export default function UserProfile() {
               interests: Array.isArray(cv.interests) ? cv.interests : [],
             };
             setFormData(loadedData);
-            saveToLocal(loadedData); // Yerel kopyayı da güncelle
+            saveToLocal(loadedData);
           }
 
           setLoading(false);
@@ -243,7 +245,6 @@ export default function UserProfile() {
         }
       }
 
-      // 2) Fallback: localStorage
       setConnectionMode("local");
       setFormData(loadFromLocal());
       setLoading(false);
@@ -252,19 +253,17 @@ export default function UserProfile() {
     fetchProfile();
   }, []);
 
-  /* ----- FOTOĞRAF YÜKLEME (Supabase Storage + localStorage fallback) ----- */
+  /* ----- FOTOĞRAF YÜKLEME ----- */
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Boyut kontrolü (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast("Dosya 5MB'den küçük olmalı.", "error");
       e.target.value = "";
       return;
     }
 
-    // Tip kontrolü
     if (!file.type.startsWith("image/")) {
       toast("Lütfen bir resim dosyası seçin.", "error");
       e.target.value = "";
@@ -275,109 +274,96 @@ export default function UserProfile() {
     setUploading(true);
 
     try {
+      let finalUrl = "";
+
       // ─── YÖNTEM 1: Supabase Storage ───
       if (connectionMode === "supabase" && me) {
-        const ext = file.name.split(".").pop() || "jpg";
-        const fileName = `${me.id}/${type}-${Date.now()}.${ext}`;
-
-        // 1) Eski dosyayı silmeye çalış (opsiyonel, hata verse de devam et)
         try {
-          const oldUrl = formData[uploadKey];
-          if (oldUrl && oldUrl.includes("/storage/v1/object/public/")) {
-            const oldPath = oldUrl.split("/storage/v1/object/public/profiles/")[1];
-            if (oldPath) {
-              await supabase.storage.from("profiles").remove([oldPath]);
-            }
-          }
-        } catch { /* eski dosya silinemezse sorun değil */ }
+          const ext = file.name.split(".").pop() || "jpg";
+          const fileName = `${me.id}/${type}-${Date.now()}.${ext}`;
 
-        // 2) Yeni dosyayı yükle
-        const { data: uploadData, error: upErr } = await supabase.storage
-          .from("profiles")
-          .upload(fileName, file, {
-            upsert: true,
-            contentType: file.type,
-            cacheControl: "3600",
-          });
-
-        if (upErr) {
-          console.error("Storage upload hatası:", upErr);
-
-          // Storage hatası varsa, bucket yoksa veya policy sorunu varsa
-          // Base64 fallback dene
-          if (upErr.message?.includes("bucket") || upErr.message?.includes("not found") || upErr.statusCode === 404) {
-            toast("Storage bucket bulunamadı. Yerel kayıt kullanılıyor.", "warning");
-            // Base64 fallback
-            const base64 = await compressImageToBase64(file, type === "avatar" ? 400 : 1200);
-            setFormData((prev) => {
-              const updated = { ...prev, [uploadKey]: base64 };
-              saveToLocal(updated);
-              return updated;
+          // Basit upload — AbortController yok, signal yok
+          const { error: upErr } = await supabase.storage
+            .from("profiles")
+            .upload(fileName, file, {
+              upsert: true,
+              contentType: file.type,
             });
-            toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} yerel olarak kaydedildi!`, "success");
-            setUploading(false);
-            e.target.value = "";
-            return;
+
+          if (upErr) {
+            console.warn("Storage upload hatası, base64 fallback yapılıyor:", upErr.message);
+            throw upErr; // catch bloğuna düşsün, base64 fallback yapsın
           }
 
-          throw upErr;
+          // Public URL al
+          const { data: urlData } = supabase.storage
+            .from("profiles")
+            .getPublicUrl(fileName);
+
+          if (urlData?.publicUrl) {
+            finalUrl = urlData.publicUrl + "?t=" + Date.now();
+          } else {
+            throw new Error("Public URL alınamadı");
+          }
+        } catch (storageErr) {
+          console.warn("Storage başarısız, base64'e dönülüyor:", storageErr);
+          // Storage çalışmıyorsa base64 fallback
+          finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         }
 
-        // 3) Public URL al
-        const { data: urlData } = supabase.storage
-          .from("profiles")
-          .getPublicUrl(uploadData?.path || fileName);
+        // ✅ cv_data içine kaydet — cover_url/avatar_url sütunu KULLANMA
+        try {
+          // Önce mevcut cv_data'yı çek
+          const { data: currentProfile } = await supabase
+            .from("profiles")
+            .select("cv_data")
+            .eq("id", me.id)
+            .maybeSingle();
 
-        const publicUrl = urlData?.publicUrl;
+          const currentCv = currentProfile?.cv_data || {};
 
-        if (!publicUrl) {
-          throw new Error("Public URL alınamadı");
-        }
-
-        // 4) Cache-busting URL
-        const finalUrl = `${publicUrl}?t=${Date.now()}`;
-
-        // 5) DB'ye kaydet
-        const { error: dbErr } = await supabase
-          .from("profiles")
-          .update({
+          // cv_data'yı güncelle — sadece ilgili url'yi değiştir
+          const updatedCvData = {
+            ...currentCv,
             [uploadKey]: finalUrl,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", me.id);
+          };
 
-        if (dbErr) {
-          console.error("DB güncelleme hatası:", dbErr);
-          // DB hatası olsa bile URL'yi state'e yaz
+          const { error: dbErr } = await supabase
+            .from("profiles")
+            .update({
+              cv_data: updatedCvData,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", me.id);
+
+          if (dbErr) {
+            console.error("DB güncelleme hatası:", dbErr);
+            toast("Veritabanına yazılamadı, yerel kayıt yapıldı.", "warning");
+          } else {
+            toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} mühürlendi!`, "success");
+          }
+        } catch (dbError) {
+          console.error("DB kayıt hatası:", dbError);
+          toast("Yerel kayıt yapıldı.", "warning");
         }
-
-        // 6) State güncelle
-        setFormData((prev) => {
-          const updated = { ...prev, [uploadKey]: finalUrl };
-          saveToLocal(updated);
-          return updated;
-        });
-
-        toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} mühürlendi!`, "success");
 
       } else {
         // ─── YÖNTEM 2: localStorage (Base64) ───
-        const maxW = type === "avatar" ? 400 : 1200;
-        const base64 = await compressImageToBase64(file, maxW, 0.75);
-
-        setFormData((prev) => {
-          const updated = { ...prev, [uploadKey]: base64 };
-          saveToLocal(updated);
-          return updated;
-        });
-
+        finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         toast(`${type === "avatar" ? "Profil fotoğrafı" : "Banner"} kaydedildi!`, "success");
       }
+
+      // State güncelle
+      setFormData((prev) => {
+        const updated = { ...prev, [uploadKey]: finalUrl };
+        saveToLocal(updated);
+        return updated;
+      });
+
     } catch (error) {
       console.error("Upload hatası:", error);
-      toast(`Yükleme başarısız: ${error.message || "Bilinmeyen hata"}`, "error");
 
-      // Son çare: base64 fallback
+      // Son çare: base64
       try {
         const base64 = await compressImageToBase64(file, type === "avatar" ? 400 : 1200);
         setFormData((prev) => {
@@ -386,7 +372,9 @@ export default function UserProfile() {
           return updated;
         });
         toast("Yerel yedek kayıt oluşturuldu.", "warning");
-      } catch { /* artık yapacak bir şey yok */ }
+      } catch {
+        toast("Yükleme tamamen başarısız oldu.", "error");
+      }
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -401,16 +389,16 @@ export default function UserProfile() {
       // Her zaman localStorage'a kaydet
       saveToLocal(formData);
 
-      // Supabase bağlantısı varsa oraya da kaydet
       if (connectionMode === "supabase" && me) {
+        // ✅ avatar_url ve cover_url cv_data İÇİNDE — ayrı sütun olarak GÖNDERMİYORUZ
         const payload = {
           id: me.id,
           full_name: formData.full_name.trim(),
           country: formData.country,
           city: formData.city,
-          avatar_url: formData.avatar_url,
-          cover_url: formData.cover_url,
           cv_data: {
+            avatar_url: formData.avatar_url,
+            cover_url: formData.cover_url,
             phone_code: formData.phone_code,
             phone_number: formData.phone_number,
             about: formData.about,
@@ -435,7 +423,6 @@ export default function UserProfile() {
       setEditOpen(false);
     } catch (e) {
       console.error("Kayıt hatası:", e);
-      // Supabase başarısız olsa bile localStorage'a zaten kaydettik
       toast("Supabase hatası: " + (e.message || "Bilinmeyen hata") + " — Yerel kayıt yapıldı.", "warning");
       setEditOpen(false);
     } finally {
@@ -468,7 +455,6 @@ export default function UserProfile() {
     }));
   };
 
-  /* ----- Skill & Interest Enter ile Ekleme ----- */
   const handleSkillKeyDown = (e) => {
     if (e.key === "Enter" && skillInput.trim()) {
       e.preventDefault();
@@ -522,26 +508,14 @@ export default function UserProfile() {
       <ToastContainer />
 
       {/* Gizli file input'lar */}
-      <input
-        type="file"
-        ref={avatarInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={(e) => handleFileUpload(e, "avatar")}
-      />
-      <input
-        type="file"
-        ref={coverInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={(e) => handleFileUpload(e, "cover")}
-      />
+      <input type="file" ref={avatarInputRef} className="hidden" accept="image/*"
+        onChange={(e) => handleFileUpload(e, "avatar")} />
+      <input type="file" ref={coverInputRef} className="hidden" accept="image/*"
+        onChange={(e) => handleFileUpload(e, "cover")} />
 
-      {/* ==================== BAĞLANTI DURUMU BANNER ==================== */}
+      {/* BAĞLANTI DURUMU */}
       <div className={`text-center py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${
-        connectionMode === "supabase"
-          ? "bg-emerald-50 text-emerald-600"
-          : "bg-amber-50 text-amber-600"
+        connectionMode === "supabase" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
       }`}>
         {connectionMode === "supabase" ? (
           <><Wifi size={12} /> Supabase Bağlantısı Aktif</>
@@ -555,24 +529,19 @@ export default function UserProfile() {
         <div className="max-w-6xl mx-auto">
           {/* Banner */}
           <div
-            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden rounded-b-3xl cursor-pointer ${uploading ? "pointer-events-none opacity-70" : ""}`}
-            onClick={() => coverInputRef.current?.click()}
+            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden rounded-b-3xl ${uploading ? "pointer-events-none opacity-70" : "cursor-pointer"}`}
+            onClick={() => !uploading && coverInputRef.current?.click()}
           >
             {formData.cover_url ? (
               <img
                 src={formData.cover_url}
                 className="w-full h-full object-cover"
                 alt="banner"
-                onError={(e) => {
-                  // Eğer URL yüklenemezse gradient göster
-                  e.target.style.display = "none";
-                }}
+                onError={(e) => { e.target.style.display = "none"; }}
               />
             ) : null}
-            {/* Her zaman gradient arka plan (fallback) */}
             <div className={`absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 ${formData.cover_url ? "opacity-0" : "opacity-90"}`} />
 
-            {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
               {uploading ? (
                 <>
@@ -592,16 +561,11 @@ export default function UserProfile() {
           {/* Profil Özet */}
           <div className="px-4 md:px-8 pb-8 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 -mt-16 relative z-10">
             <div
-              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 cursor-pointer group relative shrink-0 ${uploading ? "pointer-events-none" : ""}`}
-              onClick={() => avatarInputRef.current?.click()}
+              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group relative shrink-0 ${uploading ? "pointer-events-none" : "cursor-pointer"}`}
+              onClick={() => !uploading && avatarInputRef.current?.click()}
             >
               <img
-                src={
-                  formData.avatar_url ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    formData.full_name || "U"
-                  )}&size=256&background=f43f5e&color=fff&bold=true`
-                }
+                src={formData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || "U")}&size=256&background=f43f5e&color=fff&bold=true`}
                 className="w-full h-full object-cover"
                 alt="avatar"
                 onError={(e) => {
@@ -675,7 +639,7 @@ export default function UserProfile() {
                     <Target size={18} className="text-rose-500" /> Kariyer Vizyonu
                   </h3>
                   <p className="text-slate-700 font-bold italic text-lg leading-relaxed">
-                    "{formData.about}"
+                    &ldquo;{formData.about}&rdquo;
                   </p>
                 </section>
               )}
@@ -693,7 +657,7 @@ export default function UserProfile() {
                           {w.company || "Şirket"} • {w.start || "?"} - {w.isCurrent ? "Günümüz" : w.end || "?"}
                         </p>
                         {w.desc && (
-                          <p className="text-slate-500 italic text-sm mt-3 pl-4 border-l-2 border-rose-100">"{w.desc}"</p>
+                          <p className="text-slate-500 italic text-sm mt-3 pl-4 border-l-2 border-rose-100">&ldquo;{w.desc}&rdquo;</p>
                         )}
                       </div>
                     ))}
@@ -798,7 +762,7 @@ export default function UserProfile() {
             {/* MODAL HEADER */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-6 md:px-8 py-6 border-b border-slate-100 z-50 flex justify-between items-center rounded-t-[32px]">
               <h2 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
-                Profil Mimarı <span className="text-rose-500">v30</span>
+                Profil Mimarı <span className="text-rose-500">v31</span>
               </h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -811,7 +775,7 @@ export default function UserProfile() {
             {/* MODAL İÇERİK */}
             <div className="p-6 md:p-8 space-y-10">
 
-              {/* ───────── FOTOĞRAF YÜKLEMELERİ ───────── */}
+              {/* FOTOĞRAF YÜKLEMELERİ */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
                   Profil Görselleri
@@ -824,8 +788,7 @@ export default function UserProfile() {
                   >
                     {formData.avatar_url ? (
                       <img src={formData.avatar_url} className="w-full h-full object-cover" alt="avatar preview"
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
+                        onError={(e) => { e.target.style.display = "none"; }} />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <Camera size={28} className="mb-2" />
@@ -844,8 +807,7 @@ export default function UserProfile() {
                   >
                     {formData.cover_url ? (
                       <img src={formData.cover_url} className="w-full h-full object-cover" alt="banner preview"
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
+                        onError={(e) => { e.target.style.display = "none"; }} />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <ImagePlus size={28} className="mb-2" />
@@ -857,9 +819,15 @@ export default function UserProfile() {
                     </div>
                   </div>
                 </div>
+                {uploading && (
+                  <div className="flex items-center gap-2 text-rose-500 text-xs font-bold">
+                    <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                    Görsel yükleniyor...
+                  </div>
+                )}
               </div>
 
-              {/* ───────── 1. AD SOYAD ───────── */}
+              {/* AD SOYAD */}
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ad Soyad</label>
                 <input
@@ -870,16 +838,13 @@ export default function UserProfile() {
                 />
               </div>
 
-              {/* ───────── 2. LOKASYON ───────── */}
+              {/* LOKASYON */}
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Lokasyon</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     value={formData.country}
-                    onChange={(e) => {
-                      updateField("country", e.target.value);
-                      updateField("city", "");
-                    }}
+                    onChange={(e) => { updateField("country", e.target.value); updateField("city", ""); }}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500"
                   >
                     <option value="">Ülke Seçin</option>
@@ -900,7 +865,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* ───────── 3. TELEFON ───────── */}
+              {/* TELEFON */}
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Phone size={12} /> Uluslararası Telefon
@@ -924,7 +889,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* ───────── 4. HAKKIMDA ───────── */}
+              {/* HAKKIMDA */}
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Target size={12} /> Hakkımda / Kariyer Vizyonu
@@ -938,77 +903,63 @@ export default function UserProfile() {
                 />
               </div>
 
-              {/* ───────── 5. İŞ DENEYİMİ ───────── */}
+              {/* İŞ DENEYİMİ */}
               <div className="space-y-4">
-                <SectionTitle
-                  icon={Briefcase} color="text-rose-500" title="İş Deneyimi"
-                  onAdd={() => addArrayItem("work_experience", { role: "", company: "", start: "", end: "", isCurrent: false, desc: "" })}
-                />
+                <SectionTitle icon={Briefcase} color="text-rose-500" title="İş Deneyimi"
+                  onAdd={() => addArrayItem("work_experience", { role: "", company: "", start: "", end: "", isCurrent: false, desc: "" })} />
                 {formData.work_experience.map((w, i) => (
                   <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 relative border border-slate-100">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input placeholder="Pozisyon / Ünvan" value={w.role}
                         onChange={(e) => updateArrayItem("work_experience", i, "role", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
                       <input placeholder="Şirket Adı" value={w.company}
                         onChange={(e) => updateArrayItem("work_experience", i, "company", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center">
                       <input placeholder="Başlangıç (2020)" value={w.start}
                         onChange={(e) => updateArrayItem("work_experience", i, "start", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
                       <input placeholder="Bitiş (2023)" value={w.end} disabled={w.isCurrent}
                         onChange={(e) => updateArrayItem("work_experience", i, "end", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-rose-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-rose-500" />
                       <label className="flex items-center gap-2 cursor-pointer justify-center">
                         <input type="checkbox" checked={w.isCurrent}
                           onChange={(e) => updateArrayItem("work_experience", i, "isCurrent", e.target.checked)}
-                          className="w-4 h-4 accent-rose-500"
-                        />
+                          className="w-4 h-4 accent-rose-500" />
                         <span className="text-[9px] font-black uppercase text-slate-400">Devam Ediyor</span>
                       </label>
                       <button onClick={() => removeArrayItem("work_experience", i)}
-                        className="flex items-center justify-center gap-1 bg-white text-red-400 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[9px] font-black uppercase cursor-pointer"
-                      >
+                        className="flex items-center justify-center gap-1 bg-white text-red-400 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[9px] font-black uppercase cursor-pointer">
                         <Trash2 size={14} /> SİL
                       </button>
                     </div>
                     <textarea placeholder="Görev tanımı ve başarılarınız..." value={w.desc}
                       onChange={(e) => updateArrayItem("work_experience", i, "desc", e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none min-h-[80px] resize-none focus:ring-2 focus:ring-rose-500"
-                    />
+                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none min-h-[80px] resize-none focus:ring-2 focus:ring-rose-500" />
                   </div>
                 ))}
               </div>
 
-              {/* ───────── 6. EĞİTİM ───────── */}
+              {/* EĞİTİM */}
               <div className="space-y-4">
-                <SectionTitle
-                  icon={GraduationCap} color="text-emerald-500" title="Eğitim Bilgileri"
-                  onAdd={() => addArrayItem("education", { school: "", degree: "", field: "", start: "", end: "", isCurrent: false })}
-                />
+                <SectionTitle icon={GraduationCap} color="text-emerald-500" title="Eğitim Bilgileri"
+                  onAdd={() => addArrayItem("education", { school: "", degree: "", field: "", start: "", end: "", isCurrent: false })} />
                 {formData.education.map((ed, i) => (
                   <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 border border-slate-100">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input placeholder="Okul / Üniversite" value={ed.school}
                         onChange={(e) => updateArrayItem("education", i, "school", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
                       <input placeholder="Bölüm / Alan" value={ed.field}
                         onChange={(e) => updateArrayItem("education", i, "field", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center">
                       <select value={ed.degree}
                         onChange={(e) => updateArrayItem("education", i, "degree", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
                         <option value="">Derece</option>
                         <option value="Lise">Lise</option>
                         <option value="Ön Lisans">Ön Lisans</option>
@@ -1018,23 +969,19 @@ export default function UserProfile() {
                       </select>
                       <input placeholder="Başlangıç" value={ed.start}
                         onChange={(e) => updateArrayItem("education", i, "start", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
                       <input placeholder="Bitiş" value={ed.end} disabled={ed.isCurrent}
                         onChange={(e) => updateArrayItem("education", i, "end", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-emerald-500"
-                      />
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-emerald-500" />
                       <div className="flex items-center justify-between gap-2">
                         <label className="flex items-center gap-1 cursor-pointer">
                           <input type="checkbox" checked={ed.isCurrent}
                             onChange={(e) => updateArrayItem("education", i, "isCurrent", e.target.checked)}
-                            className="w-4 h-4 accent-emerald-500"
-                          />
+                            className="w-4 h-4 accent-emerald-500" />
                           <span className="text-[8px] font-black uppercase text-slate-400">Devam</span>
                         </label>
                         <button onClick={() => removeArrayItem("education", i)}
-                          className="text-red-400 hover:text-red-600 transition-all cursor-pointer"
-                        >
+                          className="text-red-400 hover:text-red-600 transition-all cursor-pointer">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1043,18 +990,15 @@ export default function UserProfile() {
                 ))}
               </div>
 
-              {/* ───────── 7. DİLLER ───────── */}
+              {/* DİLLER */}
               <div className="space-y-4">
-                <SectionTitle
-                  icon={Languages} color="text-indigo-500" title="Dil Yetkinliği"
-                  onAdd={() => addArrayItem("languages", { lang: "", level: 1 })}
-                />
+                <SectionTitle icon={Languages} color="text-indigo-500" title="Dil Yetkinliği"
+                  onAdd={() => addArrayItem("languages", { lang: "", level: 1 })} />
                 {formData.languages.map((l, i) => (
                   <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <select value={l.lang}
                       onChange={(e) => updateArrayItem("languages", i, "lang", e.target.value)}
-                      className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
+                      className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500">
                       <option value="">Dil Seçin</option>
                       {LANGUAGE_LIST.map((lang) => (
                         <option key={lang} value={lang}>{lang}</option>
@@ -1064,8 +1008,7 @@ export default function UserProfile() {
                       {[1, 2, 3, 4, 5].map((s) => (
                         <button key={s} type="button"
                           onClick={() => updateArrayItem("languages", i, "level", s)}
-                          className="p-1 hover:scale-125 transition-transform cursor-pointer"
-                        >
+                          className="p-1 hover:scale-125 transition-transform cursor-pointer">
                           <Star size={20} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-200"} />
                         </button>
                       ))}
@@ -1077,27 +1020,22 @@ export default function UserProfile() {
                 ))}
               </div>
 
-              {/* ───────── 8. SERTİFİKALAR ───────── */}
+              {/* SERTİFİKALAR */}
               <div className="space-y-4">
-                <SectionTitle
-                  icon={Award} color="text-amber-500" title="Sertifikalar"
-                  onAdd={() => addArrayItem("certificates", { name: "", issuer: "", year: "" })}
-                />
+                <SectionTitle icon={Award} color="text-amber-500" title="Sertifikalar"
+                  onAdd={() => addArrayItem("certificates", { name: "", issuer: "", year: "" })} />
                 {formData.certificates.map((c, i) => (
                   <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-center">
                     <input placeholder="Sertifika Adı" value={c.name}
                       onChange={(e) => updateArrayItem("certificates", i, "name", e.target.value)}
-                      className="sm:col-span-2 w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                      className="sm:col-span-2 w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
                     <input placeholder="Kurum" value={c.issuer}
                       onChange={(e) => updateArrayItem("certificates", i, "issuer", e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
                     <div className="flex gap-2 items-center">
                       <input placeholder="Yıl" value={c.year}
                         onChange={(e) => updateArrayItem("certificates", i, "year", e.target.value)}
-                        className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
-                      />
+                        className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
                       <button onClick={() => removeArrayItem("certificates", i)} className="text-red-400 hover:text-red-600 p-2 cursor-pointer">
                         <Trash2 size={14} />
                       </button>
@@ -1106,7 +1044,7 @@ export default function UserProfile() {
                 ))}
               </div>
 
-              {/* ───────── 9. YETENEKLER ───────── */}
+              {/* YETENEKLER */}
               <div className="space-y-3">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Cpu size={12} className="text-cyan-500" /> Teknik Programlar & Yetenekler
@@ -1116,23 +1054,18 @@ export default function UserProfile() {
                     <span key={i} className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
                       {s}
                       <button onClick={() => updateField("skills", formData.skills.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer"
-                      >
+                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input
-                  placeholder="Yetenek yazıp Enter'a basın..."
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={handleSkillKeyDown}
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-cyan-500"
-                />
+                <input placeholder="Yetenek yazıp Enter'a basın..."
+                  value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={handleSkillKeyDown}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-cyan-500" />
               </div>
 
-              {/* ───────── 10. İLGİ ALANLARI ───────── */}
+              {/* İLGİ ALANLARI */}
               <div className="space-y-3">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Heart size={12} className="text-pink-500" /> İlgi Alanları
@@ -1142,36 +1075,26 @@ export default function UserProfile() {
                     <span key={i} className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
                       {s}
                       <button onClick={() => updateField("interests", formData.interests.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer"
-                      >
+                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input
-                  placeholder="İlgi alanı yazıp Enter'a basın..."
-                  value={interestInput}
-                  onChange={(e) => setInterestInput(e.target.value)}
-                  onKeyDown={handleInterestKeyDown}
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-pink-500"
-                />
+                <input placeholder="İlgi alanı yazıp Enter'a basın..."
+                  value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={handleInterestKeyDown}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-pink-500" />
               </div>
             </div>
 
             {/* MODAL FOOTER */}
             <div className="sticky bottom-0 p-6 bg-white/95 backdrop-blur-sm border-t border-slate-100 flex gap-3 rounded-b-[32px]">
-              <button
-                onClick={() => setEditOpen(false)}
-                className="px-8 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
-              >
+              <button onClick={() => setEditOpen(false)}
+                className="px-8 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
                 İPTAL
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl text-lg font-black uppercase italic text-white shadow-xl active:scale-[0.98] transition-all tracking-widest disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer"
-              >
+              <button onClick={handleSave} disabled={saving}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl text-lg font-black uppercase italic text-white shadow-xl active:scale-[0.98] transition-all tracking-widest disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer">
                 <Save size={20} />
                 {saving ? "MÜHÜRLENİYOR..." : "HAFIZAYI MÜHÜRLE"}
               </button>

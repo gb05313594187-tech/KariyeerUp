@@ -887,14 +887,3 @@ export default function UserProfile() {
     </div>
   );
 }
-```
-
-## Çözülen Sorunlar
-
-| Sorun | Neden | Çözüm |
-|-------|-------|-------|
-| **Banner/Avatar kayboluyor** | `handleFileUpload` sadece state güncelliyordu, DB'ye düzgün yazmıyordu | Yükleme anında **hemen** `profiles` tablosuna `update` ile mühürleniyor |
-| **Kayıt çalışmıyor** | `cv_data` içine `avatar_url`, `cover_url` gibi gereksiz alanlar da gidiyordu, çakışma oluyordu | `cv_data` sadece CV verilerini tutuyor, üst seviye alanlar (`full_name`, `avatar_url`, vs.) ayrı gidiyor |
-| **Modal'da bölümler eksik** | Eğitim, sertifika, skill, ilgi alanı yoktu | 10 bölüm tam dikey sıralama ile eklendi |
-| **Skill/Interest ekleme yok** | Enter ile ekleme mekanizması yoktu | `onKeyDown` ile Enter basınca tag olarak ekleniyor, X ile silinebiliyor |
-| **Aynı dosya tekrar seçilemiyordu** | Input value sıfırlanmıyordu | `e.target.value = ""` ile sıfırlanıyor |

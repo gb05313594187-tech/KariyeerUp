@@ -104,6 +104,9 @@ import CreateJob from "@/pages/CreateJob";
 import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
 
+// ✅ NEW: MEETING ROOM - Jitsi Video Seans (EKLENDİ)
+import MeetingRoom from "@/pages/MeetingRoom";
+
 /* -------------------------------------------------
    Public Layout
 -------------------------------------------------- */
@@ -150,6 +153,9 @@ export default function App() {
 
             {/* ✅ NEW: INTERVIEW PAGE ROUTE (EKLENDİ) */}
             <Route path="interview/:roomName" element={<InterviewPage />} />
+
+            {/* ✅ NEW: MEETING ROOM - Coaching + Interview ortak video sayfası (EKLENDİ) */}
+            <Route path="meeting/:roomName" element={<MeetingRoom />} />
 
             {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />

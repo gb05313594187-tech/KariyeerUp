@@ -590,3 +590,79 @@ export const sessionService = {
     }
   },
 };
+/* =========================================================
+   ✅ COMPANY & INTERVIEW SERVICE (Görüşmelerim için TAM FONKSİYONLAR)
+   ========================================================= */
+export const companyService = {
+  /** Şirketin tüm mülakatlarını getirir (CorporateDashboard → Görüşmelerim sekmesi) */
+  async getCompanyInterviews(userId: string) {
+    const { data, error } = await supabase
+      .from("interviews")
+      .select(`
+        id,
+        job_id,
+        candidate_id,
+        candidate_name,
+        candidate_email,
+        scheduled_at,
+        status,
+        duration_minutes,
+        jitsi_room,
+        jitsi_url,
+        meeting_provider,
+        hire_decision,
+        language,
+        created_at,
+        jobs!inner (
+          position,
+          custom_title,
+          company_id
+        ),
+        profiles!interviews_candidate_id_fkey (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq("company_user_id", userId)
+      .order("scheduled_at", { ascending: false });
+
+    if (error) {
+      console.error("getCompanyInterviews error:", error);
+      return [];
+    }
+
+    return data;
+  },
+
+  /** Tek bir mülakat detayını getirir (isteğe bağlı) */
+  async getInterviewById(interviewId: string) {
+    const { data, error } = await supabase
+      .from("interviews")
+      .select(`
+        *,
+        jobs(position, custom_title),
+        profiles!interviews_candidate_id_fkey(full_name, avatar_url)
+      `)
+      .eq("id", interviewId)
+      .single();
+
+    if (error) return null;
+    return data;
+  },
+
+  /** Mülakat durumunu günceller (örneğin: completed, cancelled) */
+  async updateInterviewStatus(interviewId: string, status: string) {
+    const { data, error } = await supabase
+      .from("interviews")
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", interviewId)
+      .select()
+      .single();
+
+    if (error) return null;
+    return data;
+  },
+};

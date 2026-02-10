@@ -70,6 +70,7 @@ import CoachRequests from "@/pages/CoachRequests";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminHireDashboard from "@/pages/AdminHireDashboard"; // ✅ EKLENDİ
 
 // ✅ CHECKOUT / PAYMENT SUCCESS
 import Checkout from "@/pages/Checkout";
@@ -134,6 +135,8 @@ export default function App() {
           {/* ADMIN */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            {/* ✅ EKLENDİ: İşe Alım Dashboard Route */}
+            <Route path="hiring" element={<AdminHireDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

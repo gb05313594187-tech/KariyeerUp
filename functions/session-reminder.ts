@@ -1,37 +1,27 @@
-import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
+  FROM_EMAIL?: string;
+  URL?: string;
+}
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = process.env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
-const SITE_URL = process.env.URL || "https://kariyeer.com";
-
-async function sendResendEmail(to: string, subject: string, html: string) {
+async function sendResendEmail(to: string, subject: string, html: string, env: Env) {
+  const FROM_EMAIL = env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
   });
   return res.json();
 }
 
-function reminderHtml(data: {
-  name: string;
-  type: string;
-  otherName: string;
-  otherRole: string;
-  date: string;
-  time: string;
-  meetingUrl: string;
-  position?: string;
-}) {
+function reminderHtml(data: any) {
   const isInterview = data.type === "interview";
   return `
     <div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
@@ -64,15 +54,19 @@ function formatDate(dateStr: string) {
   };
 }
 
-const handler: Handler = async () => {
+// Cloudflare hem manuel tetiklemeyi hem de cron tetiklemeyi destekler
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { env } = context;
+  const SITE_URL = env.URL || "https://kariyeer.com";
+  const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     const now = new Date();
     const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
     const twoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
     let totalSent = 0;
 
-    // ─── 1) COACHING SEANSLARI ───
+    // 1) COACHING SEANSLARI
     const { data: rooms } = await supabase
       .from("meeting_rooms")
       .select("*")
@@ -81,78 +75,31 @@ const handler: Handler = async () => {
       .lte("scheduled_at", twoHours.toISOString());
 
     for (const room of rooms || []) {
-      // Daha önce gönderilmiş mi?
-      const { data: existing } = await supabase
-        .from("email_logs")
-        .select("id")
-        .eq("related_id", room.related_id)
-        .eq("template_type", "session_reminder")
-        .limit(1);
-
+      const { data: existing } = await supabase.from("email_logs").select("id").eq("related_id", room.related_id).eq("template_type", "session_reminder").limit(1);
       if (existing && existing.length > 0) continue;
 
       const { date, time } = formatDate(room.scheduled_at);
       const meetingPageUrl = `${SITE_URL}/meeting/${room.room_name}`;
       const isInterview = room.room_type === "interview";
 
-      // Katılımcıya
+      // Katılımcıya Gönder
       if (room.participant_user_id) {
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", room.participant_user_id)
-          .single();
-
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", room.participant_user_id).single();
         if (p?.email) {
-          const html = reminderHtml({
-            name: p.full_name || "Katılımcı",
-            type: isInterview ? "interview" : "session",
-            otherName: room.host_name || "",
-            otherRole: isInterview ? "Mülakatçı" : "Koç",
-            date, time,
-            meetingUrl: meetingPageUrl,
-          });
-          const result = await sendResendEmail(p.email, `⏰ ${isInterview ? "Mülakatınıza" : "Seansınıza"} 1 Saat Kaldı!`, html);
-
+          const html = reminderHtml({ name: p.full_name || "Katılımcı", type: isInterview ? "interview" : "session", otherName: room.host_name || "", otherRole: isInterview ? "Mülakatçı" : "Koç", date, time, meetingUrl: meetingPageUrl });
+          const result: any = await sendResendEmail(p.email, `⏰ ${isInterview ? "Mülakatınıza" : "Seansınıza"} 1 Saat Kaldı!`, html, env);
+          
           await supabase.from("email_logs").insert({
-            to_email: p.email,
-            to_name: p.full_name,
-            subject: "Hatırlatma",
-            template_type: "session_reminder",
-            related_id: room.related_id,
-            related_type: room.related_type,
-            resend_id: result.id || null,
-            status: result.id ? "sent" : "failed",
-            sent_at: result.id ? new Date().toISOString() : null,
+            to_email: p.email, to_name: p.full_name, subject: "Hatırlatma", template_type: "session_reminder",
+            related_id: room.related_id, related_type: room.related_type, resend_id: result.id || null,
+            status: result.id ? "sent" : "failed", sent_at: result.id ? new Date().toISOString() : null,
           });
-          totalSent++;
-        }
-      }
-
-      // Host'a
-      if (room.host_user_id) {
-        const { data: h } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", room.host_user_id)
-          .single();
-
-        if (h?.email) {
-          const html = reminderHtml({
-            name: h.full_name || "Host",
-            type: isInterview ? "interview" : "session",
-            otherName: room.participant_name || "",
-            otherRole: isInterview ? "Aday" : "Danışan",
-            date, time,
-            meetingUrl: meetingPageUrl,
-          });
-          await sendResendEmail(h.email, `⏰ ${isInterview ? "Mülakatınıza" : "Seansınıza"} 1 Saat Kaldı!`, html);
           totalSent++;
         }
       }
     }
 
-    // ─── 2) MÜLAKATLAR (interview tablosundan) ───
+    // 2) MÜLAKATLAR
     const { data: interviews } = await supabase
       .from("interviews")
       .select("*")
@@ -164,58 +111,27 @@ const handler: Handler = async () => {
     for (const iv of interviews || []) {
       const { date, time } = formatDate(iv.scheduled_at);
       const meetingPageUrl = `${SITE_URL}/interview/${iv.jitsi_room || ""}`;
-
-      // Pozisyon
+      
       let position = "";
       if (iv.job_id) {
         const { data: job } = await supabase.from("jobs").select("position").eq("post_id", iv.job_id).single();
         position = job?.position || "";
       }
 
-      // Adaya
       if (iv.candidate_email) {
-        const html = reminderHtml({
-          name: iv.candidate_name || "Aday",
-          type: "interview",
-          otherName: iv.interviewer_name || "Mülakatçı",
-          otherRole: "Mülakatçı",
-          date, time,
-          meetingUrl: meetingPageUrl,
-          position,
-        });
-        await sendResendEmail(iv.candidate_email, `⏰ Mülakatınıza 1 Saat Kaldı! - ${position}`, html);
+        const html = reminderHtml({ name: iv.candidate_name || "Aday", type: "interview", otherName: iv.interviewer_name || "Mülakatçı", otherRole: "Mülakatçı", date, time, meetingUrl: meetingPageUrl, position });
+        await sendResendEmail(iv.candidate_email, `⏰ Mülakatınıza 1 Saat Kaldı!`, html, env);
         totalSent++;
       }
 
-      // Mülakatçıya
-      if (iv.interviewer_email) {
-        const html = reminderHtml({
-          name: iv.interviewer_name || "Mülakatçı",
-          type: "interview",
-          otherName: iv.candidate_name || "Aday",
-          otherRole: "Aday",
-          date, time,
-          meetingUrl: meetingPageUrl,
-          position,
-        });
-        await sendResendEmail(iv.interviewer_email, `⏰ Mülakatınıza 1 Saat Kaldı! - ${position}`, html);
-        totalSent++;
-      }
-
-      // Güncelle
-      await supabase
-        .from("interviews")
-        .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
-        .eq("id", iv.id);
+      await supabase.from("interviews").update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() }).eq("id", iv.id);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, totalSent, checkedAt: now.toISOString() }),
-    };
+    return new Response(JSON.stringify({ success: true, totalSent }), {
+      headers: { "Content-Type": "application/json" }
+    });
+
   } catch (err: any) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };
-
-export { handler };

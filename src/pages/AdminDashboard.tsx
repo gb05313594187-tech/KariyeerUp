@@ -1,1190 +1,794 @@
 // src/pages/AdminDashboard.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Users,
-  Briefcase,
-  Building2,
-  Hourglass,
-  RefreshCw,
-  Crown,
-  CreditCard,
-  TrendingUp,
-  ShieldAlert,
-  CalendarClock,
-  Sparkles,
-  Search,
-  CheckCircle2,
-  XCircle,
-  FileText,
-  ExternalLink,
-  Loader2,
+  Users, UserCheck, UserX, Briefcase, CreditCard, Star,
+  Building2, MessageSquare, TrendingUp, RefreshCw, Award,
+  Video, FileText, Brain, Mail, Heart, Calendar, CheckCircle2,
+  Clock, BarChart3, Shield, Eye, Download, ChevronDown,
+  ChevronUp, AlertTriangle, Zap, Search, ExternalLink,
+  DollarSign, Activity, Globe, BookOpen
 } from "lucide-react";
 
-/* ==============================
-   TYPES
-============================== */
-type AdminMetrics = {
-  total_profiles: number;
-  total_coaches: number;
-  total_company_requests: number;
-  pending_coach_apps: number;
-  total_corporates?: number;
-  total_sessions?: number;
-  total_revenue_try?: number;
-};
-
-type PremiumRow = {
-  id: string;
-  user_id: string;
-  subscription_type: string | null;
-  status: string | null;
-  price: number | null;
-  currency: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  auto_renew: boolean | null;
-  badge_type: string | null;
-  created_at: string | null;
-};
-
-type CompanyRequestRow = {
-  id: string;
-  user_id?: string | null;
-  company_name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  status?: string | null;
-  created_at?: string | null;
-};
-
-type CoachAppRow = {
-  id: string;
-  user_id?: string | null;
-
-  full_name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-
-  city?: string | null;
-  country?: string | null;
-
-  status?: string | null;
-  created_at?: string | null;
-
-  certification?: string | null;
-  certification_year?: string | null;
-
-  experience?: string | null;
-  specializations?: any;
-  session_fee?: number | null;
-
-  cv_path?: string | null;
-  certificate_path?: string | null;
-
-  bio?: string | null;
-  linkedin?: string | null;
-  website?: string | null;
-};
+type Tab = "overview" | "coaches" | "companies" | "users" | "revenue" | "community" | "jobs";
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<AdminMetrics | null>(null);
-
-  const [premiumRows, setPremiumRows] = useState<PremiumRow[]>([]);
-  const [companyRows, setCompanyRows] = useState<CompanyRequestRow[]>([]);
-  const [coachAppRows, setCoachAppRows] = useState<CoachAppRow[]>([]);
-
+  const [metrics, setMetrics] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [recent, setRecent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [hardError, setHardError] = useState<string | null>(null);
-  const [softNotes, setSoftNotes] = useState<string[]>([]);
-  const [q, setQ] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [search, setSearch] = useState("");
 
-  const [selectedApp, setSelectedApp] = useState<CoachAppRow | null>(null);
-  const [selectedCompany, setSelectedCompany] = useState<CompanyRequestRow | null>(null);
+  // Koç başvuru state
+  const [coachApps, setCoachApps] = useState<any[]>([]);
+  const [selectedApp, setSelectedApp] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  /* ==============================
-     DATA LOAD
-  ============================== */
+  // Şirket talepleri
+  const [companyReqs, setCompanyReqs] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+
+  // Kullanıcı listesi
+  const [users, setUsers] = useState<any[]>([]);
+
   const fetchAll = async () => {
     setLoading(true);
-    setHardError(null);
-    setSoftNotes([]);
+    setError(null);
+    try {
+      const [metricsRes, statsRes, recentRes, appsRes, companiesRes, usersRes] =
+        await Promise.all([
+          supabase.from("admin_overview_metrics").select("*").single(),
+          supabase.rpc("admin_get_dashboard_stats"),
+          supabase.rpc("admin_recent_activity", { limit_count: 30 }),
+          supabase
+            .from("coach_applications")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("company_requests")
+            .select("*")
+            .order("updated_at", { ascending: false }),
+          supabase
+            .from("profiles")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(100),
+        ]);
 
-    // 1) KPI view
-    const { data: metrics, error: metricsErr } = await supabase
-      .from("admin_overview_metrics")
-      .select("*")
-      .single();
+      if (metricsRes.error) console.warn("metrics err:", metricsRes.error);
+      if (statsRes.error) console.warn("stats err:", statsRes.error);
+      if (recentRes.error) console.warn("recent err:", recentRes.error);
 
-    if (metricsErr) {
-      setHardError(metricsErr.message);
+      setMetrics(metricsRes.data);
+      setStats(statsRes.data);
+      setRecent(recentRes.data);
+      setCoachApps(appsRes.data || []);
+      setCompanyReqs(companiesRes.data || []);
+      setUsers(usersRes.data || []);
+    } catch (e: any) {
+      console.error(e);
+      setError(e.message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setData(metrics as AdminMetrics);
-
-    // 2) Optional sources
-    const notes: string[] = [];
-
-    const tasks = await Promise.allSettled([
-      supabase
-        .from("app_2dff6511da_premium_subscriptions")
-        .select(
-          "id,user_id,subscription_type,status,price,currency,start_date,end_date,auto_renew,badge_type,created_at"
-        )
-        .order("created_at", { ascending: false })
-        .limit(50),
-
-      supabase
-        .from("company_requests")
-        .select("id,user_id,company_name,email,phone,status,created_at")
-        .order("created_at", { ascending: false })
-        .limit(50),
-
-      supabase
-        .from("coach_applications")
-        .select(
-          "id,user_id,full_name,email,phone,city,country,status,created_at,certification,certification_year,experience,specializations,session_fee,cv_path,certificate_path,bio,linkedin,website"
-        )
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
-
-    // premium
-    if (tasks[0].status === "fulfilled") {
-      const r = tasks[0].value;
-      if (r.error) notes.push(`Premium: ${r.error.message}`);
-      else setPremiumRows((r.data as any[]) as PremiumRow[]);
-    } else {
-      notes.push("Premium: okunamadı (bağlantı/izin).");
-    }
-
-    // company requests
-    if (tasks[1].status === "fulfilled") {
-      const r = tasks[1].value;
-      if (r.error) notes.push(`Company Requests: ${r.error.message}`);
-      else setCompanyRows((r.data as any[]) as CompanyRequestRow[]);
-    } else {
-      notes.push("Company Requests: okunamadı (bağlantı/izin).");
-    }
-
-    // coach apps
-    if (tasks[2].status === "fulfilled") {
-      const r = tasks[2].value;
-      if (r.error) notes.push(`Coach Applications: ${r.error.message}`);
-      else setCoachAppRows((r.data as any[]) as CoachAppRow[]);
-    } else {
-      notes.push("Coach Applications: okunamadı (bağlantı/izin).");
-    }
-
-    setSoftNotes(notes);
-    setLoading(false);
   };
 
-  useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  /* ==============================
-     DERIVED
-  ============================== */
-  const premiumAgg = useMemo(() => {
-    const rows = premiumRows || [];
-    const active = rows.filter((r) => (r.status || "").toLowerCase() === "active");
-    const activeCount = active.length;
-
-    const activeTry = active.filter((r) => (r.currency || "").toUpperCase() === "TRY");
-    const mrrTry = activeTry.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
-    const arrTry = mrrTry * 12;
-
-    const autoRenewRate =
-      activeCount === 0
-        ? 0
-        : Math.round((active.filter((r) => r.auto_renew === true).length / activeCount) * 100);
-
-    const byType = rows.reduce<Record<string, number>>((acc, r) => {
-      const k = (r.subscription_type || "unknown").toString();
-      acc[k] = (acc[k] || 0) + 1;
-      return acc;
-    }, {});
-
-    return { rows, activeCount, mrrTry, arrTry, autoRenewRate, byType };
-  }, [premiumRows]);
-
-  const filteredRecent = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return { premiums: premiumRows, companies: companyRows, coachApps: coachAppRows };
-
-    const match = (s?: string | null) => (s || "").toLowerCase().includes(needle);
-
-    return {
-      premiums: premiumRows.filter(
-        (r) =>
-          match(r.user_id) ||
-          match(r.subscription_type) ||
-          match(r.status) ||
-          match(r.badge_type) ||
-          match(r.currency)
-      ),
-      companies: companyRows.filter(
-        (r) =>
-          match(r.company_name) ||
-          match(r.status) ||
-          match(r.id) ||
-          match(r.user_id || "") ||
-          match(r.email || "") ||
-          match(r.phone || "")
-      ),
-      coachApps: coachAppRows.filter(
-        (r) =>
-          match(r.full_name) ||
-          match(r.status) ||
-          match(r.id) ||
-          match(r.user_id) ||
-          match(r.email) ||
-          match(r.phone)
-      ),
-    };
-  }, [q, premiumRows, companyRows, coachAppRows]);
-
-  // ✅ Pending list (pending_review + pending + new fallback)
-  const pendingCoachApps = useMemo(() => {
-    return (filteredRecent.coachApps || []).filter((a) => {
-      const s = (a.status || "").toLowerCase();
-      return s === "pending_review" || s === "pending" || s === "new";
-    });
-  }, [filteredRecent.coachApps]);
-
-  const pendingCompanyRequests = useMemo(() => {
-    return (filteredRecent.companies || []).filter((a) => {
-      const s = (a.status || "").toLowerCase();
-      return s === "new" || s === "pending_review" || s === "pending";
-    });
-  }, [filteredRecent.companies]);
-
-  /* ==============================
-     FILE OPEN (SIGNED URL)
-  ============================== */
-  const openSignedFile = async (path?: string | null) => {
-    if (!path) return;
+  // Koç onayla
+  const approveCoach = async (id: string) => {
+    setActionLoading(true);
     try {
-      setActionLoading(true);
-      const { data, error } = await supabase.storage.from("coach_uploads").createSignedUrl(path, 60 * 10);
+      const { data, error } = await supabase.rpc("admin_approve_coach", {
+        application_id: id,
+      });
       if (error) throw error;
-
-      const url = data?.signedUrl;
-      if (!url) throw new Error("Signed URL üretilemedi.");
-
-      window.open(url, "_blank", "noopener,noreferrer");
+      alert("✅ Koç onaylandı!");
+      fetchAll();
+      setSelectedApp(null);
     } catch (e: any) {
-      console.error(e);
-      alert(`Dosya açılamadı: ${e?.message || "izin/bucket hatası"}`);
+      alert("❌ Hata: " + e.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  /* ==============================
-     FIX: ENSURE USER_ID BY EMAIL
-  ============================== */
-
-  // Coach: user_id yoksa email -> profiles.id bul, coach_applications.user_id yaz
-  const ensureCoachApplicationUserId = async (app: CoachAppRow) => {
-    if (app?.user_id) return app.user_id;
-
-    const email = (app?.email || "").toString().trim().toLowerCase();
-    if (!email) throw new Error("Bu başvuruda email yok.");
-
-    const { data: p, error: pErr } = await supabase
-      .from("profiles")
-      .select("id,email")
-      .ilike("email", email)
-      .maybeSingle();
-
-    if (pErr) throw pErr;
-    if (!p?.id) throw new Error("Bu email ile profiles kaydı yok. Kullanıcı önce kayıt olmalı.");
-
-    const { error: upErr } = await supabase
-      .from("coach_applications")
-      .update({ user_id: p.id })
-      .eq("id", app.id);
-
-    if (upErr) throw upErr;
-
-    return p.id as string;
-  };
-
-  // Company: user_id yoksa email -> profiles.id bul, company_requests.user_id yaz
-  const ensureCompanyUserId = async (req: CompanyRequestRow) => {
-    if (req?.user_id) return req.user_id;
-
-    const email = (req?.email || "").toString().trim().toLowerCase();
-    if (!email) throw new Error("Bu şirkette email yok.");
-
-    const { data: p, error: pErr } = await supabase
-      .from("profiles")
-      .select("id,email")
-      .ilike("email", email)
-      .maybeSingle();
-
-    if (pErr) throw pErr;
-    if (!p?.id) throw new Error("Bu email ile profiles kaydı yok. Kullanıcı önce kayıt olmalı.");
-
-    const { error: upErr } = await supabase
-      .from("company_requests")
-      .update({ user_id: p.id })
-      .eq("id", req.id);
-
-    if (upErr) throw upErr;
-
-    return p.id as string;
-  };
-
-  /* ==============================
-     COACH APPROVAL ACTIONS
-  ============================== */
-
-  const approveCoach = async (app: CoachAppRow) => {
-    if (!app?.id) return;
-
+  // Koç reddet
+  const rejectCoach = async (id: string) => {
+    if (!confirm("Bu başvuruyu reddetmek istediğinize emin misiniz?")) return;
     setActionLoading(true);
     try {
-      // ✅ 1) user_id garanti et (email -> profiles.id)
-      const uid = await ensureCoachApplicationUserId(app);
-
-      // ✅ 2) coach_applications -> approved
-      const { error: upErr } = await supabase
-        .from("coach_applications")
-        .update({ status: "approved" })
-        .eq("id", app.id);
-
-      if (upErr) throw upErr;
-
-      // ✅ 3) profiles -> role = coach
-      const { error: roleErr } = await supabase
-        .from("profiles")
-        .update({ role: "coach" })
-        .eq("id", uid);
-
-      if (roleErr) throw roleErr;
-
-      setSelectedApp(null);
-      await fetchAll();
-      alert("Koç onaylandı. (profiles.role = coach)");
-    } catch (e: any) {
-      console.error(e);
-      alert(`Onay sırasında hata: ${e?.message || "Unknown error"}`);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const rejectCoach = async (app: CoachAppRow) => {
-    if (!app?.id) return;
-
-    setActionLoading(true);
-    try {
-      const { error: upErr } = await supabase
-        .from("coach_applications")
-        .update({ status: "rejected" })
-        .eq("id", app.id);
-
-      if (upErr) throw upErr;
-
-      // user_id varsa role'i user'a çek
-      if (app.user_id) {
-        const { error: roleErr } = await supabase
-          .from("profiles")
-          .update({ role: "user" })
-          .eq("id", app.user_id);
-
-        if (roleErr) throw roleErr;
-      }
-
-      setSelectedApp(null);
-      await fetchAll();
+      const { data, error } = await supabase.rpc("admin_reject_coach", {
+        application_id: id,
+        rejection_reason: "Başvurunuz değerlendirildi ancak uygun bulunmadı.",
+      });
+      if (error) throw error;
       alert("Başvuru reddedildi.");
+      fetchAll();
+      setSelectedApp(null);
     } catch (e: any) {
-      console.error(e);
-      alert(`Ret sırasında hata: ${e?.message || "Unknown error"}`);
+      alert("❌ Hata: " + e.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  /* ==============================
-     COMPANY APPROVAL ACTIONS
-  ============================== */
-
-  const approveCompany = async (req: CompanyRequestRow) => {
-    if (!req?.id) return;
-
+  // Şirket onayla
+  const approveCompany = async (id: string) => {
     setActionLoading(true);
     try {
-      // ✅ 1) user_id garanti et (email -> profiles.id)
-      const uid = await ensureCompanyUserId(req);
-
-      // ✅ 2) company_requests -> approved
-      const { error: upErr } = await supabase
-        .from("company_requests")
-        .update({ status: "approved" })
-        .eq("id", req.id);
-
-      if (upErr) throw upErr;
-
-      // ✅ 3) profiles -> role = corporate
-      const { error: roleErr } = await supabase
-        .from("profiles")
-        .update({ role: "corporate" })
-        .eq("id", uid);
-
-      if (roleErr) throw roleErr;
-
-      setSelectedCompany(null);
-      await fetchAll();
-      alert("Şirket onaylandı. (profiles.role = corporate)");
+      const { error } = await supabase.rpc("admin_approve_company", {
+        request_id: id,
+      });
+      if (error) throw error;
+      alert("✅ Şirket onaylandı!");
+      fetchAll();
     } catch (e: any) {
-      console.error(e);
-      alert(`Şirket onayı sırasında hata: ${e?.message || "Unknown error"}`);
+      alert("❌ Hata: " + e.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const rejectCompany = async (req: CompanyRequestRow) => {
-    if (!req?.id) return;
-
+  // Şirket reddet
+  const rejectCompany = async (id: string) => {
+    if (!confirm("Bu şirket talebini reddetmek istediğinize emin misiniz?")) return;
     setActionLoading(true);
     try {
-      const { error: upErr } = await supabase
-        .from("company_requests")
-        .update({ status: "rejected" })
-        .eq("id", req.id);
-
-      if (upErr) throw upErr;
-
-      if (req.user_id) {
-        const { error: roleErr } = await supabase
-          .from("profiles")
-          .update({ role: "user" })
-          .eq("id", req.user_id);
-
-        if (roleErr) throw roleErr;
-      }
-
-      setSelectedCompany(null);
-      await fetchAll();
-      alert("Şirket talebi reddedildi.");
+      const { error } = await supabase.rpc("admin_reject_company", {
+        request_id: id,
+      });
+      if (error) throw error;
+      alert("Şirket reddedildi.");
+      fetchAll();
     } catch (e: any) {
-      console.error(e);
-      alert(`Şirket reddi sırasında hata: ${e?.message || "Unknown error"}`);
+      alert("❌ Hata: " + e.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  /* ==============================
-     RENDER
-  ============================== */
+  // Arama filtresi
+  const pendingApps = useMemo(() => {
+    return coachApps
+      .filter((a) => ["pending", "pending_review", "new"].includes(a.status))
+      .filter((a) => {
+        if (!search) return true;
+        const s = search.toLowerCase();
+        return (
+          a.full_name?.toLowerCase().includes(s) ||
+          a.email?.toLowerCase().includes(s)
+        );
+      });
+  }, [coachApps, search]);
+
+  const pendingCompanies = useMemo(() => {
+    return companyReqs
+      .filter((c) => ["pending", "pending_review", "new"].includes(c.status))
+      .filter((c) => {
+        if (!search) return true;
+        const s = search.toLowerCase();
+        return (
+          c.legal_name?.toLowerCase().includes(s) ||
+          c.brand_name?.toLowerCase().includes(s)
+        );
+      });
+  }, [companyReqs, search]);
+
+  const m = metrics || {};
+  const s = stats || {};
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-3">
-          <div className="h-7 w-48 bg-gray-200 rounded" />
-          <div className="h-28 bg-gray-100 rounded-xl" />
-          <div className="h-28 bg-gray-100 rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (hardError) {
-    return (
       <div className="p-6 space-y-4">
-        <div className="text-2xl font-bold">Admin Dashboard</div>
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-          <div className="font-semibold">Hata</div>
-          <div className="text-sm mt-1">{hardError}</div>
-          <div className="text-sm mt-2">
-            Bu hata genelde: <b>admin_overview_metrics</b> view yok / RLS izin yok.
-          </div>
+        <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
         </div>
-
-        <button
-          onClick={fetchAll}
-          className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Tekrar dene
-        </button>
       </div>
     );
   }
-
-  if (!data) return null;
-
-  const overviewCards = [
-    {
-      title: "Toplam Kullanıcı",
-      value: data.total_profiles,
-      icon: <Users className="h-5 w-5" />,
-      hint: "Tüm profil sayısı",
-    },
-    {
-      title: "Toplam Koç",
-      value: data.total_coaches,
-      icon: <Briefcase className="h-5 w-5" />,
-      hint: "Koç rolündeki kullanıcı",
-    },
-    {
-      title: "Şirket Talepleri",
-      value: data.total_company_requests,
-      icon: <Building2 className="h-5 w-5" />,
-      hint: "Toplam kurumsal talep",
-    },
-    {
-      title: "Bekleyen Koç Başvurusu",
-      value: data.pending_coach_apps,
-      icon: <Hourglass className="h-5 w-5" />,
-      hint: "pending_review / pending / new",
-    },
-  ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
+      {/* ═══ HEADER ═══ */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="text-sm text-gray-500">KPI • Premium • Operasyon • Koç/Şirket Onay Merkezi</div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Shield className="h-6 w-6 text-blue-600" />
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {m.last_updated
+              ? `Son güncelleme: ${new Date(m.last_updated).toLocaleString("tr-TR")}`
+              : "Yükleniyor..."}
+          </p>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Ara (premium / şirket / başvuru)…"
-              className="pl-9 pr-3 py-2 rounded-lg border w-[280px] max-w-full"
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Ara..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 w-64 rounded-lg"
             />
           </div>
-
-          <button
-            onClick={fetchAll}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
-            title="Yenile"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Yenile
-          </button>
+          <Button onClick={fetchAll} variant="outline" className="rounded-lg">
+            <RefreshCw className="h-4 w-4 mr-2" /> Yenile
+          </Button>
         </div>
       </div>
 
-      {/* Soft notes */}
-      {softNotes.length > 0 && (
-        <div className="rounded-xl border bg-amber-50 border-amber-200 p-4 text-amber-900">
-          <div className="font-semibold flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" />
-            Not
-          </div>
-          <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
-            {softNotes.map((n, i) => (
-              <li key={i}>{n}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        {overviewCards.map((c) => (
-          <StatCard key={c.title} title={c.title} value={c.value} icon={c.icon} hint={c.hint} />
+      {/* ═══ TABS ═══ */}
+      <div className="flex gap-1 overflow-x-auto border-b pb-1">
+        {[
+          { key: "overview", label: "Genel Bakış", icon: <BarChart3 className="h-4 w-4" /> },
+          { key: "coaches", label: `Koç Onay (${pendingApps.length})`, icon: <UserCheck className="h-4 w-4" /> },
+          { key: "companies", label: `Şirket Onay (${pendingCompanies.length})`, icon: <Building2 className="h-4 w-4" /> },
+          { key: "users", label: "Kullanıcılar", icon: <Users className="h-4 w-4" /> },
+          { key: "revenue", label: "Gelir", icon: <DollarSign className="h-4 w-4" /> },
+          { key: "community", label: "Topluluk", icon: <MessageSquare className="h-4 w-4" /> },
+          { key: "jobs", label: "İşe Alım", icon: <Briefcase className="h-4 w-4" /> },
+        ].map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key as Tab)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors rounded-t-lg ${
+              tab === t.key
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {t.icon} {t.label}
+          </button>
         ))}
       </div>
 
-      {/* APPROVAL CENTERS (COACH + COMPANY) */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* COACH APPROVAL CENTER */}
-        <div className="rounded-2xl border bg-white p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="font-semibold flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
-                Koç Onay Merkezi
+      {/* ═══ GENEL BAKIŞ ═══ */}
+      {tab === "overview" && (
+        <div className="space-y-8">
+          {/* Uyarı banner */}
+          {(pendingApps.length > 0 || pendingCompanies.length > 0) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <div className="text-sm">
+                <span className="font-semibold text-amber-800">Aksiyon gerekli: </span>
+                {pendingApps.length > 0 && (
+                  <span className="text-amber-700">
+                    {pendingApps.length} koç başvurusu bekliyor.{" "}
+                  </span>
+                )}
+                {pendingCompanies.length > 0 && (
+                  <span className="text-amber-700">
+                    {pendingCompanies.length} şirket talebi bekliyor.
+                  </span>
+                )}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                pending_review/pending/new • CV/Sertifika aç • Approve/Reject
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto shrink-0 text-amber-700 border-amber-300"
+                onClick={() => setTab("coaches")}
+              >
+                İncele →
+              </Button>
             </div>
+          )}
 
-            <div className="text-xs text-gray-500">{pendingCoachApps.length} bekleyen başvuru</div>
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {/* LEFT */}
-            <div className="rounded-xl border bg-gray-50 p-4">
-              {pendingCoachApps.length === 0 ? (
-                <div className="text-sm text-gray-600">Bekleyen başvuru yok.</div>
-              ) : (
-                <div className="space-y-2">
-                  {pendingCoachApps.slice(0, 30).map((app) => (
-                    <button
-                      key={app.id}
-                      onClick={() => setSelectedApp(app)}
-                      className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
-                        selectedApp?.id === app.id ? "border-red-300 ring-2 ring-red-100" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate">
-                            {app.full_name || "İsimsiz Başvuru"}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1 truncate">
-                            {app.email || "—"} • {app.phone || "—"}
-                          </div>
-                          <div className="text-[11px] text-gray-400 mt-1 truncate">
-                            user: {app.user_id ? shortId(app.user_id) : "— (email ile bağlanır)"}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 whitespace-nowrap">
-                          {formatDate(app.created_at)}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT */}
-            <div className="rounded-xl border p-4">
-              {!selectedApp ? (
-                <div className="text-sm text-gray-600">Soldan bir başvuru seç.</div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-lg font-bold truncate">{selectedApp.full_name || "Koç Adayı"}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {selectedApp.email || "—"} • {selectedApp.phone || "—"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {selectedApp.city || "—"} {selectedApp.country ? ` / ${selectedApp.country}` : ""}
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-gray-500">
-                      Status: <b>{selectedApp.status || "-"}</b>
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <Detail label="Deneyim">{(selectedApp.experience || "-").toString()}</Detail>
-                    <Detail label="Seans Ücreti">
-                      {selectedApp.session_fee != null ? `${selectedApp.session_fee} TRY` : "-"}
-                    </Detail>
-                    <Detail label="Sertifika">{selectedApp.certification || "-"}</Detail>
-                    <Detail label="Sertifika Yılı">{selectedApp.certification_year || "-"}</Detail>
-                  </div>
-
-                  <Detail label="Uzmanlık">
-                    {selectedApp.specializations ? (
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {stringifyAny(selectedApp.specializations)}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">—</span>
-                    )}
-                  </Detail>
-
-                  <Detail label="Bio">
-                    {selectedApp.bio ? (
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.bio}</div>
-                    ) : (
-                      <span className="text-sm text-gray-500">—</span>
-                    )}
-                  </Detail>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <a
-                      href={selectedApp.linkedin || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`rounded-xl border p-3 flex items-center justify-between ${
-                        selectedApp.linkedin ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
-                      }`}
-                    >
-                      <div className="text-sm font-semibold">LinkedIn</div>
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    </a>
-
-                    <a
-                      href={selectedApp.website || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`rounded-xl border p-3 flex items-center justify-between ${
-                        selectedApp.website ? "hover:bg-gray-50" : "opacity-50 pointer-events-none"
-                      }`}
-                    >
-                      <div className="text-sm font-semibold">Website</div>
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    </a>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => openSignedFile(selectedApp.cv_path)}
-                      disabled={actionLoading || !selectedApp.cv_path}
-                      className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
-                        !selectedApp.cv_path ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-semibold">CV Aç</span>
-                      </div>
-                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
-                    </button>
-
-                    <button
-                      onClick={() => openSignedFile(selectedApp.certificate_path)}
-                      disabled={actionLoading || !selectedApp.certificate_path}
-                      className={`rounded-xl border p-3 flex items-center justify-between hover:bg-gray-50 ${
-                        !selectedApp.certificate_path ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-semibold">Sertifika Aç</span>
-                      </div>
-                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-gray-400" />}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
-                    <button
-                      onClick={() => rejectCoach(selectedApp)}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
-                    >
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      Reddet
-                    </button>
-
-                    <button
-                      onClick={() => approveCoach(selectedApp)}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Onayla
-                    </button>
-                  </div>
-
-                  <div className="text-xs text-gray-500">
-                    Onay = <b>coach_applications.status=approved</b> + <b>profiles.role=coach</b> (user_id yoksa email ile bağlar)
-                  </div>
-                </div>
-              )}
+          {/* Ana KPI'lar */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">📊 Ana Metrikler</h2>
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+              <KpiCard label="Toplam Kullanıcı" value={m.total_users} sub={`+${m.monthly_new_users} bu ay`} icon={<Users className="h-5 w-5" />} color="blue" />
+              <KpiCard label="Bugün Kayıt" value={m.today_new_users} sub={`+${m.weekly_new_users} bu hafta`} icon={<TrendingUp className="h-5 w-5" />} color="green" />
+              <KpiCard label="Premium Üye" value={m.total_premium_users} sub={`${m.total_users ? ((m.total_premium_users / m.total_users) * 100).toFixed(1) : 0}% oran`} icon={<Award className="h-5 w-5" />} color="orange" />
+              <KpiCard label="Toplam Koç" value={m.total_coaches} sub={`${m.active_coaches} aktif`} icon={<UserCheck className="h-5 w-5" />} color="purple" />
+              <KpiCard label="Toplam Seans" value={m.total_sessions} sub={`${m.completed_sessions} tamamlandı`} icon={<Video className="h-5 w-5" />} color="blue" />
+              <KpiCard label="Toplam Gelir" value={`₺${((m.total_successful_revenue || 0) / 100).toLocaleString("tr-TR")}`} sub={`₺${((m.monthly_payment_amount || 0) / 100).toLocaleString("tr-TR")} bu ay`} icon={<DollarSign className="h-5 w-5" />} color="green" />
             </div>
           </div>
-        </div>
 
-        {/* COMPANY APPROVAL CENTER */}
-        <div className="rounded-2xl border bg-white p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="font-semibold flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Şirket Onay Merkezi
-              </div>
-              <div className="text-xs text-gray-500 mt-1">new/pending_review/pending • Approve/Reject</div>
+          {/* Operasyon KPI */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">⚡ Operasyon</h2>
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+              <KpiCard label="Bekleyen Başvuru" value={m.pending_coach_applications || pendingApps.length} icon={<Clock className="h-5 w-5" />} color="red" alert />
+              <KpiCard label="Seans Talebi" value={m.pending_session_requests} icon={<Calendar className="h-5 w-5" />} color="orange" alert={m.pending_session_requests > 0} />
+              <KpiCard label="Rezervasyon" value={m.total_bookings} sub={`${m.monthly_bookings} bu ay`} icon={<Calendar className="h-5 w-5" />} color="blue" />
+              <KpiCard label="Demo Talep" value={m.total_demo_requests} icon={<Building2 className="h-5 w-5" />} color="purple" />
+              <KpiCard label="İş İlanı" value={m.total_jobs} sub={`${m.total_job_applications} başvuru`} icon={<Briefcase className="h-5 w-5" />} color="blue" />
+              <KpiCard label="Email" value={m.total_emails_sent} icon={<Mail className="h-5 w-5" />} color="gray" />
             </div>
-
-            <div className="text-xs text-gray-500">{pendingCompanyRequests.length} bekleyen talep</div>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {/* LEFT */}
-            <div className="rounded-xl border bg-gray-50 p-4">
-              {pendingCompanyRequests.length === 0 ? (
-                <div className="text-sm text-gray-600">Bekleyen şirket talebi yok.</div>
-              ) : (
-                <div className="space-y-2">
-                  {pendingCompanyRequests.slice(0, 30).map((req) => (
-                    <button
-                      key={req.id}
-                      onClick={() => setSelectedCompany(req)}
-                      className={`w-full text-left rounded-xl border p-3 bg-white hover:bg-gray-50 transition ${
-                        selectedCompany?.id === req.id ? "border-red-300 ring-2 ring-red-100" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate">{req.company_name || "İsimsiz Şirket"}</div>
-                          <div className="text-xs text-gray-500 mt-1 truncate">
-                            {req.email || "—"} • {req.phone || "—"}
-                          </div>
-                          <div className="text-[11px] text-gray-400 mt-1 truncate">
-                            user: {req.user_id ? shortId(req.user_id) : "— (email ile bağlanır)"}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 whitespace-nowrap">{formatDate(req.created_at)}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Topluluk KPI */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">📱 Topluluk</h2>
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+              <KpiCard label="Post" value={m.total_posts} sub={`+${m.monthly_posts} bu ay`} icon={<MessageSquare className="h-5 w-5" />} color="blue" />
+              <KpiCard label="Yorum" value={m.total_comments} icon={<MessageSquare className="h-5 w-5" />} color="green" />
+              <KpiCard label="Reaksiyon" value={m.total_reactions} icon={<Heart className="h-5 w-5" />} color="red" />
+              <KpiCard label="Takip" value={m.total_follows} icon={<Users className="h-5 w-5" />} color="purple" />
+              <KpiCard label="Değerlendirme" value={m.total_reviews} sub={`⭐ ${m.average_rating}`} icon={<Star className="h-5 w-5" />} color="orange" />
+              <KpiCard label="Etkinlik" value={m.total_events} icon={<Calendar className="h-5 w-5" />} color="blue" />
             </div>
+          </div>
 
-            {/* RIGHT */}
-            <div className="rounded-xl border p-4">
-              {!selectedCompany ? (
-                <div className="text-sm text-gray-600">Soldan bir şirket talebi seç.</div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-lg font-bold truncate">{selectedCompany.company_name || "Şirket"}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {selectedCompany.email || "—"} • {selectedCompany.phone || "—"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        user_id: <b>{selectedCompany.user_id ? selectedCompany.user_id : "— (email ile bağlanır)"}</b>
-                      </div>
+          {/* Son Aktiviteler */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Son Kullanıcılar */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-600" /> Son Kayıtlar
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                {(recent?.recent_users || users.slice(0, 8)).map((u: any) => (
+                  <div key={u.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{u.full_name || u.email}</p>
+                      <p className="text-xs text-gray-400">{u.role} • {u.user_type}</p>
                     </div>
-
-                    <div className="text-xs text-gray-500">
-                      Status: <b>{selectedCompany.status || "-"}</b>
+                    <div className="text-right">
+                      {u.is_coach && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Koç</span>}
+                      {u.is_premium && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full ml-1">Premium</span>}
+                      <p className="text-[10px] text-gray-400 mt-1">{new Date(u.created_at).toLocaleDateString("tr-TR")}</p>
                     </div>
                   </div>
+                ))}
+              </CardContent>
+            </Card>
 
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
-                    <button
-                      onClick={() => rejectCompany(selectedCompany)}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-gray-50"
-                    >
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      Reddet
-                    </button>
-
-                    <button
-                      onClick={() => approveCompany(selectedCompany)}
-                      disabled={actionLoading}
-                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Onayla
-                    </button>
+            {/* Son Koç Başvuruları */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-green-600" /> Son Koç Başvuruları
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                {coachApps.slice(0, 8).map((a: any) => (
+                  <div key={a.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{a.full_name}</p>
+                      <p className="text-xs text-gray-400">{a.email}</p>
+                    </div>
+                    <StatusBadge status={a.status} />
                   </div>
+                ))}
+              </CardContent>
+            </Card>
 
-                  <div className="text-xs text-gray-500">
-                    Onay = <b>company_requests.status=approved</b> + <b>profiles.role=corporate</b> (user_id yoksa email ile bağlar)
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Premium + Revenue */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border p-5 space-y-4 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold flex items-center gap-2">
-              <Crown className="h-5 w-5" />
-              Premium / Gelir
-            </div>
-            <span className="text-xs text-gray-500">
-              {premiumRows.length > 0 ? `${premiumRows.length} kayıt` : "veri yok/izin yok"}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <MiniKpi title="Active" value={premiumAgg.activeCount} icon={<TrendingUp className="h-4 w-4" />} />
-            <MiniKpi title="MRR (TRY)" value={formatMoneyTRY(premiumAgg.mrrTry)} icon={<CreditCard className="h-4 w-4" />} />
-            <MiniKpi title="AutoRenew %" value={`${premiumAgg.autoRenewRate}%`} icon={<RefreshCw className="h-4 w-4" />} />
-          </div>
-
-          <div className="rounded-xl bg-gray-50 border p-4">
-            <div className="text-sm font-semibold">Plan kırılımı (subscription_type)</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {Object.keys(premiumAgg.byType).length === 0 ? (
-                <span className="text-sm text-gray-500">Henüz veri yok</span>
-              ) : (
-                Object.entries(premiumAgg.byType)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 12)
-                  .map(([k, v]) => (
-                    <span key={k} className="text-xs rounded-full border bg-white px-2 py-1" title={k}>
-                      {k}: <b>{v}</b>
-                    </span>
+            {/* Son Ödemeler */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-green-600" /> Son Ödemeler
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                {(recent?.recent_payments || []).length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">Henüz ödeme yok</p>
+                ) : (
+                  recent.recent_payments.slice(0, 8).map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div>
+                        <p className="text-sm font-medium">₺{(p.amount / 100).toLocaleString("tr-TR")}</p>
+                        <p className="text-xs text-gray-400">{p.provider}</p>
+                      </div>
+                      <div className="text-right">
+                        <StatusBadge status={p.status} />
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(p.created_at).toLocaleDateString("tr-TR")}</p>
+                      </div>
+                    </div>
                   ))
-              )}
-            </div>
-            <div className="mt-3 text-xs text-gray-500">
-              Not: Çoklu para birimi varsa MRR/ARR’i currency’ye göre ayıracağız.
-            </div>
-          </div>
-
-          <div className="text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">ARR (TRY)</span>
-              <span className="font-semibold">{formatMoneyTRY(premiumAgg.arrTry)}</span>
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
+      )}
 
-        {/* Ops KPIs */}
-        <div className="rounded-2xl border p-5 space-y-4 bg-white">
-          <div className="font-semibold flex items-center gap-2">
-            <CalendarClock className="h-5 w-5" />
-            Operasyon Merkezi
-          </div>
-
-          <div className="space-y-3">
-            <OpsRow title="Şirket talepleri" value={data.total_company_requests} sub="Pipeline girişi" />
-            <OpsRow title="Bekleyen koç başvurusu" value={data.pending_coach_apps} sub="Onboarding darboğazı" />
-            <OpsRow
-              title="Koç oranı"
-              value={data.total_profiles > 0 ? `${Math.round((data.total_coaches / data.total_profiles) * 100)}%` : "0%"}
-              sub="Koç / toplam kullanıcı"
-            />
-            <OpsRow title="Aktif premium" value={premiumAgg.activeCount} sub="Gelir üreten üyelik" />
-          </div>
-
-          <div className="rounded-xl border bg-white p-4">
-            <div className="text-sm font-semibold mb-2">Hızlı aksiyon listesi</div>
-            <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
-              <li>Bekleyen koçlara SLA koy (örn. 24-48 saat)</li>
-              <li>Kurumsal talepleri status ile pipeline’a bağla</li>
-              <li>Premium dönüşüm hunisi: landing → register → checkout</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* AI Insights */}
-        <div className="rounded-2xl border p-5 space-y-4 bg-white">
-          <div className="font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            AI Insights (UI)
-          </div>
-
-          <div className="rounded-xl border bg-gradient-to-b from-gray-50 to-white p-4">
-            <div className="text-sm font-semibold">Bu panel ne yapacak?</div>
-            <div className="text-sm text-gray-600 mt-1">
-              Admin için özet + öneri + anomali üretimi (Edge Function) bağlanacak.
-            </div>
-
-            <div className="mt-3 text-xs text-gray-500">Örnek:</div>
-            <ul className="mt-2 text-sm text-gray-700 space-y-2">
-              <li className="rounded-lg border bg-white p-3">
-                <b>Gelir:</b> MRR (TRY) {formatMoneyTRY(premiumAgg.mrrTry)}
-              </li>
-              <li className="rounded-lg border bg-white p-3">
-                <b>Öneri:</b> Koç onboarding’de “profile completion” ölç
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-xl border bg-white p-4">
-            <div className="text-sm font-semibold mb-2">Toplanacak datalar</div>
-            <div className="text-sm text-gray-600 space-y-1">
-              <div>• DAU/WAU/MAU</div>
-              <div>• Funnel</div>
-              <div>• Premium: churn/ARPU/LTV</div>
-              <div>• Kurumsal: lead → anlaşma</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent tables */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <PanelTable
-          title="Son Premium Kayıtları"
-          subtitle="subscription_type / status / price"
-          emptyText="Premium tablosu boş veya erişim yok."
-          rows={filteredRecent.premiums.slice(0, 10).map((r) => ({
-            id: r.id,
-            left: r.subscription_type || "-",
-            mid: r.status || "-",
-            right: `${r.price ?? "-"} ${r.currency ?? ""}`.trim(),
-            meta: r.badge_type ? `badge: ${r.badge_type}` : "",
-          }))}
-        />
-
-        <PanelTable
-          title="Son Şirket Talepleri"
-          subtitle="company_name / status"
-          emptyText="company_requests boş veya erişim yok."
-          rows={filteredRecent.companies.slice(0, 10).map((r) => ({
-            id: r.id,
-            left: r.company_name || r.id,
-            mid: r.status || "-",
-            right: formatDate(r.created_at),
-            meta: r.user_id ? `user: ${shortId(r.user_id)}` : "",
-          }))}
-        />
-
-        <PanelTable
-          title="Son Koç Başvuruları"
-          subtitle="full_name / status"
-          emptyText="coach_applications boş veya erişim yok."
-          rows={filteredRecent.coachApps.slice(0, 10).map((r) => ({
-            id: r.id,
-            left: r.full_name || r.id,
-            mid: r.status || "-",
-            right: formatDate(r.created_at),
-            meta: r.user_id ? `user: ${shortId(r.user_id)}` : "",
-          }))}
-        />
-      </div>
-
-      <div className="text-xs text-gray-500">
-        Sonraki adım: <b>RLS/Policy</b> tarafını sağlamlaştırıp “admin-only update” garantisi.
-      </div>
-    </div>
-  );
-}
-
-/* ==============================
-   UI PARTS
-============================== */
-
-function StatCard({ title, value, icon, hint }: { title: string; value: number; icon: JSX.Element; hint?: string }) {
-  return (
-    <div className="rounded-2xl border p-4 flex items-center gap-4 bg-white">
-      <div className="p-3 rounded-xl bg-gray-50 border">{icon}</div>
-      <div className="min-w-0">
-        <div className="text-sm text-gray-500">{title}</div>
-        <div className="text-2xl font-bold">{value}</div>
-        {hint ? <div className="text-xs text-gray-400 mt-1">{hint}</div> : null}
-      </div>
-    </div>
-  );
-}
-
-function MiniKpi({ title, value, icon }: { title: string; value: string | number; icon: JSX.Element }) {
-  return (
-    <div className="rounded-xl border bg-white p-3">
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-500">{title}</div>
-        <div className="text-gray-400">{icon}</div>
-      </div>
-      <div className="text-lg font-bold mt-1">{value}</div>
-    </div>
-  );
-}
-
-function OpsRow({ title, value, sub }: { title: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-xl border bg-white p-4 flex items-center justify-between">
-      <div>
-        <div className="text-sm font-semibold">{title}</div>
-        {sub ? <div className="text-xs text-gray-500 mt-1">{sub}</div> : null}
-      </div>
-      <div className="text-xl font-bold">{value}</div>
-    </div>
-  );
-}
-
-function Detail({ label, children }: { label: string; children: any }) {
-  return (
-    <div className="rounded-xl border bg-white p-3">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1">{children}</div>
-    </div>
-  );
-}
-
-function PanelTable({
-  title,
-  subtitle,
-  rows,
-  emptyText,
-}: {
-  title: string;
-  subtitle?: string;
-  emptyText: string;
-  rows: { id: string; left: string; mid: string; right: string; meta?: string }[];
-}) {
-  return (
-    <div className="rounded-2xl border bg-white p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="font-semibold">{title}</div>
-          {subtitle ? <div className="text-xs text-gray-500 mt-1">{subtitle}</div> : null}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        {rows.length === 0 ? (
-          <div className="text-sm text-gray-500">{emptyText}</div>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((r) => (
-              <div key={r.id} className="rounded-xl border bg-gray-50 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">{r.left}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {r.mid}
-                      {r.meta ? <span className="ml-2 text-gray-400">• {r.meta}</span> : null}
+      {/* ═══ KOÇ ONAY MERKEZİ ═══ */}
+      {tab === "coaches" && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          {/* Sol: Liste */}
+          <div className="lg:col-span-2 space-y-3">
+            <h2 className="text-lg font-semibold">
+              Bekleyen Başvurular ({pendingApps.length})
+            </h2>
+            {pendingApps.length === 0 ? (
+              <EmptyState text="Bekleyen başvuru yok 🎉" />
+            ) : (
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                {pendingApps.map((a) => (
+                  <Card
+                    key={a.id}
+                    className={`rounded-xl cursor-pointer transition-all hover:shadow-md p-4 ${
+                      selectedApp?.id === a.id ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
+                    }`}
+                    onClick={() => setSelectedApp(a)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">{a.full_name}</p>
+                        <p className="text-xs text-gray-500">{a.email}</p>
+                        <p className="text-xs text-gray-400">{a.phone} • {a.city}</p>
+                      </div>
+                      <div className="text-right">
+                        <StatusBadge status={a.status} />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {new Date(a.created_at).toLocaleDateString("tr-TR")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-sm font-semibold whitespace-nowrap">{r.right}</div>
-                </div>
+                  </Card>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Onaylanmış ve Reddedilmiş */}
+            <h3 className="text-sm font-semibold text-gray-500 mt-6">
+              Son İşlenenler
+            </h3>
+            {coachApps
+              .filter((a) => ["approved", "rejected"].includes(a.status))
+              .slice(0, 5)
+              .map((a) => (
+                <Card key={a.id} className="rounded-xl p-3 opacity-70">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm">{a.full_name}</p>
+                    <StatusBadge status={a.status} />
+                  </div>
+                </Card>
+              ))}
           </div>
-        )}
-      </div>
+
+          {/* Sağ: Detay */}
+          <div className="lg:col-span-3">
+            {!selectedApp ? (
+              <Card className="rounded-xl p-10 text-center text-gray-400">
+                <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p className="font-medium">Soldan bir başvuru seçin</p>
+              </Card>
+            ) : (
+              <Card className="rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">{selectedApp.full_name}</h3>
+                  <StatusBadge status={selectedApp.status} />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <InfoRow label="Email" value={selectedApp.email} />
+                  <InfoRow label="Telefon" value={selectedApp.phone} />
+                  <InfoRow label="Şehir" value={`${selectedApp.city}, ${selectedApp.country}`} />
+                  <InfoRow label="Deneyim" value={selectedApp.experience || selectedApp.experience_level} />
+                  <InfoRow label="Sertifika" value={selectedApp.certification || selectedApp.certificate_type} />
+                  <InfoRow label="Sertifika Yılı" value={selectedApp.certification_year || selectedApp.certificate_year} />
+                  <InfoRow label="Seans Ücreti" value={`₺${selectedApp.session_fee || selectedApp.session_price || "—"}`} />
+                  <InfoRow label="Uzmanlık" value={
+                    Array.isArray(selectedApp.expertise_tags)
+                      ? selectedApp.expertise_tags.join(", ")
+                      : selectedApp.specializations || "—"
+                  } />
+                </div>
+
+                {selectedApp.bio && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-1">Biyografi</p>
+                    <p className="text-sm bg-gray-50 p-3 rounded-lg">{selectedApp.bio}</p>
+                  </div>
+                )}
+
+                {/* Dosyalar */}
+                <div className="flex gap-3 flex-wrap">
+                  {selectedApp.cv_path && (
+                    <a
+                      href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${selectedApp.cv_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button variant="outline" size="sm" className="rounded-lg">
+                        <Download className="h-4 w-4 mr-2" /> CV İndir
+                      </Button>
+                    </a>
+                  )}
+                  {selectedApp.certificate_path && (
+                    <a
+                      href={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${selectedApp.certificate_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button variant="outline" size="sm" className="rounded-lg">
+                        <Download className="h-4 w-4 mr-2" /> Sertifika İndir
+                      </Button>
+                    </a>
+                  )}
+                  {selectedApp.linkedin && (
+                    <a href={selectedApp.linkedin} target="_blank" rel="noreferrer">
+                      <Button variant="outline" size="sm" className="rounded-lg">
+                        <ExternalLink className="h-4 w-4 mr-2" /> LinkedIn
+                      </Button>
+                    </a>
+                  )}
+                </div>
+
+                {/* Aksiyon Butonları */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    onClick={() => approveCoach(selectedApp.id)}
+                    disabled={actionLoading}
+                    className="flex-1 bg-green-600 hover:bg-green-700 rounded-lg"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {actionLoading ? "İşleniyor..." : "Onayla"}
+                  </Button>
+                  <Button
+                    onClick={() => rejectCoach(selectedApp.id)}
+                    disabled={actionLoading}
+                    variant="destructive"
+                    className="flex-1 rounded-lg"
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    Reddet
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ ŞİRKET ONAY MERKEZİ ═══ */}
+      {tab === "companies" && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-2 space-y-3">
+            <h2 className="text-lg font-semibold">
+              Şirket Talepleri ({pendingCompanies.length} bekleyen)
+            </h2>
+            {companyReqs.length === 0 ? (
+              <EmptyState text="Şirket talebi yok" />
+            ) : (
+              companyReqs.map((c) => (
+                <Card
+                  key={c.id}
+                  className={`rounded-xl cursor-pointer p-4 hover:shadow-md transition-all ${
+                    selectedCompany?.id === c.id ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
+                  }`}
+                  onClick={() => setSelectedCompany(c)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm">{c.brand_name || c.legal_name}</p>
+                      <p className="text-xs text-gray-400">{c.legal_name}</p>
+                    </div>
+                    <StatusBadge status={c.status} />
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+          <div className="lg:col-span-3">
+            {!selectedCompany ? (
+              <Card className="rounded-xl p-10 text-center text-gray-400">
+                <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Soldan bir şirket seçin</p>
+              </Card>
+            ) : (
+              <Card className="rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">{selectedCompany.brand_name || selectedCompany.legal_name}</h3>
+                  <StatusBadge status={selectedCompany.status} />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <InfoRow label="Tüzel Ad" value={selectedCompany.legal_name} />
+                  <InfoRow label="Marka" value={selectedCompany.brand_name} />
+                  <InfoRow label="User ID" value={selectedCompany.user_id} />
+                  <InfoRow label="Güncelleme" value={new Date(selectedCompany.updated_at).toLocaleString("tr-TR")} />
+                </div>
+                {["pending", "pending_review", "new"].includes(selectedCompany.status) && (
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      onClick={() => approveCompany(selectedCompany.id)}
+                      disabled={actionLoading}
+                      className="flex-1 bg-green-600 hover:bg-green-700 rounded-lg"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" /> Onayla
+                    </Button>
+                    <Button
+                      onClick={() => rejectCompany(selectedCompany.id)}
+                      disabled={actionLoading}
+                      variant="destructive"
+                      className="flex-1 rounded-lg"
+                    >
+                      <UserX className="h-4 w-4 mr-2" /> Reddet
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ KULLANICILAR ═══ */}
+      {tab === "users" && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Tüm Kullanıcılar ({users.length})</h2>
+          <div className="rounded-xl border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-3 font-medium text-gray-600">Kullanıcı</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Rol</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Tip</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Durum</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Kayıt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users
+                  .filter((u) => {
+                    if (!search) return true;
+                    const s = search.toLowerCase();
+                    return u.full_name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s);
+                  })
+                  .map((u) => (
+                    <tr key={u.id} className="border-t hover:bg-gray-50">
+                      <td className="p-3">
+                        <p className="font-medium">{u.full_name || "—"}</p>
+                        <p className="text-xs text-gray-400">{u.email}</p>
+                      </td>
+                      <td className="p-3">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          u.role === "admin" ? "bg-red-100 text-red-700" :
+                          u.role === "coach" ? "bg-purple-100 text-purple-700" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>{u.role || "user"}</span>
+                      </td>
+                      <td className="p-3 text-xs text-gray-500">{u.user_type || "—"}</td>
+                      <td className="p-3">
+                        <div className="flex gap-1 flex-wrap">
+                          {u.is_coach && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Koç</span>}
+                          {u.is_premium && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Premium</span>}
+                          {u.is_verified && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Doğrulanmış</span>}
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs text-gray-400">
+                        {new Date(u.created_at).toLocaleDateString("tr-TR")}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ GELİR ═══ */}
+      {tab === "revenue" && (
+        <div className="space-y-6">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <KpiCard label="Toplam Gelir" value={`₺${((m.total_successful_revenue || 0) / 100).toLocaleString("tr-TR")}`} icon={<DollarSign className="h-5 w-5" />} color="green" />
+            <KpiCard label="Bu Ay" value={`₺${((m.monthly_payment_amount || 0) / 100).toLocaleString("tr-TR")}`} icon={<Calendar className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Bugün" value={`₺${((m.today_payment_amount || 0) / 100).toLocaleString("tr-TR")}`} icon={<TrendingUp className="h-5 w-5" />} color="orange" />
+            <KpiCard label="Başarılı Ödeme" value={m.successful_payments} sub={`/ ${m.total_payments} toplam`} icon={<CheckCircle2 className="h-5 w-5" />} color="green" />
+          </div>
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+            <KpiCard label="Seans Geliri" value={`₺${m.total_session_revenue}`} icon={<Video className="h-5 w-5" />} color="purple" />
+            <KpiCard label="Abonelik" value={m.total_subscriptions} icon={<Award className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Kurumsal Fatura" value={m.total_corporate_invoices} icon={<Building2 className="h-5 w-5" />} color="gray" />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ TOPLULUK ═══ */}
+      {tab === "community" && (
+        <div className="space-y-6">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+            <KpiCard label="Post" value={m.total_posts} sub={`+${m.monthly_posts} bu ay`} icon={<MessageSquare className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Premium Post" value={m.premium_posts} icon={<Award className="h-5 w-5" />} color="orange" />
+            <KpiCard label="Yorum" value={m.total_comments} icon={<MessageSquare className="h-5 w-5" />} color="green" />
+            <KpiCard label="Reaksiyon" value={m.total_reactions} icon={<Heart className="h-5 w-5" />} color="red" />
+            <KpiCard label="Takip" value={m.total_follows} icon={<Users className="h-5 w-5" />} color="purple" />
+            <KpiCard label="Anket" value={m.total_polls} icon={<BarChart3 className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Etkinlik" value={m.total_events} icon={<Calendar className="h-5 w-5" />} color="orange" />
+            <KpiCard label="Yer İşareti" value={m.total_bookmarks} icon={<BookOpen className="h-5 w-5" />} color="gray" />
+            <KpiCard label="Ort. Puan" value={`⭐ ${m.average_rating}`} sub={`${m.total_reviews} değerlendirme`} icon={<Star className="h-5 w-5" />} color="orange" />
+            <KpiCard label="Kişilik Testi" value={m.total_personality_tests} icon={<Brain className="h-5 w-5" />} color="purple" />
+            <KpiCard label="AI Özet" value={m.total_ai_summaries} icon={<Brain className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Email" value={m.total_emails_sent} icon={<Mail className="h-5 w-5" />} color="gray" />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ İŞE ALIM ═══ */}
+      {tab === "jobs" && (
+        <div className="space-y-6">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            <KpiCard label="İş İlanı" value={m.total_jobs} icon={<Briefcase className="h-5 w-5" />} color="blue" />
+            <KpiCard label="Boosted İlan" value={m.boosted_jobs} icon={<Zap className="h-5 w-5" />} color="orange" />
+            <KpiCard label="Başvuru" value={m.total_job_applications} sub={`+${m.monthly_job_applications} bu ay`} icon={<FileText className="h-5 w-5" />} color="purple" />
+            <KpiCard label="Mülakat" value={m.total_interviews} sub={`${m.completed_interviews} tamamlandı`} icon={<Video className="h-5 w-5" />} color="blue" />
+            <KpiCard label="İşe Alınan" value={m.total_hired} sub={`/ ${m.total_hire_decisions} karar`} icon={<UserCheck className="h-5 w-5" />} color="green" />
+            <KpiCard label="Eşleşme" value={m.total_matches} icon={<Heart className="h-5 w-5" />} color="red" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ==============================
-   HELPERS
-============================== */
+// ═══════════════════════════════════════════════
+// ALT BİLEŞENLER
+// ═══════════════════════════════════════════════
 
-function formatMoneyTRY(n: number) {
-  const val = Number(n || 0);
-  try {
-    return val.toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
-  } catch {
-    return `${val} TRY`;
-  }
+function KpiCard({ label, value, sub, icon, color = "blue", alert = false }: any) {
+  const colors: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-green-50 text-green-600",
+    red: "bg-red-50 text-red-600",
+    orange: "bg-orange-50 text-orange-600",
+    purple: "bg-purple-50 text-purple-600",
+    gray: "bg-gray-50 text-gray-600",
+  };
+  return (
+    <Card className={`rounded-xl border-none shadow-sm p-4 ${alert ? "ring-2 ring-red-200 bg-red-50/30" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className={`p-2 rounded-lg shrink-0 ${colors[color]}`}>{icon}</div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-gray-500 leading-tight truncate">{label}</p>
+          <p className="text-xl font-bold mt-0.5">{value ?? 0}</p>
+          {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
+        </div>
+      </div>
+    </Card>
+  );
 }
 
-function formatDate(s?: string | null) {
-  if (!s) return "-";
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return "-";
-  return d.toLocaleString("tr-TR");
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; label: string }> = {
+    pending: { bg: "bg-yellow-100 text-yellow-700", label: "⏳ Beklemede" },
+    pending_review: { bg: "bg-orange-100 text-orange-700", label: "📋 İncelemede" },
+    new: { bg: "bg-blue-100 text-blue-700", label: "🆕 Yeni" },
+    approved: { bg: "bg-green-100 text-green-700", label: "✅ Onaylı" },
+    rejected: { bg: "bg-red-100 text-red-700", label: "❌ Reddedildi" },
+    success: { bg: "bg-green-100 text-green-700", label: "✅ Başarılı" },
+    failed: { bg: "bg-red-100 text-red-700", label: "❌ Başarısız" },
+    active: { bg: "bg-green-100 text-green-700", label: "🟢 Aktif" },
+    completed: { bg: "bg-gray-100 text-gray-700", label: "✔ Tamamlandı" },
+  };
+  const s = map[status] || { bg: "bg-gray-100 text-gray-600", label: status };
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${s.bg}`}>
+      {s.label}
+    </span>
+  );
 }
 
-function shortId(id?: string | null) {
-  if (!id) return "-";
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+function InfoRow({ label, value }: { label: string; value: any }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500">{label}</p>
+      <p className="text-sm">{value || "—"}</p>
+    </div>
+  );
 }
 
-function stringifyAny(v: any) {
-  if (v == null) return "";
-  if (typeof v === "string") return v;
-  if (Array.isArray(v)) return v.join(", ");
-  try {
-    return JSON.stringify(v);
-  } catch {
-    return String(v);
-  }
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="p-8 text-center border-2 border-dashed rounded-xl text-gray-400">
+      <p className="font-medium">{text}</p>
+    </div>
+  );
 }

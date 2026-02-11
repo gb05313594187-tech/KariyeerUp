@@ -1,34 +1,47 @@
-import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
+  URL?: string;
+}
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = "Kariyeer <noreply@kariyeer.com>";
-const SITE_URL = process.env.URL || "https://kariyeer.com";
-
-async function sendResendEmail(to: string, subject: string, html: string) {
+async function sendResendEmail(to: string, subject: string, html: string, env: Env) {
+  const FROM_EMAIL = "Kariyeer <noreply@kariyeer.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
   });
   return res.json();
 }
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*" }, body: "" };
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
+
+  // CORS Ayarları
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
   }
-  if (event.httpMethod !== "POST") return { statusCode: 405 };
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    const body: any = await request.json();
     const {
       interviewId,
       decision,
@@ -36,24 +49,30 @@ const handler: Handler = async (event) => {
       startDate,
       notes,
       notifyCandidate = true,
-    } = JSON.parse(event.body || "{}");
+    } = body;
 
-    const authHeader = event.headers.authorization || "";
+    // Yetkilendirme
+    const authHeader = request.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
     // Interview detayları
-    const { data: interview } = await supabase
+    const { data: interview }: any = await supabase
       .from("interviews")
       .select("*, candidate:profiles!candidate_id(full_name,email), job:jobs(position)")
       .eq("id", interviewId)
       .single();
 
-    if (!interview) return { statusCode: 404, body: JSON.stringify({ error: "Mülakat bulunamadı" }) };
+    if (!interview) {
+      return new Response(JSON.stringify({ error: "Mülakat bulunamadı" }), { status: 404 });
+    }
 
     // Hire decision kaydı
-    const { data: hireRecord } = await supabase
+    const { data: hireRecord, error: hireErr }: any = await supabase
       .from("hire_decisions")
       .insert({
         interview_id: interviewId,
@@ -69,6 +88,8 @@ const handler: Handler = async (event) => {
       })
       .select()
       .single();
+
+    if (hireErr) throw hireErr;
 
     // Interview tablosunda karar güncelle
     await supabase
@@ -99,10 +120,11 @@ const handler: Handler = async (event) => {
           </div>
         </div>`;
 
-      const result = await sendResendEmail(
+      const result: any = await sendResendEmail(
         interview.candidate.email,
         `${decisionText} - ${interview.job?.position}`,
-        html
+        html,
+        env
       );
 
       emailSent = !!result.id;
@@ -116,13 +138,14 @@ const handler: Handler = async (event) => {
       });
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, decision, emailSent }),
-    };
+    return new Response(
+      JSON.stringify({ success: true, decision, emailSent }),
+      { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+    );
   } catch (err: any) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 };
-
-export { handler };

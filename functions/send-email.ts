@@ -1,8 +1,8 @@
-import type { Handler } from "@netlify/functions";
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = process.env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
-const SITE_URL = process.env.URL || "https://kariyeer.com";
+interface Env {
+  RESEND_API_KEY: string;
+  FROM_EMAIL?: string;
+  URL?: string;
+}
 
 interface EmailPayload {
   to: string;
@@ -12,7 +12,7 @@ interface EmailPayload {
   data: Record<string, any>;
 }
 
-function getEmailHtml(templateType: string, data: Record<string, any>): string {
+function getEmailHtml(templateType: string, data: Record<string, any>, siteUrl: string): string {
   const wrapper = (header: string, headerColor: string, body: string) => `
     <div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
       <div style="background:linear-gradient(135deg,${headerColor});padding:32px 24px;text-align:center;color:white;">
@@ -114,7 +114,7 @@ function getEmailHtml(templateType: string, data: Record<string, any>): string {
            ...(data.startDate ? [`📅 <strong>Başlangıç:</strong> ${data.startDate}`] : []),
            ...(data.salary ? [`💰 <strong>Maaş:</strong> ${data.salary}`] : []),
          ])}
-         ${btn(SITE_URL + "/dashboard", "📋 Dashboard'a Git")}`
+         ${btn(siteUrl + "/dashboard", "📋 Dashboard'a Git")}`
       );
 
     case "payment_confirmed":
@@ -145,7 +145,7 @@ function getEmailHtml(templateType: string, data: Record<string, any>): string {
            `🕐 <strong>İstenen Saat:</strong> ${data.sessionTime}`,
            ...(data.note ? [`📝 <strong>Not:</strong> ${data.note}`] : []),
          ])}
-         ${btn(SITE_URL + "/dashboard/sessions", "📋 Talebi İncele")}`
+         ${btn(siteUrl + "/dashboard/sessions", "📋 Talebi İncele")}`
       );
 
     default:
@@ -153,41 +153,43 @@ function getEmailHtml(templateType: string, data: Record<string, any>): string {
   }
 }
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
+  const FROM_EMAIL = env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
+  const SITE_URL = env.URL || "https://kariyeer.com";
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
-      body: "",
-    };
+    });
   }
 
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   try {
-    const payload: EmailPayload = JSON.parse(event.body || "{}");
+    const payload: EmailPayload = await request.json();
     const { to, subject, templateType, data } = payload;
 
     if (!to || !subject || !templateType) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "to, subject, templateType gerekli" }),
-      };
+      return new Response(JSON.stringify({ error: "to, subject, templateType gerekli" }), { 
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
     }
 
-    const html = getEmailHtml(templateType, data || {});
+    const html = getEmailHtml(templateType, data || {}, SITE_URL);
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
         from: FROM_EMAIL,
@@ -197,32 +199,27 @@ const handler: Handler = async (event) => {
       }),
     });
 
-    const resendData = await resendResponse.json();
+    const resendData: any = await resendResponse.json();
 
     if (!resendResponse.ok) {
-      return {
-        statusCode: 500,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "Email gönderilemedi", details: resendData }),
-      };
+      return new Response(JSON.stringify({ error: "Email gönderilemedi", details: resendData }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
-        success: true,
-        resendId: resendData.id,
-        message: `Email ${to} adresine gönderildi`,
-      }),
-    };
+    return new Response(JSON.stringify({
+      success: true,
+      resendId: resendData.id,
+      message: `Email ${to} adresine gönderildi`,
+    }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+
   } catch (err: any) {
-    return {
-      statusCode: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: err.message }),
-    };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
   }
 };
-
-export { handler };

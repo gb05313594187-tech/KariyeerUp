@@ -1,34 +1,49 @@
-import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
+  FROM_EMAIL?: string;
+  URL?: string;
+}
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = process.env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
-const SITE_URL = process.env.URL || "https://kariyeer.com";
-
-async function sendResendEmail(to: string, subject: string, html: string) {
+async function sendResendEmail(to: string, subject: string, html: string, env: Env) {
+  const FROM_EMAIL = env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
   });
   return res.json();
 }
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" }, body: "" };
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
+  const SITE_URL = env.URL || "https://kariyeer.com";
+
+  // CORS Ayarları
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
   }
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    const body: any = await request.json();
     const {
       jobApplicationId,
       scheduledAt,
@@ -37,13 +52,15 @@ const handler: Handler = async (event) => {
       interviewerEmail,
       notes,
       language = "tr",
-    } = JSON.parse(event.body || "{}");
+    } = body;
 
     // Auth kontrolü
-    const authHeader = event.headers.authorization || "";
+    const authHeader = request.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
     // Başvuru bilgisi
     const { data: application, error: appErr } = await supabase
@@ -53,27 +70,17 @@ const handler: Handler = async (event) => {
       .single();
 
     if (appErr || !application) {
-      return { statusCode: 404, body: JSON.stringify({ error: "Başvuru bulunamadı" }) };
+      return new Response(JSON.stringify({ error: "Başvuru bulunamadı" }), { status: 404 });
     }
 
-    // Aday profili
-    const { data: candidate } = await supabase
-      .from("profiles")
-      .select("full_name, email, avatar_url")
-      .eq("id", application.candidate_id)
-      .single();
-
-    // Şirket profili
-    const { data: company } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", user.id)
-      .single();
+    // Aday ve Şirket profilleri
+    const { data: candidate } = await supabase.from("profiles").select("full_name, email").eq("id", application.candidate_id).single();
+    const { data: company } = await supabase.from("profiles").select("full_name, email").eq("id", user.id).single();
 
     // Pozisyon bilgisi
     const { data: job } = await supabase
       .from("jobs")
-      .select("post_id, position, location_text, company_id")
+      .select("position")
       .eq("post_id", application.job_id)
       .single();
 
@@ -85,7 +92,7 @@ const handler: Handler = async (event) => {
     const meetingPageUrl = `${SITE_URL}/interview/${roomName}`;
 
     // Interview kaydı
-    const { data: interview, error: intErr } = await supabase
+    const { data: interview, error: intErr }: any = await supabase
       .from("interviews")
       .insert({
         job_id: application.job_id,
@@ -108,9 +115,7 @@ const handler: Handler = async (event) => {
       .select()
       .single();
 
-    if (intErr) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Interview oluşturulamadı", details: intErr }) };
-    }
+    if (intErr) throw intErr;
 
     // Meeting room kaydı
     await supabase.from("meeting_rooms").insert({
@@ -136,14 +141,10 @@ const handler: Handler = async (event) => {
 
     // Tarih formatla
     const scheduled = new Date(scheduledAt);
-    const dateFormatted = scheduled.toLocaleDateString("tr-TR", {
-      weekday: "long", year: "numeric", month: "long", day: "numeric",
-    });
-    const timeFormatted = scheduled.toLocaleTimeString("tr-TR", {
-      hour: "2-digit", minute: "2-digit",
-    });
+    const dateFormatted = scheduled.toLocaleDateString("tr-TR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const timeFormatted = scheduled.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 
-    // Adaya mülakat davet emaili
+    // Adaya email gönderimi
     let emailSent = false;
     if (candidate?.email) {
       const html = `
@@ -154,33 +155,24 @@ const handler: Handler = async (event) => {
           </div>
           <div style="padding:32px 24px;">
             <p>Merhaba <strong>${candidate.full_name}</strong>,</p>
-            <p>Başvurunuz olumlu değerlendirildi! <strong>${company?.full_name || "Şirket"}</strong> sizi online mülakata davet ediyor.</p>
+            <p><strong>${company?.full_name || "Şirket"}</strong> sizi online mülakata davet ediyor.</p>
             <div style="background:#d4edda;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #28a745;">
               <p style="margin:4px 0;">💼 <strong>Pozisyon:</strong> ${job?.position || "—"}</p>
-              <p style="margin:4px 0;">🏢 <strong>Şirket:</strong> ${company?.full_name || "—"}</p>
               <p style="margin:4px 0;">📅 <strong>Tarih:</strong> ${dateFormatted}</p>
               <p style="margin:4px 0;">🕐 <strong>Saat:</strong> ${timeFormatted}</p>
-              <p style="margin:4px 0;">⏱ <strong>Süre:</strong> ${durationMinutes} dakika</p>
             </div>
             <div style="text-align:center;margin:24px 0;">
               <a href="${meetingPageUrl}" style="display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:white!important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;">🎥 Mülakata Katıl</a>
             </div>
-            <p style="color:#6c757d;font-size:13px;">💡 Sessiz bir ortamda, kameranız açık şekilde katılmanızı öneririz.</p>
           </div>
           <div style="background:#f8f9fa;padding:20px;text-align:center;color:#6c757d;font-size:12px;">© ${new Date().getFullYear()} Kariyeer.com</div>
         </div>`;
 
-      const result = await sendResendEmail(
-        candidate.email,
-        `🎯 Mülakat Daveti: ${job?.position || "Pozisyon"} - ${company?.full_name || ""}`,
-        html
-      );
+      const result: any = await sendResendEmail(candidate.email, `🎯 Mülakat Daveti: ${job?.position || ""}`, html, env);
       emailSent = !!result.id;
 
-      // Email log
       await supabase.from("email_logs").insert({
         to_email: candidate.email,
-        to_name: candidate.full_name,
         subject: `Mülakat Daveti: ${job?.position}`,
         template_type: "interview_invite",
         related_id: interview.id,
@@ -190,25 +182,16 @@ const handler: Handler = async (event) => {
         sent_at: result.id ? new Date().toISOString() : null,
       });
 
-      // Interview email durumu güncelle
-      await supabase
-        .from("interviews")
-        .update({ email_sent: emailSent, email_sent_at: emailSent ? new Date().toISOString() : null })
-        .eq("id", interview.id);
+      await supabase.from("interviews").update({ email_sent: emailSent, email_sent_at: emailSent ? new Date().toISOString() : null }).eq("id", interview.id);
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
-        success: true,
-        interview: { id: interview.id, roomUrl, roomName, meetingPageUrl, scheduledAt },
-        emailSent,
-      }),
-    };
+    return new Response(JSON.stringify({ success: true, interview: { id: interview.id, roomUrl, roomName, meetingPageUrl }, emailSent }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   } catch (err: any) {
-    return { statusCode: 500, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: err.message }) };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 };
-
-export { handler };

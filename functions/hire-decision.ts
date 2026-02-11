@@ -1,33 +1,47 @@
-import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
+  FROM_EMAIL?: string;
+}
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = process.env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
-
-async function sendResendEmail(to: string, subject: string, html: string) {
+async function sendResendEmail(to: string, subject: string, html: string, env: Env) {
+  const FROM_EMAIL = env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
   });
   return res.json();
 }
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" }, body: "" };
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
+
+  // CORS Ayarları
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
   }
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    const body: any = await request.json();
     const {
       interviewId,
       decision,
@@ -36,15 +50,18 @@ const handler: Handler = async (event) => {
       notes,
       adminNotes,
       notifyCandidate = true,
-    } = JSON.parse(event.body || "{}");
+    } = body;
 
-    // Auth
-    const authHeader = event.headers.authorization || "";
+    // Yetkilendirme (Auth) kontrolü
+    const authHeader = request.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
-    // Interview bilgisi
+    // Interview bilgisi çekme
     const { data: interview, error: intErr } = await supabase
       .from("interviews")
       .select("*")
@@ -52,10 +69,10 @@ const handler: Handler = async (event) => {
       .single();
 
     if (intErr || !interview) {
-      return { statusCode: 404, body: JSON.stringify({ error: "Mülakat bulunamadı" }) };
+      return new Response(JSON.stringify({ error: "Mülakat bulunamadı" }), { status: 404 });
     }
 
-    // Hire decision kaydı
+    // Hire decision (İşe alım kararı) kaydı
     const { data: decisionRecord, error: decErr } = await supabase
       .from("hire_decisions")
       .insert({
@@ -74,10 +91,10 @@ const handler: Handler = async (event) => {
       .single();
 
     if (decErr) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Karar kaydedilemedi", details: decErr }) };
+      return new Response(JSON.stringify({ error: "Karar kaydedilemedi", details: decErr }), { status: 500 });
     }
 
-    // Interview güncelle
+    // Interview (Mülakat) durumunu güncelle
     await supabase
       .from("interviews")
       .update({
@@ -88,7 +105,7 @@ const handler: Handler = async (event) => {
       })
       .eq("id", interviewId);
 
-    // Job application güncelle
+    // Job application (İş Başvurusu) durumunu güncelle
     if (interview.job_id && interview.candidate_id) {
       const appStatus = decision === "hired" ? "hired" : decision === "rejected" ? "rejected" : "on_hold";
       await supabase
@@ -98,17 +115,15 @@ const handler: Handler = async (event) => {
         .eq("candidate_id", interview.candidate_id);
     }
 
-    // Adaya email
+    // Adaya email gönderimi
     let emailSent = false;
     if (notifyCandidate && interview.candidate_email) {
-      // Şirket bilgisi
       const { data: company } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", interview.company_user_id)
         .single();
 
-      // Pozisyon
       let position = "—";
       if (interview.job_id) {
         const { data: job } = await supabase
@@ -153,31 +168,18 @@ const handler: Handler = async (event) => {
             <div style="padding:32px 24px;">
               <p>Merhaba <strong>${interview.candidate_name}</strong>,</p>
               <p><strong>${position}</strong> pozisyonu için gösterdiğiniz ilgiye teşekkür ederiz.</p>
-              <p>Maalesef bu sefer başka bir aday ile devam etme kararı alınmıştır. Gelecekteki pozisyonlarımız için başvurularınızı bekliyoruz.</p>
+              <p>Maalesef bu sefer başka bir aday ile devam etme kararı alınmıştır.</p>
               ${notes ? `<p><strong>Not:</strong> ${notes}</p>` : ""}
               <p>Kariyerinizde başarılar dileriz.</p>
             </div>
             <div style="background:#f8f9fa;padding:20px;text-align:center;color:#6c757d;font-size:12px;">© ${new Date().getFullYear()} Kariyeer.com</div>
           </div>`;
-      } else {
-        subject = `Başvuru Güncelleme: ${position}`;
-        html = `
-          <div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-            <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:32px 24px;text-align:center;color:white;">
-              <h1 style="margin:0;font-size:24px;">Başvuru Güncelleme</h1>
-            </div>
-            <div style="padding:32px 24px;">
-              <p>Merhaba <strong>${interview.candidate_name}</strong>,</p>
-              <p><strong>${position}</strong> başvurunuz değerlendirme aşamasındadır. Sizinle en kısa sürede iletişime geçeceğiz.</p>
-            </div>
-            <div style="background:#f8f9fa;padding:20px;text-align:center;color:#6c757d;font-size:12px;">© ${new Date().getFullYear()} Kariyeer.com</div>
-          </div>`;
       }
 
-      const result = await sendResendEmail(interview.candidate_email, subject, html);
+      const result: any = await sendResendEmail(interview.candidate_email, subject, html, env);
       emailSent = !!result.id;
 
-      // Email log
+      // Email loglarını kaydet
       await supabase.from("email_logs").insert({
         to_email: interview.candidate_email,
         to_name: interview.candidate_name,
@@ -190,26 +192,26 @@ const handler: Handler = async (event) => {
         sent_at: result.id ? new Date().toISOString() : null,
       });
 
-      // Notified güncelle
+      // Notified (Bilgilendirildi) durumunu güncelle
       await supabase
         .from("hire_decisions")
         .update({ notified: true, notified_at: new Date().toISOString() })
         .eq("id", decisionRecord.id);
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
+    return new Response(
+      JSON.stringify({
         success: true,
         decision,
         decisionId: decisionRecord.id,
         emailSent,
       }),
-    };
+      { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+    );
   } catch (err: any) {
-    return { statusCode: 500, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: err.message }) };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 };
-
-export { handler };

@@ -1,21 +1,20 @@
-import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
+  FROM_EMAIL?: string;
+  URL?: string;
+}
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY!;
-const FROM_EMAIL = process.env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
-const SITE_URL = process.env.URL || "https://kariyeer.com";
-
-async function sendResendEmail(to: string, subject: string, html: string) {
+async function sendResendEmail(to: string, subject: string, html: string, env: Env) {
+  const FROM_EMAIL = env.FROM_EMAIL || "Kariyeer <noreply@kariyeer.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
   });
@@ -57,37 +56,49 @@ function sessionEmailHtml(data: {
     </div>`;
 }
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" }, body: "" };
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const { request, env } = context;
+  const SITE_URL = env.URL || "https://kariyeer.com";
+
+  // CORS ayarları
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
   }
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
+
+  const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    const { sessionRequestId, action } = JSON.parse(event.body || "{}");
+    const body: any = await request.json();
+    const { sessionRequestId, action } = body;
 
     if (!sessionRequestId) {
-      return { statusCode: 400, body: JSON.stringify({ error: "sessionRequestId gerekli" }) };
+      return new Response(JSON.stringify({ error: "sessionRequestId gerekli" }), { status: 400 });
     }
 
-    // Seans talebini al
-    const { data: request, error: reqError } = await supabase
+    const { data: sessionRequest, error: reqError } = await supabase
       .from("app_2dff6511da_session_requests")
       .select("*")
       .eq("id", sessionRequestId)
       .single();
 
-    if (reqError || !request) {
-      return { statusCode: 404, body: JSON.stringify({ error: "Seans talebi bulunamadı" }) };
+    if (reqError || !sessionRequest) {
+      return new Response(JSON.stringify({ error: "Seans talebi bulunamadı" }), { status: 404 });
     }
 
-    // Coach bilgisi al
     const { data: coach } = await supabase
       .from("app_2dff6511da_coaches")
       .select("*")
-      .eq("id", request.coach_id)
+      .eq("id", sessionRequest.coach_id)
       .single();
 
     if (action === "reject") {
@@ -96,20 +107,16 @@ const handler: Handler = async (event) => {
         .update({ status: "rejected", rejected_at: new Date().toISOString() })
         .eq("id", sessionRequestId);
 
-      return {
-        statusCode: 200,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ success: true, action: "rejected" }),
-      };
+      return new Response(JSON.stringify({ success: true, action: "rejected" }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
     }
 
-    // Jitsi room oluştur
     const shortId = sessionRequestId.substring(0, 8);
     const roomName = `kariyeer-session-${shortId}`;
     const roomUrl = `https://meet.jit.si/${roomName}`;
     const meetingPageUrl = `${SITE_URL}/meeting/${roomName}`;
 
-    // Session request güncelle
     await supabase
       .from("app_2dff6511da_session_requests")
       .update({
@@ -125,7 +132,6 @@ const handler: Handler = async (event) => {
       })
       .eq("id", sessionRequestId);
 
-    // Meeting room kaydı
     await supabase.from("meeting_rooms").insert({
       room_name: roomName,
       room_url: roomUrl,
@@ -133,32 +139,31 @@ const handler: Handler = async (event) => {
       related_id: sessionRequestId,
       related_type: "session_request",
       host_user_id: coach?.user_id,
-      participant_user_id: request.user_id,
+      participant_user_id: sessionRequest.user_id,
       host_name: coach?.full_name,
-      participant_name: request.full_name,
-      scheduled_at: `${request.selected_date}T${request.selected_time}:00`,
+      participant_name: sessionRequest.full_name,
+      scheduled_at: `${sessionRequest.selected_date}T${sessionRequest.selected_time}:00`,
       duration_minutes: 45,
       status: "created",
     });
 
-    // Danışana email
     let clientEmailSent = false;
-    if (request.email) {
+    if (sessionRequest.email) {
       const html = sessionEmailHtml({
-        name: request.full_name,
+        name: sessionRequest.full_name,
         role: "client",
         coachName: coach?.full_name || "Koçunuz",
-        clientName: request.full_name,
-        date: request.selected_date,
-        time: request.selected_time,
+        clientName: sessionRequest.full_name,
+        date: sessionRequest.selected_date,
+        time: sessionRequest.selected_time,
         meetingUrl: meetingPageUrl,
       });
-      const result = await sendResendEmail(request.email, "✅ Seansınız Onaylandı - Kariyeer.com", html);
+      const result: any = await sendResendEmail(sessionRequest.email, "✅ Seansınız Onaylandı - Kariyeer.com", html, env);
       clientEmailSent = !!result.id;
 
       await supabase.from("email_logs").insert({
-        to_email: request.email,
-        to_name: request.full_name,
+        to_email: sessionRequest.email,
+        to_name: sessionRequest.full_name,
         subject: "Seans Onaylandı",
         template_type: "session_confirmed",
         related_id: sessionRequestId,
@@ -169,26 +174,23 @@ const handler: Handler = async (event) => {
       });
     }
 
-    // Coach'a email
     let coachEmailSent = false;
     if (coach?.email) {
       const html = sessionEmailHtml({
         name: coach.full_name,
         role: "coach",
         coachName: coach.full_name,
-        clientName: request.full_name,
-        date: request.selected_date,
-        time: request.selected_time,
+        clientName: sessionRequest.full_name,
+        date: sessionRequest.selected_date,
+        time: sessionRequest.selected_time,
         meetingUrl: meetingPageUrl,
       });
-      const result = await sendResendEmail(coach.email, `📅 Seans: ${request.full_name} - ${request.selected_date}`, html);
+      const result: any = await sendResendEmail(coach.email, `📅 Seans: ${sessionRequest.full_name} - ${sessionRequest.selected_date}`, html, env);
       coachEmailSent = !!result.id;
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
+    return new Response(
+      JSON.stringify({
         success: true,
         action: "approved",
         roomUrl,
@@ -197,14 +199,12 @@ const handler: Handler = async (event) => {
         clientEmailSent,
         coachEmailSent,
       }),
-    };
+      { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+    );
   } catch (err: any) {
-    return {
-      statusCode: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: err.message }),
-    };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 };
-
-export { handler };

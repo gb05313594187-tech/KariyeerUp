@@ -1,8 +1,11 @@
 // src/lib/meeting-api.ts
 import { supabase } from "./supabase";
 
-// Cloudflare Pages Functions path'i
-const API_BASE = "/api";
+// Cloudflare Pages Functions — fonksiyonlar functions/ kök dizininde
+// functions/approve-session.ts → /approve-session
+// functions/schedule-interview.ts → /schedule-interview
+// functions/send-email.ts → /send-email
+const API_BASE = "";
 
 async function getAuthHeaders() {
   const { data: { session } } = await supabase.auth.getSession();

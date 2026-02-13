@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/pages/App.tsx
 // @ts-nocheck
 
 import {
@@ -70,7 +70,7 @@ import CoachRequests from "@/pages/CoachRequests";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
-import AdminHireDashboard from "@/pages/AdminHireDashboard"; // ✅ EKLENDİ
+import AdminHireDashboard from "@/pages/AdminHireDashboard";
 
 // ✅ CHECKOUT / PAYMENT SUCCESS
 import Checkout from "@/pages/Checkout";
@@ -82,10 +82,10 @@ import PaytrCheckout from "@/pages/PaytrCheckout";
 // ✅ PREMIUM LANDING
 import BireyselPremium from "@/pages/BireyselPremium";
 
-// ✅ NEW: SESSION JOIN (EKLENDİ)
+// ✅ SESSION JOIN
 import SessionJoin from "@/pages/SessionJoin";
 
-// ✅ NEW: SESSION ROOM + LISTS (EKLENDİ)
+// ✅ SESSION ROOM + LISTS
 import SessionRoom from "@/pages/SessionRoom";
 import UserSessions from "@/pages/UserSessions";
 import CoachSessions from "@/pages/CoachSessions";
@@ -94,22 +94,22 @@ import CoachSessions from "@/pages/CoachSessions";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 
-// ✅ NEW: SOCIAL HOME + JOB BOARD (EKLENDİ)
+// ✅ SOCIAL HOME + JOB BOARD
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 
-// ✅ NEW: CREATE JOB (EKLENDİ)
+// ✅ CREATE JOB
 import CreateJob from "@/pages/CreateJob";
 
-// ✅ NEW: INTERVIEW PAGE (EKLENDİ)
+// ✅ INTERVIEW PAGE
 import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
 
-// ✅ NEW: MEETING ROOM - Jitsi Video Seans (EKLENDİ)
+// ✅ MEETING ROOM - Jitsi Video Seans
 import MeetingRoom from "@/pages/MeetingRoom";
 
 /* -------------------------------------------------
-   Public Layout
+   Public Layout — Navbar + Footer
 -------------------------------------------------- */
 function PublicLayout() {
   return (
@@ -132,33 +132,37 @@ export default function App() {
       <Router>
         <Toaster richColors position="top-right" />
         <Routes>
-          {/* ADMIN */}
+
+          {/* ═══════════════════════════════════════════ */}
+          {/* TAM EKRAN SAYFALAR — Layout dışı            */}
+          {/* Navbar/Footer YOK — Jitsi tam ekran açılır  */}
+          {/* ═══════════════════════════════════════════ */}
+          <Route path="/meeting/:roomName" element={<MeetingRoom />} />
+          <Route path="/interview/:roomName" element={<InterviewPage />} />
+          <Route path="/session/:id/room" element={<SessionRoom />} />
+
+          {/* ═══════════════════════════════════════════ */}
+          {/* ADMIN LAYOUT                                */}
+          {/* ═══════════════════════════════════════════ */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            {/* ✅ EKLENDİ: İşe Alım Dashboard Route */}
             <Route path="hiring" element={<AdminHireDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ROOT - Düzenlendi: element={<PublicLayout />} şeklinde olmalı */}
+          {/* ═══════════════════════════════════════════ */}
+          {/* PUBLIC LAYOUT — Navbar + Footer             */}
+          {/* ═══════════════════════════════════════════ */}
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
 
-            {/* ✅ NEW: SOCIAL HOME ROUTE (EKLENDİ) */}
+            {/* SOCIAL HOME */}
             <Route path="home" element={<SocialHome />} />
 
-            {/* ✅ NEW: JOB BOARD ROUTE (EKLENDİ) */}
+            {/* JOB BOARD */}
             <Route path="jobs" element={<JobBoard />} />
-
-            {/* ✅ NEW: CREATE JOB ROUTE (EKLENDİ) */}
             <Route path="jobs/new" element={<CreateJob />} />
-
-            {/* ✅ NEW: INTERVIEW PAGE ROUTE (EKLENDİ) */}
-            <Route path="interview/:roomName" element={<InterviewPage />} />
-
-            {/* ✅ NEW: MEETING ROOM - Coaching + Interview ortak video sayfası (EKLENDİ) */}
-            <Route path="meeting/:roomName" element={<MeetingRoom />} />
 
             {/* SITEMAP */}
             <Route path="sitemap.xml" element={<Sitemap />} />
@@ -173,45 +177,34 @@ export default function App() {
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
 
-            {/* ✅ NEW: JOIN SESSION ROUTE */}
+            {/* SESSION JOIN (layout içinde — sadece iframe) */}
             <Route path="session/:id/join" element={<SessionJoin />} />
 
-            {/* ✅ NEW: SESSION ROOM ROUTE */}
-            <Route path="session/:id/room" element={<SessionRoom />} />
-
-            {/* ✅ NEW: USER SESSIONS LIST (legacy /dashboard) */}
+            {/* SESSION LISTS */}
             <Route path="dashboard/sessions" element={<UserSessions />} />
-
-            {/* ✅ NEW: COACH SESSIONS LIST */}
             <Route path="coach/sessions" element={<CoachSessions />} />
 
-            {/* ✅ PAYTR */}
+            {/* PAYTR */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />
             <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* BookSession */}
-            <Route
-              path="book-session"
-              element={<Navigate to="/coaches" replace />}
-            />
+            {/* BookSession redirect */}
+            <Route path="book-session" element={<Navigate to="/coaches" replace />} />
 
             {/* How it works */}
             <Route path="nasil-calisir" element={<HowItWorks />} />
             <Route path="how-it-works" element={<HowItWorks />} />
 
+            {/* COACHES */}
             <Route path="coaches" element={<Coaches />} />
-
-            {/* COACH PUBLIC PROFILE */}
             <Route path="coach/:slugOrId" element={<CoachPublicProfile />} />
 
+            {/* INFO PAGES */}
             <Route path="for-coaches" element={<ForCoaches />} />
             <Route path="for-companies" element={<ForCompanies />} />
             <Route path="mentor-circle" element={<MentorCircle />} />
             <Route path="webinars" element={<Webinars />} />
-            <Route
-              path="coach-selection-process"
-              element={<CoachSelection />}
-            />
+            <Route path="coach-selection-process" element={<CoachSelection />} />
             <Route path="coach-application" element={<CoachApplication />} />
 
             {/* USER */}
@@ -221,17 +214,10 @@ export default function App() {
             <Route path="user/settings" element={<UserSettings />} />
 
             {/* CORPORATE */}
-            <Route
-              path="corporate/dashboard"
-              element={<CorporateDashboard />}
-            />
+            <Route path="corporate/dashboard" element={<CorporateDashboard />} />
             <Route path="corporate/profile" element={<CorporateProfile />} />
-            <Route
-              path="corporate/settings"
-              element={<CorporateSettings />}
-            />
+            <Route path="corporate/settings" element={<CorporateSettings />} />
             <Route path="corporate/jobs" element={<CorporateJobs />} />
-
 
             {/* COACH */}
             <Route path="coach/dashboard" element={<CoachDashboard />} />
@@ -253,19 +239,10 @@ export default function App() {
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="reset-password" element={<ResetPassword />} />
 
-            {/* LEGACY */}
-            <Route
-              path="dashboard"
-              element={<Navigate to="/user/dashboard" replace />}
-            />
-            <Route
-              path="profile"
-              element={<Navigate to="/user/profile" replace />}
-            />
-            <Route
-              path="coach-dashboard"
-              element={<Navigate to="/coach/dashboard" replace />}
-            />
+            {/* LEGACY REDIRECTS */}
+            <Route path="dashboard" element={<Navigate to="/user/dashboard" replace />} />
+            <Route path="profile" element={<Navigate to="/user/profile" replace />} />
+            <Route path="coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />

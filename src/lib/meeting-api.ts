@@ -1,6 +1,8 @@
+// src/lib/meeting-api.ts
 import { supabase } from "./supabase";
 
-const API_BASE = "/.netlify/functions";
+// Cloudflare Pages Functions path'i
+const API_BASE = "/api";
 
 async function getAuthHeaders() {
   const { data: { session } } = await supabase.auth.getSession();

@@ -7,26 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Video, VideoOff, Clock, ArrowLeft, Users, Calendar,
-  Timer, ExternalLink, Copy, CheckCircle2
+  Timer, Copy, CheckCircle2, Maximize2, Minimize2,
+  Mic, MicOff, Camera, CameraOff, PhoneOff
 } from "lucide-react";
 
-declare global {
-  interface Window {
-    JitsiMeetExternalAPI: any;
-  }
-}
-
-// Auth'u timeout ile güvenli al
 async function safeGetUser() {
   try {
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("auth_timeout")), 5000)
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 5000)
     );
-    const authPromise = supabase.auth.getUser();
-    const result = await Promise.race([authPromise, timeoutPromise]);
+    const auth = supabase.auth.getUser();
+    const result: any = await Promise.race([auth, timeout]);
     return result?.data?.user || null;
-  } catch (e) {
-    console.warn("Auth timeout, anonim devam ediliyor:", e);
+  } catch {
     return null;
   }
 }
@@ -39,7 +32,7 @@ async function safeGetProfile(userId: string) {
       .eq("id", userId)
       .single();
     return data;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -47,68 +40,34 @@ async function safeGetProfile(userId: string) {
 export default function MeetingRoom() {
   const { roomName } = useParams<{ roomName: string }>();
   const navigate = useNavigate();
-  const jitsiRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [room, setRoom] = useState<any>(null);
   const [inMeeting, setInMeeting] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
-  const [scriptLoaded, setScriptLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [meetingStartedAt, setMeetingStartedAt] = useState<number | null>(null);
 
-  // ─── 1) Jitsi script yükle ───
-  useEffect(() => {
-    if (window.JitsiMeetExternalAPI) {
-      setScriptLoaded(true);
-      return;
-    }
-    const existing = document.querySelector('script[src*="external_api"]');
-    if (existing) {
-      const check = setInterval(() => {
-        if (window.JitsiMeetExternalAPI) {
-          setScriptLoaded(true);
-          clearInterval(check);
-        }
-      }, 200);
-      setTimeout(() => clearInterval(check), 10000);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://meet.jit.si/external_api.js";
-    script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      console.warn("Jitsi script yüklenemedi, fallback kullanılacak");
-      setScriptLoaded(false);
-    };
-    document.head.appendChild(script);
-  }, []);
-
-  // ─── 2) Kullanıcı ve oda bilgisi al ───
+  // ─── 1) Kullanıcı ve oda bilgisi al ───
   useEffect(() => {
     async function init() {
       if (!roomName) {
-        setError("Oda adı bulunamadı");
         setLoading(false);
         return;
       }
 
       try {
-        // Auth — timeout safe
         const user = await safeGetUser();
-        let profile = null;
-        let isAdmin = false;
-
         if (user) {
-          profile = await safeGetProfile(user.id);
+          const profile = await safeGetProfile(user.id);
           setUserProfile({ ...user, ...profile });
-          isAdmin = profile?.role === "admin";
         }
 
-        // ── A) meeting_rooms tablosundan ara ──
+        // meeting_rooms tablosundan ara
         const { data: meetingRoom } = await supabase
           .from("meeting_rooms")
           .select("*")
@@ -116,49 +75,12 @@ export default function MeetingRoom() {
           .maybeSingle();
 
         if (meetingRoom) {
-          // Auth varsa erişim kontrolü yap, yoksa geç
-          if (user) {
-            const isHost = user.id === meetingRoom.host_user_id;
-            const isParticipant = user.id === meetingRoom.participant_user_id;
-            if (!isAdmin && !isHost && !isParticipant) {
-              // Erişim yok ama yine de Jitsi'yi açabilecek fallback sunuyoruz
-              console.warn("Erişim kısıtlı ama fallback sunuluyor");
-            }
-          }
           setRoom(meetingRoom);
           setLoading(false);
           return;
         }
 
-        // ── B) session_requests (yeni tablo) ──
-        try {
-          const { data: newReq } = await supabase
-            .from("session_requests")
-            .select("*")
-            .or(`id.eq.${roomName}`)
-            .maybeSingle();
-
-          if (newReq) {
-            setRoom({
-              room_name: roomName,
-              room_url: newReq.meeting_url || `https://meet.jit.si/kocvaktim-${roomName}`,
-              room_type: "coaching_session",
-              host_name: "Koç",
-              participant_name: newReq.full_name || "Danışan",
-              scheduled_at: newReq.selected_date
-                ? `${newReq.selected_date}T${newReq.selected_time || "00:00"}:00`
-                : null,
-              duration_minutes: 45,
-              status: "created",
-            });
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.warn("session_requests sorgusu başarısız:", e);
-        }
-
-        // ── C) session_requests (eski tablo) ──
+        // session_requests (eski tablo)
         try {
           const { data: oldReq } = await supabase
             .from("app_2dff6511da_session_requests")
@@ -169,12 +91,9 @@ export default function MeetingRoom() {
           if (oldReq) {
             setRoom({
               room_name: roomName,
-              room_url: oldReq.meeting_url || oldReq.jitsi_url || `https://meet.jit.si/kocvaktim-${roomName}`,
               room_type: "coaching_session",
               host_name: oldReq.coach?.full_name || "Koç",
               participant_name: oldReq.full_name || "Danışan",
-              host_user_id: oldReq.coach?.user_id,
-              participant_user_id: oldReq.user_id,
               scheduled_at: oldReq.selected_date
                 ? `${oldReq.selected_date}T${oldReq.selected_time || "00:00"}:00`
                 : null,
@@ -184,11 +103,9 @@ export default function MeetingRoom() {
             setLoading(false);
             return;
           }
-        } catch (e) {
-          console.warn("Eski session_requests sorgusu başarısız:", e);
-        }
+        } catch {}
 
-        // ── D) interviews tablosundan ara ──
+        // interviews tablosundan ara
         try {
           const { data: interview } = await supabase
             .from("interviews")
@@ -199,7 +116,6 @@ export default function MeetingRoom() {
           if (interview) {
             setRoom({
               room_name: roomName,
-              room_url: interview.jitsi_url || interview.meeting_link || `https://meet.jit.si/kocvaktim-${roomName}`,
               room_type: "interview",
               host_name: interview.interviewer_name || "Mülakatçı",
               participant_name: interview.candidate_name || "Aday",
@@ -210,28 +126,20 @@ export default function MeetingRoom() {
             setLoading(false);
             return;
           }
-        } catch (e) {
-          console.warn("Interviews sorgusu başarısız:", e);
-        }
+        } catch {}
 
-        // ── E) Hiçbir yerde bulunamadı → yine de aç ──
-        console.warn("Room DB'de bulunamadı, ad-hoc:", roomName);
+        // Bulunamadı — genel oda
         setRoom({
           room_name: roomName,
-          room_url: `https://meet.jit.si/kocvaktim-${roomName}`,
           room_type: "general",
-          host_name: "",
-          participant_name: "",
           status: "created",
           duration_minutes: 45,
         });
         setLoading(false);
-      } catch (e: any) {
-        console.error("Room init error:", e);
-        // Hata olsa bile sayfayı aç
+      } catch (e) {
+        console.error("Init error:", e);
         setRoom({
           room_name: roomName,
-          room_url: `https://meet.jit.si/kocvaktim-${roomName}`,
           room_type: "general",
           status: "created",
           duration_minutes: 45,
@@ -239,11 +147,10 @@ export default function MeetingRoom() {
         setLoading(false);
       }
     }
-
     init();
   }, [roomName]);
 
-  // ─── 3) Geri sayım ───
+  // ─── 2) Geri sayım ───
   useEffect(() => {
     if (!room?.scheduled_at) return;
     const interval = setInterval(() => {
@@ -254,131 +161,78 @@ export default function MeetingRoom() {
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
-        setTimeLeft(h > 0 ? `${h} saat ${m} dk` : `${m} dk ${s} sn`);
+        setTimeLeft(h > 0 ? `${h}sa ${m}dk` : `${m}dk ${s}sn`);
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [room]);
 
-  // ─── 4) Jitsi embed ile toplantıyı başlat ───
+  // ─── 3) Toplantı süresi sayacı ───
+  useEffect(() => {
+    if (!meetingStartedAt) return;
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - meetingStartedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [meetingStartedAt]);
+
+  // ─── 4) Toplantıyı başlat ───
   const startMeeting = async () => {
-    if (!roomName) return;
+    // DB status güncelle
+    try {
+      await supabase
+        .from("meeting_rooms")
+        .update({ status: "active", started_at: new Date().toISOString() })
+        .eq("room_name", roomName);
+    } catch {}
 
-    const jitsiRoomName = `kocvaktim-${roomName}`;
-
-    // Jitsi External API varsa embed olarak aç
-    if (scriptLoaded && window.JitsiMeetExternalAPI && jitsiRef.current) {
-      try {
-        jitsiRef.current.innerHTML = "";
-
-        const displayName = userProfile?.full_name || userProfile?.email || "Katılımcı";
-        const email = userProfile?.email || "";
-
-        const api = new window.JitsiMeetExternalAPI("meet.jit.si", {
-          roomName: jitsiRoomName,
-          parentNode: jitsiRef.current,
-          width: "100%",
-          height: "100%",
-          configOverwrite: {
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-            prejoinPageEnabled: false,
-            disableDeepLinking: true,
-            defaultLanguage: "tr",
-            toolbarButtons: [
-              "camera", "chat", "desktop", "filmstrip", "fullscreen",
-              "hangup", "microphone", "participants-pane", "raisehand",
-              "settings", "tileview", "toggle-camera",
-            ],
-          },
-          interfaceConfigOverwrite: {
-            APP_NAME: "Kariyeer",
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_POWERED_BY: false,
-            DEFAULT_BACKGROUND: "#1a1a2e",
-            MOBILE_APP_PROMO: false,
-          },
-          userInfo: {
-            displayName,
-            email,
-          },
-        });
-
-        if (userProfile?.avatar_url) {
-          api.executeCommand("avatarUrl", userProfile.avatar_url);
-        }
-
-        // Meeting status güncelle (hata olursa sessizce geç)
-        try {
-          await supabase
-            .from("meeting_rooms")
-            .update({ status: "active", started_at: new Date().toISOString() })
-            .eq("room_name", roomName);
-        } catch (e) {
-          console.warn("Meeting status update failed:", e);
-        }
-
-        api.addEventListener("videoConferenceJoined", () => {
-          console.log("✅ Toplantıya katıldı:", jitsiRoomName);
-        });
-
-        api.addEventListener("readyToClose", async () => {
-          try {
-            await supabase
-              .from("meeting_rooms")
-              .update({ status: "completed", ended_at: new Date().toISOString() })
-              .eq("room_name", roomName);
-          } catch (e) {
-            console.warn("Meeting end update failed:", e);
-          }
-          setInMeeting(false);
-          api.dispose();
-        });
-
-        apiRef.current = api;
-        setInMeeting(true);
-        return;
-      } catch (e) {
-        console.error("Jitsi embed hatası:", e);
-        // Fallback'e düş
-      }
-    }
-
-    // Fallback: Yeni sekmede aç
-    console.log("Jitsi embed kullanılamıyor, yeni sekmede açılıyor");
-    openExternal();
+    setMeetingStartedAt(Date.now());
+    setInMeeting(true);
   };
 
-  // ─── Yardımcı fonksiyonlar ───
-  const openExternal = () => {
-    window.open(`https://meet.jit.si/kocvaktim-${roomName}`, "_blank");
+  // ─── 5) Toplantıyı bitir ───
+  const endMeeting = async () => {
+    try {
+      await supabase
+        .from("meeting_rooms")
+        .update({ status: "completed", ended_at: new Date().toISOString() })
+        .eq("room_name", roomName);
+    } catch {}
+
+    setInMeeting(false);
+    setMeetingStartedAt(null);
+    navigate("/");
+  };
+
+  // ─── 6) Tam ekran ───
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
   };
 
   const copyLink = () => {
-    const url = `${window.location.origin}/meeting/${roomName}`;
-    navigator.clipboard.writeText(url).catch(() => {});
+    navigator.clipboard.writeText(`${window.location.origin}/meeting/${roomName}`).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const endMeeting = async () => {
-    if (apiRef.current) {
-      try { apiRef.current.dispose(); } catch (e) {}
-      apiRef.current = null;
-    }
-    try {
-      if (roomName) {
-        await supabase
-          .from("meeting_rooms")
-          .update({ status: "completed", ended_at: new Date().toISOString() })
-          .eq("room_name", roomName);
-      }
-    } catch (e) {
-      console.warn("End meeting update failed:", e);
-    }
-    setInMeeting(false);
-    navigate(-1);
+  const formatElapsed = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
+
+  // Jitsi iframe URL — auth gerektirmeyen parametreler
+  const jitsiRoomName = `kocvaktim-${roomName}`;
+  const displayName = encodeURIComponent(userProfile?.full_name || userProfile?.email || "Katılımcı");
+  const jitsiUrl = `https://meet.jit.si/${jitsiRoomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true&config.defaultLanguage=tr&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_POWERED_BY=false&interfaceConfig.MOBILE_APP_PROMO=false&userInfo.displayName="${displayName}"`;
 
   // ═══════════════════════════════════════════
   // RENDER
@@ -387,230 +241,213 @@ export default function MeetingRoom() {
   // LOADING
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 to-purple-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950">
         <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto" />
-          <p className="mt-4 text-lg">Toplantı yükleniyor...</p>
-          <p className="text-sm text-white/60 mt-1">{roomName}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-400 mx-auto" />
+          <p className="mt-4 text-lg font-medium">Toplantı odası hazırlanıyor</p>
+          <p className="text-sm text-white/50 mt-1">{roomName}</p>
         </div>
       </div>
     );
   }
 
-  // ERROR
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 to-purple-900 p-4">
-        <Card className="p-8 max-w-md text-center rounded-2xl">
-          <VideoOff className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Erişim Hatası</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="space-y-3">
-            <Button
-              onClick={openExternal}
-              className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" /> Jitsi'de Aç (Alternatif)
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full rounded-lg"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" /> Geri Dön
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  // IN MEETING — Jitsi Embed Tam Ekran
+  // ═══ IN MEETING — Profesyonel Video Ekranı ═══
   if (inMeeting) {
     return (
-      <div className="h-screen bg-gray-900 flex flex-col">
-        {/* Üst bar */}
-        <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-white text-sm font-medium">
-              {room?.room_type === "interview"
-                ? "🎯 Mülakat"
-                : room?.room_type === "coaching_session"
-                ? "🧠 Koçluk Seansı"
-                : "📹 Toplantı"}
-            </span>
-            {(room?.host_name || room?.participant_name) && (
-              <span className="text-gray-400 text-xs hidden sm:inline">
-                {room.host_name} ↔ {room.participant_name}
+      <div className="h-screen bg-[#0b0e14] flex flex-col overflow-hidden">
+        {/* ── Üst Bar ── */}
+        <div className="bg-[#12151c] border-b border-white/5 px-4 py-2 flex items-center justify-between shrink-0 z-10">
+          {/* Sol: Bilgi */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-white text-xs font-bold tracking-wider uppercase">
+                {room?.room_type === "interview" ? "Canlı Mülakat" :
+                 room?.room_type === "coaching_session" ? "Koçluk Seansı" : "Toplantı"}
               </span>
+            </div>
+
+            {(room?.host_name || room?.participant_name) && (
+              <div className="hidden md:flex items-center gap-1.5 text-white/40 text-xs">
+                <Users className="h-3 w-3" />
+                <span>{room.host_name}</span>
+                <span>↔</span>
+                <span>{room.participant_name}</span>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
+
+          {/* Orta: Süre */}
+          <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg">
+            <Clock className="h-3.5 w-3.5 text-red-400" />
+            <span className="text-white text-sm font-mono font-bold">
+              {formatElapsed(elapsed)}
+            </span>
+          </div>
+
+          {/* Sağ: Aksiyonlar */}
+          <div className="flex items-center gap-1.5">
+            <button
               onClick={copyLink}
-              variant="ghost"
-              size="sm"
-              className="text-gray-300 hover:text-white h-8 text-xs"
+              className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+              title="Link kopyala"
             >
-              {copied ? (
-                <CheckCircle2 className="h-3 w-3 mr-1 text-green-400" />
-              ) : (
-                <Copy className="h-3 w-3 mr-1" />
-              )}
-              {copied ? "Kopyalandı!" : "Link"}
-            </Button>
-            <Button
-              onClick={openExternal}
-              variant="ghost"
-              size="sm"
-              className="text-gray-300 hover:text-white h-8 text-xs"
+              {copied ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+              title="Tam ekran"
             >
-              <ExternalLink className="h-3 w-3 mr-1" /> Yeni Sekme
-            </Button>
-            <Button
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+            <button
               onClick={endMeeting}
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 h-8 text-xs rounded-lg"
+              className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors ml-2"
             >
+              <PhoneOff className="h-3.5 w-3.5" />
               Bitir
-            </Button>
+            </button>
           </div>
         </div>
-        {/* Jitsi embed alanı */}
-        <div ref={jitsiRef} className="flex-1" />
+
+        {/* ── Video Alanı ── */}
+        <div className="flex-1 relative">
+          <iframe
+            ref={iframeRef}
+            src={jitsiUrl}
+            allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full border-0"
+            title="Video Görüşme"
+          />
+        </div>
       </div>
     );
   }
 
-  // LOBBY — Toplantıya katılmadan önce bilgi ekranı
+  // ═══ LOBBY — Katılım Öncesi Ekranı ═══
   const isInterview = room?.room_type === "interview";
   const scheduledDate = room?.scheduled_at ? new Date(room.scheduled_at) : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 to-purple-900 p-4">
-      <Card className="p-8 max-w-lg w-full text-center space-y-6 rounded-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 p-4">
+      {/* Arka plan efektleri */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+      </div>
+
+      <Card className="p-8 max-w-lg w-full text-center space-y-6 rounded-3xl border-0 shadow-2xl shadow-black/20 relative z-10">
         {/* İkon */}
-        <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto">
-          <Video className="w-10 h-10 text-indigo-600" />
+        <div className="relative mx-auto w-24 h-24">
+          <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping" style={{ animationDuration: "3s" }} />
+          <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <Video className="w-10 h-10 text-white" />
+          </div>
         </div>
 
         {/* Başlık */}
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            {isInterview ? "🎯 Online Mülakat" : "👨‍💼 Kariyer Koçluğu Seansı"}
+            {isInterview ? "Online Mülakat" : "Kariyer Koçluğu Seansı"}
           </h1>
-          <p className="text-gray-500 mt-1">Kariyeer.com</p>
+          <p className="text-gray-400 mt-1 text-sm">Kariyeer.com • Güvenli Video Görüşme</p>
         </div>
 
         {/* Bilgiler */}
-        <div className="bg-gray-50 rounded-xl p-5 space-y-3 text-left">
+        <div className="bg-gray-50 rounded-2xl p-5 space-y-3 text-left">
           {room?.host_name && (
             <div className="flex items-center gap-3 text-sm">
-              <Users className="w-4 h-4 text-gray-400 shrink-0" />
-              <span className="text-gray-500 font-medium">
-                {isInterview ? "Mülakatçı:" : "Koç:"}
-              </span>
-              <span className="font-semibold">{room.host_name}</span>
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div>
+                <span className="text-gray-400 text-xs">{isInterview ? "Mülakatçı" : "Koç"}</span>
+                <p className="font-semibold text-gray-800 -mt-0.5">{room.host_name}</p>
+              </div>
             </div>
           )}
           {room?.participant_name && (
             <div className="flex items-center gap-3 text-sm">
-              <Users className="w-4 h-4 text-gray-400 shrink-0" />
-              <span className="text-gray-500 font-medium">
-                {isInterview ? "Aday:" : "Danışan:"}
-              </span>
-              <span className="font-semibold">{room.participant_name}</span>
+              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <span className="text-gray-400 text-xs">{isInterview ? "Aday" : "Danışan"}</span>
+                <p className="font-semibold text-gray-800 -mt-0.5">{room.participant_name}</p>
+              </div>
             </div>
           )}
           {scheduledDate && (
-            <>
-              <div className="flex items-center gap-3 text-sm">
-                <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-gray-500 font-medium">Tarih:</span>
-                <span className="font-semibold">
-                  {scheduledDate.toLocaleDateString("tr-TR", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
+            <div className="flex items-center gap-3 text-sm">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 text-green-600" />
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Clock className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-gray-500 font-medium">Saat:</span>
-                <span className="font-semibold">
-                  {scheduledDate.toLocaleTimeString("tr-TR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+              <div>
+                <span className="text-gray-400 text-xs">Tarih & Saat</span>
+                <p className="font-semibold text-gray-800 -mt-0.5">
+                  {scheduledDate.toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" })}
+                  {" • "}
+                  {scheduledDate.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
               </div>
-            </>
+            </div>
           )}
           <div className="flex items-center gap-3 text-sm">
-            <Timer className="w-4 h-4 text-gray-400 shrink-0" />
-            <span className="text-gray-500 font-medium">Süre:</span>
-            <span className="font-semibold">{room?.duration_minutes || 45} dakika</span>
+            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+              <Timer className="w-4 h-4 text-orange-600" />
+            </div>
+            <div>
+              <span className="text-gray-400 text-xs">Süre</span>
+              <p className="font-semibold text-gray-800 -mt-0.5">{room?.duration_minutes || 45} dakika</p>
+            </div>
           </div>
         </div>
 
         {/* Geri sayım */}
         {timeLeft && (
-          <div className="flex items-center justify-center gap-2 py-2 px-4 bg-indigo-50 rounded-lg">
-            <Clock className="w-4 h-4 text-indigo-600" />
-            <span className="text-indigo-700 font-semibold">{timeLeft}</span>
+          <div className="flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+            <Clock className="w-4 h-4 text-indigo-600 animate-pulse" />
+            <span className="text-indigo-700 font-bold text-sm">{timeLeft}</span>
           </div>
         )}
 
-        {/* Butonlar */}
-        <div className="space-y-3">
-          <Button
-            onClick={startMeeting}
-            size="lg"
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-lg py-6 rounded-xl"
-          >
-            <Video className="w-5 h-5 mr-2" />
-            Görüşmeye Katıl
-          </Button>
-
-          <Button
-            onClick={openExternal}
-            variant="outline"
-            className="w-full rounded-xl"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Yeni Sekmede Aç (Alternatif)
-          </Button>
+        {/* Cihaz kontrol ipuçları */}
+        <div className="flex items-center justify-center gap-6 py-2">
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <Camera className="w-4 h-4" />
+            <span className="text-xs">Kamera</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <Mic className="w-4 h-4" />
+            <span className="text-xs">Mikrofon</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-green-500">
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-xs font-medium">Hazır</span>
+          </div>
         </div>
 
-        {/* Link kopyala */}
-        <div className="flex items-center justify-center">
-          <Button
-            onClick={copyLink}
-            variant="ghost"
-            size="sm"
-            className="text-gray-400 text-xs"
-          >
-            {copied ? (
-              <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
-            ) : (
-              <Copy className="h-3 w-3 mr-1" />
-            )}
-            {copied ? "Link kopyalandı!" : "Toplantı linkini kopyala"}
-          </Button>
-        </div>
+        {/* Ana buton */}
+        <Button
+          onClick={startMeeting}
+          size="lg"
+          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-lg py-7 rounded-2xl shadow-lg shadow-indigo-500/25 transition-all hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Video className="w-5 h-5 mr-2" />
+          Görüşmeye Katıl
+        </Button>
 
         <p className="text-xs text-gray-400">
-          Kameranız ve mikrofonunuz izin isteyecektir. Lütfen kabul edin.
+          Tarayıcınız kamera ve mikrofon izni isteyecektir.
         </p>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/")}
-          className="text-gray-400"
+          className="text-gray-400 hover:text-gray-600"
         >
           <ArrowLeft className="w-4 h-4 mr-1" /> Ana Sayfa
         </Button>

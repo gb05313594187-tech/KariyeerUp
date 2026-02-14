@@ -21,6 +21,10 @@ import {
 // ✅ LanguageContext ile senkron (Navbar dil seçimi Index'e yansır)
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// ✅ YENİ: Slider importları
+import HeroSlider from "@/components/ui/HeroSlider";
+import { heroSlides } from "@/data/heroSlides";
+
 export default function Index() {
   const navigate = useNavigate();
 
@@ -81,7 +85,7 @@ export default function Index() {
         goal: "Hedef",
         level: "Seviye",
         language: "Dil",
-        tip: "İpucu: “Öne Çıkan Koçlar” alanı premium slot olarak satılabilir.",
+        tip: "İpucu: \"Öne Çıkan Koçlar\" alanı premium slot olarak satılabilir.",
       },
       goals: {
         interview: "Mülakat",
@@ -159,14 +163,14 @@ export default function Index() {
           "Sonrasında standart komisyon: %20",
           "Öne Çıkan Koçlar: ana sayfa görünürlüğü (ekstra ücretli)",
         ],
-        note: "Not: “Öne Çıkan Koçlar” alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.",
+        note: "Not: \"Öne Çıkan Koçlar\" alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.",
         apply: "Koç Olarak Başvur",
         view: "Koçları Görüntüle",
       },
       company: {
         badge: "Kurumsal Program Mantığı",
         title: "Koçluk, ekip performansına dönüşsün",
-        p1: "Kurumsal tarafta amaç “seans satmak” değil; ekip hedeflerini doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı → takip/raporlama şeklinde ilerler.",
+        p1: "Kurumsal tarafta amaç \"seans satmak\" değil; ekip hedeflerini doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı → takip/raporlama şeklinde ilerler.",
         cards: [
           { title: "Hedef & kapsam", desc: "Rol/level bazlı program planı" },
           { title: "Doğru koç havuzu", desc: "Uzmanlık + doğrulama katmanı" },
@@ -175,7 +179,7 @@ export default function Index() {
         chips: ["SLA: 24 saat içinde dönüş", "Pilot: 2 haftada ilk ölçüm raporu"],
         solutions: "Kurumsal Çözümler",
         midText1:
-          "Şirketler için koçluk “tekil seans” değil, ölçülebilir bir gelişim sistemidir. Kariyeer; hedef, rol ve seviye bazlı ihtiyaçları netleştirir, doğrulanmış koç havuzundan en uygun eşleşmeyi çıkarır ve süreci raporlanabilir şekilde yönetir.",
+          "Şirketler için koçluk \"tekil seans\" değil, ölçülebilir bir gelişim sistemidir. Kariyeer; hedef, rol ve seviye bazlı ihtiyaçları netleştirir, doğrulanmış koç havuzundan en uygun eşleşmeyi çıkarır ve süreci raporlanabilir şekilde yönetir.",
         midText2:
           "Sonuç: İnsan & Kültür ekibi için görünür ilerleme, yöneticiler için takip edilebilir gelişim, çalışanlar için net hedef ve düzenli koçluk akışı. Demo talebinden sonra; ihtiyaç haritası → eşleşme → pilot → ilk ölçüm raporu akışıyla ilerler.",
         demo: {
@@ -216,7 +220,7 @@ export default function Index() {
         badge: "Sponsorlu Alan / Premium Slot",
         title: "Öne Çıkan Koçlar",
         desc: "En çok tercih edilen uzmanlar. (Bu alana girmek ücretli olabilir.)",
-        premium: "Premium’a Geç",
+        premium: "Premium'a Geç",
         all: "Tüm Koçlar",
         verified: "Doğrulanmış",
         reviewsSuffix: "yorum",
@@ -227,8 +231,8 @@ export default function Index() {
         ],
       },
       y2025: {
-        title: "2025’te Ne Problemi Çözüyoruz?",
-        desc: "Kariyer belirsizliği, mülakat performansı ve “hangi yola gideceğim?” problemi. Kariyeer, hedef bazlı eşleşme ve takip ile bunu ölçülebilir hale getirir.",
+        title: "2025'te Ne Problemi Çözüyoruz?",
+        desc: "Kariyer belirsizliği, mülakat performansı ve \"hangi yola gideceğim?\" problemi. Kariyeer, hedef bazlı eşleşme ve takip ile bunu ölçülebilir hale getirir.",
         cards: [
           { value: "%37", label: "Daha hızlı terfi etkisi" },
           { value: "%42", label: "Maaş artışı avantajı" },
@@ -245,7 +249,7 @@ export default function Index() {
         user: {
           label: "User",
           subtitle:
-            "Student, junior, mid, or manager—doesn’t matter. Clarify your goal with the right coach, measure progress, move faster.",
+            "Student, junior, mid, or manager—doesn't matter. Clarify your goal with the right coach, measure progress, move faster.",
         },
         coach: {
           label: "Coach",
@@ -273,7 +277,7 @@ export default function Index() {
         goal: "Goal",
         level: "Level",
         language: "Language",
-        tip: "Tip: “Featured Coaches” can be sold as a premium slot.",
+        tip: "Tip: \"Featured Coaches\" can be sold as a premium slot.",
       },
       goals: {
         interview: "Interview",
@@ -295,8 +299,8 @@ export default function Index() {
       },
       systemValue: {
         badge: "Goal · Plan · Progress Tracking",
-        title: "Don’t leave your career to chance. Run the process.",
-        desc: "Kariyeer is not just a one-off consulting site; it’s a system that defines your career goal, matches you with the right expert, and measures progress. You don’t need to guess what to do during job search, promotion, or career change. Your goal becomes clear, you get the right coach recommendation, and progress is tracked with tangible outputs. That’s why Kariyeer isn’t a site you visit only when you need it—it’s a tool you use throughout the journey.",
+        title: "Don't leave your career to chance. Run the process.",
+        desc: "Kariyeer is not just a one-off consulting site; it's a system that defines your career goal, matches you with the right expert, and measures progress. You don't need to guess what to do during job search, promotion, or career change. Your goal becomes clear, you get the right coach recommendation, and progress is tracked with tangible outputs. That's why Kariyeer isn't a site you visit only when you need it—it's a tool you use throughout the journey.",
         cards: [
           { title: "🎯 Goal-based matching", desc: "Not random—based on goal/role/level" },
           { title: "✅ Verified coaches", desc: "Profile verification + visible quality layer" },
@@ -308,7 +312,7 @@ export default function Index() {
           "Career plan + 30/60/90-day goals",
           "Promotion & leadership program",
         ],
-        bottom: "You don’t search for a coach. The system gets you to the outcome.",
+        bottom: "You don't search for a coach. The system gets you to the outcome.",
       },
       coachFlow: {
         steps: ["Apply", "Verification", "Profile live", "First request", "First session"],
@@ -333,14 +337,14 @@ export default function Index() {
           "Then standard commission: 20%",
           "Featured Coaches: homepage visibility (paid add-on)",
         ],
-        note: "Note: “Featured Coaches” is a sponsored showcase. Coaches can pay extra to be more visible on the homepage.",
+        note: "Note: \"Featured Coaches\" is a sponsored showcase. Coaches can pay extra to be more visible on the homepage.",
         apply: "Apply as Coach",
         view: "View Coaches",
       },
       company: {
         badge: "Corporate Program Logic",
         title: "Turn coaching into team performance",
-        p1: "On the corporate side, the goal isn’t “selling sessions.” It’s matching team goals with the right coaches and making progress visible. The flow: needs definition → coach matching → session flow → tracking/reporting.",
+        p1: "On the corporate side, the goal isn't \"selling sessions.\" It's matching team goals with the right coaches and making progress visible. The flow: needs definition → coach matching → session flow → tracking/reporting.",
         cards: [
           { title: "Goal & scope", desc: "Program plan by role/level" },
           { title: "Right coach pool", desc: "Expertise + verification layer" },
@@ -349,13 +353,13 @@ export default function Index() {
         chips: ["SLA: reply within 24 hours", "Pilot: first measurement report in 2 weeks"],
         solutions: "Corporate Solutions",
         midText1:
-          "For companies, coaching isn’t a “one-off session”—it’s a measurable development system. Kariyeer clarifies needs by goal, role, and level, selects the best match from verified coaches, and manages the process in a reportable way.",
+          "For companies, coaching isn't a \"one-off session\"—it's a measurable development system. Kariyeer clarifies needs by goal, role, and level, selects the best match from verified coaches, and manages the process in a reportable way.",
         midText2:
           "Result: visible progress for People & Culture teams, trackable development for managers, clear goals and steady coaching cadence for employees. After a demo request: needs map → matching → pilot → first measurement report.",
         demo: {
           badge: "Corporate Demo Request",
-          title: "Let’s start a coaching program for your team",
-          desc: "Fill the form, we’ll build a plan for your goals and share the first report.",
+          title: "Let's start a coaching program for your team",
+          desc: "Fill the form, we'll build a plan for your goals and share the first report.",
           companyName: "Company Name",
           fullName: "Contact Person",
           email: "Email",
@@ -363,7 +367,7 @@ export default function Index() {
           teamSize: "Team Size",
           need: "Primary Need",
           startPlan: "Target start",
-          startHint: "After you submit, we’ll get back within 24 hours to finalize the plan.",
+          startHint: "After you submit, we'll get back within 24 hours to finalize the plan.",
           note: "Note (optional)",
           notePh: "Brief info: team goals, role distribution, date range...",
           footer:
@@ -402,7 +406,7 @@ export default function Index() {
       },
       y2025: {
         title: "What problem are we solving in 2025?",
-        desc: "Career uncertainty, interview performance, and the “which path should I take?” problem. Kariyeer makes this measurable with goal-based matching and tracking.",
+        desc: "Career uncertainty, interview performance, and the \"which path should I take?\" problem. Kariyeer makes this measurable with goal-based matching and tracking.",
         cards: [
           { value: "%37", label: "Faster promotion impact" },
           { value: "%42", label: "Salary increase advantage" },
@@ -424,7 +428,7 @@ export default function Index() {
         coach: {
           label: "مدرّب",
           subtitle:
-            "نمِّ ملفك، وصل لعملاء أكثر، وأدِر الجلسات والدخل من لوحة واحدة.",
+            "نمِّ ملفك، وصل لعملاء أكثر، وأدِر الجلسات والدخل من لوحة واحدة.",
         },
         company: {
           label: "شركة",
@@ -447,7 +451,7 @@ export default function Index() {
         goal: "الهدف",
         level: "المستوى",
         language: "اللغة",
-        tip: "ملاحظة: يمكن بيع قسم “المدربون المميّزون” كمساحة بريميوم.",
+        tip: "ملاحظة: يمكن بيع قسم \"المدربون المميّزون\" كمساحة بريميوم.",
       },
       goals: {
         interview: "مقابلة عمل",
@@ -494,7 +498,7 @@ export default function Index() {
       },
       coachGlobal: {
         badge: "نظام عالمي للمدربين",
-        title: "اعثر على عملاء، أدر جلساتك، ونمِّ دخلك",
+        title: "اعثر على عملاء، أدر جلساتك، ونمِّ دخلك",
         p1: "Kariyeer تقدّم للمدربين نموذج دخل قابل للتوسع وغير مرتبط بالوقت. البرامج مرنة؛ يمكنك تشغيلها بجانب عملك أو تحويلها لقناة احترافية كاملة. الجلسات الفردية تؤمن دخلًا ثابتًا، بينما الشراكات المؤسسية قد تضاعف الدخل 2–3 مرات. الطلب والمطابقة وإدارة الجلسات تتم من لوحة واحدة. تركّز أنت على خبرتك فقط.",
         p2: "Kariyeer تساعد المدربين على المطابقة مع العميل الصحيح للهدف الصحيح وإدارة كامل التدفق في مكان واحد: ظهور الملف → طلب/مطابقة → جلسة → متابعة/تقرير → دخل.",
         valueCards: [
@@ -507,14 +511,14 @@ export default function Index() {
           "ثم العمولة القياسية: 20%",
           "المدربون المميّزون: ظهور على الصفحة الرئيسية (مدفوع)",
         ],
-        note: "ملاحظة: “المدربون المميّزون” مساحة عرض مدفوعة. يمكن للمدربين الدفع لزيادة الظهور على الصفحة الرئيسية.",
+        note: "ملاحظة: \"المدربون المميّزون\" مساحة عرض مدفوعة. يمكن للمدربين الدفع لزيادة الظهور على الصفحة الرئيسية.",
         apply: "قدّم كمدرّب",
         view: "عرض المدربين",
       },
       company: {
         badge: "منطق البرنامج المؤسسي",
         title: "حوّل التدريب إلى أداء للفريق",
-        p1: "في جانب الشركات، الهدف ليس “بيع جلسات”. بل مطابقة أهداف الفريق مع المدربين المناسبين وجعل التقدّم مرئيًا. التدفق: تحديد الاحتياج → مطابقة المدرب → سير الجلسات → متابعة/تقارير.",
+        p1: "في جانب الشركات، الهدف ليس \"بيع جلسات\". بل مطابقة أهداف الفريق مع المدربين المناسبين وجعل التقدّم مرئيًا. التدفق: تحديد الاحتياج → مطابقة المدرب → سير الجلسات → متابعة/تقارير.",
         cards: [
           { title: "الهدف والنطاق", desc: "خطة بحسب الدور/المستوى" },
           { title: "مخزون مدربين مناسب", desc: "خبرة + طبقة توثيق" },
@@ -523,7 +527,7 @@ export default function Index() {
         chips: ["SLA: رد خلال 24 ساعة", "Pilot: أول تقرير قياس خلال أسبوعين"],
         solutions: "حلول الشركات",
         midText1:
-          "بالنسبة للشركات، التدريب ليس “جلسة واحدة” بل نظام تطوير قابل للقياس. Kariyeer توضح الاحتياجات بحسب الهدف والدور والمستوى، وتستخرج أفضل مطابقة من المدربين الموثّقين، وتدير العملية بشكل قابل للتقرير.",
+          "بالنسبة للشركات، التدريب ليس \"جلسة واحدة\" بل نظام تطوير قابل للقياس. Kariyeer توضح الاحتياجات بحسب الهدف والدور والمستوى، وتستخرج أفضل مطابقة من المدربين الموثّقين، وتدير العملية بشكل قابل للتقرير.",
         midText2:
           "النتيجة: تقدّم واضح لفِرق الأشخاص والثقافة، تطوير قابل للتتبّع للمديرين، وأهداف واضحة وتدفّق تدريب منتظم للموظفين. بعد طلب الديمو: خريطة احتياج → مطابقة → بايلوت → أول تقرير قياس.",
         demo: {
@@ -576,7 +580,7 @@ export default function Index() {
       },
       y2025: {
         title: "ما المشكلة التي نحلّها في 2025؟",
-        desc: "غموض المسار المهني، أداء المقابلات، وسؤال “أي طريق أختار؟”. Kariyeer تجعل ذلك قابلًا للقياس عبر المطابقة بحسب الهدف والمتابعة.",
+        desc: "غموض المسار المهني، أداء المقابلات، وسؤال \"أي طريق أختار؟\". Kariyeer تجعل ذلك قابلًا للقياس عبر المطابقة بحسب الهدف والمتابعة.",
         cards: [
           { value: "%37", label: "تأثير أسرع في الترقية" },
           { value: "%42", label: "ميزة زيادة الراتب" },
@@ -603,7 +607,7 @@ export default function Index() {
         company: {
           label: "Entreprise",
           subtitle:
-            "Mesure, rapporte et scale le développement de l’équipe via des programmes de coaching orientés objectifs.",
+            "Mesure, rapporte et scale le développement de l'équipe via des programmes de coaching orientés objectifs.",
         },
       },
       hero: {
@@ -613,7 +617,7 @@ export default function Index() {
         howItWorks: "Comment ça marche ?",
         stats: {
           onlineCoachesLabel: "Coachs en ligne",
-          todayMatchesLabel: "Matchs aujourd’hui",
+          todayMatchesLabel: "Matchs aujourd'hui",
           lastHourLabel: "Dernière heure",
         },
       },
@@ -621,7 +625,7 @@ export default function Index() {
         goal: "Objectif",
         level: "Niveau",
         language: "Langue",
-        tip: "Astuce : la zone “Coachs en vedette” peut être vendue en slot premium.",
+        tip: "Astuce : la zone \"Coachs en vedette\" peut être vendue en slot premium.",
       },
       goals: {
         interview: "Entretien",
@@ -644,7 +648,7 @@ export default function Index() {
       systemValue: {
         badge: "Objectif · Plan · Suivi de progression",
         title: "Ne laisse pas ta carrière au hasard. Pilote le process.",
-        desc: "Kariyeer n’est pas seulement un site de séances ponctuelles ; c’est un système qui définit ton objectif, te matche avec le bon expert et mesure tes progrès. Inutile de deviner quoi faire pendant une recherche d’emploi, une promotion ou un changement de carrière. Ton objectif se clarifie, le coach adapté est recommandé et la progression est suivie via des livrables concrets. Kariyeer n’est donc pas un site “à la demande”, mais un outil de parcours.",
+        desc: "Kariyeer n'est pas seulement un site de séances ponctuelles ; c'est un système qui définit ton objectif, te matche avec le bon expert et mesure tes progrès. Inutile de deviner quoi faire pendant une recherche d'emploi, une promotion ou un changement de carrière. Ton objectif se clarifie, le coach adapté est recommandé et la progression est suivie via des livrables concrets. Kariyeer n'est donc pas un site \"à la demande\", mais un outil de parcours.",
         cards: [
           { title: "🎯 Matching par objectif", desc: "Pas au hasard : objectif/rôle/niveau" },
           { title: "✅ Coachs vérifiés", desc: "Vérification du profil + couche qualité visible" },
@@ -652,11 +656,11 @@ export default function Index() {
         ],
         chips: [
           "Pack CV + LinkedIn",
-          "Simulation d’entretien + feedback",
+          "Simulation d'entretien + feedback",
           "Plan de carrière + objectifs 30/60/90 jours",
           "Programme promotion & leadership",
         ],
-        bottom: "Tu ne cherches pas un coach. Le système t’amène au résultat.",
+        bottom: "Tu ne cherches pas un coach. Le système t'amène au résultat.",
       },
       coachFlow: {
         steps: ["Postuler", "Vérification", "Profil en ligne", "1ère demande", "1ère séance"],
@@ -669,7 +673,7 @@ export default function Index() {
       coachGlobal: {
         badge: "Système global pour coachs",
         title: "Trouve des clients, gère tes séances, augmente tes revenus",
-        p1: "Kariyeer propose aux coachs un modèle de revenus scalable et indépendant du temps. Les programmes sont flexibles : en parallèle d’un job ou en canal pro à plein temps. Les séances 1:1 apportent un revenu régulier, et le B2B peut multiplier les revenus par 2–3. Demande, matching et gestion des séances : tout depuis un seul panel. Tu te concentres sur ton expertise.",
+        p1: "Kariyeer propose aux coachs un modèle de revenus scalable et indépendant du temps. Les programmes sont flexibles : en parallèle d'un job ou en canal pro à plein temps. Les séances 1:1 apportent un revenu régulier, et le B2B peut multiplier les revenus par 2–3. Demande, matching et gestion des séances : tout depuis un seul panel. Tu te concentres sur ton expertise.",
         p2: "Kariyeer permet aux coachs de matcher le bon client au bon objectif et de piloter tout le flux : visibilité → demande/match → séance → suivi/rapport → revenus.",
         valueCards: [
           { title: "Plus de visibilité", desc: "Listé en recherche objectif/rôle + badge vérifié" },
@@ -682,14 +686,14 @@ export default function Index() {
           "Coachs en vedette : visibilité homepage (payant)",
         ],
         note:
-          "Note : “Coachs en vedette” est une vitrine sponsorisée. Les coachs peuvent payer pour être plus visibles sur la homepage.",
+          "Note : \"Coachs en vedette\" est une vitrine sponsorisée. Les coachs peuvent payer pour être plus visibles sur la homepage.",
         apply: "Postuler comme coach",
         view: "Voir les coachs",
       },
       company: {
         badge: "Logique du programme entreprise",
-        title: "Transforme le coaching en performance d’équipe",
-        p1: "Côté entreprise, l’objectif n’est pas de “vendre des séances”, mais de matcher les objectifs d’équipe avec les bons coachs et rendre la progression visible. Flux : besoin → matching → séances → suivi/rapport.",
+        title: "Transforme le coaching en performance d'équipe",
+        p1: "Côté entreprise, l'objectif n'est pas de \"vendre des séances\", mais de matcher les objectifs d'équipe avec les bons coachs et rendre la progression visible. Flux : besoin → matching → séances → suivi/rapport.",
         cards: [
           { title: "Objectif & périmètre", desc: "Plan par rôle/niveau" },
           { title: "Bon pool de coachs", desc: "Expertise + couche de vérification" },
@@ -698,18 +702,18 @@ export default function Index() {
         chips: ["SLA : retour sous 24h", "Pilot : 1er rapport de mesure en 2 semaines"],
         solutions: "Solutions entreprises",
         midText1:
-          "Pour les entreprises, le coaching n’est pas une “séance ponctuelle” mais un système de développement mesurable. Kariyeer clarifie les besoins par objectif/rôle/niveau, extrait le meilleur matching parmi des coachs vérifiés et gère le process de manière reportable.",
+          "Pour les entreprises, le coaching n'est pas une \"séance ponctuelle\" mais un système de développement mesurable. Kariyeer clarifie les besoins par objectif/rôle/niveau, extrait le meilleur matching parmi des coachs vérifiés et gère le process de manière reportable.",
         midText2:
           "Résultat : progrès visibles pour People & Culture, développement traçable pour les managers, objectifs clairs et cadence régulière pour les collaborateurs. Après une demande demo : cartographie des besoins → matching → pilot → premier rapport.",
         demo: {
           badge: "Demande de démo entreprise",
           title: "Lançons un programme de coaching pour ton équipe",
           desc: "Remplis le formulaire, on construit un plan adapté et on partage le premier rapport.",
-          companyName: "Nom de l’entreprise",
+          companyName: "Nom de l'entreprise",
           fullName: "Contact",
           email: "E-mail",
           phone: "Téléphone",
-          teamSize: "Taille d’équipe",
+          teamSize: "Taille d'équipe",
           need: "Besoin prioritaire",
           startPlan: "Démarrage visé",
           startHint: "Après envoi, on revient vers toi sous 24h pour cadrer le plan.",
@@ -751,7 +755,7 @@ export default function Index() {
       },
       y2025: {
         title: "Quel problème résolvons-nous en 2025 ?",
-        desc: "Incertitude de carrière, performance en entretien et le “quel chemin choisir ?”. Kariyeer rend cela mesurable via matching par objectif et suivi.",
+        desc: "Incertitude de carrière, performance en entretien et le \"quel chemin choisir ?\". Kariyeer rend cela mesurable via matching par objectif et suivi.",
         cards: [
           { value: "%37", label: "Impact : promotion plus rapide" },
           { value: "%42", label: "Avantage : hausse salariale" },
@@ -818,6 +822,9 @@ export default function Index() {
     setDemoNote("");
   };
 
+  // ✅ YENİ: Dile göre slider verileri
+  const currentSlides = heroSlides[lang as keyof typeof heroSlides] || heroSlides.tr;
+
   // Featured coaches (statik vitrin)
   const featuredCoaches = [
     {
@@ -845,13 +852,20 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          {/* Persona */}
-          <div className="mt-8 flex justify-center">
-            <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-sm">
+
+      {/* ✅ YENİ: HERO SLIDER (eski statik hero yerine) */}
+      <HeroSlider
+        slides={currentSlides}
+        autoPlayInterval={5000}
+        height="h-[550px] md:h-[650px] lg:h-[700px]"
+      />
+
+      {/* ✅ YENİ: PERSONA SWITCHER + STATS (slider'ın hemen altında) */}
+      <section className="relative z-20 -mt-8 pb-4">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Persona seçici */}
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-lg">
               {personas.map((p) => {
                 const Icon = p.icon;
                 const active = p.key === persona;
@@ -859,7 +873,7 @@ export default function Index() {
                   <button
                     key={p.key}
                     onClick={() => setPersona(p.key)}
-                    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
                       active
                         ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow"
                         : "text-gray-700 hover:bg-orange-50"
@@ -873,64 +887,34 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Title */}
-          <div className="mt-10 text-center">
-            <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight">
-              {t.hero.titleA}{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">
-                {t.hero.titleB}
-              </span>
-            </h1>
-            <p className="mt-6 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              {personaCopy.subtitle}
-            </p>
+          {/* Persona subtitle */}
+          <p className="mt-4 text-center text-lg text-gray-600 max-w-3xl mx-auto">
+            {personaCopy.subtitle}
+          </p>
 
-            {/* CTA */}
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button
-                size="lg"
-                onClick={onMatch}
-                className="bg-gradient-to-r from-red-600 to-orange-500 hover:brightness-110 text-white text-lg h-14 px-8 rounded-xl shadow-lg"
-              >
-                {t.hero.matchCta} <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-
-              <Link to="/how-it-works">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="bg-white border-2 border-orange-200 text-gray-700 text-lg h-14 px-8 rounded-xl"
-                >
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  {t.hero.howItWorks}
-                </Button>
-              </Link>
+          {/* Inline stats */}
+          <div className="mt-4 flex flex-wrap justify-center gap-8 text-sm font-semibold text-gray-700">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-green-600" />
+              {t.hero.stats.onlineCoachesLabel}{" "}
+              <span className="font-black">33</span>
             </div>
-
-            {/* Inline stats */}
-            <div className="mt-10 flex flex-wrap justify-center gap-8 text-sm font-semibold text-gray-700">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-green-600" />
-                {t.hero.stats.onlineCoachesLabel}{" "}
-                <span className="font-black">33</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-orange-600" />
-                {t.hero.stats.todayMatchesLabel}{" "}
-                <span className="font-black">146</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-red-600" />
-                {t.hero.stats.lastHourLabel}{" "}
-                <span className="font-black">18</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-orange-600" />
+              {t.hero.stats.todayMatchesLabel}{" "}
+              <span className="font-black">146</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-red-600" />
+              {t.hero.stats.lastHourLabel}{" "}
+              <span className="font-black">18</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* QUICK MATCH */}
-      <section className="relative z-10 -mt-10 pb-14">
+      <section className="relative z-10 pb-14">
         <div className="max-w-5xl mx-auto px-4">
           <div className="bg-white border border-orange-200 rounded-2xl shadow-lg p-6">
             <div className="grid md:grid-cols-4 gap-4">
@@ -976,7 +960,6 @@ export default function Index() {
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   {t.quickMatch.language}
                 </label>
-                {/* ✅ Dil seçimi artık context üzerinden, Index'te kilitli */}
                 <select
                   value={lang}
                   onChange={() => {}}

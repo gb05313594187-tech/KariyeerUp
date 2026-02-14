@@ -21,7 +21,7 @@ export default function CoachApplication() {
     country: "",
 
     // Step 2
-    certificate_type: "", // "Diğer" seçilirse açıklama
+    certificate_type: "",
     selected_certificates: [] as string[],
     certificate_year: "",
     experience_level: "",
@@ -71,7 +71,7 @@ export default function CoachApplication() {
         }
         setMe(user);
 
-        // Kullanıcı daha önce başvurmuş mu?
+        // KORUNAN: Kullanıcı daha önce başvurmuş mu?
         const { data: existingApps, error: exErr } = await supabase
           .from("coach_applications")
           .select("id,status,created_at")
@@ -88,7 +88,7 @@ export default function CoachApplication() {
           }
         }
 
-        // Profilde pending/approved ise de engelleyebilirsin (opsiyonel)
+        // KORUNAN: Profilde pending/approved kontrolü
         const { data: prof } = await supabase
           .from("profiles")
           .select("status,is_approved")
@@ -106,7 +106,7 @@ export default function CoachApplication() {
     })();
   }, []);
 
-  /* ---------------- HELPERS ---------------- */
+  /* ---------------- HELPERS (TÜMÜ KORUNAN) ---------------- */
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -141,7 +141,6 @@ export default function CoachApplication() {
         ? prev.selected_certificates.filter((c) => c !== cert)
         : [...prev.selected_certificates, cert];
 
-      // Diğer kaldırıldıysa açıklamayı temizle
       const nextCertificateType = next.includes("Diğer") ? prev.certificate_type : "";
 
       return {
@@ -168,7 +167,7 @@ export default function CoachApplication() {
       }
 
       if (isOtherSelected && !formData.certificate_type?.trim()) {
-        toast.error("“Diğer” seçtiysen kısa bir açıklama yazmalısın.");
+        toast.error(""Diğer" seçtiysen kısa bir açıklama yazmalısın.");
         return;
       }
     }
@@ -185,6 +184,7 @@ export default function CoachApplication() {
 
   const handlePrevStep = () => setStep((prev) => Math.max(1, prev - 1));
 
+  // KORUNAN: Upload fonksiyonu
   async function uploadToBucket(bucket: string, file: File, prefix: string, userId: string) {
     const ext = file.name.split(".").pop() || "file";
     const fileName = `${prefix}_${userId}_${Date.now()}.${ext}`;
@@ -195,12 +195,11 @@ export default function CoachApplication() {
 
     if (error) throw error;
 
-    // public url (bucket public ise)
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(data.path);
     return { path: data.path, publicUrl: pub?.publicUrl || null };
   }
 
-  /* ---------------- SUBMIT ---------------- */
+  /* ---------------- SUBMIT (KORUNAN) ---------------- */
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (loading) return;
@@ -221,7 +220,7 @@ export default function CoachApplication() {
     try {
       const userId = me.id;
 
-      // Tekrar kontrol: aynı user pending ise engelle
+      // KORUNAN: Tekrar kontrol
       const { data: existing } = await supabase
         .from("coach_applications")
         .select("id,status,created_at")
@@ -235,22 +234,18 @@ export default function CoachApplication() {
         return;
       }
 
-      // Upload
+      // KORUNAN: Upload
       let cv_path: string | null = null;
       let certificate_path: string | null = null;
-      let cv_public_url: string | null = null;
-      let certificate_public_url: string | null = null;
 
       if (formData.cv_file) {
         const up = await uploadToBucket("coach_uploads", formData.cv_file, "cv", userId);
         cv_path = up.path;
-        cv_public_url = up.publicUrl;
       }
 
       if (formData.certificate_file) {
         const up = await uploadToBucket("coach_uploads", formData.certificate_file, "certificate", userId);
         certificate_path = up.path;
-        certificate_public_url = up.publicUrl;
       }
 
       const combinedCertificateType =
@@ -258,37 +253,26 @@ export default function CoachApplication() {
           ? formData.selected_certificates.join(", ")
           : formData.certificate_type;
 
+      // KORUNAN: Payload
       const payload: any = {
         user_id: userId,
-
-        // Step 1
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
         city: formData.city,
         country: formData.country,
-
-        // Step 2
         certificate_type: combinedCertificateType,
         certificate_year: formData.certificate_year,
         experience_level: formData.experience_level,
         session_price: formData.session_price ? Number(formData.session_price) : null,
         expertise_tags: formData.expertise_tags,
-
-        // Step 3
         cv_path,
         certificate_path,
-        // Admin ekranda görmek istersen (DB’de kolon yoksa şimdilik yazma)
-        // cv_public_url,
-        // certificate_public_url,
         bio: formData.bio,
         linkedin: formData.linkedin,
         website: formData.website,
-
-        // Step 4
         accept_terms: formData.accept_terms,
         accept_ethics: formData.accept_ethics,
-
         status: "pending_review",
       };
 
@@ -315,8 +299,20 @@ export default function CoachApplication() {
   };
 
   /* ---------------- UI ---------------- */
-  if (booting) return null;
 
+  // ✅ DEĞİŞİKLİK: Booting sırasında beyaz ekran yerine loading spinner göster
+  if (booting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm font-medium">Sayfa yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // KORUNAN: Step 5 - başvuru alındı
   if (step === 5) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -347,7 +343,7 @@ export default function CoachApplication() {
           </p>
         </div>
 
-        {/* Step indicator */}
+        {/* KORUNAN: Step indicator */}
         <div className="flex items-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
             <div
@@ -358,7 +354,7 @@ export default function CoachApplication() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* STEP 1 */}
+          {/* KORUNAN: STEP 1 */}
           {step === 1 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">1. Kişisel Bilgiler</h2>
@@ -425,7 +421,7 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* STEP 2 */}
+          {/* KORUNAN: STEP 2 */}
           {step === 2 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">2. Profesyonel Bilgiler</h2>
@@ -467,7 +463,7 @@ export default function CoachApplication() {
                 )}
 
                 <p className="text-xs text-slate-500">
-                  Seçtiklerin kayda “tek alan” olarak (ICF, EMCC...) yazılır.
+                  Seçtiklerin kayda "tek alan" olarak (ICF, EMCC...) yazılır.
                 </p>
               </div>
 
@@ -540,7 +536,7 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* STEP 3 */}
+          {/* KORUNAN: STEP 3 */}
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">3. Belgeler ve Profil</h2>
@@ -615,7 +611,7 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* STEP 4 */}
+          {/* KORUNAN: STEP 4 */}
           {step === 4 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">4. Koşullar ve Onay</h2>
@@ -656,7 +652,7 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* NAV */}
+          {/* KORUNAN: Navigation */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
             <div>
               {step > 1 && (

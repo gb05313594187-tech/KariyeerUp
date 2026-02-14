@@ -32,18 +32,15 @@ export default function HeroSlider({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]));
 
-  // Preload next image
+  // Preload next/prev images
   useEffect(() => {
-    const nextIndex = (currentIndex + 1) % slides.length;
-    const prevIndex = (currentIndex - 1 + slides.length) % slides.length;
-
-    [nextIndex, prevIndex].forEach((idx) => {
+    const nextIdx = (currentIndex + 1) % slides.length;
+    const prevIdx = (currentIndex - 1 + slides.length) % slides.length;
+    [nextIdx, prevIdx].forEach((idx) => {
       if (!loadedImages.has(idx)) {
         const img = new Image();
         img.src = slides[idx].image;
-        img.onload = () => {
-          setLoadedImages((prev) => new Set([...prev, idx]));
-        };
+        img.onload = () => setLoadedImages((prev) => new Set([...prev, idx]));
       }
     });
   }, [currentIndex, slides, loadedImages]);
@@ -52,19 +49,14 @@ export default function HeroSlider({
     (index: number) => {
       if (isTransitioning) return;
       setIsTransitioning(true);
-      setCurrentIndex(index);
+      setCurrentIndex((index + slides.length) % slides.length);
       setTimeout(() => setIsTransitioning(false), 700);
     },
-    [isTransitioning]
+    [isTransitioning, slides.length]
   );
 
-  const nextSlide = useCallback(() => {
-    goToSlide((currentIndex + 1) % slides.length);
-  }, [currentIndex, slides.length, goToSlide]);
-
-  const prevSlide = useCallback(() => {
-    goToSlide((currentIndex - 1 + slides.length) % slides.length);
-  }, [currentIndex, slides.length, goToSlide]);
+  const nextSlide = useCallback(() => goToSlide(currentIndex + 1), [currentIndex, goToSlide]);
+  const prevSlide = useCallback(() => goToSlide(currentIndex - 1), [currentIndex, goToSlide]);
 
   // Auto-play
   useEffect(() => {
@@ -73,38 +65,29 @@ export default function HeroSlider({
     return () => clearInterval(timer);
   }, [nextSlide, autoPlayInterval, isPaused]);
 
-  // Keyboard navigation
+  // Keyboard
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handle = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") prevSlide();
       if (e.key === "ArrowRight") nextSlide();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
   }, [nextSlide, prevSlide]);
 
-  // Touch/Swipe support
-  const minSwipeDistance = 50;
-
+  // Swipe
+  const minSwipe = 50;
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
+  const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    if (Math.abs(distance) >= minSwipeDistance) {
-      if (distance > 0) nextSlide();
-      else prevSlide();
-    }
+    const d = touchStart - touchEnd;
+    if (Math.abs(d) >= minSwipe) d > 0 ? nextSlide() : prevSlide();
   };
 
-  // Progress bar width
   const progressPercent = ((currentIndex + 1) / slides.length) * 100;
 
   return (
@@ -119,7 +102,7 @@ export default function HeroSlider({
       aria-label="Hero Slider"
       aria-roledescription="carousel"
     >
-      {/* ===== SLIDES ===== */}
+      {/* SLIDES */}
       {slides.map((slide, index) => {
         const isActive = index === currentIndex;
         return (
@@ -133,7 +116,7 @@ export default function HeroSlider({
             aria-label={`Slide ${index + 1} / ${slides.length}`}
             aria-hidden={!isActive}
           >
-            {/* Background Image */}
+            {/* BG Image */}
             <div className="absolute inset-0">
               <img
                 src={slide.image}
@@ -141,7 +124,6 @@ export default function HeroSlider({
                 className="w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
               />
-              {/* Multi-layer overlay for readability */}
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
             </div>
@@ -150,10 +132,10 @@ export default function HeroSlider({
             <div className="relative z-10 h-full flex items-center">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="max-w-2xl">
-                  {/* Slide number badge */}
+                  {/* Badge */}
                   <div
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full 
-                      bg-white/10 backdrop-blur-md border border-white/20 
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                      bg-white/10 backdrop-blur-md border border-white/20
                       text-white/90 text-xs font-medium mb-6
                       transition-all duration-700 delay-200
                       ${isActive ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
@@ -164,9 +146,8 @@ export default function HeroSlider({
 
                   {/* Title */}
                   <h1
-                    className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white 
-                      leading-[1.1] tracking-tight
-                      transition-all duration-700 delay-300
+                    className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white
+                      leading-[1.1] tracking-tight transition-all duration-700 delay-300
                       ${isActive ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}
                   >
                     {slide.title}{" "}
@@ -192,8 +173,8 @@ export default function HeroSlider({
                   >
                     <a
                       href={slide.ctaLink}
-                      className="inline-flex items-center justify-center gap-2 
-                        bg-gradient-to-r from-red-600 to-orange-500 
+                      className="inline-flex items-center justify-center gap-2
+                        bg-gradient-to-r from-red-600 to-orange-500
                         hover:from-red-500 hover:to-orange-400
                         text-white font-bold text-lg
                         h-14 px-8 rounded-xl shadow-lg shadow-red-600/30
@@ -202,7 +183,6 @@ export default function HeroSlider({
                       {slide.ctaText}
                       <ChevronRight className="h-5 w-5" />
                     </a>
-
                     {slide.secondaryCtaText && (
                       <a
                         href={slide.secondaryCtaLink || "#"}
@@ -223,7 +203,7 @@ export default function HeroSlider({
         );
       })}
 
-      {/* ===== NAVIGATION ARROWS ===== */}
+      {/* ARROWS */}
       <button
         onClick={prevSlide}
         disabled={isTransitioning}
@@ -238,7 +218,6 @@ export default function HeroSlider({
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
-
       <button
         onClick={nextSlide}
         disabled={isTransitioning}
@@ -254,37 +233,30 @@ export default function HeroSlider({
         <ChevronRight className="h-6 w-6" />
       </button>
 
-      {/* ===== BOTTOM BAR: Dots + Progress ===== */}
+      {/* BOTTOM BAR */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        {/* Progress bar */}
         <div className="h-1 bg-white/10">
           <div
             className="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-
-        {/* Dots + counter */}
         <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-gradient-to-t from-black/40 to-transparent">
-          {/* Dots */}
           <div className="flex items-center gap-2">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`transition-all duration-300 rounded-full
-                  ${
-                    index === currentIndex
-                      ? "w-8 h-2.5 bg-gradient-to-r from-red-500 to-orange-400"
-                      : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
-                  }`}
+                className={`transition-all duration-300 rounded-full ${
+                  index === currentIndex
+                    ? "w-8 h-2.5 bg-gradient-to-r from-red-500 to-orange-400"
+                    : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
+                }`}
                 aria-label={`Slayt ${index + 1}`}
                 aria-current={index === currentIndex ? "true" : "false"}
               />
             ))}
           </div>
-
-          {/* Pause indicator */}
           <div className="flex items-center gap-3 text-white/60 text-sm">
             {isPaused && (
               <span className="flex items-center gap-1 text-xs">
@@ -299,7 +271,7 @@ export default function HeroSlider({
         </div>
       </div>
 
-      {/* ===== DECORATIVE ELEMENTS ===== */}
+      {/* Decorative */}
       <div className="absolute top-8 right-8 z-10 hidden lg:block">
         <div className="w-32 h-32 border border-white/10 rounded-full" />
         <div className="w-20 h-20 border border-white/5 rounded-full absolute top-6 left-6" />

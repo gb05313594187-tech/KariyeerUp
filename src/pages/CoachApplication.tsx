@@ -41,20 +41,20 @@ export default function CoachApplication() {
   });
 
   const expertiseOptions = [
-    "Kariyer Geçişi",
-    "Liderlik Koçluğu",
-    "Yeni Mezun Koçluğu",
-    "Yöneticiler için Koçluk",
-    "Mülakat Hazırlığı",
+    "Kariyer Gecisi",
+    "Liderlik Koclugu",
+    "Yeni Mezun Koclugu",
+    "Yoneticiler icin Kocluk",
+    "Mulakat Hazirligi",
     "CV & LinkedIn",
-    "Performans Gelişimi",
-    "Uluslararası Kariyer",
+    "Performans Gelisimi",
+    "Uluslararasi Kariyer",
   ];
 
-  const certificateOptions = ["ICF", "EMCC", "MYK", "ICF + MYK", "Diğer"];
+  const certificateOptions = ["ICF", "EMCC", "MYK", "ICF + MYK", "Diger"];
 
   const isOtherSelected = useMemo(
-    () => formData.selected_certificates.includes("Diğer"),
+    () => formData.selected_certificates.includes("Diger"),
     [formData.selected_certificates]
   );
 
@@ -65,13 +65,12 @@ export default function CoachApplication() {
         const { data, error } = await supabase.auth.getUser();
         const user = data?.user;
         if (error || !user) {
-          toast.error("Koç başvurusu için önce giriş yapmalısın.");
+          toast.error("Koc basvurusu icin once giris yapmalisin.");
           window.location.href = "/login";
           return;
         }
         setMe(user);
 
-        // KORUNAN: Kullanıcı daha önce başvurmuş mu?
         const { data: existingApps, error: exErr } = await supabase
           .from("coach_applications")
           .select("id,status,created_at")
@@ -82,13 +81,12 @@ export default function CoachApplication() {
         if (!exErr && existingApps && existingApps.length > 0) {
           const last = existingApps[0];
           if (last?.status === "pending_review" || last?.status === "approved") {
-            toast.message("Zaten bir koç başvurun var. Tekrar başvuru alamıyoruz.");
+            toast.message("Zaten bir koc basvurun var. Tekrar basvuru alamiyoruz.");
             setStep(5);
             return;
           }
         }
 
-        // KORUNAN: Profilde pending/approved kontrolü
         const { data: prof } = await supabase
           .from("profiles")
           .select("status,is_approved")
@@ -96,7 +94,7 @@ export default function CoachApplication() {
           .maybeSingle();
 
         if (prof?.status === "pending_review" || prof?.is_approved === true) {
-          toast.message("Profil durumun zaten incelemede / onaylı görünüyor.");
+          toast.message("Profil durumun zaten incelemede / onayli gorunuyor.");
           setStep(5);
           return;
         }
@@ -106,7 +104,7 @@ export default function CoachApplication() {
     })();
   }, []);
 
-  /* ---------------- HELPERS (TÜMÜ KORUNAN) ---------------- */
+  /* ---------------- HELPERS ---------------- */
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -141,7 +139,7 @@ export default function CoachApplication() {
         ? prev.selected_certificates.filter((c) => c !== cert)
         : [...prev.selected_certificates, cert];
 
-      const nextCertificateType = next.includes("Diğer") ? prev.certificate_type : "";
+      const nextCertificateType = next.includes("Diger") ? prev.certificate_type : "";
 
       return {
         ...prev,
@@ -154,7 +152,7 @@ export default function CoachApplication() {
   const handleNextStep = () => {
     if (step === 1) {
       if (!formData.full_name || !formData.email || !formData.phone) {
-        toast.error("Lütfen ad soyad, e-posta ve telefon alanlarını doldurun.");
+        toast.error("Lutfen ad soyad, e-posta ve telefon alanlarini doldurun.");
         return;
       }
     }
@@ -162,19 +160,19 @@ export default function CoachApplication() {
     if (step === 2) {
       const hasSelectedCerts = formData.selected_certificates?.length > 0;
       if (!hasSelectedCerts || !formData.experience_level) {
-        toast.error("Lütfen en az bir sertifika seçin ve deneyim seviyesini belirtin.");
+        toast.error("Lutfen en az bir sertifika secin ve deneyim seviyesini belirtin.");
         return;
       }
 
       if (isOtherSelected && !formData.certificate_type?.trim()) {
-        toast.error(""Diğer" seçtiysen kısa bir açıklama yazmalısın.");
+        toast.error("\"Diger\" sectiysen kisa bir aciklama yazmalisin.");
         return;
       }
     }
 
     if (step === 3) {
       if (!formData.cv_file || !formData.certificate_file) {
-        toast.error("Lütfen CV ve Sertifika dosyalarını yükleyin.");
+        toast.error("Lutfen CV ve Sertifika dosyalarini yukleyin.");
         return;
       }
     }
@@ -184,7 +182,6 @@ export default function CoachApplication() {
 
   const handlePrevStep = () => setStep((prev) => Math.max(1, prev - 1));
 
-  // KORUNAN: Upload fonksiyonu
   async function uploadToBucket(bucket: string, file: File, prefix: string, userId: string) {
     const ext = file.name.split(".").pop() || "file";
     const fileName = `${prefix}_${userId}_${Date.now()}.${ext}`;
@@ -199,18 +196,18 @@ export default function CoachApplication() {
     return { path: data.path, publicUrl: pub?.publicUrl || null };
   }
 
-  /* ---------------- SUBMIT (KORUNAN) ---------------- */
+  /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (loading) return;
 
     if (!formData.accept_terms || !formData.accept_ethics) {
-      toast.error("Başvuru göndermek için tüm koşulları onaylamalısınız.");
+      toast.error("Basvuru gondermek icin tum kosullari onaylamalisiniz.");
       return;
     }
 
     if (!me?.id) {
-      toast.error("Giriş bilgisi bulunamadı. Lütfen tekrar giriş yap.");
+      toast.error("Giris bilgisi bulunamadi. Lutfen tekrar giris yap.");
       window.location.href = "/login";
       return;
     }
@@ -220,7 +217,6 @@ export default function CoachApplication() {
     try {
       const userId = me.id;
 
-      // KORUNAN: Tekrar kontrol
       const { data: existing } = await supabase
         .from("coach_applications")
         .select("id,status,created_at")
@@ -229,12 +225,11 @@ export default function CoachApplication() {
         .limit(1);
 
       if (existing?.[0]?.status === "pending_review" || existing?.[0]?.status === "approved") {
-        toast.message("Zaten bir koç başvurun var. Tekrar başvuru alamıyoruz.");
+        toast.message("Zaten bir koc basvurun var. Tekrar basvuru alamiyoruz.");
         setStep(5);
         return;
       }
 
-      // KORUNAN: Upload
       let cv_path: string | null = null;
       let certificate_path: string | null = null;
 
@@ -253,7 +248,6 @@ export default function CoachApplication() {
           ? formData.selected_certificates.join(", ")
           : formData.certificate_type;
 
-      // KORUNAN: Payload
       const payload: any = {
         user_id: userId,
         full_name: formData.full_name,
@@ -279,7 +273,7 @@ export default function CoachApplication() {
       const { error: insertError } = await supabase.from("coach_applications").insert(payload);
       if (insertError) {
         console.error(insertError);
-        toast.error("Başvuru kaydedilirken bir hata oluştu (RLS/Policy olabilir).");
+        toast.error("Basvuru kaydedilirken bir hata olustu (RLS/Policy olabilir).");
         return;
       }
 
@@ -289,44 +283,41 @@ export default function CoachApplication() {
         .eq("id", userId);
 
       setStep(5);
-      toast.success("Başvurunuz alındı. En kısa sürede inceleyeceğiz. 🎉");
+      toast.success("Basvurunuz alindi. En kisa surede inceleyecegiz.");
     } catch (err: any) {
       console.error(err);
-      toast.error("Beklenmeyen bir hata oluştu.");
+      toast.error("Beklenmeyen bir hata olustu.");
     } finally {
       setLoading(false);
     }
   };
 
   /* ---------------- UI ---------------- */
-
-  // ✅ DEĞİŞİKLİK: Booting sırasında beyaz ekran yerine loading spinner göster
   if (booting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm font-medium">Sayfa yükleniyor...</p>
+          <p className="text-gray-500 text-sm font-medium">Sayfa yukleniyor...</p>
         </div>
       </div>
     );
   }
 
-  // KORUNAN: Step 5 - başvuru alındı
   if (step === 5) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="max-w-lg w-full bg-white shadow-xl rounded-2xl p-8 space-y-4 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">Başvurunuz Alındı 🎉</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Basvurunuz Alindi</h1>
           <p className="text-slate-600 text-sm">
-            Koç başvurunuz kaydedildi. Ekibimiz belgelerinizi inceledikten sonra sizinle e-posta üzerinden iletişime geçecek.
+            Koc basvurunuz kaydedildi. Ekibimiz belgelerinizi inceledikten sonra sizinle e-posta uzerinden iletisime gececek.
           </p>
           <p className="text-slate-500 text-xs">
-            Onaylandığınızda profiliniz Koçlar sayfasında görünür hale gelecek ve koç paneline erişebileceksiniz.
+            Onaylandiginizda profiliniz Koclar sayfasinda gorunur hale gelecek ve koc paneline erisebileceksiniz.
           </p>
 
           <div className="flex gap-3 justify-center mt-4">
-            <Button onClick={() => (window.location.href = "/")}>Ana Sayfaya Dön</Button>
+            <Button onClick={() => (window.location.href = "/")}>Ana Sayfaya Don</Button>
           </div>
         </div>
       </div>
@@ -337,13 +328,13 @@ export default function CoachApplication() {
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Koç Başvuru Formu</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Koc Basvuru Formu</h1>
           <p className="text-sm text-slate-600 mt-1">
-            Koç ağına katılmak için formu eksiksiz doldurun. Başvurunuz ekip tarafından incelenecektir.
+            Koc agina katilmak icin formu eksiksiz doldurun. Basvurunuz ekip tarafindan incelenecektir.
           </p>
         </div>
 
-        {/* KORUNAN: Step indicator */}
+        {/* Step indicator */}
         <div className="flex items-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
             <div
@@ -354,10 +345,10 @@ export default function CoachApplication() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* KORUNAN: STEP 1 */}
+          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">1. Kişisel Bilgiler</h2>
+              <h2 className="text-lg font-semibold text-slate-900">1. Kisisel Bilgiler</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -397,7 +388,7 @@ export default function CoachApplication() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Şehir</label>
+                  <label className="text-sm font-medium text-slate-700">Sehir</label>
                   <input
                     type="text"
                     name="city"
@@ -408,7 +399,7 @@ export default function CoachApplication() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Ülke</label>
+                  <label className="text-sm font-medium text-slate-700">Ulke</label>
                   <input
                     type="text"
                     name="country"
@@ -421,14 +412,14 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* KORUNAN: STEP 2 */}
+          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">2. Profesyonel Bilgiler</h2>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Sertifika Türü (birden fazla seçebilirsiniz)
+                  Sertifika Turu (birden fazla secebilirsiniz)
                 </label>
 
                 <div className="flex flex-wrap gap-2">
@@ -457,19 +448,19 @@ export default function CoachApplication() {
                     name="certificate_type"
                     value={formData.certificate_type}
                     onChange={handleChange}
-                    placeholder="Diğer sertifika(lar) / açıklama"
+                    placeholder="Diger sertifika(lar) / aciklama"
                     className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                   />
                 )}
 
                 <p className="text-xs text-slate-500">
-                  Seçtiklerin kayda "tek alan" olarak (ICF, EMCC...) yazılır.
+                  Sectiklerin kayda tek alan olarak (ICF, EMCC...) yazilir.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Sertifika Yılı</label>
+                  <label className="text-sm font-medium text-slate-700">Sertifika Yili</label>
                   <input
                     type="text"
                     name="certificate_year"
@@ -489,29 +480,29 @@ export default function CoachApplication() {
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                     required
                   >
-                    <option value="">Seçin</option>
-                    <option value="junior">1-2 Yıl</option>
-                    <option value="mid">3-5 Yıl</option>
-                    <option value="senior">5+ Yıl</option>
+                    <option value="">Secin</option>
+                    <option value="junior">1-2 Yil</option>
+                    <option value="mid">3-5 Yil</option>
+                    <option value="senior">5+ Yil</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Seans Ücreti (₺)</label>
+                  <label className="text-sm font-medium text-slate-700">Seans Ucreti (TL)</label>
                   <input
                     type="number"
                     name="session_price"
                     value={formData.session_price}
                     onChange={handleChange}
-                    placeholder="Örn: 750"
+                    placeholder="Orn: 750"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Uzmanlık Alanları</label>
-                <p className="text-xs text-slate-500">Birden fazla alan seçebilirsiniz.</p>
+                <label className="text-sm font-medium text-slate-700">Uzmanlik Alanlari</label>
+                <p className="text-xs text-slate-500">Birden fazla alan secebilirsiniz.</p>
 
                 <div className="flex flex-wrap gap-2">
                   {expertiseOptions.map((tag) => {
@@ -536,7 +527,7 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* KORUNAN: STEP 3 */}
+          {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">3. Belgeler ve Profil</h2>
@@ -551,7 +542,7 @@ export default function CoachApplication() {
                     className="w-full text-sm"
                   />
                   {formData.cv_file && (
-                    <p className="text-xs text-slate-500 mt-1">Seçilen dosya: {formData.cv_file.name}</p>
+                    <p className="text-xs text-slate-500 mt-1">Secilen dosya: {formData.cv_file.name}</p>
                   )}
                 </div>
 
@@ -565,19 +556,19 @@ export default function CoachApplication() {
                   />
                   {formData.certificate_file && (
                     <p className="text-xs text-slate-500 mt-1">
-                      Seçilen dosya: {formData.certificate_file.name}
+                      Secilen dosya: {formData.certificate_file.name}
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Kısa Biyografi</label>
+                  <label className="text-sm font-medium text-slate-700">Kisa Biyografi</label>
                   <textarea
                     name="bio"
                     value={formData.bio}
                     onChange={handleChange}
                     rows={4}
-                    placeholder="Koçluk yaklaşımınız, deneyimleriniz ve çalıştığınız hedef kitle hakkında kısa bir özet..."
+                    placeholder="Kocluk yaklasiminiz, deneyimleriniz ve calistiginiz hedef kitle hakkinda kisa bir ozet..."
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                   />
                 </div>
@@ -611,10 +602,10 @@ export default function CoachApplication() {
             </div>
           )}
 
-          {/* KORUNAN: STEP 4 */}
+          {/* STEP 4 */}
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">4. Koşullar ve Onay</h2>
+              <h2 className="text-lg font-semibold text-slate-900">4. Kosullar ve Onay</h2>
 
               <div className="space-y-3">
                 <div className="flex items-start gap-2">
@@ -627,7 +618,7 @@ export default function CoachApplication() {
                     className="mt-1"
                   />
                   <label htmlFor="accept_terms" className="text-sm text-slate-700">
-                    Kullanım koşullarını ve komisyon yapısını okudum, kabul ediyorum.
+                    Kullanim kosullarini ve komisyon yapisini okudum, kabul ediyorum.
                   </label>
                 </div>
 
@@ -641,18 +632,18 @@ export default function CoachApplication() {
                     className="mt-1"
                   />
                   <label htmlFor="accept_ethics" className="text-sm text-slate-700">
-                    Profesyonel etik kurallara uygun çalışacağımı ve gizlilik ilkelerine uyacağımı taahhüt ediyorum.
+                    Profesyonel etik kurallara uygun calisacagimi ve gizlilik ilkelerine uyacagimi taahhut ediyorum.
                   </label>
                 </div>
 
                 <p className="text-xs text-slate-500">
-                  Başvurunuz değerlendirilecek. Onaylanırsa profiliniz yayına alınır ve koç paneline erişirsiniz.
+                  Basvurunuz degerlendirilecek. Onaylanirsa profiliniz yayina alinir ve koc paneline erisirsiniz.
                 </p>
               </div>
             </div>
           )}
 
-          {/* KORUNAN: Navigation */}
+          {/* NAV */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
             <div>
               {step > 1 && (
@@ -665,7 +656,7 @@ export default function CoachApplication() {
             <div className="flex gap-2">
               {step < 4 && (
                 <Button type="button" onClick={handleNextStep} disabled={loading}>
-                  İleri
+                  Ileri
                 </Button>
               )}
 
@@ -674,7 +665,7 @@ export default function CoachApplication() {
                   type="submit"
                   disabled={loading || !formData.accept_terms || !formData.accept_ethics}
                 >
-                  {loading ? "Başvuru Gönderiliyor..." : "Başvuruyu Gönder"}
+                  {loading ? "Basvuru Gonderiliyor..." : "Basvuruyu Gonder"}
                 </Button>
               )}
             </div>

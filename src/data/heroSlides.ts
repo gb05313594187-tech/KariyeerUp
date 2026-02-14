@@ -15,8 +15,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
       title: "Hayalindeki Kariyere",
       highlight: "Ulaş",
-      description:
-        "Hedef bazlı eşleşme ile sana en uygun kariyer koçunu bul. Mülakat hazırlığından terfi stratejisine kadar profesyonel destek al.",
+      description: "Hedef bazlı eşleşme ile sana en uygun kariyer koçunu bul. Mülakat hazırlığından terfi stratejisine kadar profesyonel destek al.",
       ctaText: "Koçlarla Eşleş",
       ctaLink: "/coaches",
       secondaryCtaText: "Nasıl Çalışır?",
@@ -27,8 +26,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1600&q=80",
       title: "Profesyonel Ağını",
       highlight: "Genişlet",
-      description:
-        "Doğrulanmış koçlar, ölçülebilir ilerleme, somut çıktılar. Kariyerini şansa bırakma, süreci yönet.",
+      description: "Doğrulanmış koçlar, ölçülebilir ilerleme, somut çıktılar. Kariyerini şansa bırakma, süreci yönet.",
       ctaText: "Hemen Başla",
       ctaLink: "/register",
       secondaryCtaText: "Koçları İncele",
@@ -39,8 +37,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1600&q=80",
       title: "CV'ni Oluştur,",
       highlight: "Öne Çık",
-      description:
-        "CV + LinkedIn optimizasyonu, mülakat simülasyonu ve kariyer planı ile rakiplerinden bir adım önde ol.",
+      description: "CV + LinkedIn optimizasyonu, mülakat simülasyonu ve kariyer planı ile rakiplerinden bir adım önde ol.",
       ctaText: "CV Paketi Al",
       ctaLink: "/pricing",
       secondaryCtaText: "Fiyatları Gör",
@@ -51,8 +48,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80",
       title: "Kurumsal Koçluk",
       highlight: "Programları",
-      description:
-        "Ekip gelişimini ölçülebilir hale getirin. Hedef bazlı koç eşleşmesi, takip ve raporlama tek platformda.",
+      description: "Ekip gelişimini ölçülebilir hale getirin. Hedef bazlı koç eşleşmesi, takip ve raporlama tek platformda.",
       ctaText: "Demo Talep Et",
       ctaLink: "/for-companies",
       secondaryCtaText: "Kurumsal Çözümler",
@@ -63,23 +59,20 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80",
       title: "Koç Ol,",
       highlight: "Gelirini Büyüt",
-      description:
-        "Profilini oluştur, global danışanlara ulaş, seanslarını ve gelirini tek panelden yönet. İlk 50 koça %10 komisyon.",
+      description: "Profilini oluştur, global danışanlara ulaş, seanslarını ve gelirini tek panelden yönet. İlk 50 koça %10 komisyon.",
       ctaText: "Koç Olarak Başvur",
       ctaLink: "/coach-application",
       secondaryCtaText: "Detaylı Bilgi",
       secondaryCtaLink: "/for-coaches",
     },
   ],
-
   en: [
     {
       id: 1,
       image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
       title: "Reach Your Dream",
       highlight: "Career",
-      description:
-        "Find the best career coach for you with goal-based matching. Get professional support from interview prep to promotion strategy.",
+      description: "Find the best career coach with goal-based matching. Get professional support from interview prep to promotion strategy.",
       ctaText: "Match with Coaches",
       ctaLink: "/coaches",
       secondaryCtaText: "How It Works",
@@ -90,8 +83,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1600&q=80",
       title: "Expand Your Professional",
       highlight: "Network",
-      description:
-        "Verified coaches, measurable progress, tangible outcomes. Don't leave your career to chance.",
+      description: "Verified coaches, measurable progress, tangible outcomes. Don't leave your career to chance.",
       ctaText: "Get Started",
       ctaLink: "/register",
       secondaryCtaText: "Browse Coaches",
@@ -102,8 +94,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1600&q=80",
       title: "Build Your CV,",
       highlight: "Stand Out",
-      description:
-        "CV + LinkedIn optimization, interview simulation, and career planning to stay ahead of the competition.",
+      description: "CV + LinkedIn optimization, interview simulation, and career planning to stay ahead.",
       ctaText: "Get CV Package",
       ctaLink: "/pricing",
       secondaryCtaText: "See Pricing",
@@ -114,8 +105,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80",
       title: "Corporate Coaching",
       highlight: "Programs",
-      description:
-        "Make team development measurable. Goal-based coach matching, tracking, and reporting in one platform.",
+      description: "Make team development measurable. Goal-based coach matching, tracking, and reporting in one platform.",
       ctaText: "Request Demo",
       ctaLink: "/for-companies",
       secondaryCtaText: "Corporate Solutions",
@@ -126,23 +116,20 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80",
       title: "Become a Coach,",
       highlight: "Grow Revenue",
-      description:
-        "Create your profile, reach global clients, manage sessions and revenue from one dashboard. 10% commission for first 50 coaches.",
+      description: "Create your profile, reach global clients, manage sessions and revenue. 10% commission for first 50 coaches.",
       ctaText: "Apply as Coach",
       ctaLink: "/coach-application",
       secondaryCtaText: "Learn More",
       secondaryCtaLink: "/for-coaches",
     },
   ],
-
   ar: [
     {
       id: 1,
       image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
       title: "حقّق حلمك",
       highlight: "المهني",
-      description:
-        "اعثر على أفضل مدرب مهني عبر مطابقة بحسب الهدف. احصل على دعم احترافي من التحضير للمقابلة إلى استراتيجية الترقية.",
+      description: "اعثر على أفضل مدرب مهني عبر مطابقة بحسب الهدف. احصل على دعم احترافي.",
       ctaText: "تطابق مع المدربين",
       ctaLink: "/coaches",
       secondaryCtaText: "كيف يعمل؟",
@@ -153,8 +140,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1600&q=80",
       title: "وسّع شبكتك",
       highlight: "المهنية",
-      description:
-        "مدربون موثّقون، تقدّم قابل للقياس، نتائج ملموسة. لا تترك مسارك المهني للصدفة.",
+      description: "مدربون موثّقون، تقدّم قابل للقياس، نتائج ملموسة.",
       ctaText: "ابدأ الآن",
       ctaLink: "/register",
       secondaryCtaText: "تصفّح المدربين",
@@ -165,7 +151,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1600&q=80",
       title: "أنشئ سيرتك،",
       highlight: "تميّز",
-      description: "تحسين السيرة + لينكدإن، محاكاة المقابلات، وتخطيط مهني للتفوق على المنافسين.",
+      description: "تحسين السيرة + لينكدإن، محاكاة المقابلات، وتخطيط مهني.",
       ctaText: "احصل على باقة السيرة",
       ctaLink: "/pricing",
       secondaryCtaText: "الأسعار",
@@ -176,8 +162,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80",
       title: "برامج التدريب",
       highlight: "للشركات",
-      description:
-        "اجعل تطوير الفريق قابلًا للقياس. مطابقة مدرب بحسب الهدف، متابعة وتقارير في منصة واحدة.",
+      description: "اجعل تطوير الفريق قابلًا للقياس. مطابقة مدرب بحسب الهدف.",
       ctaText: "اطلب عرض تجريبي",
       ctaLink: "/for-companies",
       secondaryCtaText: "حلول الشركات",
@@ -188,23 +173,20 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80",
       title: "كن مدرّبًا،",
       highlight: "نمِّ دخلك",
-      description:
-        "أنشئ ملفك، تواصل مع عملاء عالميين، أدر جلساتك ودخلك من لوحة واحدة. عمولة 10% لأول 50 مدرب.",
+      description: "أنشئ ملفك، تواصل مع عملاء عالميين. عمولة 10% لأول 50 مدرب.",
       ctaText: "قدّم كمدرّب",
       ctaLink: "/coach-application",
       secondaryCtaText: "تفاصيل أكثر",
       secondaryCtaLink: "/for-coaches",
     },
   ],
-
   fr: [
     {
       id: 1,
       image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
       title: "Atteins la carrière",
       highlight: "de tes rêves",
-      description:
-        "Trouve le meilleur coach carrière via le matching par objectif. Obtiens un accompagnement pro, de la préparation d'entretien à la stratégie de promotion.",
+      description: "Trouve le meilleur coach carrière via le matching par objectif. Accompagnement pro garanti.",
       ctaText: "Matcher avec un coach",
       ctaLink: "/coaches",
       secondaryCtaText: "Comment ça marche ?",
@@ -215,8 +197,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1600&q=80",
       title: "Élargis ton réseau",
       highlight: "professionnel",
-      description:
-        "Coachs vérifiés, progrès mesurables, résultats concrets. Ne laisse pas ta carrière au hasard.",
+      description: "Coachs vérifiés, progrès mesurables, résultats concrets.",
       ctaText: "Commencer",
       ctaLink: "/register",
       secondaryCtaText: "Voir les coachs",
@@ -227,8 +208,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1600&q=80",
       title: "Crée ton CV,",
       highlight: "démarque-toi",
-      description:
-        "Optimisation CV + LinkedIn, simulation d'entretien et plan de carrière pour garder une longueur d'avance.",
+      description: "Optimisation CV + LinkedIn, simulation d'entretien et plan de carrière.",
       ctaText: "Pack CV",
       ctaLink: "/pricing",
       secondaryCtaText: "Voir les prix",
@@ -239,8 +219,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=80",
       title: "Programmes de coaching",
       highlight: "entreprise",
-      description:
-        "Rendez le développement d'équipe mesurable. Matching coach par objectif, suivi et reporting en une seule plateforme.",
+      description: "Rendez le développement d'équipe mesurable. Matching, suivi et reporting.",
       ctaText: "Demander une démo",
       ctaLink: "/for-companies",
       secondaryCtaText: "Solutions entreprises",
@@ -251,8 +230,7 @@ export const heroSlides: SlideSet = {
       image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80",
       title: "Deviens coach,",
       highlight: "augmente tes revenus",
-      description:
-        "Crée ton profil, touche des clients internationaux, gère séances et revenus depuis un seul panel. Commission 10% pour les 50 premiers coachs.",
+      description: "Crée ton profil, touche des clients internationaux. Commission 10% pour les 50 premiers.",
       ctaText: "Postuler comme coach",
       ctaLink: "/coach-application",
       secondaryCtaText: "En savoir plus",

@@ -1,6 +1,6 @@
 // src/components/Navbar.tsx
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 
-export default function Navbar() {
+// ✅ DEĞİŞİKLİK 1: memo ile sarmalama — gereksiz re-render önleme
+const Navbar = memo(function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
@@ -40,7 +41,7 @@ export default function Navbar() {
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
 
-  // ✅ Çok dilli başlıklar için çeviri objesi
+  // KORUNAN: Çok dilli çeviriler
   const translations = {
     tr: {
       jobs: "İlanlar",
@@ -98,13 +99,18 @@ export default function Navbar() {
 
   const t = translations[language || "tr"];
 
+  // KORUNAN: Route değişiminde menü kapat
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + "/");
+  // KORUNAN: isActive kontrolü
+  const isActive = useCallback((path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/"),
+    [location.pathname]
+  );
 
+  // KORUNAN: Role bazlı hesaplamalar
   const roleLabel = useMemo(() => {
     if (role === "coach") return language === "tr" ? "Koç" : "Coach";
     if (role === "corporate") return language === "tr" ? "Şirket" : "Corporate";
@@ -147,15 +153,27 @@ export default function Navbar() {
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
 
+  // ✅ DEĞİŞİKLİK 2: Logout handler memo ile sarmalama
+  const handleLogout = useCallback(async () => {
+    await auth.logout();
+    navigate("/");
+  }, [auth, navigate]);
+
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
   const mobilePrimary =
     "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-700 transition";
 
+  // ✅ DEĞİŞİKLİK 3: Loading sırasında SON BİLİNEN DURUMU göster (skeleton yerine)
+  // İlk yüklemede (me === null ve loading === true) skeleton göster
+  // Sonraki loading'lerde (me zaten var) → mevcut UI'ı koru, skeleton GÖSTERME
+  const showAuthSkeleton = auth.loading && me === null;
+
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
+
+        {/* KORUNAN: Logo */}
         <Link to={logoPath} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
@@ -163,6 +181,7 @@ export default function Navbar() {
           <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
+        {/* KORUNAN: Desktop Nav */}
         <nav className="hidden md:flex items-center gap-2">
           {me && (
             <Link
@@ -213,7 +232,9 @@ export default function Navbar() {
           </Link>
         </nav>
 
+        {/* KORUNAN: Right side */}
         <div className="flex items-center gap-2">
+          {/* KORUNAN: Dil seçici */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="rounded-xl">
@@ -231,16 +252,20 @@ export default function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* KORUNAN: Notification bell */}
           <div className="hidden sm:block">
             <NotificationBell />
           </div>
 
-          {auth.loading ? (
+          {/* ✅ DEĞİŞİKLİK 4: Auth durumu — akıllı skeleton */}
+          {showAuthSkeleton ? (
+            // Sadece ilk yüklemede skeleton göster
             <div className="hidden md:flex items-center gap-2">
-              <div className="h-10 w-28 rounded-xl bg-gray-100" />
-              <div className="h-10 w-40 rounded-xl bg-gray-100" />
+              <div className="h-10 w-28 rounded-xl bg-gray-100 animate-pulse" />
+              <div className="h-10 w-40 rounded-xl bg-gray-100 animate-pulse" />
             </div>
           ) : !me ? (
+            // KORUNAN: Giriş yapmamış kullanıcı
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
@@ -254,9 +279,15 @@ export default function Navbar() {
               </Link>
             </div>
           ) : (
+            // KORUNAN: Giriş yapmış kullanıcı
             <div className="hidden md:flex items-center gap-2">
+              {/* ✅ DEĞİŞİKLİK 5: Loading sırasında butonlara opacity ekle (donma hissi azalır) */}
               <Link to={dashboardPath}>
-                <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
+                <Button
+                  className={`rounded-xl bg-red-600 hover:bg-red-700 text-white transition-opacity ${
+                    auth.loading ? "opacity-70" : "opacity-100"
+                  }`}
+                >
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   {dashboardLabel}
                 </Button>
@@ -264,7 +295,12 @@ export default function Navbar() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-xl">
+                  <Button
+                    variant="outline"
+                    className={`rounded-xl transition-opacity ${
+                      auth.loading ? "opacity-70" : "opacity-100"
+                    }`}
+                  >
                     <User className="h-4 w-4 mr-2" />
                     {displayName}
                     <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
@@ -306,12 +342,7 @@ export default function Navbar() {
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      await auth.logout();
-                      navigate("/");
-                    }}
-                  >
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     {t.logout}
                   </DropdownMenuItem>
@@ -320,6 +351,7 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* KORUNAN: Mobil hamburger */}
           <Button
             variant="outline"
             className="md:hidden rounded-xl"
@@ -330,6 +362,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* KORUNAN: Mobil menü */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
@@ -376,13 +409,7 @@ export default function Navbar() {
                   <button onClick={() => navigate(settingsPath)} className={mobileBtn}>
                     {t.settings}
                   </button>
-                  <button
-                    onClick={async () => {
-                      await auth.logout();
-                      navigate("/");
-                    }}
-                    className={mobileBtn}
-                  >
+                  <button onClick={handleLogout} className={mobileBtn}>
                     {t.logout}
                   </button>
                 </>
@@ -393,4 +420,6 @@ export default function Navbar() {
       )}
     </header>
   );
-}
+});
+
+export default Navbar;

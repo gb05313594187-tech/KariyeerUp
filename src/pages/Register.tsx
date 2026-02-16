@@ -44,7 +44,8 @@ const translations = {
     error: "Kayıt başarısız",
     orDivider: "veya",
     googleRegister: "Google ile Kayıt Ol",
-    googleError: "Google ile kayıt sırasında bir hata oluştu.",
+    linkedinRegister: "LinkedIn ile Kayıt Ol",
+    socialError: "Kayıt sırasında bir hata oluştu.",
   },
   en: {
     title: "Register",
@@ -71,7 +72,8 @@ const translations = {
     error: "Registration failed",
     orDivider: "or",
     googleRegister: "Sign up with Google",
-    googleError: "An error occurred during Google sign up.",
+    linkedinRegister: "Sign up with LinkedIn",
+    socialError: "An error occurred during sign up.",
   },
   ar: {
     title: "إنشاء حساب",
@@ -98,7 +100,8 @@ const translations = {
     error: "فشل التسجيل",
     orDivider: "أو",
     googleRegister: "التسجيل باستخدام Google",
-    googleError: "حدث خطأ أثناء التسجيل باستخدام Google.",
+    linkedinRegister: "التسجيل باستخدام LinkedIn",
+    socialError: "حدث خطأ أثناء التسجيل.",
   },
   fr: {
     title: "S'inscrire",
@@ -125,7 +128,8 @@ const translations = {
     error: "Échec de l'inscription",
     orDivider: "ou",
     googleRegister: "S'inscrire avec Google",
-    googleError: "Une erreur s'est produite lors de l'inscription avec Google.",
+    linkedinRegister: "S'inscrire avec LinkedIn",
+    socialError: "Une erreur s'est produite lors de l'inscription.",
   },
 };
 
@@ -133,7 +137,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState("");
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -152,24 +156,24 @@ export default function Register() {
     return "user";
   };
 
-  const handleGoogleRegister = async () => {
-    setGoogleLoading(true);
+  const handleSocialRegister = async (provider: "google" | "linkedin_oidc") => {
+    setSocialLoading(provider);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/`,
         },
       });
       if (error) {
-        console.error("Google register error:", error);
-        toast.error(t.googleError);
+        console.error(`${provider} register error:`, error);
+        toast.error(t.socialError);
       }
     } catch (err) {
-      console.error("Google register error:", err);
-      toast.error(t.googleError);
+      console.error(`${provider} register error:`, err);
+      toast.error(t.socialError);
     } finally {
-      setGoogleLoading(false);
+      setSocialLoading("");
     }
   };
 
@@ -261,8 +265,8 @@ export default function Register() {
             type="button"
             variant="outline"
             className="w-full h-11 font-semibold border-gray-300 hover:bg-gray-50"
-            onClick={handleGoogleRegister}
-            disabled={googleLoading}
+            onClick={() => handleSocialRegister("google")}
+            disabled={socialLoading === "google"}
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -270,7 +274,21 @@ export default function Register() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            {googleLoading ? "..." : t.googleRegister}
+            {socialLoading === "google" ? "..." : t.googleRegister}
+          </Button>
+
+          {/* LinkedIn Register Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 font-semibold border-gray-300 hover:bg-blue-50"
+            onClick={() => handleSocialRegister("linkedin_oidc")}
+            disabled={socialLoading === "linkedin_oidc"}
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#0A66C2">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+            {socialLoading === "linkedin_oidc" ? "..." : t.linkedinRegister}
           </Button>
 
           {/* Divider */}

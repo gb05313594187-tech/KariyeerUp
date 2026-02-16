@@ -50,7 +50,7 @@ const Navbar = memo(function Navbar() {
       premium_user: "Bireysel Premium",
       premium_coach: "Koç Premium",
       premium_corporate: "Kurumsal Premium",
-      premium_default: "Bireysel Premium",
+      premium_default: "Premium",
       dashboard: "Panel",
       login: "Giriş Yap",
       register: "Kayıt Ol",
@@ -66,7 +66,7 @@ const Navbar = memo(function Navbar() {
       premium_user: "Individual Premium",
       premium_coach: "Coach Premium",
       premium_corporate: "Corporate Premium",
-      premium_default: "Individual Premium",
+      premium_default: "Premium",
       dashboard: "Dashboard",
       login: "Login",
       register: "Register",
@@ -82,7 +82,7 @@ const Navbar = memo(function Navbar() {
       premium_user: "بريميوم فردي",
       premium_coach: "بريميوم المدرب",
       premium_corporate: "بريميوم الشركات",
-      premium_default: "بريميوم فردي",
+      premium_default: "بريميوم",
       dashboard: "لوحة القيادة",
       login: "تسجيل الدخول",
       register: "سجل الآن",
@@ -98,7 +98,7 @@ const Navbar = memo(function Navbar() {
       premium_user: "Premium Individuel",
       premium_coach: "Premium Coach",
       premium_corporate: "Premium Entreprise",
-      premium_default: "Premium Individuel",
+      premium_default: "Premium",
       dashboard: "Tableau de bord",
       login: "Connexion",
       register: "S'inscrire",
@@ -113,6 +113,15 @@ const Navbar = memo(function Navbar() {
 
   // ─── ROLE BAZLI PREMİUM LABEL & ICON & PATH ───
   const premiumConfig = useMemo(() => {
+    // Giriş yapmamış → pricing sayfasına git (LinkedIn modeli)
+    if (!me) {
+      return {
+        label: t.premium_default,
+        icon: Crown,
+        path: "/pricing",
+      };
+    }
+
     if (role === "corporate") {
       return {
         label: t.premium_corporate,
@@ -127,13 +136,13 @@ const Navbar = memo(function Navbar() {
         path: "/bireysel-premium",
       };
     }
-    // user, admin, veya giriş yapmamış
+    // user, admin
     return {
-      label: t.premium_default,
+      label: t.premium_user,
       icon: Crown,
       path: "/bireysel-premium",
     };
-  }, [role, t]);
+  }, [role, me, t]);
 
   const PremiumIcon = premiumConfig.icon;
 

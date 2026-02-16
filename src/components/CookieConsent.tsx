@@ -1,39 +1,41 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Cookie, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import ReactGA from "react-ga4"; // Eklendi
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Cookie, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
+import ReactGA from "react-ga4";
+
+const GA_ID = "G-Y6SC2CRG53";
 
 export default function CookieConsent() {
   const [showConsent, setShowConsent] = useState(false);
   const { language } = useLanguage();
 
   useEffect(() => {
-    const consent = localStorage.getItem('kariyeer_cookie_consent');
+    const consent = localStorage.getItem("kariyeer_cookie_consent");
     if (!consent) {
-      // 2 saniye sonra göster
       setTimeout(() => setShowConsent(true), 2000);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem('kariyeer_cookie_consent', 'accepted');
-    
-    // Google Analytics'i aktif et
-    ReactGA.set({ consent: "granted" });
-    ReactGA.send({ hitType: "pageview", page: window.location.pathname });
-    
+    localStorage.setItem("kariyeer_cookie_consent", "accepted");
+
+    if (!window.__ga_initialized) {
+      ReactGA.initialize(GA_ID);
+      window.__ga_initialized = true;
+    }
+    ReactGA.send({
+      hitType: "pageview",
+      page: window.location.pathname,
+    });
+
     setShowConsent(false);
   };
 
   const handleReject = () => {
-    localStorage.setItem('kariyeer_cookie_consent', 'rejected');
-    
-    // Google Analytics izinlerini kapat (Yasal uyum)
-    ReactGA.set({ consent: "denied" });
-    
+    localStorage.setItem("kariyeer_cookie_consent", "rejected");
     setShowConsent(false);
   };
 
@@ -49,30 +51,33 @@ export default function CookieConsent() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {language === 'tr' ? 'Çerez Kullanımı' : 'Cookie Usage'}
+                {language === "tr" ? "Çerez Kullanımı" : "Cookie Usage"}
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                {language === 'tr'
-                  ? 'Web sitemizde deneyiminizi iyileştirmek, site kullanımını analiz etmek ve kişiselleştirilmiş içerik sunmak için çerezler kullanıyoruz. Siteyi kullanmaya devam ederek çerez kullanımını kabul etmiş olursunuz.'
-                  : 'We use cookies on our website to improve your experience, analyze site usage and provide personalized content. By continuing to use the site, you accept the use of cookies.'}
+                {language === "tr"
+                  ? "Web sitemizde deneyiminizi iyileştirmek, site kullanımını analiz etmek ve kişiselleştirilmiş içerik sunmak için çerezler kullanıyoruz. Siteyi kullanmaya devam ederek çerez kullanımını kabul etmiş olursunuz."
+                  : "We use cookies on our website to improve your experience, analyze site usage and provide personalized content. By continuing to use the site, you accept the use of cookies."}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={handleAccept}
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >
-                  {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                  {language === "tr" ? "Kabul Et" : "Accept"}
                 </Button>
                 <Button
                   onClick={handleReject}
                   variant="outline"
                   className="border-red-600 text-red-600 hover:bg-red-50"
                 >
-                  {language === 'tr' ? 'Reddet' : 'Reject'}
+                  {language === "tr" ? "Reddet" : "Reject"}
                 </Button>
-                <Link to="/privacy"> {/* Rotaya uygun güncellendi */}
-                  <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    {language === 'tr' ? 'Detaylı Bilgi' : 'More Info'}
+                <Link to="/privacy">
+                  <Button
+                    variant="ghost"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    {language === "tr" ? "Detaylı Bilgi" : "More Info"}
                   </Button>
                 </Link>
               </div>

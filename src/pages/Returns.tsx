@@ -255,4 +255,13 @@ export default function Returns() {
                 <Link to="/distance-sales" className="text-red-600 hover:underline">
                   Mesafeli Satış Sözleşmesi
                 </Link>
-                'ni 
+                'ni inceleyebilirsiniz.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

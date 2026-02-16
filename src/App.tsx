@@ -113,7 +113,7 @@ import CorporateJobs from "@/pages/CorporateJobs";
 import MeetingRoom from "@/pages/MeetingRoom";
 
 // ✅ ANALYTICS — Google Analytics 4 Ölçüm Kimliği
-const GA_ID = "G-Y6SC2CRG53";
+const GA_ID = "G-R39ELRDLKQ";
 
 /* -------------------------------------------------
    Analytics Tracker Component

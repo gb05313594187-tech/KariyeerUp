@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabase";
 export default function Register() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [kvkkAccepted, setKvkkAccepted] = useState(false); // KVKK onayı için state
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -36,6 +37,13 @@ export default function Register() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+
+    // KVKK Kontrolü
+    if (!kvkkAccepted) {
+      toast.error("Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız.");
+      return;
+    }
+
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
@@ -188,10 +196,24 @@ export default function Register() {
               </RadioGroup>
             </div>
 
+            {/* KVKK Onay Kutusu eklendi */}
+            <div className="flex items-start space-x-2 py-2">
+              <input
+                type="checkbox"
+                id="kvkk"
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#D32F2F] focus:ring-[#D32F2F]"
+                checked={kvkkAccepted}
+                onChange={(e) => setKvkkAccepted(e.target.checked)}
+              />
+              <label htmlFor="kvkk" className="text-xs text-gray-600 leading-tight">
+                <Link to="/privacy" className="text-[#D32F2F] hover:underline font-semibold">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum. *
+              </label>
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
-              disabled={isLoading}
+              disabled={isLoading || !kvkkAccepted} // Onaylanmadan buton aktif olmaz
             >
               {isLoading ? "Kaydediliyor..." : "Kayıt Ol"}
             </Button>

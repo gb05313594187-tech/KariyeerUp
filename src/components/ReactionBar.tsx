@@ -16,52 +16,24 @@ const REACTIONS = [
 
 const translations = {
   tr: {
-    like: "Beğen",
-    celebrate: "Kutla",
-    support: "Destek",
-    love: "Sevgi",
-    insightful: "Fikir",
-    funny: "Eğlenceli",
-    comment: "Yorum",
-    share: "Paylaş",
-    send: "Gönder",
-    reactionsCount: "tepki",
+    like: "Beğen", celebrate: "Kutla", support: "Destek", love: "Sevgi",
+    insightful: "Fikir", funny: "Eğlenceli", comment: "Yorum",
+    share: "Paylaş", send: "Gönder",
   },
   en: {
-    like: "Like",
-    celebrate: "Celebrate",
-    support: "Support",
-    love: "Love",
-    insightful: "Insightful",
-    funny: "Funny",
-    comment: "Comment",
-    share: "Share",
-    send: "Send",
-    reactionsCount: "reactions",
+    like: "Like", celebrate: "Celebrate", support: "Support", love: "Love",
+    insightful: "Insightful", funny: "Funny", comment: "Comment",
+    share: "Share", send: "Send",
   },
   ar: {
-    like: "إعجاب",
-    celebrate: "احتفال",
-    support: "دعم",
-    love: "حب",
-    insightful: "ملهم",
-    funny: "مضحك",
-    comment: "تعليق",
-    share: "مشاركة",
-    send: "إرسال",
-    reactionsCount: "تفاعل",
+    like: "إعجاب", celebrate: "احتفال", support: "دعم", love: "حب",
+    insightful: "ملهم", funny: "مضحك", comment: "تعليق",
+    share: "مشاركة", send: "إرسال",
   },
   fr: {
-    like: "J'aime",
-    celebrate: "Bravo",
-    support: "Soutien",
-    love: "J'adore",
-    insightful: "Instructif",
-    funny: "Drôle",
-    comment: "Commenter",
-    share: "Partager",
-    send: "Envoyer",
-    reactionsCount: "réactions",
+    like: "J'aime", celebrate: "Bravo", support: "Soutien", love: "J'adore",
+    insightful: "Instructif", funny: "Drôle", comment: "Commenter",
+    share: "Partager", send: "Envoyer",
   },
 };
 
@@ -73,37 +45,37 @@ export default function ReactionBar({ postId }) {
   const [counts, setCounts] = useState({});
   const [myReaction, setMyReaction] = useState(null);
   const [showReactions, setShowReactions] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [animating, setAnimating] = useState(null);
   const timeoutRef = useRef(null);
-  const containerRef = useRef(null);
 
   const totalReactions = Object.values(counts).reduce((a, b) => a + b, 0);
 
-  // Top 3 reaction emojis for summary
   const topReactions = Object.entries(counts)
     .filter(([_, count]) => count > 0)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
     .map(([key]) => REACTIONS.find((r) => r.key === key));
 
+  // All reactions with counts > 0 for breakdown
+  const activeReactions = Object.entries(counts)
+    .filter(([_, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([key, count]) => ({
+      ...REACTIONS.find((r) => r.key === key),
+      count,
+    }));
+
   useEffect(() => {
     loadReactions();
-
     const channel = supabase
       .channel(`post-reactions-${postId}`)
       .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "post_reactions",
+        event: "*", schema: "public", table: "post_reactions",
         filter: `post_id=eq.${postId}`,
-      }, () => {
-        loadReactions();
-      })
+      }, () => loadReactions())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, [postId]);
 
   const loadReactions = async () => {
@@ -111,18 +83,15 @@ export default function ReactionBar({ postId }) {
       .from("post_reactions")
       .select("type, user_id")
       .eq("post_id", postId);
-
     if (error) return;
 
     const map = {};
     let mine = null;
     const me = (await supabase.auth.getUser()).data?.user?.id;
-
     data.forEach((r) => {
       map[r.type] = (map[r.type] || 0) + 1;
       if (r.user_id === me) mine = r.type;
     });
-
     setCounts(map);
     setMyReaction(mine);
   };
@@ -131,40 +100,26 @@ export default function ReactionBar({ postId }) {
     const user = (await supabase.auth.getUser()).data?.user;
     if (!user) return;
 
-    // Animation
     setAnimating(type);
     setTimeout(() => setAnimating(null), 600);
 
     if (myReaction === type) {
-      // Optimistic update
       setMyReaction(null);
       setCounts((prev) => ({ ...prev, [type]: Math.max((prev[type] || 1) - 1, 0) }));
-
-      await supabase
-        .from("post_reactions")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", user.id)
-        .eq("type", type);
+      await supabase.from("post_reactions").delete()
+        .eq("post_id", postId).eq("user_id", user.id).eq("type", type);
     } else {
-      // Optimistic update
       if (myReaction) {
         setCounts((prev) => ({ ...prev, [myReaction]: Math.max((prev[myReaction] || 1) - 1, 0) }));
       }
       setMyReaction(type);
       setCounts((prev) => ({ ...prev, [type]: (prev[type] || 0) + 1 }));
-
       await supabase.from("post_reactions").delete()
-        .eq("post_id", postId)
-        .eq("user_id", user.id);
-
+        .eq("post_id", postId).eq("user_id", user.id);
       await supabase.from("post_reactions").insert({
-        post_id: postId,
-        user_id: user.id,
-        type,
+        post_id: postId, user_id: user.id, type,
       });
     }
-
     setShowReactions(false);
   };
 
@@ -182,26 +137,59 @@ export default function ReactionBar({ postId }) {
 
   return (
     <div className={`${isRTL ? "rtl text-right" : ""}`}>
-      {/* Reaction Summary — Top bar */}
+
+      {/* Reaction Summary — Sadece ikonlar + toplam sayı */}
       {totalReactions > 0 && (
-        <div className="flex items-center justify-between px-1 pb-2">
-          <div className="flex items-center gap-1.5">
+        <div className="relative px-1 pb-2">
+          <button
+            onClick={() => setShowBreakdown(!showBreakdown)}
+            className="flex items-center gap-1.5 group"
+          >
             {/* Emoji bubbles */}
             <div className="flex -space-x-1">
               {topReactions.map((r, i) => (
                 <div
                   key={r?.key}
-                  className={`w-5 h-5 rounded-full ${r?.bg} flex items-center justify-center border-2 border-white shadow-sm`}
+                  className={`w-[22px] h-[22px] rounded-full ${r?.bg} flex items-center justify-center border-2 border-white shadow-sm transition-transform group-hover:scale-110`}
                   style={{ zIndex: 3 - i }}
                 >
-                  <span className="text-[10px]">{r?.emoji}</span>
+                  <span className="text-[11px]">{r?.emoji}</span>
                 </div>
               ))}
             </div>
-            <span className="text-xs text-gray-500 ml-1">
-              {totalReactions} {t.reactionsCount}
+            <span className="text-xs text-gray-500 group-hover:text-gray-700 group-hover:underline transition-colors ml-0.5">
+              {totalReactions}
             </span>
-          </div>
+          </button>
+
+          {/* Breakdown Popup */}
+          {showBreakdown && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowBreakdown(false)} />
+              <div className={`absolute z-50 bottom-full mb-2 ${isRTL ? "right-0" : "left-0"}`}>
+                <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-3 min-w-[180px]">
+                  {activeReactions.map((r) => (
+                    <div key={r.key} className="flex items-center justify-between py-1.5 px-1">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">{r.emoji}</span>
+                        <span className="text-sm text-gray-700 font-medium">{t[r.key]}</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded-md min-w-[28px] text-center">
+                        {r.count}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Total */}
+                  <div className="mt-1.5 pt-1.5 border-t border-gray-100 flex items-center justify-between px-1">
+                    <span className="text-xs text-gray-500 font-medium">Total</span>
+                    <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
+                      {totalReactions}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -209,14 +197,15 @@ export default function ReactionBar({ postId }) {
       <div className="h-px bg-gray-100 mb-1" />
 
       {/* Action Buttons */}
-      <div className="flex items-center" ref={containerRef}>
+      <div className="flex items-center">
+
         {/* Like Button with hover popup */}
         <div
           className="relative flex-1"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Reaction Popup */}
+          {/* Reaction Picker Popup */}
           {showReactions && (
             <div
               className={`absolute bottom-full mb-2 ${isRTL ? "right-0" : "left-0"} z-50`}
@@ -236,7 +225,6 @@ export default function ReactionBar({ postId }) {
                     <span className="text-2xl transition-transform duration-200 group-hover:-translate-y-1">
                       {r.emoji}
                     </span>
-                    {/* Tooltip */}
                     <span className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-[10px] font-semibold px-2 py-1 rounded-md whitespace-nowrap">
                       {t[r.key]}
                     </span>
@@ -266,19 +254,19 @@ export default function ReactionBar({ postId }) {
           </button>
         </div>
 
-        {/* Comment Button */}
+        {/* Comment */}
         <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all duration-200">
           <MessageCircle className="h-5 w-5" />
           <span className="hidden sm:inline">{t.comment}</span>
         </button>
 
-        {/* Share Button */}
+        {/* Share */}
         <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all duration-200">
           <Share2 className="h-5 w-5" />
           <span className="hidden sm:inline">{t.share}</span>
         </button>
 
-        {/* Send Button */}
+        {/* Send */}
         <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all duration-200">
           <Send className="h-5 w-5" />
           <span className="hidden sm:inline">{t.send}</span>

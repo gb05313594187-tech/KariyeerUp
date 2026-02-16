@@ -233,6 +233,11 @@ export default function App() {
             <Route path="terms" element={<Terms />} />
             <Route path="ethics" element={<Ethics />} />
 
+            {/* EKLEDİĞİNİZ YENİ ROTARLAR */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/distance-sales" element={<DistanceSales />} />
+            <Route path="/returns" element={<Returns />} />
+
             {/* AUTH */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />

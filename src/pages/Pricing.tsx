@@ -280,7 +280,8 @@ export default function Pricing() {
                         ))}
                       </div>
 
-                      <div className="mt-7 flex gap-3 flex-wrap">
+                      {/* ✅ Sadece primary buton kaldı, secondary (Planları İncele) kaldırıldı */}
+                      <div className="mt-7">
                         <Button
                           className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
                           onClick={() =>
@@ -292,13 +293,6 @@ export default function Pricing() {
                           }
                         >
                           {t("pricing_corporate_cta_primary")}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-xl border-red-200 text-red-700 hover:bg-red-50"
-                          onClick={() => navigate("/pricing")}
-                        >
-                          {t("pricing_corporate_cta_secondary")}
                         </Button>
                       </div>
 
@@ -377,10 +371,11 @@ export default function Pricing() {
                       >
                         {t("pricing_coach_cta_primary")}
                       </Button>
+                      {/* ✅ /pricing → /how-it-works olarak değiştirildi */}
                       <Button
                         variant="outline"
                         className="rounded-xl"
-                        onClick={() => navigate("/pricing")}
+                        onClick={() => navigate("/how-it-works")}
                       >
                         {t("pricing_coach_cta_secondary")}
                       </Button>

@@ -1,17 +1,17 @@
 // src/pages/App.tsx
 // @ts-nocheck
 
-import { useEffect } from "react"; // Sayfa takibi için eklendi
+import { useEffect } from "react"; 
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   Outlet,
-  useLocation, // Sayfa yolu takibi için eklendi
+  useLocation,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import ReactGA from "react-ga4"; // Analytics kütüphanesi eklendi
+import ReactGA from "react-ga4"; // ✅ Analytics kütüphanesi
 
 // ✅ AUTH PROVIDER
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -19,7 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CookieConsent from "@/components/ui/CookieConsent"; // Çerez onayı eklendi
+import CookieConsent from "@/components/ui/CookieConsent"; 
 
 // ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";
@@ -113,6 +113,8 @@ import CorporateJobs from "@/pages/CorporateJobs";
 import MeetingRoom from "@/pages/MeetingRoom";
 
 // ✅ ANALYTICS INITIALIZATION
+// Not: react-ga4 kütüphanesi yüklü değilse burası hata verebilir. 
+// Cloudflare build sırasında hata almamanız için kütüphanenin yüklü olması şarttır.
 ReactGA.initialize("G-R39ELRDLKQ");
 
 /* -------------------------------------------------

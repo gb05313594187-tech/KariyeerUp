@@ -11,12 +11,13 @@ import {
   Star,
   Users2,
   BarChart3,
-  Globe,
-  Briefcase,
   Loader2,
-  TrendingUp,
   Target,
   Zap,
+  TrendingUp,
+  Rocket,
+  Award,
+  LineChart,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -29,17 +30,19 @@ const PLAN_CONFIG = {
       badge: "Bireysel Premium",
       title: "Kariyerinde hızlan.\nPremium ile öne geç.",
       subtitle:
-        "Daha iyi koçlara eriş, daha hızlı rezervasyon al, daha net bir planla ilerle.",
+        "Doğrulanmış koçlarla birebir çalış, öncelikli rezervasyon al ve kariyerini hızlandır.",
       cta: "Premium Satın Al",
       ctaSecondary: "Koçları İncele",
       ctaSecondaryPath: "/coaches",
-      card1Title: "Premium ayrıcalıklar",
-      card1Desc: "Koçluk deneyimini daha hızlı ve daha etkili hale getirir.",
-      card2Title: "Güvenli ödeme",
-      card2Desc: "Ödeme PayTR altyapısında tamamlanır. Kart bilgisi platformda tutulmaz.",
-      card3Title: "Tek tıkla başla",
-      card3Desc: "Satın aldıktan sonra premium koçlara anında eriş.",
-      featuresTitle: "Neler dahil?",
+      card1Title: "Hızlı eşleşme",
+      card1Desc: "AI destekli koç eşleşmesiyle sana en uygun koçu anında bul.",
+      card2Title: "Öncelikli rezervasyon",
+      card2Desc: "Premium kullanıcılar koçların takviminde öncelikli yer alır.",
+      card3Title: "Güvenli ödeme",
+      card3Desc: "Ödeme PayTR altyapısında tamamlanır. Kart bilgisi platformda tutulmaz.",
+      featuresTitle: "Premium ile neler kazanırsın?",
+      boostTitle: "Premium Boost",
+      boostDesc: "Premium üyeler ortalama %40 daha hızlı koç eşleşmesi alıyor.",
       price: "199 ₺",
       period: "/ ay",
       priceLabel: "Aylık",
@@ -48,17 +51,20 @@ const PLAN_CONFIG = {
     en: {
       badge: "Individual Premium",
       title: "Accelerate your career.\nGo premium.",
-      subtitle: "Access better coaches, book faster, and move forward with a clear plan.",
+      subtitle:
+        "Work 1-on-1 with verified coaches, get priority booking, and fast-track your career.",
       cta: "Buy Premium",
       ctaSecondary: "Browse Coaches",
       ctaSecondaryPath: "/coaches",
-      card1Title: "Premium benefits",
-      card1Desc: "Makes your coaching experience faster and more effective.",
-      card2Title: "Secure payment",
-      card2Desc: "Payment is processed via PayTR. Card info is never stored on platform.",
-      card3Title: "Start instantly",
-      card3Desc: "Access premium coaches immediately after purchase.",
-      featuresTitle: "What's included?",
+      card1Title: "Fast matching",
+      card1Desc: "Find the best coach for you instantly with AI-powered matching.",
+      card2Title: "Priority booking",
+      card2Desc: "Premium users get priority slots in coach calendars.",
+      card3Title: "Secure payment",
+      card3Desc: "Payment is processed via PayTR. Card info is never stored.",
+      featuresTitle: "What do you get with Premium?",
+      boostTitle: "Premium Boost",
+      boostDesc: "Premium members get matched with coaches 40% faster on average.",
       price: "199 ₺",
       period: "/ mo",
       priceLabel: "Monthly",
@@ -66,31 +72,35 @@ const PLAN_CONFIG = {
     },
     features: {
       tr: [
-        "Premium koçlara erişim",
-        "Öncelikli rezervasyon",
+        "Doğrulanmış premium koçlara erişim",
+        "Öncelikli rezervasyon ve takvim erişimi",
+        "Seans sonrası aksiyon planı ve çıktılar",
+        "İlerleme takibi ve özet raporları",
         "Gelişmiş profil ve CV optimizasyonu",
-        "Seans sonrası aksiyon planı",
-        "Öncelikli destek",
+        "Öncelikli destek hattı",
       ],
       en: [
-        "Access to premium coaches",
-        "Priority booking",
+        "Access to verified premium coaches",
+        "Priority booking and calendar access",
+        "Post-session action plan and deliverables",
+        "Progress tracking and summary reports",
         "Advanced profile & CV optimization",
-        "Post-session action plan",
-        "Priority support",
+        "Priority support line",
       ],
     },
     plan: "individual",
     icon: Crown,
+    boostIcon: Rocket,
     gradient: "from-red-600 to-orange-500",
-    cardIcons: [Sparkles, ShieldCheck, Crown],
+    cardIcons: [Sparkles, TrendingUp, ShieldCheck],
   },
 
   coach: {
     tr: {
       badge: "Koç Premium",
       title: "Daha fazla danışana ulaş.\nÖne çıkan koç ol.",
-      subtitle: "Profilini öne çıkar, daha fazla danışan eşleşmesi al ve gelirini artır.",
+      subtitle:
+        "Profilini öne çıkar, daha fazla danışan eşleşmesi al ve gelirini artır.",
       cta: "Koç Premium Satın Al",
       ctaSecondary: "Nasıl Çalışır?",
       ctaSecondaryPath: "/pricing",
@@ -101,6 +111,8 @@ const PLAN_CONFIG = {
       card3Title: "Gelir analitikleri",
       card3Desc: "Detaylı performans raporları ve gelir takibi.",
       featuresTitle: "Koç Premium ayrıcalıkları",
+      boostTitle: "Koç Boost",
+      boostDesc: "Premium koçlar ortalama %60 daha fazla danışan eşleşmesi alıyor.",
       price: "299 ₺",
       period: "/ ay",
       priceLabel: "Aylık",
@@ -109,7 +121,8 @@ const PLAN_CONFIG = {
     en: {
       badge: "Coach Premium",
       title: "Reach more clients.\nBecome a featured coach.",
-      subtitle: "Boost your profile, get more client matches, and grow your income.",
+      subtitle:
+        "Boost your profile, get more client matches, and grow your income.",
       cta: "Buy Coach Premium",
       ctaSecondary: "How It Works?",
       ctaSecondaryPath: "/pricing",
@@ -120,6 +133,8 @@ const PLAN_CONFIG = {
       card3Title: "Revenue analytics",
       card3Desc: "Detailed performance reports and income tracking.",
       featuresTitle: "Coach Premium benefits",
+      boostTitle: "Coach Boost",
+      boostDesc: "Premium coaches receive 60% more client matches on average.",
       price: "299 ₺",
       period: "/ mo",
       priceLabel: "Monthly",
@@ -147,6 +162,7 @@ const PLAN_CONFIG = {
     },
     plan: "coach",
     icon: Star,
+    boostIcon: Award,
     gradient: "from-gray-900 to-gray-700",
     cardIcons: [Star, Users2, BarChart3],
   },
@@ -155,7 +171,8 @@ const PLAN_CONFIG = {
     tr: {
       badge: "Kurumsal Premium",
       title: "Ekibinizi güçlendirin.\nÖlçeklenebilir koçluk.",
-      subtitle: "Çalışanlarınız için profesyonel koçluk programları. Raporlama ve eşleşme tek yerden.",
+      subtitle:
+        "Çalışanlarınız için profesyonel koçluk programları. Eşleşme, takip ve raporlama tek yerden.",
       cta: "Demo Talep Et",
       ctaSecondary: "Planları İncele",
       ctaSecondaryPath: "/pricing",
@@ -166,6 +183,8 @@ const PLAN_CONFIG = {
       card3Title: "Özel müşteri temsilcisi",
       card3Desc: "SLA kapsamında 24 saat içinde dönüş garantisi.",
       featuresTitle: "Kurumsal Premium ayrıcalıkları",
+      boostTitle: "Kurumsal Boost",
+      boostDesc: "Kurumsal programlardaki çalışanlar bireysel kullanıcılara göre %55 daha hızlı ilerleme kaydediyor.",
       price: "Teklif Al",
       period: "",
       priceLabel: "Kurumsal",
@@ -174,7 +193,8 @@ const PLAN_CONFIG = {
     en: {
       badge: "Corporate Premium",
       title: "Empower your team.\nScalable coaching.",
-      subtitle: "Professional coaching programs for your employees. Reporting and matching in one place.",
+      subtitle:
+        "Professional coaching programs for your employees. Matching, tracking and reporting in one place.",
       cta: "Request Demo",
       ctaSecondary: "View Plans",
       ctaSecondaryPath: "/pricing",
@@ -185,6 +205,8 @@ const PLAN_CONFIG = {
       card3Title: "Dedicated account manager",
       card3Desc: "24-hour response guarantee under SLA.",
       featuresTitle: "Corporate Premium benefits",
+      boostTitle: "Corporate Boost",
+      boostDesc: "Employees in corporate programs progress 55% faster than individual users.",
       price: "Get Quote",
       period: "",
       priceLabel: "Corporate",
@@ -214,6 +236,7 @@ const PLAN_CONFIG = {
     },
     plan: "corporate",
     icon: Building2,
+    boostIcon: LineChart,
     gradient: "from-red-700 to-red-500",
     cardIcons: [Target, Zap, Users2],
   },
@@ -244,6 +267,7 @@ export default function BireyselPremium() {
   const texts = config[lang] || config.tr;
   const features = config.features[lang] || config.features.tr;
   const PlanIcon = config.icon;
+  const BoostIcon = config.boostIcon;
   const CardIcons = config.cardIcons;
 
   const handleBuy = () => {
@@ -321,8 +345,19 @@ export default function BireyselPremium() {
           })}
         </div>
 
+        {/* BOOST BANNER */}
+        <div className="mt-8 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-6 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <BoostIcon className="w-6 h-6 text-amber-600" />
+          </div>
+          <div>
+            <div className="font-extrabold text-gray-900 text-lg">{texts.boostTitle}</div>
+            <p className="mt-1 text-gray-700">{texts.boostDesc}</p>
+          </div>
+        </div>
+
         {/* FEATURES + PRICING */}
-        <div className="mt-10 rounded-2xl border border-gray-200 p-6">
+        <div className="mt-8 rounded-2xl border border-gray-200 p-6">
           <div className="text-lg font-extrabold text-gray-900">{texts.featuresTitle}</div>
           <div className="mt-4 grid md:grid-cols-2 gap-3">
             {features.map((f: string) => (
@@ -333,7 +368,7 @@ export default function BireyselPremium() {
             ))}
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t">
             <div>
               <div className="text-sm text-gray-500">{texts.priceLabel}</div>
               <div className="text-3xl font-extrabold text-gray-900">

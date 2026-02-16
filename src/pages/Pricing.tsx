@@ -1,5 +1,4 @@
 // src/pages/Pricing.tsx
-// @ts-nocheck
 import { Button } from "@/components/ui/button";
 import {
   Crown,
@@ -20,25 +19,26 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getTranslation } from "@/lib/i18n";
+import { getTranslation, type Language } from "@/lib/i18n";
+
+function countTrue(...vals: boolean[]) {
+  return vals.filter(Boolean).length;
+}
 
 export default function Pricing() {
   const navigate = useNavigate();
   const auth = useAuth();
-
   const { language } = useLanguage();
-  const t = (key: string) => getTranslation((language || "en") as any, key);
 
-  // ─── AUTH LOADING GUARD ───────────────────────────────
+  const t = (key: string): string =>
+    getTranslation((language || "en") as Language, key);
+
   const authLoading = auth.loading;
-
   const role = auth?.role || null;
   const isLoggedIn = !!auth?.isAuthenticated;
 
-  // --- FEATURES ---
-  const individual = [
+  const individualFeatures = [
     t("pricing_individual_feat1"),
     t("pricing_individual_feat2"),
     t("pricing_individual_feat3"),
@@ -47,7 +47,7 @@ export default function Pricing() {
     t("pricing_individual_feat6"),
   ];
 
-  const corporate = [
+  const corporateFeatures = [
     t("pricing_corporate_feat1"),
     t("pricing_corporate_feat2"),
     t("pricing_corporate_feat3"),
@@ -58,7 +58,7 @@ export default function Pricing() {
     t("pricing_corporate_feat8"),
   ];
 
-  const coach = [
+  const coachFeatures = [
     t("pricing_coach_feat1"),
     t("pricing_coach_feat2"),
     t("pricing_coach_feat3"),
@@ -68,17 +68,23 @@ export default function Pricing() {
     t("pricing_coach_feat7"),
   ];
 
-  // --- VISIBILITY RULE ---
-  const canSeeIndividual = authLoading || !isLoggedIn || role === "user" || role === "admin";
-  const canSeeCorporate = authLoading || !isLoggedIn || role === "corporate" || role === "admin";
-  const canSeeCoach = authLoading || !isLoggedIn || role === "coach" || role === "admin";
+  const canSeeIndividual =
+    authLoading || !isLoggedIn || role === "user" || role === "admin";
+  const canSeeCorporate =
+    authLoading || !isLoggedIn || role === "corporate" || role === "admin";
+  const canSeeCoach =
+    authLoading || !isLoggedIn || role === "coach" || role === "admin";
 
-  // Hero CTA
   const primaryCta = () => {
     if (!isLoggedIn) return navigate("/register");
     if (role === "corporate") return navigate("/checkout?plan=corporate");
     if (role === "coach") return navigate("/checkout?plan=coach");
     return navigate("/checkout?plan=individual");
+  };
+
+  const scrollToPlans = () => {
+    const el = document.getElementById("plans");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -95,7 +101,9 @@ export default function Pricing() {
 
           <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
             {t("pricing_hero_title_prefix")}{" "}
-            <span className="text-red-600">{t("pricing_hero_title_highlight")}</span>
+            <span className="text-red-600">
+              {t("pricing_hero_title_highlight")}
+            </span>
           </h1>
 
           <p className="mt-4 text-center text-gray-600 text-base sm:text-lg max-w-3xl mx-auto">
@@ -106,14 +114,10 @@ export default function Pricing() {
             <Button
               variant="outline"
               className="rounded-xl border-red-200 text-red-700 hover:bg-red-50"
-              onClick={() => {
-                const el = document.getElementById("plans");
-                el?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
+              onClick={scrollToPlans}
             >
               {t("pricing_hero_cta_plans")}
             </Button>
-
             <Button
               className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
               onClick={primaryCta}
@@ -122,35 +126,40 @@ export default function Pricing() {
             </Button>
           </div>
 
-          {/* mini trust */}
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="rounded-2xl border bg-white p-5">
               <div className="flex items-center gap-2 font-bold text-gray-900">
                 <TicketPercent className="w-5 h-5 text-red-600" />
                 {t("pricing_trust1_title")}
               </div>
-              <p className="mt-2 text-sm text-gray-600">{t("pricing_trust1_desc")}</p>
+              <p className="mt-2 text-sm text-gray-600">
+                {t("pricing_trust1_desc")}
+              </p>
             </div>
             <div className="rounded-2xl border bg-white p-5">
               <div className="flex items-center gap-2 font-bold text-gray-900">
                 <Video className="w-5 h-5 text-red-600" />
                 {t("pricing_trust2_title")}
               </div>
-              <p className="mt-2 text-sm text-gray-600">{t("pricing_trust2_desc")}</p>
+              <p className="mt-2 text-sm text-gray-600">
+                {t("pricing_trust2_desc")}
+              </p>
             </div>
             <div className="rounded-2xl border bg-white p-5">
               <div className="flex items-center gap-2 font-bold text-gray-900">
                 <Headphones className="w-5 h-5 text-red-600" />
                 {t("pricing_trust3_title")}
               </div>
-              <p className="mt-2 text-sm text-gray-600">{t("pricing_trust3_desc")}</p>
+              <p className="mt-2 text-sm text-gray-600">
+                {t("pricing_trust3_desc")}
+              </p>
             </div>
           </div>
 
-          {/* role note — sadece auth hazırken göster */}
           {!authLoading && isLoggedIn && role !== "admin" && (
             <div className="mt-8 rounded-2xl border bg-white p-4 text-sm text-gray-700">
-              {t("pricing_role_note_prefix")} <b>{role}</b>. {t("pricing_role_note_suffix")}
+              {t("pricing_role_note_prefix")} <b>{role}</b>.{" "}
+              {t("pricing_role_note_suffix")}
             </div>
           )}
         </div>
@@ -159,26 +168,21 @@ export default function Pricing() {
       {/* PLANS */}
       <section id="plans" className="py-14">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* ─── AUTH LOADING → SKELETON ─── */}
           {authLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
-              <p className="text-gray-500 text-sm">
-                {t("pricing_loading") || "Planlar yükleniyor..."}
-              </p>
+              <p className="text-gray-500 text-sm">{t("processing")}</p>
             </div>
           ) : (
             <>
               <div
-                className={[
-                  "grid gap-6",
+                className={`grid gap-6 ${
                   countTrue(canSeeIndividual, canSeeCorporate, canSeeCoach) === 1
                     ? "grid-cols-1"
-                    : "grid-cols-1 lg:grid-cols-2",
-                ].join(" ")}
+                    : "grid-cols-1 lg:grid-cols-2"
+                }`}
               >
-                {/* Individual */}
+                {/* ── Individual ── */}
                 {canSeeIndividual && (
                   <div className="rounded-3xl border bg-white p-7 shadow-sm">
                     <div className="flex items-start justify-between gap-4">
@@ -190,7 +194,9 @@ export default function Pricing() {
                         <h2 className="mt-4 text-2xl font-extrabold text-gray-900">
                           {t("pricing_individual_title")}
                         </h2>
-                        <p className="mt-2 text-gray-600">{t("pricing_individual_desc")}</p>
+                        <p className="mt-2 text-gray-600">
+                          {t("pricing_individual_desc")}
+                        </p>
                       </div>
                       <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center">
                         <Crown className="w-6 h-6" />
@@ -198,10 +204,10 @@ export default function Pricing() {
                     </div>
 
                     <div className="mt-6 space-y-3">
-                      {individual.map((tItem, i) => (
+                      {individualFeatures.map((feat, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-red-600 mt-0.5" />
-                          <div className="text-gray-800">{tItem}</div>
+                          <div className="text-gray-800">{feat}</div>
                         </div>
                       ))}
                     </div>
@@ -210,7 +216,11 @@ export default function Pricing() {
                       <Button
                         className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
                         onClick={() =>
-                          navigate(isLoggedIn ? "/checkout?plan=individual" : "/register")
+                          navigate(
+                            isLoggedIn
+                              ? "/checkout?plan=individual"
+                              : "/register"
+                          )
                         }
                       >
                         {t("pricing_individual_cta_primary")}
@@ -218,7 +228,7 @@ export default function Pricing() {
                       <Button
                         variant="outline"
                         className="rounded-xl border-red-200 text-red-700 hover:bg-red-50"
-                        onClick={() => navigate("/webinars")}
+                        onClick={() => navigate("/coaches")}
                       >
                         {t("pricing_individual_cta_secondary")}
                       </Button>
@@ -236,7 +246,7 @@ export default function Pricing() {
                   </div>
                 )}
 
-                {/* Corporate */}
+                {/* ── Corporate ── */}
                 {canSeeCorporate && (
                   <div className="rounded-3xl border border-red-200 bg-white p-7 shadow-sm relative overflow-hidden">
                     <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-red-50" />
@@ -252,7 +262,9 @@ export default function Pricing() {
                           <h2 className="mt-4 text-2xl font-extrabold text-gray-900">
                             {t("pricing_corporate_title")}
                           </h2>
-                          <p className="mt-2 text-gray-600">{t("pricing_corporate_desc")}</p>
+                          <p className="mt-2 text-gray-600">
+                            {t("pricing_corporate_desc")}
+                          </p>
                         </div>
                         <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center">
                           <Users2 className="w-6 h-6" />
@@ -260,10 +272,10 @@ export default function Pricing() {
                       </div>
 
                       <div className="mt-6 space-y-3">
-                        {corporate.map((tItem, i) => (
+                        {corporateFeatures.map((feat, i) => (
                           <div key={i} className="flex items-start gap-3">
                             <CheckCircle2 className="w-5 h-5 text-red-600 mt-0.5" />
-                            <div className="text-gray-800">{tItem}</div>
+                            <div className="text-gray-800">{feat}</div>
                           </div>
                         ))}
                       </div>
@@ -272,7 +284,11 @@ export default function Pricing() {
                         <Button
                           className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
                           onClick={() =>
-                            navigate(isLoggedIn ? "/checkout?plan=corporate" : "/register")
+                            navigate(
+                              isLoggedIn
+                                ? "/checkout?plan=corporate"
+                                : "/register"
+                            )
                           }
                         >
                           {t("pricing_corporate_cta_primary")}
@@ -280,7 +296,7 @@ export default function Pricing() {
                         <Button
                           variant="outline"
                           className="rounded-xl border-red-200 text-red-700 hover:bg-red-50"
-                          onClick={() => navigate("/corporate/dashboard")}
+                          onClick={() => navigate("/pricing")}
                         >
                           {t("pricing_corporate_cta_secondary")}
                         </Button>
@@ -320,7 +336,7 @@ export default function Pricing() {
                   </div>
                 )}
 
-                {/* Coach */}
+                {/* ── Coach ── */}
                 {canSeeCoach && (
                   <div className="rounded-3xl border bg-white p-7 shadow-sm">
                     <div className="flex items-start justify-between gap-4">
@@ -332,7 +348,9 @@ export default function Pricing() {
                         <h2 className="mt-4 text-2xl font-extrabold text-gray-900">
                           {t("pricing_coach_title")}
                         </h2>
-                        <p className="mt-2 text-gray-600">{t("pricing_coach_desc")}</p>
+                        <p className="mt-2 text-gray-600">
+                          {t("pricing_coach_desc")}
+                        </p>
                       </div>
                       <div className="w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center">
                         <Star className="w-6 h-6" />
@@ -340,10 +358,10 @@ export default function Pricing() {
                     </div>
 
                     <div className="mt-6 space-y-3">
-                      {coach.map((tItem, i) => (
+                      {coachFeatures.map((feat, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-gray-900 mt-0.5" />
-                          <div className="text-gray-800">{tItem}</div>
+                          <div className="text-gray-800">{feat}</div>
                         </div>
                       ))}
                     </div>
@@ -352,7 +370,9 @@ export default function Pricing() {
                       <Button
                         className="rounded-xl bg-gray-900 hover:bg-black text-white"
                         onClick={() =>
-                          navigate(isLoggedIn ? "/checkout?plan=coach" : "/register")
+                          navigate(
+                            isLoggedIn ? "/checkout?plan=coach" : "/register"
+                          )
                         }
                       >
                         {t("pricing_coach_cta_primary")}
@@ -360,7 +380,7 @@ export default function Pricing() {
                       <Button
                         variant="outline"
                         className="rounded-xl"
-                        onClick={() => navigate("/coach/dashboard")}
+                        onClick={() => navigate("/pricing")}
                       >
                         {t("pricing_coach_cta_secondary")}
                       </Button>
@@ -371,7 +391,9 @@ export default function Pricing() {
                         <ShieldCheck className="w-5 h-5" />
                         {t("pricing_note_label")}
                       </div>
-                      <p className="mt-1 text-sm text-gray-700">{t("pricing_coach_note")}</p>
+                      <p className="mt-1 text-sm text-gray-700">
+                        {t("pricing_coach_note")}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -384,17 +406,20 @@ export default function Pricing() {
                 </h3>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                   <div className="rounded-2xl bg-gray-50 p-4">
-                    <div className="font-bold text-gray-900">{t("pricing_faq1_q")}</div>
+                    <div className="font-bold text-gray-900">
+                      {t("pricing_faq1_q")}
+                    </div>
                     <div className="mt-1">{t("pricing_faq1_a")}</div>
                   </div>
                   <div className="rounded-2xl bg-gray-50 p-4">
-                    <div className="font-bold text-gray-900">{t("pricing_faq2_q")}</div>
+                    <div className="font-bold text-gray-900">
+                      {t("pricing_faq2_q")}
+                    </div>
                     <div className="mt-1">{t("pricing_faq2_a")}</div>
                   </div>
                 </div>
               </div>
 
-              {/* Hiçbir plan görünmüyorsa uyarı */}
               {isLoggedIn &&
                 role !== "admin" &&
                 !canSeeIndividual &&
@@ -410,8 +435,4 @@ export default function Pricing() {
       </section>
     </div>
   );
-}
-
-function countTrue(...vals: boolean[]) {
-  return vals.filter(Boolean).length;
 }

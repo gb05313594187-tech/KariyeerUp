@@ -16,32 +16,25 @@ import {
   Star,
   CheckCircle2,
   Sparkles,
+  Target,
+  ShieldCheck,
+  BarChart3,
+  Zap,
 } from "lucide-react";
 
-// ✅ LanguageContext ile senkron (Navbar dil seçimi Index'e yansır)
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// ✅ YENİ: Slider importları
 import HeroSlider from "@/components/ui/HeroSlider";
 import { heroSlides } from "@/data/heroSlides";
 
 export default function Index() {
   const navigate = useNavigate();
-
-  // ✅ Navbar'daki dil seçimi ile aynı source
   const { language } = useLanguage();
 
-  // Match filters
   const [goal, setGoal] = useState("interview");
   const [level, setLevel] = useState("mid");
-
-  // ✅ Index artık kendi dil state'ini tutmuyor
   const lang = (language || "tr") as any;
-
-  // Persona: Kullanıcı / Koç / Şirket
   const [persona, setPersona] = useState("user");
 
-  // ✅ DEMO FORM (Şirket seçilince gösterilecek)
   const [demoCompanyName, setDemoCompanyName] = useState("");
   const [demoName, setDemoName] = useState("");
   const [demoEmail, setDemoEmail] = useState("");
@@ -85,7 +78,7 @@ export default function Index() {
         goal: "Hedef",
         level: "Seviye",
         language: "Dil",
-        tip: "İpucu: \"Öne Çıkan Koçlar\" alanı premium slot olarak satılabilir.",
+        tip: 'İpucu: "Öne Çıkan Koçlar" alanı premium slot olarak satılabilir.',
       },
       goals: {
         interview: "Mülakat",
@@ -107,19 +100,23 @@ export default function Index() {
       },
       systemValue: {
         badge: "Hedef · Plan · İlerleme Takibi",
-        title: "Kariyerini şansa bırakma. Süreci yönet.",
-        desc: "Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil; kariyer hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi ölçen bir sistemdir. İş bulma, terfi veya kariyer değişimi sürecinde ne yapman gerektiğini tahmin etmene gerek kalmaz. Hedefin netleşir, sana uygun koç önerilir ve ilerleme somut çıktılarla takip edilir. Bu yüzden Kariyeer, ihtiyaç anında girilen bir site değil; süreç boyunca kullanılan bir araçtır.",
+        title: "Kariyerini şansa bırakma.",
+        titleHighlight: "Süreci yönet.",
+        desc: 'Kariyeer, tekil seanslardan oluşan bir danışmanlık sitesi değil; kariyer hedefini tanımlayan, doğru uzmanla eşleştiren ve ilerlemeyi ölçen bir sistemdir. İş bulma, terfi veya kariyer değişimi sürecinde ne yapman gerektiğini tahmin etmene gerek kalmaz. Hedefin netleşir, sana uygun koç önerilir ve ilerleme somut çıktılarla takip edilir. Bu yüzden Kariyeer, ihtiyaç anında girilen bir site değil; süreç boyunca kullanılan bir araçtır.',
         cards: [
           {
-            title: "🎯 Hedef bazlı eşleşme",
+            icon: "target",
+            title: "Hedef bazlı eşleşme",
             desc: "Rastgele değil; hedef/rol/level üzerinden",
           },
           {
-            title: "✅ Doğrulanmış koçlar",
+            icon: "shield",
+            title: "Doğrulanmış koçlar",
             desc: "Profil doğrulama + görünür kalite katmanı",
           },
           {
-            title: "📊 Görünür ilerleme",
+            icon: "chart",
+            title: "Görünür ilerleme",
             desc: "Seans sonrası çıktı + takip düzeni",
           },
         ],
@@ -130,9 +127,17 @@ export default function Index() {
           "Terfi & liderlik gelişim programı",
         ],
         bottom: "Koç aramazsın. Sistem seni doğru sonuca götürür.",
+        cta_browse: "Koçları İncele",
+        cta_how: "Nasıl Çalışır?",
       },
       coachFlow: {
-        steps: ["Başvur", "Doğrulama", "Profil yayında", "İlk talep", "İlk seans"],
+        steps: [
+          "Başvur",
+          "Doğrulama",
+          "Profil yayında",
+          "İlk talep",
+          "İlk seans",
+        ],
         cards: [
           "Ödeme güvencesi platform üzerinden sağlanır.",
           "Doğrulama rozetiyle görünürlüğün artar.",
@@ -163,23 +168,32 @@ export default function Index() {
           "Sonrasında standart komisyon: %20",
           "Öne Çıkan Koçlar: ana sayfa görünürlüğü (ekstra ücretli)",
         ],
-        note: "Not: \"Öne Çıkan Koçlar\" alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.",
+        note: 'Not: "Öne Çıkan Koçlar" alanı sponsorlu vitrindir. İsteyen koçlar ek ücret ile ana sayfada daha görünür olur.',
         apply: "Koç Olarak Başvur",
         view: "Koçları Görüntüle",
       },
       company: {
         badge: "Kurumsal Program Mantığı",
         title: "Koçluk, ekip performansına dönüşsün",
-        p1: "Kurumsal tarafta amaç \"seans satmak\" değil; ekip hedeflerini doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı → takip/raporlama şeklinde ilerler.",
+        p1: 'Kurumsal tarafta amaç "seans satmak" değil; ekip hedeflerini doğru koçlarla eşleştirip, ilerlemeyi görünür hale getirmek. Süreç; ihtiyaç tanımı → koç eşleşmesi → seans akışı → takip/raporlama şeklinde ilerler.',
         cards: [
           { title: "Hedef & kapsam", desc: "Rol/level bazlı program planı" },
-          { title: "Doğru koç havuzu", desc: "Uzmanlık + doğrulama katmanı" },
-          { title: "Takip & görünürlük", desc: "Raporlanabilir çıktı (mail / PDF)" },
+          {
+            title: "Doğru koç havuzu",
+            desc: "Uzmanlık + doğrulama katmanı",
+          },
+          {
+            title: "Takip & görünürlük",
+            desc: "Raporlanabilir çıktı (mail / PDF)",
+          },
         ],
-        chips: ["SLA: 24 saat içinde dönüş", "Pilot: 2 haftada ilk ölçüm raporu"],
+        chips: [
+          "SLA: 24 saat içinde dönüş",
+          "Pilot: 2 haftada ilk ölçüm raporu",
+        ],
         solutions: "Kurumsal Çözümler",
         midText1:
-          "Şirketler için koçluk \"tekil seans\" değil, ölçülebilir bir gelişim sistemidir. Kariyeer; hedef, rol ve seviye bazlı ihtiyaçları netleştirir, doğrulanmış koç havuzundan en uygun eşleşmeyi çıkarır ve süreci raporlanabilir şekilde yönetir.",
+          'Şirketler için koçluk "tekil seans" değil, ölçülebilir bir gelişim sistemidir. Kariyeer; hedef, rol ve seviye bazlı ihtiyaçları netleştirir, doğrulanmış koç havuzundan en uygun eşleşmeyi çıkarır ve süreci raporlanabilir şekilde yönetir.',
         midText2:
           "Sonuç: İnsan & Kültür ekibi için görünür ilerleme, yöneticiler için takip edilebilir gelişim, çalışanlar için net hedef ve düzenli koçluk akışı. Demo talebinden sonra; ihtiyaç haritası → eşleşme → pilot → ilk ölçüm raporu akışıyla ilerler.",
         demo: {
@@ -193,9 +207,11 @@ export default function Index() {
           teamSize: "Ekip Büyüklüğü",
           need: "Öncelikli İhtiyaç",
           startPlan: "Başlangıç hedefi",
-          startHint: "Gönderince 24 saat içinde dönüş yapıp planı netleştiririz.",
+          startHint:
+            "Gönderince 24 saat içinde dönüş yapıp planı netleştiririz.",
           note: "Not (opsiyonel)",
-          notePh: "Kısa bilgi: ekip hedefi, rol dağılımı, tarih aralığı...",
+          notePh:
+            "Kısa bilgi: ekip hedefi, rol dağılımı, tarih aralığı...",
           footer:
             "Gönderim sonrası: ihtiyaç haritası → koç eşleşmesi → pilot → mail/PDF raporu (isteğe bağlı sunum).",
           submit: "Demo Talebi Gönder",
@@ -225,14 +241,23 @@ export default function Index() {
         verified: "Doğrulanmış",
         reviewsSuffix: "yorum",
         coaches: [
-          { title: "Kariyer & Liderlik Koçu", tags: ["Liderlik", "Kariyer"] },
-          { title: "Teknoloji & Startup Mentoru", tags: ["Teknoloji", "Startup"] },
-          { title: "Mülakat & CV Uzmanı", tags: ["Mülakat", "CV"] },
+          {
+            title: "Kariyer & Liderlik Koçu",
+            tags: ["Liderlik", "Kariyer"],
+          },
+          {
+            title: "Teknoloji & Startup Mentoru",
+            tags: ["Teknoloji", "Startup"],
+          },
+          {
+            title: "Mülakat & CV Uzmanı",
+            tags: ["Mülakat", "CV"],
+          },
         ],
       },
       y2025: {
         title: "2025'te Ne Problemi Çözüyoruz?",
-        desc: "Kariyer belirsizliği, mülakat performansı ve \"hangi yola gideceğim?\" problemi. Kariyeer, hedef bazlı eşleşme ve takip ile bunu ölçülebilir hale getirir.",
+        desc: 'Kariyer belirsizliği, mülakat performansı ve "hangi yola gideceğim?" problemi. Kariyeer, hedef bazlı eşleşme ve takip ile bunu ölçülebilir hale getirir.',
         cards: [
           { value: "%37", label: "Daha hızlı terfi etkisi" },
           { value: "%42", label: "Maaş artışı avantajı" },
@@ -277,7 +302,7 @@ export default function Index() {
         goal: "Goal",
         level: "Level",
         language: "Language",
-        tip: "Tip: \"Featured Coaches\" can be sold as a premium slot.",
+        tip: 'Tip: "Featured Coaches" can be sold as a premium slot.',
       },
       goals: {
         interview: "Interview",
@@ -299,12 +324,25 @@ export default function Index() {
       },
       systemValue: {
         badge: "Goal · Plan · Progress Tracking",
-        title: "Don't leave your career to chance. Run the process.",
+        title: "Don't leave your career to chance.",
+        titleHighlight: "Run the process.",
         desc: "Kariyeer is not just a one-off consulting site; it's a system that defines your career goal, matches you with the right expert, and measures progress. You don't need to guess what to do during job search, promotion, or career change. Your goal becomes clear, you get the right coach recommendation, and progress is tracked with tangible outputs. That's why Kariyeer isn't a site you visit only when you need it—it's a tool you use throughout the journey.",
         cards: [
-          { title: "🎯 Goal-based matching", desc: "Not random—based on goal/role/level" },
-          { title: "✅ Verified coaches", desc: "Profile verification + visible quality layer" },
-          { title: "📊 Visible progress", desc: "Post-session output + follow-up cadence" },
+          {
+            icon: "target",
+            title: "Goal-based matching",
+            desc: "Not random—based on goal/role/level",
+          },
+          {
+            icon: "shield",
+            title: "Verified coaches",
+            desc: "Profile verification + visible quality layer",
+          },
+          {
+            icon: "chart",
+            title: "Visible progress",
+            desc: "Post-session output + follow-up cadence",
+          },
         ],
         chips: [
           "CV + LinkedIn package",
@@ -312,10 +350,19 @@ export default function Index() {
           "Career plan + 30/60/90-day goals",
           "Promotion & leadership program",
         ],
-        bottom: "You don't search for a coach. The system gets you to the outcome.",
+        bottom:
+          "You don't search for a coach. The system gets you to the outcome.",
+        cta_browse: "Browse Coaches",
+        cta_how: "How It Works?",
       },
       coachFlow: {
-        steps: ["Apply", "Verification", "Profile live", "First request", "First session"],
+        steps: [
+          "Apply",
+          "Verification",
+          "Profile live",
+          "First request",
+          "First session",
+        ],
         cards: [
           "Payment protection is provided through the platform.",
           "A verification badge boosts your visibility.",
@@ -328,32 +375,50 @@ export default function Index() {
         p1: "Kariyeer offers coaches a time-independent, scalable income model. Programs are flexible; you can run them alongside your main job or turn them into a fully professional channel. While 1:1 sessions create steady income, corporate collaborations can multiply revenue 2–3x. Demand, matching, and session management run in one dashboard. You focus on expertise only.",
         p2: "Kariyeer helps coaches match with the right client for the right goal and manage the full flow in one place: profile visibility → request/match → session → follow-up/report → revenue.",
         valueCards: [
-          { title: "More visibility", desc: "Listed in goal/role searches + verification badge" },
-          { title: "One dashboard", desc: "Sessions, calendar, requests, revenue, performance tracking" },
-          { title: "Global scale", desc: "International demand via language/country breakdown" },
+          {
+            title: "More visibility",
+            desc: "Listed in goal/role searches + verification badge",
+          },
+          {
+            title: "One dashboard",
+            desc: "Sessions, calendar, requests, revenue, performance tracking",
+          },
+          {
+            title: "Global scale",
+            desc: "International demand via language/country breakdown",
+          },
         ],
         chips: [
           "Commission: 10% for first 50 coaches (first 6 months)",
           "Then standard commission: 20%",
           "Featured Coaches: homepage visibility (paid add-on)",
         ],
-        note: "Note: \"Featured Coaches\" is a sponsored showcase. Coaches can pay extra to be more visible on the homepage.",
+        note: 'Note: "Featured Coaches" is a sponsored showcase. Coaches can pay extra to be more visible on the homepage.',
         apply: "Apply as Coach",
         view: "View Coaches",
       },
       company: {
         badge: "Corporate Program Logic",
         title: "Turn coaching into team performance",
-        p1: "On the corporate side, the goal isn't \"selling sessions.\" It's matching team goals with the right coaches and making progress visible. The flow: needs definition → coach matching → session flow → tracking/reporting.",
+        p1: 'On the corporate side, the goal isn\'t "selling sessions." It\'s matching team goals with the right coaches and making progress visible. The flow: needs definition → coach matching → session flow → tracking/reporting.',
         cards: [
           { title: "Goal & scope", desc: "Program plan by role/level" },
-          { title: "Right coach pool", desc: "Expertise + verification layer" },
-          { title: "Tracking & visibility", desc: "Reportable output (email / PDF)" },
+          {
+            title: "Right coach pool",
+            desc: "Expertise + verification layer",
+          },
+          {
+            title: "Tracking & visibility",
+            desc: "Reportable output (email / PDF)",
+          },
         ],
-        chips: ["SLA: reply within 24 hours", "Pilot: first measurement report in 2 weeks"],
+        chips: [
+          "SLA: reply within 24 hours",
+          "Pilot: first measurement report in 2 weeks",
+        ],
         solutions: "Corporate Solutions",
         midText1:
-          "For companies, coaching isn't a \"one-off session\"—it's a measurable development system. Kariyeer clarifies needs by goal, role, and level, selects the best match from verified coaches, and manages the process in a reportable way.",
+          'For companies, coaching isn\'t a "one-off session"—it\'s a measurable development system. Kariyeer clarifies needs by goal, role, and level, selects the best match from verified coaches, and manages the process in a reportable way.',
         midText2:
           "Result: visible progress for People & Culture teams, trackable development for managers, clear goals and steady coaching cadence for employees. After a demo request: needs map → matching → pilot → first measurement report.",
         demo: {
@@ -367,9 +432,11 @@ export default function Index() {
           teamSize: "Team Size",
           need: "Primary Need",
           startPlan: "Target start",
-          startHint: "After you submit, we'll get back within 24 hours to finalize the plan.",
+          startHint:
+            "After you submit, we'll get back within 24 hours to finalize the plan.",
           note: "Note (optional)",
-          notePh: "Brief info: team goals, role distribution, date range...",
+          notePh:
+            "Brief info: team goals, role distribution, date range...",
           footer:
             "After submission: needs map → coach matching → pilot → email/PDF report (optional deck).",
           submit: "Send Demo Request",
@@ -399,14 +466,23 @@ export default function Index() {
         verified: "Verified",
         reviewsSuffix: "reviews",
         coaches: [
-          { title: "Career & Leadership Coach", tags: ["Leadership", "Career"] },
-          { title: "Tech & Startup Mentor", tags: ["Technology", "Startup"] },
-          { title: "Interview & CV Specialist", tags: ["Interview", "CV"] },
+          {
+            title: "Career & Leadership Coach",
+            tags: ["Leadership", "Career"],
+          },
+          {
+            title: "Tech & Startup Mentor",
+            tags: ["Technology", "Startup"],
+          },
+          {
+            title: "Interview & CV Specialist",
+            tags: ["Interview", "CV"],
+          },
         ],
       },
       y2025: {
         title: "What problem are we solving in 2025?",
-        desc: "Career uncertainty, interview performance, and the \"which path should I take?\" problem. Kariyeer makes this measurable with goal-based matching and tracking.",
+        desc: 'Career uncertainty, interview performance, and the "which path should I take?" problem. Kariyeer makes this measurable with goal-based matching and tracking.',
         cards: [
           { value: "%37", label: "Faster promotion impact" },
           { value: "%42", label: "Salary increase advantage" },
@@ -451,7 +527,7 @@ export default function Index() {
         goal: "الهدف",
         level: "المستوى",
         language: "اللغة",
-        tip: "ملاحظة: يمكن بيع قسم \"المدربون المميّزون\" كمساحة بريميوم.",
+        tip: 'ملاحظة: يمكن بيع قسم "المدربون المميّزون" كمساحة بريميوم.',
       },
       goals: {
         interview: "مقابلة عمل",
@@ -473,12 +549,25 @@ export default function Index() {
       },
       systemValue: {
         badge: "هدف · خطة · تتبّع التقدّم",
-        title: "لا تترك مسارك للصدفة. أدر العملية.",
-        desc: "Kariyeer ليست مجرد موقع جلسات منفصلة؛ بل نظام يعرّف هدفك المهني، يطابقك مع الخبير المناسب، ويقيس التقدّم. لا تحتاج للتخمين أثناء البحث عن عمل أو الترقية أو تغيير المسار. يتضح هدفك، ويُقترح عليك المدرب الأنسب، ويُتابَع التقدّم بنتائج ملموسة. لذلك Kariyeer ليست زيارة وقت الحاجة فقط—بل أداة ترافقك طوال الرحلة.",
+        title: "لا تترك مسارك للصدفة.",
+        titleHighlight: "أدر العملية.",
+        desc: 'Kariyeer ليست مجرد موقع جلسات منفصلة؛ بل نظام يعرّف هدفك المهني، يطابقك مع الخبير المناسب، ويقيس التقدّم. لا تحتاج للتخمين أثناء البحث عن عمل أو الترقية أو تغيير المسار. يتضح هدفك، ويُقترح عليك المدرب الأنسب، ويُتابَع التقدّم بنتائج ملموسة. لذلك Kariyeer ليست زيارة وقت الحاجة فقط—بل أداة ترافقك طوال الرحلة.',
         cards: [
-          { title: "🎯 مطابقة بحسب الهدف", desc: "ليست عشوائية—بحسب الهدف/الدور/المستوى" },
-          { title: "✅ مدربون موثّقون", desc: "توثيق الملف + طبقة جودة واضحة" },
-          { title: "📊 تقدّم مرئي", desc: "مخرجات بعد الجلسة + نظام متابعة" },
+          {
+            icon: "target",
+            title: "مطابقة بحسب الهدف",
+            desc: "ليست عشوائية—بحسب الهدف/الدور/المستوى",
+          },
+          {
+            icon: "shield",
+            title: "مدربون موثّقون",
+            desc: "توثيق الملف + طبقة جودة واضحة",
+          },
+          {
+            icon: "chart",
+            title: "تقدّم مرئي",
+            desc: "مخرجات بعد الجلسة + نظام متابعة",
+          },
         ],
         chips: [
           "باقة السيرة + لينكدإن",
@@ -487,9 +576,17 @@ export default function Index() {
           "برنامج الترقية والقيادة",
         ],
         bottom: "لن تبحث عن مدرّب. النظام يقودك للنتيجة.",
+        cta_browse: "تصفّح المدربين",
+        cta_how: "كيف يعمل؟",
       },
       coachFlow: {
-        steps: ["قدّم", "توثيق", "الملف منشور", "أول طلب", "أول جلسة"],
+        steps: [
+          "قدّم",
+          "توثيق",
+          "الملف منشور",
+          "أول طلب",
+          "أول جلسة",
+        ],
         cards: [
           "ضمان الدفع يتم عبر المنصّة.",
           "شارة التوثيق تزيد ظهورك.",
@@ -502,32 +599,50 @@ export default function Index() {
         p1: "Kariyeer تقدّم للمدربين نموذج دخل قابل للتوسع وغير مرتبط بالوقت. البرامج مرنة؛ يمكنك تشغيلها بجانب عملك أو تحويلها لقناة احترافية كاملة. الجلسات الفردية تؤمن دخلًا ثابتًا، بينما الشراكات المؤسسية قد تضاعف الدخل 2–3 مرات. الطلب والمطابقة وإدارة الجلسات تتم من لوحة واحدة. تركّز أنت على خبرتك فقط.",
         p2: "Kariyeer تساعد المدربين على المطابقة مع العميل الصحيح للهدف الصحيح وإدارة كامل التدفق في مكان واحد: ظهور الملف → طلب/مطابقة → جلسة → متابعة/تقرير → دخل.",
         valueCards: [
-          { title: "ظهور أكبر", desc: "الظهور في بحث بحسب الهدف/الدور + شارة توثيق" },
-          { title: "لوحة واحدة", desc: "الجلسات والتقويم والطلبات والدخل وتتبّع الأداء" },
-          { title: "توسّع عالمي", desc: "تدفّق دولي عبر اللغة/الدولة" },
+          {
+            title: "ظهور أكبر",
+            desc: "الظهور في بحث بحسب الهدف/الدور + شارة توثيق",
+          },
+          {
+            title: "لوحة واحدة",
+            desc: "الجلسات والتقويم والطلبات والدخل وتتبّع الأداء",
+          },
+          {
+            title: "توسّع عالمي",
+            desc: "تدفّق دولي عبر اللغة/الدولة",
+          },
         ],
         chips: [
           "العمولة: 10% لأول 50 مدرب (أول 6 أشهر)",
           "ثم العمولة القياسية: 20%",
           "المدربون المميّزون: ظهور على الصفحة الرئيسية (مدفوع)",
         ],
-        note: "ملاحظة: \"المدربون المميّزون\" مساحة عرض مدفوعة. يمكن للمدربين الدفع لزيادة الظهور على الصفحة الرئيسية.",
+        note: 'ملاحظة: "المدربون المميّزون" مساحة عرض مدفوعة. يمكن للمدربين الدفع لزيادة الظهور على الصفحة الرئيسية.',
         apply: "قدّم كمدرّب",
         view: "عرض المدربين",
       },
       company: {
         badge: "منطق البرنامج المؤسسي",
         title: "حوّل التدريب إلى أداء للفريق",
-        p1: "في جانب الشركات، الهدف ليس \"بيع جلسات\". بل مطابقة أهداف الفريق مع المدربين المناسبين وجعل التقدّم مرئيًا. التدفق: تحديد الاحتياج → مطابقة المدرب → سير الجلسات → متابعة/تقارير.",
+        p1: 'في جانب الشركات، الهدف ليس "بيع جلسات". بل مطابقة أهداف الفريق مع المدربين المناسبين وجعل التقدّم مرئيًا. التدفق: تحديد الاحتياج → مطابقة المدرب → سير الجلسات → متابعة/تقارير.',
         cards: [
           { title: "الهدف والنطاق", desc: "خطة بحسب الدور/المستوى" },
-          { title: "مخزون مدربين مناسب", desc: "خبرة + طبقة توثيق" },
-          { title: "متابعة ووضوح", desc: "مخرجات قابلة للتقرير (بريد / PDF)" },
+          {
+            title: "مخزون مدربين مناسب",
+            desc: "خبرة + طبقة توثيق",
+          },
+          {
+            title: "متابعة ووضوح",
+            desc: "مخرجات قابلة للتقرير (بريد / PDF)",
+          },
         ],
-        chips: ["SLA: رد خلال 24 ساعة", "Pilot: أول تقرير قياس خلال أسبوعين"],
+        chips: [
+          "SLA: رد خلال 24 ساعة",
+          "Pilot: أول تقرير قياس خلال أسبوعين",
+        ],
         solutions: "حلول الشركات",
         midText1:
-          "بالنسبة للشركات، التدريب ليس \"جلسة واحدة\" بل نظام تطوير قابل للقياس. Kariyeer توضح الاحتياجات بحسب الهدف والدور والمستوى، وتستخرج أفضل مطابقة من المدربين الموثّقين، وتدير العملية بشكل قابل للتقرير.",
+          'بالنسبة للشركات، التدريب ليس "جلسة واحدة" بل نظام تطوير قابل للقياس. Kariyeer توضح الاحتياجات بحسب الهدف والدور والمستوى، وتستخرج أفضل مطابقة من المدربين الموثّقين، وتدير العملية بشكل قابل للتقرير.',
         midText2:
           "النتيجة: تقدّم واضح لفِرق الأشخاص والثقافة، تطوير قابل للتتبّع للمديرين، وأهداف واضحة وتدفّق تدريب منتظم للموظفين. بعد طلب الديمو: خريطة احتياج → مطابقة → بايلوت → أول تقرير قياس.",
         demo: {
@@ -541,9 +656,11 @@ export default function Index() {
           teamSize: "حجم الفريق",
           need: "الاحتياج الأساسي",
           startPlan: "موعد البدء المستهدف",
-          startHint: "بعد الإرسال سنعود لك خلال 24 ساعة لتثبيت الخطة.",
+          startHint:
+            "بعد الإرسال سنعود لك خلال 24 ساعة لتثبيت الخطة.",
           note: "ملاحظة (اختياري)",
-          notePh: "معلومات مختصرة: هدف الفريق، توزيع الأدوار، المدة الزمنية...",
+          notePh:
+            "معلومات مختصرة: هدف الفريق، توزيع الأدوار، المدة الزمنية...",
           footer:
             "بعد الإرسال: خريطة احتياج → مطابقة المدرب → بايلوت → تقرير بريد/PDF (وعرض اختياري).",
           submit: "إرسال طلب الديمو",
@@ -561,7 +678,11 @@ export default function Index() {
             performance: "أداء",
             cv: "السيرة / لينكدإن",
           },
-          startOptions: { week: "هذا الأسبوع", month: "هذا الشهر", q1: "Q1" },
+          startOptions: {
+            week: "هذا الأسبوع",
+            month: "هذا الشهر",
+            q1: "Q1",
+          },
         },
       },
       featured: {
@@ -573,14 +694,23 @@ export default function Index() {
         verified: "موثّق",
         reviewsSuffix: "تقييم",
         coaches: [
-          { title: "مدربة مسار مهني وقيادة", tags: ["قيادة", "مسار مهني"] },
-          { title: "مرشد تقنية وستارتاب", tags: ["تقنية", "ستارتاب"] },
-          { title: "مختصة مقابلات وسيرة", tags: ["مقابلات", "سيرة"] },
+          {
+            title: "مدربة مسار مهني وقيادة",
+            tags: ["قيادة", "مسار مهني"],
+          },
+          {
+            title: "مرشد تقنية وستارتاب",
+            tags: ["تقنية", "ستارتاب"],
+          },
+          {
+            title: "مختصة مقابلات وسيرة",
+            tags: ["مقابلات", "سيرة"],
+          },
         ],
       },
       y2025: {
         title: "ما المشكلة التي نحلّها في 2025؟",
-        desc: "غموض المسار المهني، أداء المقابلات، وسؤال \"أي طريق أختار؟\". Kariyeer تجعل ذلك قابلًا للقياس عبر المطابقة بحسب الهدف والمتابعة.",
+        desc: 'غموض المسار المهني، أداء المقابلات، وسؤال "أي طريق أختار؟". Kariyeer تجعل ذلك قابلًا للقياس عبر المطابقة بحسب الهدف والمتابعة.',
         cards: [
           { value: "%37", label: "تأثير أسرع في الترقية" },
           { value: "%42", label: "ميزة زيادة الراتب" },
@@ -625,7 +755,7 @@ export default function Index() {
         goal: "Objectif",
         level: "Niveau",
         language: "Langue",
-        tip: "Astuce : la zone \"Coachs en vedette\" peut être vendue en slot premium.",
+        tip: 'Astuce : la zone "Coachs en vedette" peut être vendue en slot premium.',
       },
       goals: {
         interview: "Entretien",
@@ -647,12 +777,25 @@ export default function Index() {
       },
       systemValue: {
         badge: "Objectif · Plan · Suivi de progression",
-        title: "Ne laisse pas ta carrière au hasard. Pilote le process.",
+        title: "Ne laisse pas ta carrière au hasard.",
+        titleHighlight: "Pilote le process.",
         desc: "Kariyeer n'est pas seulement un site de séances ponctuelles ; c'est un système qui définit ton objectif, te matche avec le bon expert et mesure tes progrès. Inutile de deviner quoi faire pendant une recherche d'emploi, une promotion ou un changement de carrière. Ton objectif se clarifie, le coach adapté est recommandé et la progression est suivie via des livrables concrets. Kariyeer n'est donc pas un site \"à la demande\", mais un outil de parcours.",
         cards: [
-          { title: "🎯 Matching par objectif", desc: "Pas au hasard : objectif/rôle/niveau" },
-          { title: "✅ Coachs vérifiés", desc: "Vérification du profil + couche qualité visible" },
-          { title: "📊 Progrès visibles", desc: "Livrables post-séance + cadence de suivi" },
+          {
+            icon: "target",
+            title: "Matching par objectif",
+            desc: "Pas au hasard : objectif/rôle/niveau",
+          },
+          {
+            icon: "shield",
+            title: "Coachs vérifiés",
+            desc: "Vérification du profil + couche qualité visible",
+          },
+          {
+            icon: "chart",
+            title: "Progrès visibles",
+            desc: "Livrables post-séance + cadence de suivi",
+          },
         ],
         chips: [
           "Pack CV + LinkedIn",
@@ -660,10 +803,19 @@ export default function Index() {
           "Plan de carrière + objectifs 30/60/90 jours",
           "Programme promotion & leadership",
         ],
-        bottom: "Tu ne cherches pas un coach. Le système t'amène au résultat.",
+        bottom:
+          "Tu ne cherches pas un coach. Le système t'amène au résultat.",
+        cta_browse: "Voir les coachs",
+        cta_how: "Comment ça marche ?",
       },
       coachFlow: {
-        steps: ["Postuler", "Vérification", "Profil en ligne", "1ère demande", "1ère séance"],
+        steps: [
+          "Postuler",
+          "Vérification",
+          "Profil en ligne",
+          "1ère demande",
+          "1ère séance",
+        ],
         cards: [
           "La garantie de paiement est assurée via la plateforme.",
           "Le badge de vérification augmente ta visibilité.",
@@ -676,17 +828,25 @@ export default function Index() {
         p1: "Kariyeer propose aux coachs un modèle de revenus scalable et indépendant du temps. Les programmes sont flexibles : en parallèle d'un job ou en canal pro à plein temps. Les séances 1:1 apportent un revenu régulier, et le B2B peut multiplier les revenus par 2–3. Demande, matching et gestion des séances : tout depuis un seul panel. Tu te concentres sur ton expertise.",
         p2: "Kariyeer permet aux coachs de matcher le bon client au bon objectif et de piloter tout le flux : visibilité → demande/match → séance → suivi/rapport → revenus.",
         valueCards: [
-          { title: "Plus de visibilité", desc: "Listé en recherche objectif/rôle + badge vérifié" },
-          { title: "Un seul panel", desc: "Séances, agenda, demandes, revenus, suivi performance" },
-          { title: "Échelle globale", desc: "Flux international via langues/pays" },
+          {
+            title: "Plus de visibilité",
+            desc: "Listé en recherche objectif/rôle + badge vérifié",
+          },
+          {
+            title: "Un seul panel",
+            desc: "Séances, agenda, demandes, revenus, suivi performance",
+          },
+          {
+            title: "Échelle globale",
+            desc: "Flux international via langues/pays",
+          },
         ],
         chips: [
           "Commission : 10% pour les 50 premiers coachs (6 premiers mois)",
           "Ensuite commission standard : 20%",
           "Coachs en vedette : visibilité homepage (payant)",
         ],
-        note:
-          "Note : \"Coachs en vedette\" est une vitrine sponsorisée. Les coachs peuvent payer pour être plus visibles sur la homepage.",
+        note: 'Note : "Coachs en vedette" est une vitrine sponsorisée. Les coachs peuvent payer pour être plus visibles sur la homepage.',
         apply: "Postuler comme coach",
         view: "Voir les coachs",
       },
@@ -696,10 +856,19 @@ export default function Index() {
         p1: "Côté entreprise, l'objectif n'est pas de \"vendre des séances\", mais de matcher les objectifs d'équipe avec les bons coachs et rendre la progression visible. Flux : besoin → matching → séances → suivi/rapport.",
         cards: [
           { title: "Objectif & périmètre", desc: "Plan par rôle/niveau" },
-          { title: "Bon pool de coachs", desc: "Expertise + couche de vérification" },
-          { title: "Suivi & visibilité", desc: "Livrables reportables (mail / PDF)" },
+          {
+            title: "Bon pool de coachs",
+            desc: "Expertise + couche de vérification",
+          },
+          {
+            title: "Suivi & visibilité",
+            desc: "Livrables reportables (mail / PDF)",
+          },
         ],
-        chips: ["SLA : retour sous 24h", "Pilot : 1er rapport de mesure en 2 semaines"],
+        chips: [
+          "SLA : retour sous 24h",
+          "Pilot : 1er rapport de mesure en 2 semaines",
+        ],
         solutions: "Solutions entreprises",
         midText1:
           "Pour les entreprises, le coaching n'est pas une \"séance ponctuelle\" mais un système de développement mesurable. Kariyeer clarifie les besoins par objectif/rôle/niveau, extrait le meilleur matching parmi des coachs vérifiés et gère le process de manière reportable.",
@@ -716,7 +885,8 @@ export default function Index() {
           teamSize: "Taille d'équipe",
           need: "Besoin prioritaire",
           startPlan: "Démarrage visé",
-          startHint: "Après envoi, on revient vers toi sous 24h pour cadrer le plan.",
+          startHint:
+            "Après envoi, on revient vers toi sous 24h pour cadrer le plan.",
           note: "Note (optionnel)",
           notePh: "Bref : objectifs équipe, répartition rôles, période...",
           footer:
@@ -736,7 +906,11 @@ export default function Index() {
             performance: "Performance",
             cv: "CV / LinkedIn",
           },
-          startOptions: { week: "Cette semaine", month: "Ce mois-ci", q1: "T1 (Q1)" },
+          startOptions: {
+            week: "Cette semaine",
+            month: "Ce mois-ci",
+            q1: "T1 (Q1)",
+          },
         },
       },
       featured: {
@@ -748,9 +922,18 @@ export default function Index() {
         verified: "Vérifié",
         reviewsSuffix: "avis",
         coaches: [
-          { title: "Coach carrière & leadership", tags: ["Leadership", "Carrière"] },
-          { title: "Mentor tech & startup", tags: ["Tech", "Startup"] },
-          { title: "Spécialiste entretien & CV", tags: ["Entretien", "CV"] },
+          {
+            title: "Coach carrière & leadership",
+            tags: ["Leadership", "Carrière"],
+          },
+          {
+            title: "Mentor tech & startup",
+            tags: ["Tech", "Startup"],
+          },
+          {
+            title: "Spécialiste entretien & CV",
+            tags: ["Entretien", "CV"],
+          },
         ],
       },
       y2025: {
@@ -771,9 +954,24 @@ export default function Index() {
   const t = i18n[lang] || i18n.tr;
 
   const personas = [
-    { key: "user", label: t.personas.user.label, icon: Users, subtitle: t.personas.user.subtitle },
-    { key: "coach", label: t.personas.coach.label, icon: Briefcase, subtitle: t.personas.coach.subtitle },
-    { key: "company", label: t.personas.company.label, icon: Building2, subtitle: t.personas.company.subtitle },
+    {
+      key: "user",
+      label: t.personas.user.label,
+      icon: Users,
+      subtitle: t.personas.user.subtitle,
+    },
+    {
+      key: "coach",
+      label: t.personas.coach.label,
+      icon: Briefcase,
+      subtitle: t.personas.coach.subtitle,
+    },
+    {
+      key: "company",
+      label: t.personas.company.label,
+      icon: Building2,
+      subtitle: t.personas.company.subtitle,
+    },
   ];
 
   const personaCopy = personas.find((p) => p.key === persona) ?? personas[0];
@@ -785,7 +983,6 @@ export default function Index() {
 
   const onDemoSubmit = async (e: any) => {
     e.preventDefault();
-
     const payload = {
       company_name: demoCompanyName,
       contact_name: demoName,
@@ -797,21 +994,21 @@ export default function Index() {
       note: demoNote,
       lang,
     };
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("corporate_demo_requests")
       .insert(payload)
       .select("id")
       .single();
-
     if (error) {
       console.error(error);
-      toast.error("Demo talebi gönderilemedi. Lütfen tekrar deneyin.");
+      toast.error(
+        "Demo talebi gönderilemedi. Lütfen tekrar deneyin."
+      );
       return;
     }
-
-    toast.success("Demo talebiniz alındı. 24 saat içinde sizinle iletişime geçeceğiz.");
-
+    toast.success(
+      "Demo talebiniz alındı. 24 saat içinde sizinle iletişime geçeceğiz."
+    );
     setDemoCompanyName("");
     setDemoName("");
     setDemoEmail("");
@@ -822,10 +1019,9 @@ export default function Index() {
     setDemoNote("");
   };
 
-  // ✅ YENİ: Dile göre slider verileri
-  const currentSlides = heroSlides[lang as keyof typeof heroSlides] || heroSlides.tr;
+  const currentSlides =
+    heroSlides[lang as keyof typeof heroSlides] || heroSlides.tr;
 
-  // Featured coaches (statik vitrin)
   const featuredCoaches = [
     {
       name: "Dr. Ayşe Yılmaz",
@@ -850,20 +1046,25 @@ export default function Index() {
     },
   ];
 
+  // Icon mapper for systemValue cards
+  const cardIconMap: Record<string, any> = {
+    target: Target,
+    shield: ShieldCheck,
+    chart: BarChart3,
+  };
+
   return (
     <div className="min-h-screen bg-white">
-
-      {/* ✅ YENİ: HERO SLIDER (eski statik hero yerine) */}
+      {/* HERO SLIDER */}
       <HeroSlider
         slides={currentSlides}
         autoPlayInterval={5000}
         height="h-[550px] md:h-[650px] lg:h-[700px]"
       />
 
-      {/* ✅ YENİ: PERSONA SWITCHER + STATS (slider'ın hemen altında) */}
+      {/* PERSONA SWITCHER + STATS */}
       <section className="relative z-20 -mt-8 pb-4">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Persona seçici */}
           <div className="flex justify-center">
             <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-lg">
               {personas.map((p) => {
@@ -887,12 +1088,10 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Persona subtitle */}
           <p className="mt-4 text-center text-lg text-gray-600 max-w-3xl mx-auto">
             {personaCopy.subtitle}
           </p>
 
-          {/* Inline stats */}
           <div className="mt-4 flex flex-wrap justify-center gap-8 text-sm font-semibold text-gray-700">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-green-600" />
@@ -938,7 +1137,6 @@ export default function Index() {
                   <option value="confidence">{t.goals.confidence}</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   {t.quickMatch.level}
@@ -955,7 +1153,6 @@ export default function Index() {
                   <option value="manager">{t.levels.manager}</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">
                   {t.quickMatch.language}
@@ -973,7 +1170,6 @@ export default function Index() {
                   <option value="fr">{t.langs.fr}</option>
                 </select>
               </div>
-
               <div className="flex items-end">
                 <Button
                   onClick={onMatch}
@@ -984,58 +1180,135 @@ export default function Index() {
               </div>
             </div>
           </div>
-
-          {/* mini note */}
           <div className="mt-4 text-center text-xs text-gray-500">
             {t.quickMatch.tip}
           </div>
         </div>
       </section>
 
-      {/* ✅ USER: Sistem değeri */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ✅ USER: SİSTEM DEĞERİ — YENİ GÖRSEL TASARIM          */}
+      {/* ═══════════════════════════════════════════════════════ */}
       {persona === "user" ? (
-        <section className="pb-10 bg-white">
-          <div className="max-w-5xl mx-auto px-4">
-            <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
-              <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-orange-200 text-sm font-semibold text-red-600 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  {t.systemValue.badge}
+        <section className="pb-16 bg-gradient-to-b from-white via-orange-50/30 to-white">
+          <div className="max-w-6xl mx-auto px-4">
+            {/* Ana container */}
+            <div className="relative rounded-3xl border border-orange-200 bg-white shadow-xl overflow-hidden">
+              {/* Decorative background elements */}
+              <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-orange-100/50 to-transparent rounded-full -translate-y-1/3 translate-x-1/3" />
+              <div className="absolute bottom-0 left-0 w-56 h-56 bg-gradient-to-tr from-red-50/50 to-transparent rounded-full translate-y-1/3 -translate-x-1/3" />
+
+              <div className="relative z-10 p-8 md:p-12">
+                {/* Badge */}
+                <div className="flex justify-center">
+                  <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 border border-orange-200 text-sm font-bold text-red-600 shadow-sm">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                    </span>
+                    {t.systemValue.badge}
+                  </div>
                 </div>
 
-                <h3 className="mt-4 text-2xl md:text-3xl font-black text-gray-900">
+                {/* Title */}
+                <h3 className="mt-6 text-center text-3xl md:text-4xl font-black text-gray-900 leading-tight">
                   {t.systemValue.title}
+                  <br />
+                  <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
+                    {t.systemValue.titleHighlight}
+                  </span>
                 </h3>
 
-                <p className="mt-3 text-sm md:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                {/* Description */}
+                <p className="mt-5 text-center text-base md:text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
                   {t.systemValue.desc}
                 </p>
 
-                <div className="mt-6 grid md:grid-cols-3 gap-3 text-sm">
-                  {t.systemValue.cards.map((c: any) => (
-                    <div
-                      key={c.title}
-                      className="rounded-xl border border-gray-200 bg-gray-50 p-4"
-                    >
-                      <div className="font-semibold text-gray-900">{c.title}</div>
-                      <div className="mt-1 text-gray-600">{c.desc}</div>
-                    </div>
-                  ))}
+                {/* 3 Feature Cards */}
+                <div className="mt-10 grid md:grid-cols-3 gap-5">
+                  {t.systemValue.cards.map((c: any, idx: number) => {
+                    const IconComponent =
+                      cardIconMap[c.icon] || Target;
+                    const gradients = [
+                      "from-red-500 to-orange-500",
+                      "from-emerald-500 to-teal-500",
+                      "from-blue-500 to-indigo-500",
+                    ];
+                    return (
+                      <div
+                        key={c.title}
+                        className="group relative rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all duration-300 hover:-translate-y-1"
+                      >
+                        {/* Icon circle */}
+                        <div
+                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradients[idx]} flex items-center justify-center shadow-lg mb-4`}
+                        >
+                          <IconComponent className="h-6 w-6 text-white" />
+                        </div>
+
+                        <h4 className="text-lg font-bold text-gray-900">
+                          {c.title}
+                        </h4>
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                          {c.desc}
+                        </p>
+
+                        {/* Subtle hover accent */}
+                        <div
+                          className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${gradients[idx]} rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2 justify-center">
-                  {t.systemValue.chips.map((x: string) => (
+                {/* Divider */}
+                <div className="mt-10 flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent" />
+                  <Zap className="h-5 w-5 text-orange-400" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent" />
+                </div>
+
+                {/* Chips */}
+                <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                  {t.systemValue.chips.map((x: string, idx: number) => (
                     <span
                       key={x}
-                      className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700"
+                      className="inline-flex items-center gap-2 text-sm rounded-full border border-orange-200 bg-gradient-to-r from-orange-50 to-white px-4 py-2 text-gray-700 font-medium shadow-sm hover:shadow-md hover:border-orange-300 transition-all duration-200"
                     >
+                      <CheckCircle2 className="h-4 w-4 text-orange-500" />
                       {x}
                     </span>
                   ))}
                 </div>
 
-                <div className="mt-5 text-sm font-semibold text-gray-700">
-                  {t.systemValue.bottom}
+                {/* Bottom quote */}
+                <div className="mt-8 text-center">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-lg">
+                    <Sparkles className="h-5 w-5 text-orange-400" />
+                    <span className="text-sm font-bold">
+                      {t.systemValue.bottom}
+                    </span>
+                  </div>
+                </div>
+
+                {/* CTAs */}
+                <div className="mt-8 flex flex-wrap gap-4 justify-center">
+                  <Button
+                    onClick={() => navigate("/coaches")}
+                    className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110 shadow-lg shadow-red-200/50"
+                  >
+                    {t.systemValue.cta_browse}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/how-it-works")}
+                    className="h-12 rounded-xl border-orange-200 font-semibold px-8 hover:bg-orange-50"
+                  >
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    {t.systemValue.cta_how}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1043,31 +1316,36 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ COACH: süreç + güvence */}
+      {/* COACH: süreç + güvence */}
       {persona === "coach" ? (
         <section className="pb-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <div className="rounded-2xl border border-orange-200 bg-white shadow-lg p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {t.coachFlow.steps.map((s: string, idx: number, arr: any[]) => (
-                  <div key={s} className="flex items-center gap-2">
-                    <span className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 text-gray-900 text-sm font-bold">
-                      {s}
-                    </span>
-                    {idx !== arr.length - 1 ? (
-                      <span className="text-orange-300 font-black">→</span>
-                    ) : null}
-                  </div>
-                ))}
+                {t.coachFlow.steps.map(
+                  (s: string, idx: number, arr: any[]) => (
+                    <div key={s} className="flex items-center gap-2">
+                      <span className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 text-gray-900 text-sm font-bold">
+                        {s}
+                      </span>
+                      {idx !== arr.length - 1 ? (
+                        <span className="text-orange-300 font-black">
+                          →
+                        </span>
+                      ) : null}
+                    </div>
+                  )
+                )}
               </div>
-
               <div className="mt-5 grid md:grid-cols-3 gap-3">
                 {t.coachFlow.cards.map((c: string) => (
                   <div
                     key={c}
                     className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center"
                   >
-                    <div className="text-sm font-semibold text-gray-800">{c}</div>
+                    <div className="text-sm font-semibold text-gray-800">
+                      {c}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1076,7 +1354,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ COACH: global değer + komisyon */}
+      {/* COACH: global değer + komisyon */}
       {persona === "coach" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1087,26 +1365,28 @@ export default function Index() {
                     <Briefcase className="h-4 w-4" />
                     {t.coachGlobal.badge}
                   </div>
-
                   <h3 className="mt-3 text-2xl font-black text-gray-900">
                     {t.coachGlobal.title}
                   </h3>
-
                   <p className="mt-3 text-sm md:text-base text-gray-600 max-w-3xl leading-relaxed">
                     {t.coachGlobal.p1}
                   </p>
-
-                  <p className="mt-3 text-gray-600 max-w-3xl">{t.coachGlobal.p2}</p>
-
+                  <p className="mt-3 text-gray-600 max-w-3xl">
+                    {t.coachGlobal.p2}
+                  </p>
                   <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                     {t.coachGlobal.valueCards.map((c: any) => (
-                      <div key={c.title} className="rounded-xl border bg-gray-50 p-4">
-                        <div className="font-semibold text-gray-900">{c.title}</div>
+                      <div
+                        key={c.title}
+                        className="rounded-xl border bg-gray-50 p-4"
+                      >
+                        <div className="font-semibold text-gray-900">
+                          {c.title}
+                        </div>
                         <div className="mt-1 text-gray-600">{c.desc}</div>
                       </div>
                     ))}
                   </div>
-
                   <div className="mt-4 flex flex-wrap gap-2">
                     {t.coachGlobal.chips.map((x: string) => (
                       <span
@@ -1117,18 +1397,18 @@ export default function Index() {
                       </span>
                     ))}
                   </div>
-
-                  <div className="mt-4 text-xs text-gray-500">{t.coachGlobal.note}</div>
+                  <div className="mt-4 text-xs text-gray-500">
+                    {t.coachGlobal.note}
+                  </div>
                 </div>
-
                 <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
                   <Button
                     className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
                     onClick={() => navigate("/coach-application")}
                   >
-                    {t.coachGlobal.apply} <ArrowRight className="ml-2 h-4 w-4" />
+                    {t.coachGlobal.apply}{" "}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-
                   <Button
                     variant="outline"
                     className="h-12 rounded-xl border-orange-200"
@@ -1143,7 +1423,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ COMPANY: açıklama bloğu */}
+      {/* COMPANY: açıklama bloğu */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1153,22 +1433,25 @@ export default function Index() {
                   <Sparkles className="h-4 w-4" />
                   {t.company.badge}
                 </div>
-
                 <h3 className="mt-3 text-2xl font-black text-gray-900">
                   {t.company.title}
                 </h3>
-
-                <p className="mt-2 text-gray-600 max-w-3xl">{t.company.p1}</p>
-
+                <p className="mt-2 text-gray-600 max-w-3xl">
+                  {t.company.p1}
+                </p>
                 <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                   {t.company.cards.map((c: any) => (
-                    <div key={c.title} className="rounded-xl border bg-gray-50 p-4">
-                      <div className="font-semibold text-gray-900">{c.title}</div>
+                    <div
+                      key={c.title}
+                      className="rounded-xl border bg-gray-50 p-4"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        {c.title}
+                      </div>
                       <div className="mt-1 text-gray-600">{c.desc}</div>
                     </div>
                   ))}
                 </div>
-
                 <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                   <div className="flex flex-wrap gap-2">
                     {t.company.chips.map((x: string) => (
@@ -1180,9 +1463,11 @@ export default function Index() {
                       </span>
                     ))}
                   </div>
-
                   <Link to="/for-companies">
-                    <Button variant="outline" className="rounded-xl border-orange-200">
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-orange-200"
+                    >
                       {t.company.solutions}
                     </Button>
                   </Link>
@@ -1193,19 +1478,21 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ COMPANY: metin */}
+      {/* COMPANY: metin */}
       {persona === "company" ? (
         <section className="py-6 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <div className="text-gray-600 leading-relaxed">
               <p className="text-sm md:text-base">{t.company.midText1}</p>
-              <p className="mt-3 text-sm md:text-base">{t.company.midText2}</p>
+              <p className="mt-3 text-sm md:text-base">
+                {t.company.midText2}
+              </p>
             </div>
           </div>
         </section>
       ) : null}
 
-      {/* ✅ COMPANY: DEMO FORM */}
+      {/* COMPANY: DEMO FORM */}
       {persona === "company" ? (
         <section className="py-10 bg-white">
           <div className="max-w-5xl mx-auto px-4">
@@ -1215,13 +1502,12 @@ export default function Index() {
                   <Building2 className="h-4 w-4" />
                   {t.company.demo.badge}
                 </div>
-
                 <h3 className="mt-3 text-2xl font-black text-gray-900">
                   {t.company.demo.title}
                 </h3>
-
-                <p className="mt-2 text-gray-600">{t.company.demo.desc}</p>
-
+                <p className="mt-2 text-gray-600">
+                  {t.company.demo.desc}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {t.company.chips.map((x: string) => (
                     <span
@@ -1242,13 +1528,16 @@ export default function Index() {
                     </label>
                     <input
                       value={demoCompanyName}
-                      onChange={(e) => setDemoCompanyName(e.target.value)}
+                      onChange={(e) =>
+                        setDemoCompanyName(e.target.value)
+                      }
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={t.company.demo.placeholders.company}
+                      placeholder={
+                        t.company.demo.placeholders.company
+                      }
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.fullName}
@@ -1261,7 +1550,6 @@ export default function Index() {
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.email}
@@ -1270,12 +1558,13 @@ export default function Index() {
                       value={demoEmail}
                       onChange={(e) => setDemoEmail(e.target.value)}
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={t.company.demo.placeholders.email}
+                      placeholder={
+                        t.company.demo.placeholders.email
+                      }
                       type="email"
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.phone}
@@ -1284,27 +1573,37 @@ export default function Index() {
                       value={demoPhone}
                       onChange={(e) => setDemoPhone(e.target.value)}
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={t.company.demo.placeholders.phone}
+                      placeholder={
+                        t.company.demo.placeholders.phone
+                      }
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.teamSize}
                     </label>
                     <select
                       value={demoTeamSize}
-                      onChange={(e) => setDemoTeamSize(e.target.value)}
+                      onChange={(e) =>
+                        setDemoTeamSize(e.target.value)
+                      }
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
                     >
-                      <option value="1-10">{t.company.demo.teamOptions.a}</option>
-                      <option value="11-50">{t.company.demo.teamOptions.b}</option>
-                      <option value="51-200">{t.company.demo.teamOptions.c}</option>
-                      <option value="200+">{t.company.demo.teamOptions.d}</option>
+                      <option value="1-10">
+                        {t.company.demo.teamOptions.a}
+                      </option>
+                      <option value="11-50">
+                        {t.company.demo.teamOptions.b}
+                      </option>
+                      <option value="51-200">
+                        {t.company.demo.teamOptions.c}
+                      </option>
+                      <option value="200+">
+                        {t.company.demo.teamOptions.d}
+                      </option>
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.need}
@@ -1314,32 +1613,48 @@ export default function Index() {
                       onChange={(e) => setDemoNeed(e.target.value)}
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
                     >
-                      <option value="Mülakat">{t.company.demo.needOptions.interview}</option>
-                      <option value="Kariyer Planı">{t.company.demo.needOptions.career}</option>
-                      <option value="Liderlik">{t.company.demo.needOptions.leadership}</option>
-                      <option value="Performans">{t.company.demo.needOptions.performance}</option>
-                      <option value="CV / LinkedIn">{t.company.demo.needOptions.cv}</option>
+                      <option value="Mülakat">
+                        {t.company.demo.needOptions.interview}
+                      </option>
+                      <option value="Kariyer Planı">
+                        {t.company.demo.needOptions.career}
+                      </option>
+                      <option value="Liderlik">
+                        {t.company.demo.needOptions.leadership}
+                      </option>
+                      <option value="Performans">
+                        {t.company.demo.needOptions.performance}
+                      </option>
+                      <option value="CV / LinkedIn">
+                        {t.company.demo.needOptions.cv}
+                      </option>
                     </select>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.startPlan}
                     </label>
                     <select
                       value={demoStartPlan}
-                      onChange={(e) => setDemoStartPlan(e.target.value)}
+                      onChange={(e) =>
+                        setDemoStartPlan(e.target.value)
+                      }
                       className="w-full h-12 rounded-xl border border-orange-200 px-4"
                     >
-                      <option value="Bu hafta">{t.company.demo.startOptions.week}</option>
-                      <option value="Bu ay">{t.company.demo.startOptions.month}</option>
-                      <option value="Q1">{t.company.demo.startOptions.q1}</option>
+                      <option value="Bu hafta">
+                        {t.company.demo.startOptions.week}
+                      </option>
+                      <option value="Bu ay">
+                        {t.company.demo.startOptions.month}
+                      </option>
+                      <option value="Q1">
+                        {t.company.demo.startOptions.q1}
+                      </option>
                     </select>
                     <div className="mt-2 text-xs text-gray-500">
                       {t.company.demo.startHint}
                     </div>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-gray-500 mb-1">
                       {t.company.demo.note}
@@ -1352,14 +1667,16 @@ export default function Index() {
                     />
                   </div>
                 </div>
-
                 <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                  <div className="text-xs text-gray-500">{t.company.demo.footer}</div>
+                  <div className="text-xs text-gray-500">
+                    {t.company.demo.footer}
+                  </div>
                   <Button
                     type="submit"
                     className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
                   >
-                    {t.company.demo.submit} <ArrowRight className="ml-2 h-4 w-4" />
+                    {t.company.demo.submit}{" "}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -1368,7 +1685,7 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ✅ ÖNE ÇIKAN KOÇLAR */}
+      {/* ÖNE ÇIKAN KOÇLAR */}
       <section className="py-18 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
@@ -1377,7 +1694,9 @@ export default function Index() {
                 <Sparkles className="h-4 w-4" />
                 {t.featured.badge}
               </div>
-              <h2 className="mt-3 text-3xl font-black text-gray-900">{t.featured.title}</h2>
+              <h2 className="mt-3 text-3xl font-black text-gray-900">
+                {t.featured.title}
+              </h2>
               <p className="mt-2 text-gray-600">{t.featured.desc}</p>
             </div>
             <div className="flex gap-3">
@@ -1393,25 +1712,23 @@ export default function Index() {
               </Link>
             </div>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8">
             {featuredCoaches.map((coach, i) => (
               <div
                 key={i}
                 className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition"
               >
-                <h3 className="text-lg font-bold text-gray-900">{coach.name}</h3>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {coach.name}
+                </h3>
                 <p className="text-sm text-gray-500">{coach.title}</p>
-
                 <div className="flex items-center gap-2 mt-3 text-sm">
                   <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                   <span className="font-semibold">{coach.rating}</span>
                   <span className="text-gray-400">
-                    {" "}
                     ({coach.reviews} {t.featured.reviewsSuffix})
                   </span>
                 </div>
-
                 <div className="flex flex-wrap gap-2 mt-4">
                   {coach.tags.map((tag: string) => (
                     <span
@@ -1422,7 +1739,6 @@ export default function Index() {
                     </span>
                   ))}
                 </div>
-
                 <div className="mt-6 flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle2 className="h-4 w-4" />
@@ -1439,18 +1755,25 @@ export default function Index() {
       {/* 2025 BLOĞU */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-gray-900">{t.y2025.title}</h2>
-          <p className="mt-4 text-gray-600 max-w-3xl mx-auto">{t.y2025.desc}</p>
-
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+            {t.y2025.title}
+          </h2>
+          <p className="mt-4 text-gray-600 max-w-3xl mx-auto">
+            {t.y2025.desc}
+          </p>
           <div className="mt-12 grid md:grid-cols-3 gap-8">
             {t.y2025.cards.map((c: any) => (
-              <div key={c.value} className="p-6 rounded-2xl border border-orange-200">
-                <div className="text-4xl font-black text-orange-600">{c.value}</div>
+              <div
+                key={c.value}
+                className="p-6 rounded-2xl border border-orange-200"
+              >
+                <div className="text-4xl font-black text-orange-600">
+                  {c.value}
+                </div>
                 <p className="mt-2 text-gray-600">{c.label}</p>
               </div>
             ))}
           </div>
-
           <div className="mt-10 flex justify-center gap-4 flex-wrap">
             {persona !== "company" ? (
               <>

@@ -20,6 +20,10 @@ import {
   ShieldCheck,
   BarChart3,
   Zap,
+  Crown,
+  Award,
+  MessageCircle,
+  ArrowUpRight,
 } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -239,6 +243,8 @@ export default function Index() {
         all: "Tüm Koçlar",
         verified: "Doğrulanmış",
         reviewsSuffix: "yorum",
+        viewProfile: "Profili İncele",
+        bookSession: "Seans Planla",
         coaches: [
           {
             title: "Kariyer & Liderlik Koçu",
@@ -464,6 +470,8 @@ export default function Index() {
         all: "All Coaches",
         verified: "Verified",
         reviewsSuffix: "reviews",
+        viewProfile: "View Profile",
+        bookSession: "Book Session",
         coaches: [
           {
             title: "Career & Leadership Coach",
@@ -692,6 +700,8 @@ export default function Index() {
         all: "كل المدربين",
         verified: "موثّق",
         reviewsSuffix: "تقييم",
+        viewProfile: "عرض الملف",
+        bookSession: "حجز جلسة",
         coaches: [
           {
             title: "مدربة مسار مهني وقيادة",
@@ -920,6 +930,8 @@ export default function Index() {
         all: "Tous les coachs",
         verified: "Vérifié",
         reviewsSuffix: "avis",
+        viewProfile: "Voir le profil",
+        bookSession: "Réserver",
         coaches: [
           {
             title: "Coach carrière & leadership",
@@ -1028,6 +1040,9 @@ export default function Index() {
       rating: "4.9",
       reviews: "120+",
       tags: t.featured.coaches[0].tags,
+      initials: "AY",
+      gradient: "from-red-500 to-orange-500",
+      sessions: "850+",
     },
     {
       name: "Mehmet Demir",
@@ -1035,6 +1050,9 @@ export default function Index() {
       rating: "5.0",
       reviews: "85+",
       tags: t.featured.coaches[1].tags,
+      initials: "MD",
+      gradient: "from-orange-500 to-amber-500",
+      sessions: "620+",
     },
     {
       name: "Zeynep Kaya",
@@ -1042,6 +1060,9 @@ export default function Index() {
       rating: "4.8",
       reviews: "200+",
       tags: t.featured.coaches[2].tags,
+      initials: "ZK",
+      gradient: "from-red-600 to-rose-500",
+      sessions: "1200+",
     },
   ];
 
@@ -1055,11 +1076,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-white">
       {/* HERO SLIDER */}
-      <HeroSlider
-        slides={currentSlides}
-        autoPlayInterval={5000}
-        height="h-[550px] md:h-[650px] lg:h-[700px]"
-      />
+      <HeroSlider slides={currentSlides} autoPlayInterval={5000} height="h-[550px] md:h-[650px] lg:h-[700px]" />
 
       {/* PERSONA SWITCHER + STATS */}
       <section className="relative z-20 -mt-8 pb-4">
@@ -1684,69 +1701,159 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ÖNE ÇIKAN KOÇLAR */}
-      <section className="py-18 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ✅ ÖNE ÇIKAN KOÇLAR — PREMIUM TASARIM                         */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+        {/* Decorative orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-red-600/20 to-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-br from-orange-500/15 to-amber-400/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-red-500/10 to-transparent rounded-full blur-2xl" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-28">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-14">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-orange-200 text-xs font-bold text-orange-700">
-                <Sparkles className="h-4 w-4" />
-                {t.featured.badge}
+              {/* Premium badge */}
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-red-600/20 to-orange-500/20 border border-red-500/30 backdrop-blur-sm">
+                <Crown className="h-4 w-4 text-orange-400" />
+                <span className="text-sm font-bold text-orange-300 tracking-wide">
+                  {t.featured.badge}
+                </span>
               </div>
-              <h2 className="mt-3 text-3xl font-black text-gray-900">
+              <h2 className="mt-5 text-4xl md:text-5xl font-black text-white leading-tight">
                 {t.featured.title}
               </h2>
-              <p className="mt-2 text-gray-600">{t.featured.desc}</p>
+              <p className="mt-3 text-lg text-gray-400 max-w-xl">
+                {t.featured.desc}
+              </p>
             </div>
             <div className="flex gap-3">
               <Link to="/pricing">
-                <Button className="bg-red-600 hover:bg-red-700 text-white rounded-xl">
+                <Button className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-6 hover:brightness-110 shadow-lg shadow-red-900/30 border-0">
+                  <Crown className="mr-2 h-4 w-4" />
                   {t.featured.premium}
                 </Button>
               </Link>
               <Link to="/coaches">
-                <Button variant="outline" className="rounded-xl">
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-xl border-gray-600 text-gray-300 font-semibold px-6 hover:bg-gray-800 hover:text-white hover:border-gray-500"
+                >
                   {t.featured.all}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+
+          {/* Coach Cards */}
+          <div className="grid md:grid-cols-3 gap-6">
             {featuredCoaches.map((coach, i) => (
               <div
                 key={i}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition"
+                className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
               >
-                <h3 className="text-lg font-bold text-gray-900">
-                  {coach.name}
-                </h3>
-                <p className="text-sm text-gray-500">{coach.title}</p>
-                <div className="flex items-center gap-2 mt-3 text-sm">
-                  <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                  <span className="font-semibold">{coach.rating}</span>
-                  <span className="text-gray-400">
-                    ({coach.reviews} {t.featured.reviewsSuffix})
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {coach.tags.map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-700"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {t.featured.verified}
+                {/* Card glow effect on hover */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+
+                {/* Card body */}
+                <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
+                  {/* Top row: Avatar + Crown */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar with gradient ring */}
+                      <div className={`relative`}>
+                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${coach.gradient} flex items-center justify-center shadow-lg shadow-red-900/20`}>
+                          <span className="text-xl font-black text-white">
+                            {coach.initials}
+                          </span>
+                        </div>
+                        {/* Online indicator */}
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+                          {coach.name}
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                          {coach.title}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
+                      <Award className="h-5 w-5 text-orange-400" />
+                    </div>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
+
+                  {/* Rating row */}
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex">
+                        {[...Array(5)].map((_, si) => (
+                          <Star
+                            key={si}
+                            className="h-4 w-4 text-amber-400 fill-amber-400"
+                          />
+                        ))}
+                      </div>
+                      <span className="text-lg font-black text-white ml-1">
+                        {coach.rating}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      ({coach.reviews} {t.featured.reviewsSuffix})
+                    </span>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {coach.tags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
+
+                  {/* Bottom: Verified + Sessions + CTA */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="text-xs font-semibold">
+                          {t.featured.verified}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-500">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span className="text-xs">{coach.sessions}</span>
+                      </div>
+                    </div>
+                    <button className="flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors group/btn">
+                      <span>{t.featured.viewProfile || "Profili İncele"}</span>
+                      <ArrowUpRight className="h-4 w-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Bottom accent line */}
+          <div className="mt-14 flex items-center gap-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
+            <Crown className="h-5 w-5 text-orange-500/40" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
           </div>
         </div>
       </section>

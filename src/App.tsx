@@ -19,7 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CookieConsent from "@/components/ui/CookieConsent"; 
+import CookieConsent from "@/components/CookieConsent"; // ✅ DÜZELTILDI — ui/ kaldırıldı
 
 // ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";

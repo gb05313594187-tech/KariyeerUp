@@ -25,12 +25,13 @@ import {
   Crown,
   Home as HomeIcon,
   Briefcase,
+  Building2,
+  Star,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 
-// ✅ DEĞİŞİKLİK 1: memo ile sarmalama — gereksiz re-render önleme
 const Navbar = memo(function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,76 +42,111 @@ const Navbar = memo(function Navbar() {
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
 
-  // KORUNAN: Çok dilli çeviriler
   const translations = {
     tr: {
       jobs: "İlanlar",
       mentor: "MentorCircle",
       webinar: "Webinar",
-      premium: "Bireysel Premium",
+      premium_user: "Bireysel Premium",
+      premium_coach: "Koç Premium",
+      premium_corporate: "Kurumsal Premium",
+      premium_default: "Bireysel Premium",
       dashboard: "Panel",
       login: "Giriş Yap",
       register: "Kayıt Ol",
       feed: "Ana Akış",
       profile: "Profil",
       settings: "Ayarlar",
-      logout: "Çıkış"
+      logout: "Çıkış",
     },
     en: {
       jobs: "Jobs",
       mentor: "MentorCircle",
       webinar: "Webinars",
-      premium: "Individual Premium",
+      premium_user: "Individual Premium",
+      premium_coach: "Coach Premium",
+      premium_corporate: "Corporate Premium",
+      premium_default: "Individual Premium",
       dashboard: "Dashboard",
       login: "Login",
       register: "Register",
       feed: "Feed",
       profile: "Profile",
       settings: "Settings",
-      logout: "Logout"
+      logout: "Logout",
     },
     ar: {
       jobs: "وظائف",
       mentor: "دائرة المنقذ",
       webinar: "ندوة عبر الويب",
-      premium: "بريميوم فردي",
+      premium_user: "بريميوم فردي",
+      premium_coach: "بريميوم المدرب",
+      premium_corporate: "بريميوم الشركات",
+      premium_default: "بريميوم فردي",
       dashboard: "لوحة القيادة",
       login: "تسجيل الدخول",
       register: "سجل الآن",
       feed: "التغذية الرئيسية",
       profile: "ملف شخصي",
       settings: "إعدادات",
-      logout: "تسجيل الخروج"
+      logout: "تسجيل الخروج",
     },
     fr: {
       jobs: "Emplois",
       mentor: "Cercle Mentor",
       webinar: "Webinaire",
-      premium: "Premium Individuel",
+      premium_user: "Premium Individuel",
+      premium_coach: "Premium Coach",
+      premium_corporate: "Premium Entreprise",
+      premium_default: "Premium Individuel",
       dashboard: "Tableau de bord",
       login: "Connexion",
       register: "S'inscrire",
       feed: "Flux",
       profile: "Profil",
       settings: "Paramètres",
-      logout: "Déconnexion"
-    }
+      logout: "Déconnexion",
+    },
   };
 
   const t = translations[language || "tr"];
 
-  // KORUNAN: Route değişiminde menü kapat
+  // ─── ROLE BAZLI PREMİUM LABEL & ICON & PATH ───
+  const premiumConfig = useMemo(() => {
+    if (role === "corporate") {
+      return {
+        label: t.premium_corporate,
+        icon: Building2,
+        path: "/bireysel-premium",
+      };
+    }
+    if (role === "coach") {
+      return {
+        label: t.premium_coach,
+        icon: Star,
+        path: "/bireysel-premium",
+      };
+    }
+    // user, admin, veya giriş yapmamış
+    return {
+      label: t.premium_default,
+      icon: Crown,
+      path: "/bireysel-premium",
+    };
+  }, [role, t]);
+
+  const PremiumIcon = premiumConfig.icon;
+
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // KORUNAN: isActive kontrolü
-  const isActive = useCallback((path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + "/"),
+  const isActive = useCallback(
+    (path: string) =>
+      location.pathname === path || location.pathname.startsWith(path + "/"),
     [location.pathname]
   );
 
-  // KORUNAN: Role bazlı hesaplamalar
   const roleLabel = useMemo(() => {
     if (role === "coach") return language === "tr" ? "Koç" : "Coach";
     if (role === "corporate") return language === "tr" ? "Şirket" : "Corporate";
@@ -146,14 +182,12 @@ const Navbar = memo(function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  const premiumPath = "/bireysel-premium";
   const socialHomePath = "/home";
   const jobsPath = "/jobs";
   const logoPath = "/";
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
 
-  // ✅ DEĞİŞİKLİK 2: Logout handler memo ile sarmalama
   const handleLogout = useCallback(async () => {
     await auth.logout();
     navigate("/");
@@ -162,18 +196,14 @@ const Navbar = memo(function Navbar() {
   const mobileBtn =
     "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition";
   const mobilePrimary =
-    "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-700 transition";
+    "w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left hover:bg-red-50 transition flex items-center gap-2";
 
-  // ✅ DEĞİŞİKLİK 3: Loading sırasında SON BİLİNEN DURUMU göster (skeleton yerine)
-  // İlk yüklemede (me === null ve loading === true) skeleton göster
-  // Sonraki loading'lerde (me zaten var) → mevcut UI'ı koru, skeleton GÖSTERME
   const showAuthSkeleton = auth.loading && me === null;
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-
-        {/* KORUNAN: Logo */}
+        {/* Logo */}
         <Link to={logoPath} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black">
             K
@@ -181,7 +211,7 @@ const Navbar = memo(function Navbar() {
           <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
         </Link>
 
-        {/* KORUNAN: Desktop Nav */}
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-2">
           {me && (
             <Link
@@ -224,17 +254,18 @@ const Navbar = memo(function Navbar() {
             {t.webinar}
           </Link>
 
-          <Link to={premiumPath}>
+          {/* ─── ROLE BAZLI PREMİUM BUTONU ─── */}
+          <Link to={premiumConfig.path}>
             <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
-              <Crown className="h-4 w-4 mr-2" />
-              {t.premium}
+              <PremiumIcon className="h-4 w-4 mr-2" />
+              {premiumConfig.label}
             </Button>
           </Link>
         </nav>
 
-        {/* KORUNAN: Right side */}
+        {/* Right side */}
         <div className="flex items-center gap-2">
-          {/* KORUNAN: Dil seçici */}
+          {/* Dil seçici */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="rounded-xl">
@@ -252,20 +283,18 @@ const Navbar = memo(function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* KORUNAN: Notification bell */}
+          {/* Notification bell */}
           <div className="hidden sm:block">
             <NotificationBell />
           </div>
 
-          {/* ✅ DEĞİŞİKLİK 4: Auth durumu — akıllı skeleton */}
+          {/* Auth durumu */}
           {showAuthSkeleton ? (
-            // Sadece ilk yüklemede skeleton göster
             <div className="hidden md:flex items-center gap-2">
               <div className="h-10 w-28 rounded-xl bg-gray-100 animate-pulse" />
               <div className="h-10 w-40 rounded-xl bg-gray-100 animate-pulse" />
             </div>
           ) : !me ? (
-            // KORUNAN: Giriş yapmamış kullanıcı
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
@@ -279,9 +308,7 @@ const Navbar = memo(function Navbar() {
               </Link>
             </div>
           ) : (
-            // KORUNAN: Giriş yapmış kullanıcı
             <div className="hidden md:flex items-center gap-2">
-              {/* ✅ DEĞİŞİKLİK 5: Loading sırasında butonlara opacity ekle (donma hissi azalır) */}
               <Link to={dashboardPath}>
                 <Button
                   className={`rounded-xl bg-red-600 hover:bg-red-700 text-white transition-opacity ${
@@ -351,7 +378,7 @@ const Navbar = memo(function Navbar() {
             </div>
           )}
 
-          {/* KORUNAN: Mobil hamburger */}
+          {/* Mobil hamburger */}
           <Button
             variant="outline"
             className="md:hidden rounded-xl"
@@ -362,7 +389,7 @@ const Navbar = memo(function Navbar() {
         </div>
       </div>
 
-      {/* KORUNAN: Mobil menü */}
+      {/* Mobil menü */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
@@ -384,8 +411,16 @@ const Navbar = memo(function Navbar() {
               {t.webinar}
             </button>
 
-            <Link to={premiumPath} className="block" onClick={() => setMobileOpen(false)}>
-              <div className={mobilePrimary}>{t.premium}</div>
+            {/* ─── MOBİL PREMİUM BUTONU ─── */}
+            <Link
+              to={premiumConfig.path}
+              className="block"
+              onClick={() => setMobileOpen(false)}
+            >
+              <div className={mobilePrimary}>
+                <PremiumIcon className="h-4 w-4" />
+                {premiumConfig.label}
+              </div>
             </Link>
 
             <div className="pt-2 border-t space-y-2">

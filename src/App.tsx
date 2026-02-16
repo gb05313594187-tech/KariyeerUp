@@ -19,6 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // LAYOUT (Public)
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CookieConsent from "@/components/ui/CookieConsent"; // Çerez onayı eklendi
 
 // ✅ Admin Layout
 import AdminLayout from "@/layouts/AdminLayout";
@@ -116,13 +117,19 @@ ReactGA.initialize("G-R39ELRDLKQ");
 
 /* -------------------------------------------------
    Analytics Tracker Component
-   (Her sayfa değişiminde Google'a veri gönderir)
+   (Sadece kullanıcı çerezleri kabul ettiyse veri gönderir)
 -------------------------------------------------- */
 function AnalyticsTracker() {
   const location = useLocation();
 
   useEffect(() => {
-    ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+    // LocalStorage'dan kontrol et
+    const consent = localStorage.getItem('kariyeer_cookie_consent');
+    
+    // Sadece "accepted" ise veri gönder
+    if (consent === 'accepted') {
+      ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+    }
   }, [location]);
 
   return null;
@@ -139,6 +146,7 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <CookieConsent /> {/* Çerez bandı buraya eklendi */}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ReactGA from "react-ga4";
 
-const GA_ID = "G-Y6SC2CRG53";
+const GA_ID = "G-R39ELRDLKQ";
 
 const translations = {
   tr: {

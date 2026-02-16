@@ -1,3 +1,4 @@
+// src/components/Footer.tsx
 // @ts-nocheck
 import { Link } from "react-router-dom";
 import {
@@ -17,7 +18,7 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white pt-16 pb-8 mt-auto border-t-4 border-orange-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
-          
+
           {/* 1. KOLON */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
@@ -34,7 +35,7 @@ export default function Footer() {
             <div className="space-y-3 text-sm text-gray-300">
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-orange-500" />
-                <span>Levent, İstanbul</span>
+                <span>Avcılar, İstanbul</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-orange-500" />
@@ -93,7 +94,7 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* SSL + ÖDEME LOGOLARI (PREMIUM DÜZENLEME) */}
+            {/* SSL + ÖDEME LOGOLARI */}
             <div className="pt-4 border-t border-gray-800 space-y-4">
               <div className="flex items-center gap-2 text-green-400 text-sm font-bold">
                 <ShieldCheck className="w-5 h-5" />

@@ -63,7 +63,7 @@ export default function Register() {
           data: {
             display_name: formData.fullName,
             role, // ✅ user | coach | corporate
-            user_type: formData.userType, // ✅ senin mevcut mantığın (individual/coach/company) kalabilir
+            user_type: formData.userType, 
           },
         },
       });
@@ -71,13 +71,17 @@ export default function Register() {
       if (error) throw error;
 
       if (data.user) {
-        // 2) profiles tablosuna insert (senin kolonlara göre)
+        // 2) profiles tablosuna insert (Tablo şemasına tam uyumlu)
         const { error: profileError } = await supabase.from("profiles").insert([
           {
             id: data.user.id,
+            email: formData.email,
+            full_name: formData.fullName, // Tablonda NO NULL (Zorunlu)
             display_name: formData.fullName,
-            role, // ✅ asıl yetki kaynağın bu olsun
-            user_type: formData.userType, // individual/coach/company
+            role, // user | coach | corporate
+            user_type: formData.userType, // individual | coach | company
+            kvkk_consent: true, // ✅ Yasal Onay
+            consent_date: new Date().toISOString(), // ✅ Onay Tarihi
             phone: null,
             country: null,
           },
@@ -85,7 +89,7 @@ export default function Register() {
 
         if (profileError) {
           console.error("Profil insert hatası:", profileError);
-          // auth kaydı var, devam edebiliriz
+          // auth kaydı var, devam edebiliriz ama hatayı logla
         }
       }
 
@@ -196,7 +200,7 @@ export default function Register() {
               </RadioGroup>
             </div>
 
-            {/* KVKK Onay Kutusu eklendi */}
+            {/* KVKK Onay Kutusu */}
             <div className="flex items-start space-x-2 py-2">
               <input
                 type="checkbox"
@@ -206,14 +210,14 @@ export default function Register() {
                 onChange={(e) => setKvkkAccepted(e.target.checked)}
               />
               <label htmlFor="kvkk" className="text-xs text-gray-600 leading-tight">
-                <Link to="/privacy" className="text-[#D32F2F] hover:underline font-semibold">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum. *
+                <Link to="/privacy" className="text-[#D32F2F] hover:underline font-semibold underline">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum. *
               </label>
             </div>
 
             <Button
               type="submit"
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
-              disabled={isLoading || !kvkkAccepted} // Onaylanmadan buton aktif olmaz
+              disabled={isLoading || !kvkkAccepted} 
             >
               {isLoading ? "Kaydediliyor..." : "Kayıt Ol"}
             </Button>

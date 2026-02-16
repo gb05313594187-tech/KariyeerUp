@@ -435,7 +435,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_individual_feat5: "MentorCircle etkinliklerine erişim",
     pricing_individual_feat6: "Webinar kütüphanesi erişimi",
     pricing_individual_cta_primary: "Planı Seç",
-    pricing_individual_cta_secondary: "Webinarları İncele",
+    pricing_individual_cta_secondary: "Koçları İncele",
     pricing_note_label: "Not",
     pricing_individual_note: "Seans ücretleri koçun belirlediği tarife üzerinden ayrıca faturalandırılır. Platform abonelik ücreti yoktur; yalnızca aldığınız seanslar için ödeme yaparsınız.",
 
@@ -451,7 +451,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_corporate_feat7: "Toplu seans paketleri ve indirimler",
     pricing_corporate_feat8: "Çalışan memnuniyet takibi",
     pricing_corporate_cta_primary: "Demo Talep Et",
-    pricing_corporate_cta_secondary: "Kurumsal Paneli Gör",
+    pricing_corporate_cta_secondary: "Planları İncele",
     pricing_corporate_card1_title: "Özel Raporlama",
     pricing_corporate_card1_desc: "Ekip bazlı ilerleme ve çıktılar aylık rapor olarak sunulur.",
     pricing_corporate_card2_title: "Öncelikli Destek",
@@ -470,7 +470,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_coach_feat6: "Kurumsal iş birliği fırsatları",
     pricing_coach_feat7: "Global danışan erişimi (çok dil desteği)",
     pricing_coach_cta_primary: "Koç Olarak Başvur",
-    pricing_coach_cta_secondary: "Koç Panelini Gör",
+    pricing_coach_cta_secondary: "Nasıl Çalışır?",
     pricing_coach_note: "İlk 50 koç için ilk 6 ay %10 komisyon. Sonrasında standart %20 komisyon uygulanır. Öne Çıkan Koçlar alanı ek ücretli sponsorlu vitrindir.",
 
     pricing_faq_title: "Sık Sorulan Sorular",
@@ -913,7 +913,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_individual_feat5: "Access to MentorCircle events",
     pricing_individual_feat6: "Webinar library access",
     pricing_individual_cta_primary: "Choose Plan",
-    pricing_individual_cta_secondary: "Browse Webinars",
+    pricing_individual_cta_secondary: "Browse Coaches",
     pricing_note_label: "Note",
     pricing_individual_note: "Session fees are billed separately based on the coach's rate. There is no platform subscription fee; you only pay for the sessions you take.",
 
@@ -929,7 +929,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_corporate_feat7: "Bulk session packages and discounts",
     pricing_corporate_feat8: "Employee satisfaction tracking",
     pricing_corporate_cta_primary: "Request Demo",
-    pricing_corporate_cta_secondary: "View Corporate Panel",
+    pricing_corporate_cta_secondary: "View Plans",   
     pricing_corporate_card1_title: "Custom Reporting",
     pricing_corporate_card1_desc: "Team-based progress and outputs delivered as monthly reports.",
     pricing_corporate_card2_title: "Priority Support",
@@ -948,7 +948,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_coach_feat6: "Corporate collaboration opportunities",
     pricing_coach_feat7: "Global client access (multi-language support)",
     pricing_coach_cta_primary: "Apply as Coach",
-    pricing_coach_cta_secondary: "View Coach Panel",
+    pricing_coach_cta_secondary: "How It Works?",    
     pricing_coach_note: "10% commission for the first 50 coaches during the first 6 months. Standard 20% commission applies afterwards. Featured Coaches area is a paid sponsored showcase.",
 
     pricing_faq_title: "Frequently Asked Questions",
@@ -1500,7 +1500,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_individual_feat5: "Suivi de progression basé sur l'objectif",
     pricing_individual_feat6: "Support par email prioritaire",
     pricing_individual_cta_primary: "Commencer",
-    pricing_individual_cta_secondary: "Voir les webinaires",
+    pricing_individual_cta_secondary: "Voir les coachs",
     pricing_note_label: "Bon à savoir",
     pricing_individual_note:
       "Première séance découverte offerte. Annulation possible à tout moment.",
@@ -1518,7 +1518,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_corporate_feat7: "Facturation centralisée",
     pricing_corporate_feat8: "SLA : réponse sous 24h",
     pricing_corporate_cta_primary: "Demander une démo",
-    pricing_corporate_cta_secondary: "Tableau de bord entreprise",
+    pricing_corporate_cta_secondary: "Voir les plans",      
     pricing_corporate_card1_title: "Rapports & Analytics",
     pricing_corporate_card1_desc:
       "Suivi détaillé de la progression de chaque collaborateur et rapports exportables.",
@@ -1541,7 +1541,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_coach_feat6: "Option slot premium (page d'accueil)",
     pricing_coach_feat7: "Commission réduite : 10% les 6 premiers mois",
     pricing_coach_cta_primary: "Rejoindre en tant que coach",
-    pricing_coach_cta_secondary: "Tableau de bord coach",
+    pricing_coach_cta_secondary: "Comment ça marche ?",      
     pricing_coach_note:
       "Commission de 10% pour les 50 premiers coachs (6 premiers mois), puis 20% standard. Slots premium disponibles en option.",
 
@@ -2077,7 +2077,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_individual_feat5: "تتبع تقدم قائم على الهدف",
     pricing_individual_feat6: "دعم بريد إلكتروني ذو أولوية",
     pricing_individual_cta_primary: "ابدأ الآن",
-    pricing_individual_cta_secondary: "عرض الندوات",
+    pricing_individual_cta_secondary: "استعرض المدربين",
     pricing_note_label: "معلومة مهمة",
     pricing_individual_note:
       "الجلسة التعريفية الأولى مجانية. يمكنك الإلغاء في أي وقت.",
@@ -2095,7 +2095,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_corporate_feat7: "فوترة مركزية",
     pricing_corporate_feat8: "SLA: رد خلال 24 ساعة",
     pricing_corporate_cta_primary: "طلب عرض تجريبي",
-    pricing_corporate_cta_secondary: "لوحة تحكم المؤسسة",
+    pricing_corporate_cta_secondary: "عرض الخطط",      
     pricing_corporate_card1_title: "تقارير وتحليلات",
     pricing_corporate_card1_desc:
       "تتبع مفصّل لتقدم كل موظف وتقارير قابلة للتصدير.",
@@ -2118,7 +2118,7 @@ export const translations: Record<Language, Record<string, string>> = {
     pricing_coach_feat6: "خيار مساحة مميّزة (الصفحة الرئيسية)",
     pricing_coach_feat7: "عمولة مخفّضة: 10% أول 6 أشهر",
     pricing_coach_cta_primary: "انضم كمدرب",
-    pricing_coach_cta_secondary: "لوحة تحكم المدرب",
+    pricing_coach_cta_secondary: "كيف يعمل؟",      
     pricing_coach_note:
       "عمولة 10% لأول 50 مدربًا (أول 6 أشهر)، ثم 20% قياسي. المساحات المميّزة متاحة كخيار إضافي.",
 

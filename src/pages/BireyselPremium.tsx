@@ -1,6 +1,5 @@
 // src/pages/BireyselPremium.tsx
 // @ts-nocheck
-import { useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +14,12 @@ import {
   Globe,
   Briefcase,
   Loader2,
+  TrendingUp,
+  Target,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 // ─── ROLE BAZLI KONFİGÜRASYON ───
@@ -31,55 +34,49 @@ const PLAN_CONFIG = {
       ctaSecondary: "Koçları İncele",
       ctaSecondaryPath: "/coaches",
       card1Title: "Premium ayrıcalıklar",
-      card1Desc:
-        "Koçluk deneyimini daha hızlı ve daha etkili hale getirir.",
+      card1Desc: "Koçluk deneyimini daha hızlı ve daha etkili hale getirir.",
       card2Title: "Güvenli ödeme",
-      card2Desc:
-        "Ödeme PayTR altyapısında tamamlanır. Kart bilgisi platformda tutulmaz.",
+      card2Desc: "Ödeme PayTR altyapısında tamamlanır. Kart bilgisi platformda tutulmaz.",
       card3Title: "Tek tıkla başla",
       card3Desc: "Satın aldıktan sonra premium koçlara anında eriş.",
       featuresTitle: "Neler dahil?",
       price: "199 ₺",
       period: "/ ay",
       priceLabel: "Aylık",
-      priceNote:
-        "*Fiyat bilgilendirme amaçlıdır. Ödeme sırasında güncel fiyat geçerlidir.",
+      priceNote: "*Fiyat bilgilendirme amaçlıdır. Ödeme sırasında güncel fiyat geçerlidir.",
     },
     en: {
       badge: "Individual Premium",
       title: "Accelerate your career.\nGo premium.",
-      subtitle:
-        "Access better coaches, book faster, and move forward with a clear plan.",
+      subtitle: "Access better coaches, book faster, and move forward with a clear plan.",
       cta: "Buy Premium",
       ctaSecondary: "Browse Coaches",
       ctaSecondaryPath: "/coaches",
       card1Title: "Premium benefits",
       card1Desc: "Makes your coaching experience faster and more effective.",
       card2Title: "Secure payment",
-      card2Desc:
-        "Payment is processed via PayTR. Card info is never stored on platform.",
+      card2Desc: "Payment is processed via PayTR. Card info is never stored on platform.",
       card3Title: "Start instantly",
       card3Desc: "Access premium coaches immediately after purchase.",
       featuresTitle: "What's included?",
       price: "199 ₺",
       period: "/ mo",
       priceLabel: "Monthly",
-      priceNote:
-        "*Price is informational. Actual price applies at checkout.",
+      priceNote: "*Price is informational. Actual price applies at checkout.",
     },
     features: {
       tr: [
         "Premium koçlara erişim",
         "Öncelikli rezervasyon",
         "Gelişmiş profil ve CV optimizasyonu",
-        "Webinar ve içerik arşivi",
+        "Seans sonrası aksiyon planı",
         "Öncelikli destek",
       ],
       en: [
         "Access to premium coaches",
         "Priority booking",
         "Advanced profile & CV optimization",
-        "Webinar & content archive",
+        "Post-session action plan",
         "Priority support",
       ],
     },
@@ -93,49 +90,40 @@ const PLAN_CONFIG = {
     tr: {
       badge: "Koç Premium",
       title: "Daha fazla danışana ulaş.\nÖne çıkan koç ol.",
-      subtitle:
-        "Profilini öne çıkar, daha fazla danışan eşleşmesi al ve gelirini artır.",
+      subtitle: "Profilini öne çıkar, daha fazla danışan eşleşmesi al ve gelirini artır.",
       cta: "Koç Premium Satın Al",
-      ctaSecondary: "Koç Panelini Gör",
-      ctaSecondaryPath: "/coach/dashboard",
+      ctaSecondary: "Nasıl Çalışır?",
+      ctaSecondaryPath: "/pricing",
       card1Title: "Öne çıkan profil",
-      card1Desc:
-        "Arama sonuçlarında ve ana sayfada öncelikli görünürsün.",
+      card1Desc: "Arama sonuçlarında ve ana sayfada öncelikli görünürsün.",
       card2Title: "Daha fazla eşleşme",
-      card2Desc:
-        "AI eşleşme algoritmasında premium koçlara öncelik verilir.",
+      card2Desc: "AI eşleşme algoritmasında premium koçlara öncelik verilir.",
       card3Title: "Gelir analitikleri",
-      card3Desc:
-        "Detaylı performans raporları ve gelir takibi.",
+      card3Desc: "Detaylı performans raporları ve gelir takibi.",
       featuresTitle: "Koç Premium ayrıcalıkları",
       price: "299 ₺",
       period: "/ ay",
       priceLabel: "Aylık",
-      priceNote:
-        "*Fiyat bilgilendirme amaçlıdır. Ödeme sırasında güncel fiyat geçerlidir.",
+      priceNote: "*Fiyat bilgilendirme amaçlıdır. Ödeme sırasında güncel fiyat geçerlidir.",
     },
     en: {
       badge: "Coach Premium",
       title: "Reach more clients.\nBecome a featured coach.",
-      subtitle:
-        "Boost your profile, get more client matches, and grow your income.",
+      subtitle: "Boost your profile, get more client matches, and grow your income.",
       cta: "Buy Coach Premium",
-      ctaSecondary: "View Coach Panel",
-      ctaSecondaryPath: "/coach/dashboard",
+      ctaSecondary: "How It Works?",
+      ctaSecondaryPath: "/pricing",
       card1Title: "Featured profile",
-      card1Desc:
-        "Get priority placement in search results and homepage.",
+      card1Desc: "Get priority placement in search results and homepage.",
       card2Title: "More matches",
-      card2Desc:
-        "AI matching algorithm prioritizes premium coaches.",
+      card2Desc: "AI matching algorithm prioritizes premium coaches.",
       card3Title: "Revenue analytics",
       card3Desc: "Detailed performance reports and income tracking.",
       featuresTitle: "Coach Premium benefits",
       price: "299 ₺",
       period: "/ mo",
       priceLabel: "Monthly",
-      priceNote:
-        "*Price is informational. Actual price applies at checkout.",
+      priceNote: "*Price is informational. Actual price applies at checkout.",
     },
     features: {
       tr: [
@@ -167,35 +155,29 @@ const PLAN_CONFIG = {
     tr: {
       badge: "Kurumsal Premium",
       title: "Ekibinizi güçlendirin.\nÖlçeklenebilir koçluk.",
-      subtitle:
-        "Çalışanlarınız için profesyonel koçluk programları. Raporlama ve eşleşme tek yerden.",
-      cta: "Kurumsal Premium Satın Al",
-      ctaSecondary: "Kurumsal Paneli Gör",
-      ctaSecondaryPath: "/corporate/dashboard",
+      subtitle: "Çalışanlarınız için profesyonel koçluk programları. Raporlama ve eşleşme tek yerden.",
+      cta: "Demo Talep Et",
+      ctaSecondary: "Planları İncele",
+      ctaSecondaryPath: "/pricing",
       card1Title: "Toplu eşleşme",
-      card1Desc:
-        "Rol ve seviye bazlı otomatik koç eşleşmesi.",
+      card1Desc: "Rol ve seviye bazlı otomatik koç eşleşmesi.",
       card2Title: "Detaylı raporlama",
-      card2Desc:
-        "Ekip bazlı ilerleme raporları, PDF ve e-posta ile.",
+      card2Desc: "Ekip bazlı ilerleme raporları, PDF ve e-posta ile.",
       card3Title: "Özel müşteri temsilcisi",
-      card3Desc:
-        "SLA kapsamında 24 saat içinde dönüş garantisi.",
+      card3Desc: "SLA kapsamında 24 saat içinde dönüş garantisi.",
       featuresTitle: "Kurumsal Premium ayrıcalıkları",
       price: "Teklif Al",
       period: "",
       priceLabel: "Kurumsal",
-      priceNote:
-        "*Fiyat ekip büyüklüğü ve ihtiyaca göre belirlenir. Demo talep edin.",
+      priceNote: "*Fiyat ekip büyüklüğü ve ihtiyaca göre belirlenir. Demo talep edin.",
     },
     en: {
       badge: "Corporate Premium",
       title: "Empower your team.\nScalable coaching.",
-      subtitle:
-        "Professional coaching programs for your employees. Reporting and matching in one place.",
-      cta: "Buy Corporate Premium",
-      ctaSecondary: "View Corporate Panel",
-      ctaSecondaryPath: "/corporate/dashboard",
+      subtitle: "Professional coaching programs for your employees. Reporting and matching in one place.",
+      cta: "Request Demo",
+      ctaSecondary: "View Plans",
+      ctaSecondaryPath: "/pricing",
       card1Title: "Bulk matching",
       card1Desc: "Automatic coach matching by role and level.",
       card2Title: "Detailed reporting",
@@ -206,8 +188,7 @@ const PLAN_CONFIG = {
       price: "Get Quote",
       period: "",
       priceLabel: "Corporate",
-      priceNote:
-        "*Pricing depends on team size and needs. Request a demo.",
+      priceNote: "*Pricing depends on team size and needs. Request a demo.",
     },
     features: {
       tr: [
@@ -234,7 +215,7 @@ const PLAN_CONFIG = {
     plan: "corporate",
     icon: Building2,
     gradient: "from-red-700 to-red-500",
-    cardIcons: [Globe, Briefcase, Users2],
+    cardIcons: [Target, Zap, Users2],
   },
 };
 
@@ -242,10 +223,11 @@ export default function BireyselPremium() {
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
+  const { language } = useLanguage();
 
   const authed = !!auth?.user;
   const role = auth?.role || "user";
-  const lang = "tr"; // TODO: useLanguage() ile değiştir
+  const lang = (language || "tr") as "tr" | "en";
 
   // ─── AUTH LOADING GUARD ───
   if (auth.loading) {
@@ -277,7 +259,6 @@ export default function BireyselPremium() {
     }
 
     if (planKey === "corporate") {
-      // Kurumsal için demo talep formu
       navigate("/corporate/demo-request");
       return;
     }
@@ -290,7 +271,7 @@ export default function BireyselPremium() {
       {/* HERO */}
       <section className={`bg-gradient-to-r ${config.gradient}`}>
         <div className="max-w-6xl mx-auto px-4 py-14 text-white">
-          <div className="inline-flex items-center gap-2 bg-white/15 px-4 py-2 rounded-full text-sm">
+          <div className="inline-flex items-center gap-2 bg-white/15 px-4 py-2 rounded-full text-sm font-semibold">
             <PlanIcon className="w-4 h-4" />
             {texts.badge}
           </div>
@@ -342,11 +323,9 @@ export default function BireyselPremium() {
 
         {/* FEATURES + PRICING */}
         <div className="mt-10 rounded-2xl border border-gray-200 p-6">
-          <div className="text-lg font-extrabold text-gray-900">
-            {texts.featuresTitle}
-          </div>
+          <div className="text-lg font-extrabold text-gray-900">{texts.featuresTitle}</div>
           <div className="mt-4 grid md:grid-cols-2 gap-3">
-            {features.map((f) => (
+            {features.map((f: string) => (
               <div key={f} className="flex items-start gap-2 text-gray-700">
                 <Check className="w-5 h-5 text-green-600 mt-0.5" />
                 <span>{f}</span>
@@ -360,9 +339,7 @@ export default function BireyselPremium() {
               <div className="text-3xl font-extrabold text-gray-900">
                 {texts.price}{" "}
                 {texts.period && (
-                  <span className="text-base font-semibold text-gray-500">
-                    {texts.period}
-                  </span>
+                  <span className="text-base font-semibold text-gray-500">{texts.period}</span>
                 )}
               </div>
               <div className="text-xs text-gray-500 mt-1">{texts.priceNote}</div>

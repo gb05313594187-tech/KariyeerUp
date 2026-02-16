@@ -16,18 +16,122 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const translations = {
+  tr: {
+    title: "Kayıt Ol",
+    subtitle: "Yeni bir Kariyeer hesabı oluşturun",
+    fullName: "Ad Soyad",
+    fullNamePlaceholder: "Adınız Soyadınız",
+    email: "E-posta",
+    emailPlaceholder: "ornek@email.com",
+    password: "Şifre (En az 6 karakter)",
+    confirmPassword: "Şifre Tekrar",
+    accountType: "Hesap Türü",
+    individual: "Bireysel Kullanıcı",
+    coach: "Koç",
+    company: "Şirket",
+    kvkkText: "'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum.",
+    kvkkLink: "KVKK Aydınlatma Metni",
+    submit: "Kayıt Ol",
+    submitting: "Kaydediliyor...",
+    alreadyHaveAccount: "Zaten hesabınız var mı?",
+    login: "Giriş Yap",
+    kvkkError: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız.",
+    passwordMismatch: "Şifreler eşleşmiyor!",
+    success: "Kayıt başarılı!",
+    error: "Kayıt başarısız",
+  },
+  en: {
+    title: "Register",
+    subtitle: "Create a new Kariyeer account",
+    fullName: "Full Name",
+    fullNamePlaceholder: "Your Full Name",
+    email: "Email",
+    emailPlaceholder: "example@email.com",
+    password: "Password (At least 6 characters)",
+    confirmPassword: "Confirm Password",
+    accountType: "Account Type",
+    individual: "Individual User",
+    coach: "Coach",
+    company: "Company",
+    kvkkText: " and I consent to the processing of my personal data.",
+    kvkkLink: "Privacy Policy",
+    submit: "Register",
+    submitting: "Registering...",
+    alreadyHaveAccount: "Already have an account?",
+    login: "Login",
+    kvkkError: "You must accept the Privacy Policy to continue.",
+    passwordMismatch: "Passwords do not match!",
+    success: "Registration successful!",
+    error: "Registration failed",
+  },
+  ar: {
+    title: "إنشاء حساب",
+    subtitle: "أنشئ حساب Kariyeer جديد",
+    fullName: "الاسم الكامل",
+    fullNamePlaceholder: "اسمك الكامل",
+    email: "البريد الإلكتروني",
+    emailPlaceholder: "example@email.com",
+    password: "كلمة المرور (6 أحرف على الأقل)",
+    confirmPassword: "تأكيد كلمة المرور",
+    accountType: "نوع الحساب",
+    individual: "مستخدم فردي",
+    coach: "مدرب",
+    company: "شركة",
+    kvkkText: " وأوافق على معالجة بياناتي الشخصية.",
+    kvkkLink: "سياسة الخصوصية",
+    submit: "إنشاء حساب",
+    submitting: "جاري التسجيل...",
+    alreadyHaveAccount: "هل لديك حساب بالفعل؟",
+    login: "تسجيل الدخول",
+    kvkkError: "يجب الموافقة على سياسة الخصوصية للمتابعة.",
+    passwordMismatch: "كلمات المرور غير متطابقة!",
+    success: "تم التسجيل بنجاح!",
+    error: "فشل التسجيل",
+  },
+  fr: {
+    title: "S'inscrire",
+    subtitle: "Créez un nouveau compte Kariyeer",
+    fullName: "Nom complet",
+    fullNamePlaceholder: "Votre nom complet",
+    email: "E-mail",
+    emailPlaceholder: "exemple@email.com",
+    password: "Mot de passe (Au moins 6 caractères)",
+    confirmPassword: "Confirmer le mot de passe",
+    accountType: "Type de compte",
+    individual: "Utilisateur individuel",
+    coach: "Coach",
+    company: "Entreprise",
+    kvkkText: " et je consens au traitement de mes données personnelles.",
+    kvkkLink: "Politique de confidentialité",
+    submit: "S'inscrire",
+    submitting: "Inscription en cours...",
+    alreadyHaveAccount: "Vous avez déjà un compte ?",
+    login: "Se connecter",
+    kvkkError: "Vous devez accepter la Politique de confidentialité pour continuer.",
+    passwordMismatch: "Les mots de passe ne correspondent pas !",
+    success: "Inscription réussie !",
+    error: "Échec de l'inscription",
+  },
+};
 
 export default function Register() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [kvkkAccepted, setKvkkAccepted] = useState(false); // KVKK onayı için state
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "individual", // individual | coach | company
+    userType: "individual",
   });
+
+  const t = translations[language] || translations.tr;
+  const isRTL = language === "ar";
 
   const mapRole = (userType: string) => {
     if (userType === "coach") return "coach";
@@ -38,16 +142,15 @@ export default function Register() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    // KVKK Kontrolü
     if (!kvkkAccepted) {
-      toast.error("Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız.");
+      toast.error(t.kvkkError);
       return;
     }
 
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Şifreler eşleşmiyor!");
+      toast.error(t.passwordMismatch);
       setIsLoading(false);
       return;
     }
@@ -55,15 +158,14 @@ export default function Register() {
     try {
       const role = mapRole(formData.userType);
 
-      // 1) Supabase Auth'a kayıt (metadata)
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             display_name: formData.fullName,
-            role, // ✅ user | coach | corporate
-            user_type: formData.userType, 
+            role,
+            user_type: formData.userType,
           },
         },
       });
@@ -71,17 +173,16 @@ export default function Register() {
       if (error) throw error;
 
       if (data.user) {
-        // 2) profiles tablosuna insert (Tablo şemasına tam uyumlu)
         const { error: profileError } = await supabase.from("profiles").insert([
           {
             id: data.user.id,
             email: formData.email,
-            full_name: formData.fullName, // Tablonda NO NULL (Zorunlu)
+            full_name: formData.fullName,
             display_name: formData.fullName,
-            role, // user | coach | corporate
-            user_type: formData.userType, // individual | coach | company
-            kvkk_consent: true, // ✅ Yasal Onay
-            consent_date: new Date().toISOString(), // ✅ Onay Tarihi
+            role,
+            user_type: formData.userType,
+            kvkk_consent: true,
+            consent_date: new Date().toISOString(),
             phone: null,
             country: null,
           },
@@ -89,11 +190,10 @@ export default function Register() {
 
         if (profileError) {
           console.error("Profil insert hatası:", profileError);
-          // auth kaydı var, devam edebiliriz ama hatayı logla
         }
       }
 
-      toast.success("Kayıt başarılı!");
+      toast.success(t.success);
 
       if (formData.userType === "coach") {
         navigate("/coach-application");
@@ -102,32 +202,32 @@ export default function Register() {
       }
     } catch (err: any) {
       console.error("Kayıt hatası:", err);
-      toast.error(`Kayıt başarısız: ${err.message}`);
+      toast.error(`${t.error}: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF5F2] p-4">
+    <div className={`min-h-screen flex items-center justify-center bg-[#FFF5F2] p-4 ${isRTL ? "rtl text-right" : ""}`}>
       <Card className="w-full max-w-md shadow-xl border-t-4 border-t-[#D32F2F]">
         <CardHeader className="space-y-1 text-center">
           <div className="w-12 h-12 bg-[#D32F2F] rounded-lg mx-auto flex items-center justify-center mb-2">
             <span className="text-white font-bold text-xl">K</span>
           </div>
           <CardTitle className="text-2xl font-bold text-[#D32F2F]">
-            Kayıt Ol
+            {t.title}
           </CardTitle>
-          <CardDescription>Yeni bir Kariyeer hesabı oluşturun</CardDescription>
+          <CardDescription>{t.subtitle}</CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Ad Soyad *</Label>
+              <Label htmlFor="fullName">{t.fullName} *</Label>
               <Input
                 id="fullName"
-                placeholder="Adınız Soyadınız"
+                placeholder={t.fullNamePlaceholder}
                 required
                 value={formData.fullName}
                 onChange={(e: any) =>
@@ -137,11 +237,11 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">E-posta *</Label>
+              <Label htmlFor="email">{t.email} *</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="ornek@email.com"
+                placeholder={t.emailPlaceholder}
                 required
                 value={formData.email}
                 onChange={(e: any) =>
@@ -151,7 +251,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Şifre * (En az 6 karakter)</Label>
+              <Label htmlFor="password">{t.password} *</Label>
               <Input
                 id="password"
                 type="password"
@@ -164,7 +264,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Şifre Tekrar *</Label>
+              <Label htmlFor="confirmPassword">{t.confirmPassword} *</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -177,7 +277,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label>Hesap Türü</Label>
+              <Label>{t.accountType}</Label>
               <RadioGroup
                 value={formData.userType}
                 onValueChange={(value) =>
@@ -185,23 +285,23 @@ export default function Register() {
                 }
                 className="flex flex-col space-y-1"
               >
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                   <RadioGroupItem value="individual" id="individual" />
-                  <Label htmlFor="individual">Bireysel Kullanıcı</Label>
+                  <Label htmlFor="individual">{t.individual}</Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                   <RadioGroupItem value="coach" id="coach" />
-                  <Label htmlFor="coach">Koç</Label>
+                  <Label htmlFor="coach">{t.coach}</Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                   <RadioGroupItem value="company" id="company" />
-                  <Label htmlFor="company">Şirket</Label>
+                  <Label htmlFor="company">{t.company}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* KVKK Onay Kutusu */}
-            <div className="flex items-start space-x-2 py-2">
+            <div className={`flex items-start py-2 ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
               <input
                 type="checkbox"
                 id="kvkk"
@@ -210,28 +310,31 @@ export default function Register() {
                 onChange={(e) => setKvkkAccepted(e.target.checked)}
               />
               <label htmlFor="kvkk" className="text-xs text-gray-600 leading-tight">
-                <Link to="/privacy" className="text-[#D32F2F] hover:underline font-semibold underline">KVKK Aydınlatma Metni</Link>'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum. *
+                <Link to="/privacy" className="text-[#D32F2F] hover:underline font-semibold underline">
+                  {t.kvkkLink}
+                </Link>
+                {t.kvkkText} *
               </label>
             </div>
 
             <Button
               type="submit"
               className="w-full bg-[#C62828] hover:bg-[#B71C1C] text-white font-bold"
-              disabled={isLoading || !kvkkAccepted} 
+              disabled={isLoading || !kvkkAccepted}
             >
-              {isLoading ? "Kaydediliyor..." : "Kayıt Ol"}
+              {isLoading ? t.submitting : t.submit}
             </Button>
           </form>
         </CardContent>
 
         <CardFooter className="flex justify-center">
           <div className="text-sm text-gray-500">
-            Zaten hesabınız var mı?{" "}
+            {t.alreadyHaveAccount}{" "}
             <Link
               to="/login"
               className="text-[#D32F2F] hover:underline font-semibold"
             >
-              Giriş Yap
+              {t.login}
             </Link>
           </div>
         </CardFooter>

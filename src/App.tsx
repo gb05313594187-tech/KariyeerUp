@@ -1,14 +1,17 @@
 // src/pages/App.tsx
 // @ts-nocheck
 
+import { useEffect } from "react"; // Sayfa takibi için eklendi
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   Outlet,
+  useLocation, // Sayfa yolu takibi için eklendi
 } from "react-router-dom";
 import { Toaster } from "sonner";
+import ReactGA from "react-ga4"; // Analytics kütüphanesi eklendi
 
 // ✅ AUTH PROVIDER
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -108,6 +111,23 @@ import CorporateJobs from "@/pages/CorporateJobs";
 // ✅ MEETING ROOM - Jitsi Video Seans
 import MeetingRoom from "@/pages/MeetingRoom";
 
+// ✅ ANALYTICS INITIALIZATION
+ReactGA.initialize("G-R39ELRDLKQ");
+
+/* -------------------------------------------------
+   Analytics Tracker Component
+   (Her sayfa değişiminde Google'a veri gönderir)
+-------------------------------------------------- */
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+  }, [location]);
+
+  return null;
+}
+
 /* -------------------------------------------------
    Public Layout — Navbar + Footer
 -------------------------------------------------- */
@@ -130,6 +150,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <AnalyticsTracker /> {/* Sayfa takibi burada başlıyor */}
         <Toaster richColors position="top-right" />
         <Routes>
 

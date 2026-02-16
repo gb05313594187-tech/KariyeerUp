@@ -78,7 +78,6 @@ export default function Index() {
         goal: "Hedef",
         level: "Seviye",
         language: "Dil",
-        tip: 'İpucu: "Öne Çıkan Koçlar" alanı premium slot olarak satılabilir.',
       },
       goals: {
         interview: "Mülakat",

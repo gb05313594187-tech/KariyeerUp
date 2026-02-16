@@ -112,10 +112,8 @@ import CorporateJobs from "@/pages/CorporateJobs";
 // ✅ MEETING ROOM - Jitsi Video Seans
 import MeetingRoom from "@/pages/MeetingRoom";
 
-// ✅ ANALYTICS INITIALIZATION
-// Not: react-ga4 kütüphanesi yüklü değilse burası hata verebilir. 
-// Cloudflare build sırasında hata almamanız için kütüphanenin yüklü olması şarttır.
-ReactGA.initialize("G-R39ELRDLKQ");
+// ✅ ANALYTICS — Google Analytics 4 Ölçüm Kimliği
+const GA_ID = "G-Y6SC2CRG53";
 
 /* -------------------------------------------------
    Analytics Tracker Component
@@ -130,6 +128,11 @@ function AnalyticsTracker() {
     
     // Sadece "accepted" ise veri gönder
     if (consent === 'accepted') {
+      // GA henüz başlatılmadıysa başlat
+      if (!window.__ga_initialized) {
+        ReactGA.initialize(GA_ID);
+        window.__ga_initialized = true;
+      }
       ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
     }
   }, [location]);

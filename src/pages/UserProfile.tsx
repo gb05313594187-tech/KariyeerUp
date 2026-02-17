@@ -4,7 +4,6 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   runStandardMatching,
   runBoostMatching,
-  fetchExistingMatches,
   fetchAllJobs,
   isGeminiConfigured,
 } from "@/lib/matchingService";

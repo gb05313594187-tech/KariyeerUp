@@ -1,626 +1,580 @@
 // src/lib/matchingService.ts
-// @ts-nocheck
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+// AI Eşleşme Motoru - Aday↔İlan, Aday↔Koç, Şirket↔Aday
+import { supabase, isSupabaseConfigured } from "./supabase";
 
 /* =========================================================
-   GEMINI API — DOĞRU MODEL
+   TYPES
    ========================================================= */
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-2.0-flash";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+export interface MatchResult {
+  id: string;
+  type: "job" | "coach" | "candidate";
+  targetId: string;
+  targetName: string;
+  targetTitle: string;
+  matchScore: number; // 0-100
+  matchReasons: string[];
+  matchWeaknesses: string[];
+  avatarUrl?: string;
+  extra: Record<string, any>;
+}
 
-export function isGeminiConfigured(): boolean {
-  return !!GEMINI_API_KEY && GEMINI_API_KEY.length > 10;
+export interface MatchFilters {
+  goal?: string;
+  level?: string;
+  sector?: string;
+  language?: string;
+  location?: string;
+  minScore?: number;
 }
 
 /* =========================================================
-   TABLO ADLARI — TEK MERKEZDEN
+   SCORING HELPERS
    ========================================================= */
-const TABLE_MATCHES = "matches";
-const TABLE_JOBS = "jobs";
+
+// Metin benzerliği (basit keyword overlap)
+function textSimilarity(a: string | null, b: string | null): number {
+  if (!a || !b) return 0;
+  const wordsA = a.toLowerCase().split(/[\s,;|·•]+/).filter(Boolean);
+  const wordsB = b.toLowerCase().split(/[\s,;|·•]+/).filter(Boolean);
+  if (wordsA.length === 0 || wordsB.length === 0) return 0;
+  const intersection = wordsA.filter((w) => wordsB.some((wb) => wb.includes(w) || w.includes(wb)));
+  return (intersection.length / Math.max(wordsA.length, wordsB.length)) * 100;
+}
+
+// JSONB array benzerliği
+function jsonbArraySimilarity(a: any, b: any): number {
+  const arrA = Array.isArray(a) ? a.map((x: any) => (typeof x === "string" ? x.toLowerCase() : JSON.stringify(x).toLowerCase())) : [];
+  const arrB = Array.isArray(b) ? b.map((x: any) => (typeof x === "string" ? x.toLowerCase() : JSON.stringify(x).toLowerCase())) : [];
+  if (arrA.length === 0 || arrB.length === 0) return 0;
+  const matches = arrA.filter((ia: string) => arrB.some((ib: string) => ib.includes(ia) || ia.includes(ib)));
+  return (matches.length / Math.max(arrA.length, arrB.length)) * 100;
+}
+
+// Exact match bonus
+function exactMatch(a: string | null, b: string | null, bonus = 15): number {
+  if (!a || !b) return 0;
+  return a.toLowerCase().trim() === b.toLowerCase().trim() ? bonus : 0;
+}
+
+// Weighted score calculator
+function calculateWeightedScore(scores: { score: number; weight: number }[]): number {
+  const totalWeight = scores.reduce((sum, s) => sum + s.weight, 0);
+  if (totalWeight === 0) return 0;
+  const weighted = scores.reduce((sum, s) => sum + s.score * s.weight, 0) / totalWeight;
+  return Math.min(100, Math.round(weighted));
+}
 
 /* =========================================================
-   TÜM İLANLARI ÇEK
+   ADAY ↔ İLAN EŞLEŞMESİ
    ========================================================= */
-export async function fetchAllJobs(): Promise<any[]> {
+export async function matchCandidateToJobs(
+  candidateId: string,
+  filters?: MatchFilters
+): Promise<MatchResult[]> {
   if (!isSupabaseConfigured) return [];
-  try {
-    const { data, error } = await supabase
-      .from(TABLE_JOBS)
-      .select("*");
 
-    if (error) {
-      console.error("fetchAllJobs error:", error.message);
-      return [];
-    }
-    console.log(`✅ ${(data || []).length} ilan yüklendi`);
-    return data || [];
-  } catch (err) {
-    console.error("fetchAllJobs exception:", err);
-    return [];
+  // Aday profilini çek
+  const { data: candidate } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", candidateId)
+    .single();
+
+  if (!candidate) return [];
+
+  // İlanları çek
+  const { data: jobs } = await supabase
+    .from("jobs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (!jobs || jobs.length === 0) return [];
+
+  const results: MatchResult[] = jobs.map((job) => {
+    const scores = [
+      // Sektör uyumu
+      { score: exactMatch(candidate.sector, job.sector, 100), weight: 25 },
+      // Pozisyon/Title uyumu
+      { score: textSimilarity(candidate.title, job.position), weight: 20 },
+      // Level uyumu
+      { score: exactMatch(candidate.experience_years, job.level, 100), weight: 15 },
+      // Konum uyumu
+      { score: exactMatch(candidate.city, job.location_text, 100), weight: 10 },
+      // Dil uyumu
+      { score: jsonbArraySimilarity(candidate.languages, job.required_languages), weight: 10 },
+      // Yetkinlik uyumu
+      { score: jsonbArraySimilarity(candidate.superpowers, job.required_skills), weight: 15 },
+      // Hedef uyumu
+      { score: jsonbArraySimilarity(candidate.goals, [job.work_type, job.position]), weight: 5 },
+    ];
+
+    const matchScore = calculateWeightedScore(scores);
+
+    // Eşleşme nedenleri
+    const reasons: string[] = [];
+    const weaknesses: string[] = [];
+
+    if (scores[0].score > 50) reasons.push("Sektör uyumu yüksek");
+    else if (scores[0].score === 0) weaknesses.push("Farklı sektör");
+
+    if (scores[1].score > 40) reasons.push("Pozisyon uyumu güçlü");
+    if (scores[2].score > 50) reasons.push("Seviye eşleşiyor");
+    if (scores[3].score > 50) reasons.push("Konum uyumlu");
+    if (scores[5].score > 30) reasons.push("Yetkinlik örtüşmesi var");
+    else weaknesses.push("Bazı yetkinlikler eksik");
+
+    return {
+      id: `match-${candidateId}-${job.post_id}`,
+      type: "job" as const,
+      targetId: job.post_id,
+      targetName: job.company_name || "Şirket",
+      targetTitle: job.position || "Pozisyon",
+      matchScore,
+      matchReasons: reasons,
+      matchWeaknesses: weaknesses,
+      extra: {
+        location: job.location_text,
+        workType: job.work_type,
+        level: job.level,
+        salary: job.salary_range,
+        companyId: job.company_id,
+      },
+    };
+  });
+
+  // Filtrele ve sırala
+  let filtered = results.filter((r) => r.matchScore >= (filters?.minScore || 20));
+
+  if (filters?.sector) {
+    filtered = filtered.filter((r) => r.extra.sector === filters.sector);
   }
+
+  return filtered.sort((a, b) => b.matchScore - a.matchScore).slice(0, 20);
 }
 
 /* =========================================================
-   MEVCUT EŞLEŞMELERİ ÇEK
+   ŞİRKET ↔ ADAY EŞLEŞMESİ
    ========================================================= */
-export async function fetchExistingMatches(userId: string): Promise<any[]> {
-  if (!isSupabaseConfigured || !userId) return [];
-  try {
-    const { data, error } = await supabase
-      .from(TABLE_MATCHES)
-      .select("*")
-      .eq("user_id", userId)
-      .order("fit_score", { ascending: false });
-
-    if (error) {
-      console.error("fetchExistingMatches error:", error.message);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error("fetchExistingMatches exception:", err);
-    return [];
-  }
-}
-
-/* =========================================================
-   EŞLEŞMEYİ KAYDET (UPSERT)
-   ========================================================= */
-async function saveMatch(
-  userId: string,
+export async function matchJobToCandidates(
   jobId: string,
-  fitScore: number,
-  explanation: string
-): Promise<boolean> {
-  if (!isSupabaseConfigured || !userId || !jobId) return false;
+  filters?: MatchFilters
+): Promise<MatchResult[]> {
+  if (!isSupabaseConfigured) return [];
 
-  try {
-    const { error } = await supabase
-      .from(TABLE_MATCHES)
-      .upsert(
-        {
-          user_id: userId,
-          job_id: jobId,
-          fit_score: fitScore,
-          explanation: explanation,
-          updated_at: new Date().toISOString(),
+  // İlanı çek
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("post_id", jobId)
+    .single();
+
+  if (!job) return [];
+
+  // Adayları çek (sadece user rolündekiler)
+  const { data: candidates } = await supabase
+    .from("profiles")
+    .select("*")
+    .in("role", ["user", null])
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (!candidates || candidates.length === 0) return [];
+
+  const results: MatchResult[] = candidates
+    .filter((c) => c.full_name || c.email) // En azından ismi veya emaili olanlar
+    .map((candidate) => {
+      const scores = [
+        { score: exactMatch(candidate.sector, job.sector, 100), weight: 25 },
+        { score: textSimilarity(candidate.title, job.position), weight: 20 },
+        { score: exactMatch(candidate.experience_years, job.level, 100), weight: 15 },
+        { score: exactMatch(candidate.city, job.location_text, 100), weight: 10 },
+        { score: jsonbArraySimilarity(candidate.languages, job.required_languages), weight: 10 },
+        { score: jsonbArraySimilarity(candidate.superpowers, job.required_skills), weight: 15 },
+        { score: jsonbArraySimilarity(candidate.goals, [job.work_type, job.position]), weight: 5 },
+      ];
+
+      const matchScore = calculateWeightedScore(scores);
+
+      const reasons: string[] = [];
+      const weaknesses: string[] = [];
+
+      if (scores[0].score > 50) reasons.push("Sektör deneyimi var");
+      if (scores[1].score > 40) reasons.push("Pozisyon uyumu güçlü");
+      if (scores[2].score > 50) reasons.push("Deneyim seviyesi uygun");
+      if (scores[5].score > 30) reasons.push("İstenen yetkinliklere sahip");
+      if (scores[0].score === 0) weaknesses.push("Farklı sektörden");
+      if (scores[5].score === 0) weaknesses.push("Yetkinlik bilgisi eksik");
+
+      return {
+        id: `match-${jobId}-${candidate.id}`,
+        type: "candidate" as const,
+        targetId: candidate.id,
+        targetName: candidate.full_name || candidate.email?.split("@")[0] || "Aday",
+        targetTitle: candidate.title || candidate.headline || "—",
+        matchScore,
+        matchReasons: reasons,
+        matchWeaknesses: weaknesses,
+        avatarUrl: candidate.avatar_url,
+        extra: {
+          email: candidate.email,
+          city: candidate.city,
+          sector: candidate.sector,
+          experience: candidate.experience_years,
+          isPremium: candidate.is_premium,
         },
-        {
-          onConflict: "user_id,job_id",
-        }
-      );
+      };
+    });
 
-    if (error) {
-      console.error("saveMatch error:", error.message, error.details);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("saveMatch exception:", err);
+  let filtered = results.filter((r) => r.matchScore >= (filters?.minScore || 20));
+
+  return filtered.sort((a, b) => b.matchScore - a.matchScore).slice(0, 30);
+}
+
+/* =========================================================
+   ADAY ↔ KOÇ EŞLEŞMESİ
+   ========================================================= */
+export async function matchCandidateToCoaches(
+  candidateId: string,
+  filters?: MatchFilters
+): Promise<MatchResult[]> {
+  if (!isSupabaseConfigured) return [];
+
+  const { data: candidate } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", candidateId)
+    .single();
+
+  if (!candidate) return [];
+
+  // Koçları çek
+  const { data: coaches } = await supabase
+    .from("app_2dff6511da_coaches")
+    .select("*")
+    .order("rating", { ascending: false });
+
+  if (!coaches || coaches.length === 0) return [];
+
+  const results: MatchResult[] = coaches.map((coach) => {
+    const candidateGoals = Array.isArray(candidate.goals)
+      ? candidate.goals.map((g: any) => (typeof g === "string" ? g : g.label || g.name || ""))
+      : [];
+
+    const scores = [
+      // Uzmanlık alanı ↔ Aday hedefi
+      {
+        score: jsonbArraySimilarity(
+          coach.specializations || [coach.specialization],
+          candidateGoals
+        ),
+        weight: 30,
+      },
+      // Sektör uyumu
+      { score: textSimilarity(coach.title, candidate.sector), weight: 15 },
+      // Dil uyumu
+      {
+        score: textSimilarity(
+          coach.languages,
+          Array.isArray(candidate.languages)
+            ? candidate.languages.map((l: any) => (typeof l === "string" ? l : l.name || "")).join(",")
+            : ""
+        ),
+        weight: 15,
+      },
+      // Rating bonusu
+      { score: Math.min(100, (Number(coach.rating) || 0) * 20), weight: 20 },
+      // Deneyim bonusu
+      { score: Math.min(100, (coach.experience_years || 0) * 10), weight: 10 },
+      // Konum (opsiyonel)
+      { score: textSimilarity(coach.location, candidate.city), weight: 10 },
+    ];
+
+    const matchScore = calculateWeightedScore(scores);
+
+    const reasons: string[] = [];
+    if (scores[0].score > 30) reasons.push("Hedeflerinle örtüşen uzmanlık");
+    if (scores[1].score > 30) reasons.push("Sektör deneyimi var");
+    if (scores[3].score > 80) reasons.push("Yüksek puan");
+    if (scores[4].score > 50) reasons.push("Deneyimli koç");
+
+    return {
+      id: `match-coach-${candidateId}-${coach.id}`,
+      type: "coach" as const,
+      targetId: coach.id,
+      targetName: coach.full_name || "Koç",
+      targetTitle: coach.title || "Kariyer Koçu",
+      matchScore,
+      matchReasons: reasons,
+      matchWeaknesses: [],
+      avatarUrl: coach.avatar_url,
+      extra: {
+        hourlyRate: coach.hourly_rate,
+        rating: coach.rating,
+        totalReviews: coach.total_reviews,
+        userId: coach.user_id,
+        slug: coach.slug,
+      },
+    };
+  });
+
+  return results.sort((a, b) => b.matchScore - a.matchScore).slice(0, 10);
+}
+
+/* =========================================================
+   EŞLEŞMEYİ KAYDET (matches tablosu)
+   ========================================================= */
+export async function saveMatch(
+  userId: string,
+  targetId: string,
+  matchType: "job" | "coach" | "candidate",
+  score: number,
+  reasons: string[]
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("matches").insert({
+      user_id: userId,
+      target_id: targetId,
+      match_type: matchType,
+      score,
+      reasons,
+      status: "new",
+    });
+    return !error;
+  } catch {
     return false;
   }
 }
 
 /* =========================================================
-   METİN NORMALLEŞTİRME
+   AI RAPOR SERVİSİ (Corporate Dashboard için)
    ========================================================= */
-function normalize(text: string): string {
-  if (!text) return "";
-  return text
-    .toLowerCase()
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export const aiReportService = {
+  // Aday hakkında AI insight getir
+  async getCandidateInsight(candidateId: string, jobId: string) {
+    const { data } = await supabase
+      .from("ai_candidate_insights")
+      .select("*")
+      .eq("candidate_id", candidateId)
+      .eq("job_id", jobId)
+      .maybeSingle();
+    return data;
+  },
 
-/* =========================================================
-   KELİME EŞLEŞME SKORU
-   ========================================================= */
-function wordMatchScore(profileText: string, jobText: string): number {
-  const pWords = new Set(normalize(profileText).split(" ").filter(w => w.length >= 3));
-  const jWords = new Set(normalize(jobText).split(" ").filter(w => w.length >= 3));
+  // AI karar açıklanabilirlik raporu
+  async getDecisionExplainability(candidateId: string) {
+    const { data } = await supabase
+      .from("ai_decision_explainability")
+      .select("*")
+      .eq("candidate_id", candidateId)
+      .limit(1);
+    return data?.[0] || null;
+  },
 
-  if (jWords.size === 0) return 0;
+  // Board kontrol paneli
+  async getBoardControlPanel() {
+    const { data } = await supabase
+      .from("ai_board_control_panel")
+      .select("*")
+      .limit(1);
+    return data?.[0] || null;
+  },
 
-  let matchCount = 0;
-  for (const jWord of jWords) {
-    for (const pWord of pWords) {
-      if (pWord.includes(jWord) || jWord.includes(pWord)) {
-        matchCount++;
-        break;
-      }
-    }
-  }
+  // Recruitment KPI
+  async getRecruitmentKPI() {
+    const { data } = await supabase
+      .from("ai_recruitment_kpi")
+      .select("*")
+      .limit(1);
+    return data?.[0] || null;
+  },
 
-  return Math.min(100, Math.round((matchCount / jWords.size) * 100));
-}
+  // Drift monitoring
+  async getDriftMonitoring() {
+    const { data } = await supabase
+      .from("ai_drift_monitoring")
+      .select("*")
+      .order("period", { ascending: false })
+      .limit(6);
+    return data || [];
+  },
 
-/* =========================================================
-   STANDARD MATCHING — Kelime Bazlı
-   ========================================================= */
-interface MatchDetails {
-  skillScore: number;
-  locationScore: number;
-  levelScore: number;
-  languageScore: number;
-}
+  // Bias & Fairness raporu
+  async getBiasFairnessReport() {
+    const { data } = await supabase
+      .from("ai_bias_fairness_report")
+      .select("*");
+    return data || [];
+  },
 
-interface MatchResult {
-  score: number;
-  explanation: string;
-  strengths: string[];
-  gaps: string[];
-  details: MatchDetails;
-}
+  // AI raporu email ile gönder
+  async sendAIReport(candidateId: string, jobId: string, recipientEmail: string) {
+    const insight = await this.getCandidateInsight(candidateId, jobId);
+    const explainability = await this.getDecisionExplainability(candidateId);
 
-function calculateStandardMatch(profile: any, job: any): MatchResult {
-  const cv = profile.cv_data || {};
-  const strengths: string[] = [];
-  const gaps: string[] = [];
+    if (!insight) return { success: false, error: "AI insight bulunamadı" };
 
-  // ─── 1. YETENEK SKORU (%40) ───
-  const profileSkills = (cv.skills || []).join(" ");
-  const profileExp = (cv.work_experience || [])
-    .map((w: any) => `${w.role || ""} ${w.company || ""} ${w.desc || ""}`)
-    .join(" ");
-  const profileEdu = (cv.education || [])
-    .map((e: any) => `${e.school || ""} ${e.field || ""} ${e.degree || ""}`)
-    .join(" ");
-  const profileAll = `${profileSkills} ${profileExp} ${profileEdu} ${profile.bio || ""}`;
-  const jobText = `${job.position || ""} ${job.description || ""} ${job.custom_title || ""}`;
+    // Edge function ile email gönder
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
 
-  const skillScore = wordMatchScore(profileAll, jobText);
-
-  if (skillScore >= 60) {
-    strengths.push("Yetenek ve deneyimleriniz ilanla yüksek oranda örtüşüyor.");
-  } else if (skillScore >= 30) {
-    strengths.push("Bazı yetenekleriniz ilanla uyumlu.");
-    gaps.push("İlanda aranan bazı becerileri geliştirmeniz faydalı olabilir.");
-  } else {
-    gaps.push("İlana ait anahtar yetenekler profilinizde eksik görünüyor.");
-  }
-
-  // ─── 2. LOKASYON SKORU (%20) ───
-  let locationScore = 50;
-  const profileLocation = normalize(`${profile.city || ""} ${profile.country || ""}`);
-  const jobLocation = normalize(job.location_text || "");
-  const jobWorkType = normalize(job.work_type || "");
-
-  if (jobWorkType.includes("remote") || jobWorkType.includes("uzaktan")) {
-    locationScore = 100;
-    strengths.push("Uzaktan çalışma — lokasyon engeli yok.");
-  } else if (jobLocation && profileLocation) {
-    if (profileLocation.includes(jobLocation) || jobLocation.includes(profileLocation)) {
-      locationScore = 100;
-      strengths.push("Lokasyonunuz ilanla uyumlu.");
-    } else {
-      const pCountry = normalize(profile.country || "");
-      if (pCountry && jobLocation.includes(pCountry)) {
-        locationScore = 60;
-        gaps.push("Aynı ülkedesiniz ancak farklı şehir — taşınma gerekebilir.");
-      } else {
-        locationScore = 20;
-        gaps.push("Lokasyonunuz ilan lokasyonundan farklı.");
-      }
-    }
-  }
-
-  // ─── 3. DENEYİM SEVİYESİ (%25) ───
-  let levelScore = 50;
-  let estimatedYears = 0;
-
-  (cv.work_experience || []).forEach((w: any) => {
-    const startYear = parseInt(w.start) || 0;
-    const endYear = w.isCurrent ? new Date().getFullYear() : (parseInt(w.end) || 0);
-    if (startYear > 0 && endYear >= startYear) {
-      estimatedYears += (endYear - startYear);
-    }
-  });
-
-  const jobLevel = normalize(job.level || "");
-
-  if (jobLevel.includes("junior") || jobLevel.includes("entry") || jobLevel.includes("stajyer")) {
-    levelScore = estimatedYears <= 3 ? 100 : 70;
-    if (estimatedYears <= 3) strengths.push("Junior pozisyon için uygun deneyim seviyesi.");
-  } else if (jobLevel.includes("mid") || jobLevel.includes("orta")) {
-    if (estimatedYears >= 2 && estimatedYears <= 6) {
-      levelScore = 100;
-      strengths.push("Mid-Level pozisyona uygun deneyim.");
-    } else if (estimatedYears >= 1) {
-      levelScore = 60;
-    } else {
-      levelScore = 30;
-      gaps.push("Bu pozisyon için daha fazla deneyim gerekebilir.");
-    }
-  } else if (jobLevel.includes("senior") || jobLevel.includes("kidemli")) {
-    if (estimatedYears >= 5) {
-      levelScore = 100;
-      strengths.push("Senior seviye deneyiminiz mevcut.");
-    } else if (estimatedYears >= 3) {
-      levelScore = 50;
-      gaps.push("Senior pozisyon için deneyim süreniz sınırda.");
-    } else {
-      levelScore = 20;
-      gaps.push("Senior pozisyon için daha fazla deneyim gerekiyor.");
-    }
-  } else if (jobLevel.includes("lead") || jobLevel.includes("yonetici") || jobLevel.includes("executive")) {
-    levelScore = estimatedYears >= 8 ? 100 : estimatedYears >= 5 ? 50 : 15;
-    if (estimatedYears < 5) gaps.push("Yönetici pozisyonu için daha fazla deneyim gerekiyor.");
-  } else {
-    levelScore = (cv.work_experience || []).length > 0 ? 70 : 40;
-  }
-
-  // ─── 4. DİL SKORU (%15) ───
-  let languageScore = 80;
-  const profileLangs = (cv.languages || []).map((l: any) => normalize(l.lang || ""));
-  const jobDesc = normalize(`${job.description || ""} ${job.position || ""}`);
-
-  const langMap: Record<string, string[]> = {
-    english: ["english", "ingilizce"],
-    turkish: ["turkce", "turkish"],
-    arabic: ["arabic", "arapca"],
-    french: ["french", "fransizca"],
-    german: ["german", "almanca"],
-  };
-
-  const requiredLangs: string[] = [];
-  for (const [key, variants] of Object.entries(langMap)) {
-    if (variants.some((v) => jobDesc.includes(v))) {
-      requiredLangs.push(key);
-    }
-  }
-
-  if (requiredLangs.length > 0) {
-    let langMatches = 0;
-    for (const req of requiredLangs) {
-      const variants = langMap[req] || [req];
-      const found = profileLangs.some((pLang) =>
-        variants.some((v) => pLang.includes(v) || v.includes(pLang))
-      );
-      if (found) langMatches++;
-    }
-    languageScore = Math.round((langMatches / requiredLangs.length) * 100);
-
-    if (langMatches === requiredLangs.length) {
-      strengths.push("Tüm dil gereksinimlerini karşılıyorsunuz.");
-    } else if (langMatches > 0) {
-      gaps.push("Bazı dil gereksinimleri profilinizde eksik.");
-    } else {
-      gaps.push("İlanda belirtilen dil gereksinimlerini karşılamıyorsunuz.");
-    }
-  }
-
-  // ─── TOPLAM SKOR ───
-  const details: MatchDetails = { skillScore, locationScore, levelScore, languageScore };
-
-  const totalScore = Math.max(0, Math.min(100, Math.round(
-    skillScore * 0.40 +
-    locationScore * 0.20 +
-    levelScore * 0.25 +
-    languageScore * 0.15
-  )));
-
-  let explanation: string;
-  if (totalScore >= 80) {
-    explanation = `Profiliniz bu ilan ile yüksek uyum gösteriyor. Yetenek: %${skillScore}, Lokasyon: %${locationScore}, Deneyim: %${levelScore}.`;
-  } else if (totalScore >= 50) {
-    explanation = `Orta düzeyde uyum. Bazı alanlarda güçlüsünüz ancak geliştirilecek yönler var. Genel: %${totalScore}.`;
-  } else {
-    explanation = `Düşük uyum. Eksik yetkinliklerinizi geliştirerek skoru artırabilirsiniz. Genel: %${totalScore}.`;
-  }
-
-  return { score: totalScore, explanation, strengths, gaps, details };
-}
-
-/* =========================================================
-   STANDARD MATCHING — ÇALIŞTIR
-   ========================================================= */
-export async function runStandardMatching(profile: any, userId: string): Promise<any[]> {
-  console.log("🔍 Standard matching başlıyor...");
-
-  const jobs = await fetchAllJobs();
-  if (jobs.length === 0) {
-    console.warn("⚠️ Hiç iş ilanı bulunamadı");
-    return [];
-  }
-
-  console.log(`📋 ${jobs.length} ilan bulundu, eşleştirme yapılıyor...`);
-  const results: any[] = [];
-
-  for (const job of jobs) {
-    const { score, explanation, strengths, gaps, details } = calculateStandardMatch(profile, job);
-
-    const saved = await saveMatch(userId, job.post_id, score, `[STANDARD] ${explanation}`);
-    if (!saved) {
-      console.warn(`⚠️ Eşleşme kaydedilemedi: job=${job.post_id}`);
-    }
-
-    results.push({
-      job,
-      score,
-      explanation,
-      mode: "standard" as const,
-      strengths,
-      gaps,
-      details,
-    });
-  }
-
-  results.sort((a, b) => b.score - a.score);
-  console.log(`✅ Standard matching tamamlandı: ${results.length} sonuç`);
-  return results;
-}
-
-/* =========================================================
-   GEMINI API ÇAĞRISI
-   ========================================================= */
-async function callGeminiAPI(prompt: string): Promise<string> {
-  if (!isGeminiConfigured()) {
-    throw new Error("Gemini API Key yapılandırılmamış.");
-  }
-
-  const url = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`;
-  console.log(`🤖 Gemini çağrılıyor: ${GEMINI_MODEL}`);
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.3,
-        topP: 0.8,
-        maxOutputTokens: 1024,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`Gemini API error ${response.status}:`, errorBody);
-
-    if (response.status === 404) {
-      console.warn("⚠️ Model bulunamadı, fallback deneniyor...");
-      return await callGeminiFallback(prompt);
-    }
-
-    throw new Error(`Gemini API hatası: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  if (!text) throw new Error("Gemini boş yanıt döndürdü");
-
-  return text.trim();
-}
-
-/* =========================================================
-   GEMINI FALLBACK
-   ========================================================= */
-const FALLBACK_MODELS = [
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-];
-
-async function callGeminiFallback(prompt: string): Promise<string> {
-  for (const model of FALLBACK_MODELS) {
-    try {
-      console.log(`🔄 Fallback: ${model}`);
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-
-      const response = await fetch(url, {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-company-email`,
+      {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, topP: 0.8, maxOutputTokens: 1024 },
+          to: recipientEmail,
+          subject: `AI Aday Raporu - ${insight.candidate_id}`,
+          templateType: "ai_candidate_report",
+          data: {
+            insight,
+            explainability,
+            generatedAt: new Date().toISOString(),
+          },
         }),
-      });
-
-      if (!response.ok) {
-        console.warn(`❌ ${model}: ${response.status}`);
-        continue;
       }
+    );
 
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return res.json();
+  },
 
-      if (text) {
-        console.log(`✅ Fallback başarılı: ${model}`);
-        return text.trim();
+  // Olumlu adaya Jitsi link gönder
+  async sendInterviewInvite(
+    candidateEmail: string,
+    candidateName: string,
+    jobTitle: string,
+    scheduledAt: string,
+    jitsiRoom: string
+  ) {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
+
+    const jitsiUrl = `https://meet.jit.si/${jitsiRoom}`;
+
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-company-email`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          to: candidateEmail,
+          subject: `Mülakat Daveti - ${jobTitle}`,
+          templateType: "interview_invite",
+          data: {
+            candidateName,
+            jobTitle,
+            scheduledAt,
+            jitsiUrl,
+            jitsiRoom,
+          },
+        }),
       }
-    } catch (err) {
-      console.warn(`❌ ${model} hata:`, err);
-    }
-  }
+    );
 
-  throw new Error("Tüm Gemini modelleri başarısız oldu.");
-}
+    return res.json();
+  },
+};
 
 /* =========================================================
-   AI BOOST — PROMPT
+   BOOST SERVİSİ
    ========================================================= */
-function buildBoostPrompt(profile: any, job: any): string {
-  const cv = profile.cv_data || {};
+export const boostService = {
+  // Koç boost satın al
+  async purchaseCoachBoost(coachUserId: string, durationDays = 30) {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + durationDays);
 
-  const profileSummary = `
-ADAY PROFİLİ:
-- İsim: ${profile.full_name || "Belirtilmemiş"}
-- Lokasyon: ${profile.city || ""}, ${profile.country || ""}
-- Hakkında: ${profile.bio || "Belirtilmemiş"}
-- Yetenekler: ${(cv.skills || []).join(", ") || "Belirtilmemiş"}
-- İş Deneyimi: ${
-    (cv.work_experience || [])
-      .map((w: any) => `${w.role || "?"} @ ${w.company || "?"} (${w.start || "?"}-${w.isCurrent ? "Günümüz" : w.end || "?"}): ${w.desc || ""}`)
-      .join("; ") || "Belirtilmemiş"
-  }
-- Eğitim: ${
-    (cv.education || [])
-      .map((e: any) => `${e.degree || "?"} ${e.field || "?"} @ ${e.school || "?"}`)
-      .join("; ") || "Belirtilmemiş"
-  }
-- Diller: ${
-    (cv.languages || [])
-      .map((l: any) => `${l.lang || "?"} (${l.level || 1}/5)`)
-      .join(", ") || "Belirtilmemiş"
-  }
-- Sertifikalar: ${
-    (cv.certificates || [])
-      .map((c: any) => `${c.name || "?"} (${c.issuer || "?"}, ${c.year || "?"})`)
-      .join(", ") || "Yok"
-  }`.trim();
+    // Profiles tablosunu güncelle
+    const { error: profileErr } = await supabase
+      .from("profiles")
+      .update({
+        is_featured: true,
+        featured_until: endDate.toISOString(),
+      })
+      .eq("id", coachUserId);
 
-  const jobSummary = `
-İŞ İLANI:
-- Pozisyon: ${job.position || job.custom_title || "Belirtilmemiş"}
-- Açıklama: ${job.description || "Belirtilmemiş"}
-- Seviye: ${job.level || "Belirtilmemiş"}
-- Çalışma Tipi: ${job.work_type || "Belirtilmemiş"}
-- Lokasyon: ${job.location_text || "Belirtilmemiş"}
-- Deneyim: ${job.experience_range || "Belirtilmemiş"}
-- Maaş: ${job.salary_min ? `${job.salary_min} - ${job.salary_max || "?"} ₺` : "Belirtilmemiş"}`.trim();
+    if (profileErr) return { success: false, error: profileErr.message };
 
-  return `Sen bir kariyer danışmanı ve iş eşleştirme uzmanısın.
-Aşağıdaki aday profili ve iş ilanını detaylı analiz et.
+    // Coaches tablosunu da güncelle (eğer varsa)
+    await supabase
+      .from("app_2dff6511da_coaches")
+      .update({ status: "featured" })
+      .eq("user_id", coachUserId);
 
-${profileSummary}
+    return { success: true, featuredUntil: endDate.toISOString() };
+  },
 
-${jobSummary}
+  // Koç boost durumunu kontrol et
+  async checkCoachBoost(coachUserId: string) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("is_featured, featured_until")
+      .eq("id", coachUserId)
+      .single();
 
-LÜTFEN YANITI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
-{
-  "score": <0-100 arası uyum puanı>,
-  "explanation": "<2-3 cümle Türkçe genel değerlendirme>",
-  "strengths": ["<güçlü yön 1>", "<güçlü yön 2>"],
-  "gaps": ["<gelişim alanı 1>", "<gelişim alanı 2>"]
-}
+    if (!data) return { isFeatured: false };
 
-Kurallar:
-- score: 0-100 arası tam sayı
-- explanation: Türkçe, 2-3 cümle
-- strengths: en fazla 3 madde
-- gaps: en fazla 3 madde
-- SADECE JSON döndür, başka hiçbir metin ekleme`;
-}
+    const isActive = data.is_featured && data.featured_until && new Date(data.featured_until) > new Date();
 
-/* =========================================================
-   GEMINI YANITI PARSE
-   ========================================================= */
-function parseGeminiResponse(text: string): {
-  score: number;
-  explanation: string;
-  strengths: string[];
-  gaps: string[];
-} {
-  try {
-    let jsonStr = text;
-
-    const blockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (blockMatch) {
-      jsonStr = blockMatch[1];
-    } else {
-      const start = text.indexOf("{");
-      const end = text.lastIndexOf("}");
-      if (start !== -1 && end !== -1 && end > start) {
-        jsonStr = text.substring(start, end + 1);
-      }
+    // Süresi geçmişse otomatik kapat
+    if (data.is_featured && !isActive) {
+      await supabase
+        .from("profiles")
+        .update({ is_featured: false, featured_until: null })
+        .eq("id", coachUserId);
+      return { isFeatured: false };
     }
-
-    const parsed = JSON.parse(jsonStr);
 
     return {
-      score: Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0))),
-      explanation: String(parsed.explanation || "AI analizi tamamlandı."),
-      strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String).slice(0, 3) : [],
-      gaps: Array.isArray(parsed.gaps) ? parsed.gaps.map(String).slice(0, 3) : [],
+      isFeatured: isActive,
+      featuredUntil: data.featured_until,
     };
-  } catch (err) {
-    console.error("Gemini parse error:", err);
-    return {
-      score: 50,
-      explanation: "AI analizi tamamlandı ancak detaylı sonuç oluşturulamadı.",
-      strengths: [],
-      gaps: [],
-    };
-  }
-}
+  },
 
-/* =========================================================
-   AI BOOST MATCHING — ÇALIŞTIR
-   ========================================================= */
-export async function runBoostMatching(profile: any, userId: string): Promise<any[]> {
-  if (!isGeminiConfigured()) {
-    throw new Error("Gemini API Key yapılandırılmamış.");
-  }
+  // İlan boost satın al
+  async purchaseJobBoost(jobId: string, durationDays = 14) {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + durationDays);
 
-  console.log("🚀 AI Boost başlıyor...");
-  console.log(`🔑 Key: ${GEMINI_API_KEY.substring(0, 8)}...`);
-  console.log(`🤖 Model: ${GEMINI_MODEL}`);
+    const { error } = await supabase
+      .from("jobs")
+      .update({
+        is_boosted: true,
+        boosted_until: endDate.toISOString(),
+      })
+      .eq("post_id", jobId);
 
-  const jobs = await fetchAllJobs();
-  if (jobs.length === 0) {
-    console.warn("⚠️ Hiç iş ilanı bulunamadı");
-    return [];
-  }
+    if (error) return { success: false, error: error.message };
+    return { success: true, boostedUntil: endDate.toISOString() };
+  },
 
-  console.log(`📋 ${jobs.length} ilan, AI analizi yapılıyor...`);
-  const results: any[] = [];
+  // Boost'lu ilanları getir (üstte gösterilecek)
+  async getBoostedJobs() {
+    const { data } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("is_boosted", true)
+      .gte("boosted_until", new Date().toISOString())
+      .order("boosted_until", { ascending: false });
+    return data || [];
+  },
 
-  for (let i = 0; i < jobs.length; i++) {
-    const job = jobs[i];
-    const jobTitle = job.position || job.custom_title || "Bilinmeyen";
-    console.log(`🔄 [${i + 1}/${jobs.length}] ${jobTitle}`);
-
-    try {
-      const prompt = buildBoostPrompt(profile, job);
-      const rawResponse = await callGeminiAPI(prompt);
-      const parsed = parseGeminiResponse(rawResponse);
-
-      console.log(`✅ ${jobTitle}: Skor ${parsed.score}`);
-
-      await saveMatch(userId, job.post_id, parsed.score, `[BOOST] ${parsed.explanation}`);
-
-      results.push({
-        job,
-        score: parsed.score,
-        explanation: parsed.explanation,
-        mode: "boost" as const,
-        strengths: parsed.strengths,
-        gaps: parsed.gaps,
-        details: { skillScore: 0, locationScore: 0, levelScore: 0, languageScore: 0 },
-      });
-    } catch (err: any) {
-      console.error(`❌ AI hatası (${jobTitle}):`, err.message);
-
-      const fallback = calculateStandardMatch(profile, job);
-      await saveMatch(userId, job.post_id, fallback.score, `[BOOST-FALLBACK] ${fallback.explanation}`);
-
-      results.push({
-        job,
-        score: fallback.score,
-        explanation: `⚠️ AI başarısız, standart kullanıldı: ${fallback.explanation}`,
-        mode: "boost" as const,
-        strengths: fallback.strengths,
-        gaps: [...fallback.gaps, "AI analizi yapılamadı — standart algoritma kullanıldı."],
-        details: fallback.details,
-      });
-    }
-
-    if (i < jobs.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-    }
-  }
-
-  results.sort((a, b) => b.score - a.score);
-  console.log(`🏁 AI Boost tamamlandı: ${results.length} sonuç`);
-  return results;
-}
+  // Öne çıkan koçları getir
+  async getFeaturedCoaches() {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("is_featured", true)
+      .eq("is_coach", true)
+      .gte("featured_until", new Date().toISOString())
+      .order("rating", { ascending: false });
+    return data || [];
+  },
+};

@@ -43,40 +43,8 @@ const Navbar = memo(function Navbar() {
   const role = auth?.role ?? null;
 
   const translations = {
-    tr: {
-      jobs: "İlanlar",
-      mentor: "MentorCircle",
-      webinar: "Webinar",
-      premium_user: "Bireysel Premium",
-      premium_coach: "Koç Premium",
-      premium_corporate: "Kurumsal Premium",
-      premium_default: "Premium",
-      dashboard: "Panel",
-      login: "Giriş Yap",
-      register: "Kayıt Ol",
-      feed: "Ana Akış",
-      profile: "Profil",
-      settings: "Ayarlar",
-      logout: "Çıkış",
-      boost: "Boost",
-    },
-    en: {
-      jobs: "Jobs",
-      mentor: "MentorCircle",
-      webinar: "Webinars",
-      premium_user: "Individual Premium",
-      premium_coach: "Coach Premium",
-      premium_corporate: "Corporate Premium",
-      premium_default: "Premium",
-      dashboard: "Dashboard",
-      login: "Login",
-      register: "Register",
-      feed: "Feed",
-      profile: "Profile",
-      settings: "Settings",
-      logout: "Logout",
-      boost: "Boost",
-    },
+    tr: { jobs: "İlanlar", mentor: "MentorCircle", webinar: "Webinar", premium_user: "Bireysel Premium", premium_coach: "Koç Premium", premium_corporate: "Kurumsal Premium", premium_default: "Premium", dashboard: "Panel", login: "Giriş Yap", register: "Kayıt Ol", feed: "Ana Akış", profile: "Profil", settings: "Ayarlar", logout: "Çıkış", boost: "Boost" },
+    en: { jobs: "Jobs", mentor: "MentorCircle", webinar: "Webinars", premium_user: "Individual Premium", premium_coach: "Coach Premium", premium_corporate: "Corporate Premium", premium_default: "Premium", dashboard: "Dashboard", login: "Login", register: "Register", feed: "Feed", profile: "Profile", settings: "Settings", logout: "Logout", boost: "Boost" },
     ar: { jobs: "وظائف", mentor: "دائرة المنقذ", webinar: "ندوة عبر الويب", premium_user: "بريميوم فردي", premium_coach: "بريميوم المدرب", premium_corporate: "بريميوم الشركات", premium_default: "بريميوم", dashboard: "لوحة القيادة", login: "تسجيل الدخول", register: "سجل الآن", feed: "التغذية الرئيسية", profile: "ملف شخصي", settings: "إعدادات", logout: "تسجيل الخروج", boost: "تعزيز" },
     fr: { jobs: "Emplois", mentor: "Cercle Mentor", webinar: "Webinaire", premium_user: "Premium Individuel", premium_coach: "Premium Coach", premium_corporate: "Premium Entreprise", premium_default: "Premium", dashboard: "Tableau de bord", login: "Connexion", register: "S'inscrire", feed: "Flux", profile: "Profil", settings: "Paramètres", logout: "Déconnexion", boost: "Boost" },
   } as const;
@@ -96,34 +64,18 @@ const Navbar = memo(function Navbar() {
 
   const isActive = useCallback((path: string) => location.pathname === path || location.pathname.startsWith(path + "/"), [location.pathname]);
 
-  const roleLabel = useMemo(() => {
-    if (role === "coach") return language === "tr" ? "Koç" : "Coach";
-    if (role === "corporate") return language === "tr" ? "Şirket" : "Corporate";
+  const dashboardLabel = useMemo(() => {
+    if (role === "coach") return language === "tr" ? "Koç Paneli" : "Coach Panel";
+    if (role === "corporate") return language === "tr" ? "Kurumsal Panel" : "Corporate Panel";
     if (role === "admin") return "Admin";
     return t.dashboard;
   }, [role, language, t]);
-
-  const dashboardLabel = useMemo(() => (role === "coach" || role === "corporate" ? `${roleLabel} ${t.dashboard}` : t.dashboard), [role, roleLabel, t]);
 
   const dashboardPath = useMemo(() => {
     if (role === "coach") return "/coach/dashboard";
     if (role === "corporate") return "/corporate/dashboard";
     if (role === "admin") return "/admin";
     return "/user/dashboard";
-  }, [role]);
-
-  const profilePath = useMemo(() => {
-    if (role === "coach") return "/coach/profile";
-    if (role === "corporate") return "/corporate/profile";
-    if (role === "admin") return "/admin/profile";
-    return "/user/profile";
-  }, [role]);
-
-  const settingsPath = useMemo(() => {
-    if (role === "coach") return "/coach/settings";
-    if (role === "corporate") return "/corporate/settings";
-    if (role === "admin") return "/admin/settings";
-    return "/user/settings";
   }, [role]);
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
@@ -133,77 +85,69 @@ const Navbar = memo(function Navbar() {
     navigate("/");
   }, [auth, navigate]);
 
-  const showAuthSkeleton = auth.loading && me === null;
-
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 z-10">
-          <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-lg">K</div>
-          <span className="font-extrabold text-xl text-red-600">Kariyeer</span>
+        <Link to="/" className="flex items-center gap-2.5 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-lg">K</div>
+          <span className="font-extrabold text-xl text-red-600 hidden sm:block">Kariyeer</span>
         </Link>
 
-        {/* Desktop Nav - Büyük ekran (lg+) */}
-        <nav className="hidden lg:flex items-center gap-3 flex-1 justify-center">
+        {/* Orta kısım - Menü (1024px+) */}
+        <nav className="hidden lg:flex items-center gap-1.5 flex-1 justify-center">
           {me && (
-            <Link to="/jobs" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${isActive("/jobs") ? "bg-red-50 text-red-700 border border-red-200" : "text-gray-700 hover:bg-gray-50"}`}>
-              <Briefcase className="h-4 w-4 text-red-600" />
-              {t.jobs}
+            <Link to="/jobs" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/jobs") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
+              <Briefcase className="h-4 w-4 inline mr-1.5" />{t.jobs}
             </Link>
           )}
-          <Link to="/mentor-circle" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${isActive("/mentor-circle") ? "bg-red-50 text-red-700 border border-red-200" : "text-gray-700 hover:bg-gray-50"}`}>
-            <Sparkles className="h-4 w-4 text-red-600" />
-            {t.mentor}
+          <Link to="/mentor-circle" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/mentor-circle") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
+            <Sparkles className="h-4 w-4 inline mr-1.5" />{t.mentor}
           </Link>
-          <Link to="/webinars" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${isActive("/webinars") ? "bg-red-50 text-red-700 border border-red-200" : "text-gray-700 hover:bg-gray-50"}`}>
-            <Video className="h-4 w-4 text-red-600" />
-            {t.webinar}
+          <Link to="/webinars" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/webinars") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
+            <Video className="h-4 w-4 inline mr-1.5" />{t.webinar}
           </Link>
         </nav>
 
-        {/* Premium + Boost - Büyük ekran */}
-        <div className="hidden lg:flex items-center gap-3">
-          <Link to={premiumConfig.path}>
-            <Button className="h-10 rounded-xl px-5 bg-red-600 hover:bg-red-700 text-white font-semibold whitespace-nowrap">
-              <PremiumIcon className="h-4 w-4 mr-2" />
-              {premiumConfig.label}
+        {/* Sağ kısım - Premium + Boost + Diğer */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Premium & Boost - Sadece büyük ekran */}
+          <div className="hidden xl:flex items-center gap-2">
+            <Link to={premiumConfig.path}>
+              <Button size="sm" className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold">
+                <PremiumIcon className="h-4 w-4 mr-1.5" />
+                {premiumConfig.label}
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => navigate("/boost")} className="h-9 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 font-bold shadow-md">
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              {t.boost}
             </Button>
-          </Link>
-          <Button
-            onClick={() => navigate("/boost")}
-            className="h-10 rounded-xl px-5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold shadow-md whitespace-nowrap"
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            {t.boost}
-          </Button>
-        </div>
+          </div>
 
-        {/* Orta ekran (md-lg arası) - Sadece Premium */}
-        <div className="hidden md:flex lg:hidden items-center">
-          <Link to={premiumConfig.path}>
-            <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white text-sm">
-              <PremiumIcon className="h-4 w-4 mr-1" />
-              Premium
-            </Button>
-          </Link>
-        </div>
+          {/* Premium sadece orta ekran (1024-1280px) */}
+          <div className="hidden lg:flex xl:hidden">
+            <Link to={premiumConfig.path}>
+              <Button size="sm" className="h-9 px-3 text-xs bg-red-600 hover:bg-red-700">
+                <PremiumIcon className="h-3.5 w-3.5 mr-1" />
+                Premium
+              </Button>
+            </Link>
+          </div>
 
-        {/* Right side */}
-        <div className="flex items-center gap-3">
+          {/* Dil + Bildirim + Kullanıcı */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl">
-                <Globe className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" className="h-9 px-3">
+                <Globe className="h-3.5 w-3.5 mr-1" />
                 {(language || "tr").toUpperCase()}
-                <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("tr")}>TR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("en")}>EN</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>AR</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>FR</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("tr")}>Türkçe</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage("fr")}>Français</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -211,52 +155,42 @@ const Navbar = memo(function Navbar() {
             <NotificationBell />
           </div>
 
-          {showAuthSkeleton ? (
+          {!me ? (
             <div className="hidden md:flex items-center gap-2">
-              <div className="h-10 w-32 rounded-xl bg-gray-100 animate-pulse" />
-              <div className="h-10 w-40 rounded-xl bg-gray-100 animate-pulse" />
-            </div>
-          ) : !me ? (
-            <div className="hidden md:flex items-center gap-3">
-              <Link to="/login"><Button variant="outline" className="rounded-xl">{t.login}</Button></Link>
-              <Link to="/register"><Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">{t.register}</Button></Link>
+              <Link to="/login"><Button variant="outline" size="sm" className="h-9">Giriş</Button></Link>
+              <Link to="/register"><Button size="sm" className="h-9 bg-red-600 hover:bg-red-700">Kayıt Ol</Button></Link>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2">
               <Link to={dashboardPath}>
-                <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
- good               {dashboardLabel}
+                <Button size="sm" className="h-9 bg-red-600 hover:bg-red-700">
+                  <LayoutDashboard className="h-3.5 w-3.5 mr-1" />
+                  {dashboardLabel}
                 </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-xl">
-                    <User className="h-4 w-4 mr-2" />
-                    {displayName}
-                    <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+                  <Button variant="outline" size="sm" className="h-9 max-w-32">
+                    <User className="h-3.5 w-3.5 mr-1" />
+                    <span className="truncate">{displayName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="text-xs text-gray-500">{roleLabel}</div>
-                    <div className="text-sm font-semibold">{displayName}</div>
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/home")}><HomeIcon className="mr-2 h-4 w-4" />{t.feed}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/jobs")}><Briefcase className="mr-2 h-4 w-4" />{t.jobs}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/home")}><HomeIcon className="mr-2 h-4 w-4" />Ana Akış</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/jobs")}><Briefcase className="mr-2 h-4 w-4" />İlanlar</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}><LayoutDashboard className="mr-2 h-4 w-4" />{dashboardLabel}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(profilePath)}><User className="mr-2 h-4 w-4" />{t.profile}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(settingsPath)}><Settings className="mr-2 h-4 w-4" />{t.settings}</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />{t.logout}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/user/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />Çıkış</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           )}
 
-          <Button variant="outline" className="md:hidden rounded-xl" onClick={() => setMobileOpen(s => !s)}>
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {/* Mobile Menu Button */}
+          <Button variant="outline" size="sm" className="h-9 md:hidden" onClick={() => setMobileOpen(v => !v)}>
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -264,45 +198,23 @@ const Navbar = memo(function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white">
-          <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            {me && (
-              <>
-                <button onClick={() => { navigate("/home"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.feed}</button>
-                <button onClick={() => { navigate("/jobs"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.jobs}</button>
-              </>
-            )}
-            <button onClick={() => { navigate("/mentor-circle"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.mentor}</button>
-            <button onClick={() => { navigate("/webinars"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.webinar}</button>
-
+          <div className="px-4 py-4 space-y-2">
             <Link to={premiumConfig.path} onClick={() => setMobileOpen(false)} className="block">
-              <div className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left flex items-center gap-2">
-                <PremiumIcon className="h-5 w-5" />
+              <Button className="w-full h-12 text-left justify-start text-lg font-bold bg-red-600 hover:bg-red-700">
+                <PremiumIcon className="h-5 w-5 mr-3" />
                 {premiumConfig.label}
-              </div>
+              </Button>
             </Link>
-
-            <button
-              onClick={() => { navigate("/boost"); setMobileOpen(false); }}
-              className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold shadow-md flex items-center gap-2"
-            >
-              <Sparkles className="h-5 w-5" />
+            <Button onClick={() => { navigate("/boost"); setMobileOpen(false); }} className="w-full h-12 text-left justify-start text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600">
+              <Sparkles className="h-5 w-5 mr-3" />
               {t.boost}
-            </button>
-
-            <div className="pt-2 border-t space-y-2">
-              {!me ? (
-                <>
-                  <button onClick={() => { navigate("/login"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.login}</button>
-                  <button onClick={() => { navigate("/register"); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-left">{t.register}</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => { navigate(dashboardPath); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{dashboardLabel}</button>
-                  <button onClick={() => { navigate(profilePath); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.profile}</button>
-                  <button onClick={() => { navigate(settingsPath); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition">{t.settings}</button>
-                  <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition text-red-600">{t.logout}</button>
-                </>
-              )}
+            </Button>
+            <div className="pt-2 space-y-1">
+              <button onClick={() => { navigate("/home"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Ana Akış</button>
+              <button onClick={() => { navigate("/jobs"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">İlanlar</button>
+              <button onClick={() => { navigate(dashboardPath); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">{dashboardLabel}</button>
+              <button onClick={() => { navigate("/user/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
+              <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl text-red-600 font-semibold">Çıkış Yap</button>
             </div>
           </div>
         </div>

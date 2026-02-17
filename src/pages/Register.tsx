@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -157,7 +158,6 @@ export default function Register() {
 
       if (error) throw error;
 
-      // Profil ekle
       await supabase.from("profiles").insert({
         id: data.user?.id,
         full_name: formData.fullName,
@@ -212,14 +212,15 @@ export default function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-lg font-bold">{t.fullName} *</Label>
-              <Input required value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="h-14 text-lg border-2 border-gray-200 focus:border-red-500" placeholder={t.fullName} />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-lg font-bold">{t.email} *</Label>
-              <Input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-14 text-lg border-2 border-gray-200 focus:border-red-500" placeholder={t.email} />
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-lg font-bold">{t.fullName} *</Label>
+                <Input required value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="h-14 text-lg border-2 border-gray-200 focus:border-red-500" placeholder={t.fullName} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-lg font-bold">{t.email} *</Label>
+                <Input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-14 text-lg border-2 border-gray-200 focus:border-red-500" placeholder={t.email} />
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -233,19 +234,55 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* HESAP TÜRÜ - %100 EŞİT KUTULAR */}
+            <div className="space-y-6">
               <Label className="text-lg font-bold">{t.accountType}</Label>
-              <RadioGroup value={formData.userType} onValueChange={(v) => setFormData({ ...formData, userType: v })} className="grid grid-cols-3 gap-4">
-                {["individual", "coach", "company"].map((type) => (
-                  <div key={type}>
-                    <RadioGroupItem value={type} id={type} className="peer sr-only" />
-                    <Label htmlFor={type} className="flex flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-6 cursor-pointer transition-all hover:border-red-500 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:ring-4 peer-checked:ring-red-100">
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mb-3">
-                        <span className="text-2xl font-black text-red-600">
-                          {type === "individual" ? "👤" : type === "coach" ? "🎯" : "🏢"}
+              
+              <RadioGroup value={formData.userType} onValueChange={(v) => setFormData({ ...formData, userType: v })} className="grid grid-cols-3 gap-6">
+                {[
+                  { value: "individual", label: t.individual, icon: "👤", gradient: "from-blue-500 to-cyan-500" },
+                  { value: "coach",      label: t.coach,      icon: "🎯", gradient: "from-purple-500 to-pink-500" },
+                  { value: "company",    label: t.company,    icon: "🏢", gradient: "from-emerald-500 to-teal-500" },
+                ].map((item) => (
+                  <div key={item.value} className="relative group">
+                    <RadioGroupItem value={item.value} id={item.value} className="peer sr-only" />
+                    
+                    <Label
+                      htmlFor={item.value}
+                      className={`
+                        relative block h-48 rounded-3xl border-4 cursor-pointer transition-all duration-300
+                        peer-checked:border-transparent peer-checked:ring-4 peer-checked:ring-white/50
+                        bg-white shadow-lg hover:shadow-2xl hover:-translate-y-2
+                        ${formData.userType === item.value ? "shadow-2xl" : "border-gray-200"}
+                      `}
+                    >
+                      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${item.gradient} opacity-0 peer-checked:opacity-100 transition-opacity duration-500`} />
+                      
+                      <div className="relative z-10 h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
+                        <div className={`
+                          w-20 h-20 rounded-3xl flex items-center justify-center text-5xl shadow-2xl
+                          ${formData.userType === item.value ? "bg-white text-gray-800" : "bg-gray-100 text-gray-600"}
+                          transition-all duration-300 group-hover:scale-110
+                        `}>
+                          {item.icon}
+                        </div>
+                        
+                        <span className={`
+                          text-lg font-black tracking-tight
+                          ${formData.userType === item.value ? "text-white drop-shadow-2xl" : "text-gray-800"}
+                          transition-all duration-300
+                        `}>
+                          {item.label}
                         </span>
                       </div>
-                      <span className="font-bold text-lg">{t[type]}</span>
+
+                      {formData.userType === item.value && (
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2">
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-2xl">
+                            <CheckCircle2 className="w-8 h-8 text-red-600" />
+                          </div>
+                        </div>
+                      )}
                     </Label>
                   </div>
                 ))}
@@ -256,7 +293,7 @@ export default function Register() {
               <input type="checkbox" id="kvkk" checked={kvkkAccepted} onChange={(e) => setKvkkAccepted(e.target.checked)} className="mt-1 w-6 h-6 rounded border-2 border-gray-300 text-red-600 focus:ring-red-500" />
               <label htmlFor="kvkk" className="text-sm text-gray-600 leading-relaxed">
                 <Link to="/privacy" className="font-bold text-red-600 hover:underline">KVKK Aydınlatma Metni</Link>
-                {t.kvkk.replace("KVKK Aydınlatma Metni'ni okudum ve kişisel verilerimin işlenmesini onaylıyorum.", "")} *
+                {t.kvkk.includes("okudum") ? t.kvkk.substring(t.kvkk.indexOf("'ni")) : " ve kişisel verilerimin işlenmesini onaylıyorum."} *
               </label>
             </div>
 

@@ -592,3 +592,59 @@ export async function fetchExistingMatches(userId: string) {
   }
   return data || [];
 }
+// =========================================================
+// UserProfile.tsx için gerekli eksik fonksiyonlar
+// =========================================================
+
+export async function fetchAllJobs() {
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error("fetchAllJobs error:", error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function runStandardMatching(userId: string) {
+  const results = await matchCandidateToJobs(userId);
+  for (const r of results.slice(0, 10)) {
+    await saveMatch(userId, r.targetId, "job", r.matchScore, r.matchReasons);
+  }
+  return results;
+}
+
+export async function runBoostMatching(userId: string) {
+  const { data: credits } = await supabase
+    .from("user_boost_credits")
+    .select("balance")
+    .eq("user_id", userId)
+    .eq("credit_type", "ai_match")
+    .maybeSingle();
+
+  if (!credits || credits.balance <= 0) {
+    return { success: false, error: "Yetersiz AI Match kredisi" };
+  }
+
+  const results = await matchCandidateToJobs(userId, { minScore: 50 });
+
+  await supabase
+    .from("user_boost_credits")
+    .update({ balance: credits.balance - 1 })
+    .eq("user_id", userId)
+    .eq("credit_type", "ai_match");
+
+  for (const r of results.slice(0, 20)) {
+    await saveMatch(userId, r.targetId, "job", r.matchScore, r.matchReasons);
+  }
+
+  return { success: true, results };
+}
+
+export function isGeminiConfigured(): boolean {
+  return !!(import.meta.env.VITE_GEMINI_API_KEY);
+}

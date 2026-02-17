@@ -269,6 +269,14 @@ const Navbar = memo(function Navbar() {
               <PremiumIcon className="h-4 w-4 mr-2" />
               {premiumConfig.label}
             </Button>
+            {/* YENİ BOOST BUTONU */}
+<Button
+  className="h-10 rounded-xl px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold shadow-md ml-2"
+  onClick={() => navigate("/boost")}
+>
+  <Sparkles className="h-4 w-4 mr-2" />
+  Boost
+</Button>
           </Link>
         </nav>
 

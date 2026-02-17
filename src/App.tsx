@@ -1,4 +1,4 @@
-// src/pages/App.tsx
+// src/App.tsx
 // @ts-nocheck
 
 import { useEffect } from "react"; 
@@ -11,17 +11,15 @@ import {
   useLocation,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import ReactGA from "react-ga4"; // ✅ Analytics kütüphanesi
+import ReactGA from "react-ga4";
 
-// ✅ AUTH PROVIDER
+// AUTH PROVIDER
 import { AuthProvider } from "@/contexts/AuthContext";
 
-// LAYOUT (Public)
+// LAYOUTS
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CookieConsent from "@/components/CookieConsent"; // ✅ DÜZELTILDI — ui/ kaldırıldı
-
-// ✅ Admin Layout
+import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
 
 // SAYFALAR
@@ -36,11 +34,8 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import CoachSelection from "@/pages/CoachSelection";
 import CoachApplication from "@/pages/CoachApplication";
-
-// ✅ Nasıl Çalışır
 import HowItWorks from "@/pages/Howitworks";
 
-// ✅ LEGAL
 import About from "@/pages/About";
 import Privacy from "@/pages/Privacy";
 import Returns from "@/pages/Returns";
@@ -50,8 +45,6 @@ import Ethics from "@/pages/Ethics";
 
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
-
-// ✅ SITEMAP
 import Sitemap from "@/pages/Sitemap";
 
 // USER
@@ -76,59 +69,47 @@ import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminHireDashboard from "@/pages/AdminHireDashboard";
 
-// ✅ CHECKOUT / PAYMENT SUCCESS
+// CHECKOUT / PAYMENT
 import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
-
-// ✅ PAYTR
 import PaytrCheckout from "@/pages/PaytrCheckout";
 
-// ✅ PREMIUM LANDING
+// PREMIUM
 import BireyselPremium from "@/pages/BireyselPremium";
 
-// ✅ SESSION JOIN
+// SESSION
 import SessionJoin from "@/pages/SessionJoin";
-
-// ✅ SESSION ROOM + LISTS
 import SessionRoom from "@/pages/SessionRoom";
 import UserSessions from "@/pages/UserSessions";
 import CoachSessions from "@/pages/CoachSessions";
 
-// ✅ AUTH EXTRA PAGES
+// AUTH EXTRA
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 
-// ✅ SOCIAL HOME + JOB BOARD
+// SOCIAL + JOB BOARD
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
-
-// ✅ CREATE JOB
 import CreateJob from "@/pages/CreateJob";
 
-// ✅ INTERVIEW PAGE
+// INTERVIEW + MEETING
 import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
-
-// ✅ MEETING ROOM - Jitsi Video Seans
 import MeetingRoom from "@/pages/MeetingRoom";
 
-// ✅ ANALYTICS — Google Analytics 4 Ölçüm Kimliği
+// YENİ: BOOST SAYFASI
+import Boost from "@/pages/Boost";
+
+// ANALYTICS ID
 const GA_ID = "G-R39ELRDLKQ";
 
-/* -------------------------------------------------
-   Analytics Tracker Component
-   (Sadece kullanıcı çerezleri kabul ettiyse veri gönderir)
--------------------------------------------------- */
 function AnalyticsTracker() {
   const location = useLocation();
 
   useEffect(() => {
-    // LocalStorage'dan kontrol et
     const consent = localStorage.getItem('kariyeer_cookie_consent');
     
-    // Sadece "accepted" ise veri gönder
     if (consent === 'accepted') {
-      // GA henüz başlatılmadıysa başlat
       if (!window.__ga_initialized) {
         ReactGA.initialize(GA_ID);
         window.__ga_initialized = true;
@@ -140,9 +121,6 @@ function AnalyticsTracker() {
   return null;
 }
 
-/* -------------------------------------------------
-   Public Layout — Navbar + Footer
--------------------------------------------------- */
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -151,33 +129,25 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      <CookieConsent /> {/* Çerez bandı buraya eklendi */}
+      <CookieConsent />
     </div>
   );
 }
 
-/* -------------------------------------------------
-   APP
--------------------------------------------------- */
 export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AnalyticsTracker /> {/* Sayfa takibi burada başlıyor */}
+        <AnalyticsTracker />
         <Toaster richColors position="top-right" />
         <Routes>
 
-          {/* ═══════════════════════════════════════════ */}
-          {/* TAM EKRAN SAYFALAR — Layout dışı            */}
-          {/* Navbar/Footer YOK — Jitsi tam ekran açılır  */}
-          {/* ═══════════════════════════════════════════ */}
+          {/* TAM EKRAN SAYFALAR (Navbar/Footer yok) */}
           <Route path="/meeting/:roomName" element={<MeetingRoom />} />
           <Route path="/interview/:roomName" element={<InterviewPage />} />
           <Route path="/session/:id/room" element={<SessionRoom />} />
 
-          {/* ═══════════════════════════════════════════ */}
-          {/* ADMIN LAYOUT                                */}
-          {/* ═══════════════════════════════════════════ */}
+          {/* ADMIN PANEL */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="hiring" element={<AdminHireDashboard />} />
@@ -185,55 +155,37 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ═══════════════════════════════════════════ */}
-          {/* PUBLIC LAYOUT — Navbar + Footer             */}
-          {/* ═══════════════════════════════════════════ */}
+          {/* ANA LAYOUT (Navbar + Footer) */}
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
-
-            {/* SOCIAL HOME */}
             <Route path="home" element={<SocialHome />} />
-
-            {/* JOB BOARD */}
             <Route path="jobs" element={<JobBoard />} />
             <Route path="jobs/new" element={<CreateJob />} />
+            <Route path="corporate/jobs" element={<CorporateJobs />} />
 
-            {/* SITEMAP */}
+            {/* BOOST SAYFASI EKLENDİ */}
+            <Route path="boost" element={<Boost />} />
+
             <Route path="sitemap.xml" element={<Sitemap />} />
-
-            {/* PREMIUM */}
             <Route path="bireysel-premium" element={<BireyselPremium />} />
-
-            {/* PRICING */}
             <Route path="pricing" element={<Pricing />} />
 
-            {/* CHECKOUT FLOW */}
             <Route path="checkout" element={<Checkout />} />
             <Route path="payment-success" element={<PaymentSuccess />} />
-
-            {/* SESSION JOIN (layout içinde — sadece iframe) */}
-            <Route path="session/:id/join" element={<SessionJoin />} />
-
-            {/* SESSION LISTS */}
-            <Route path="dashboard/sessions" element={<UserSessions />} />
-            <Route path="coach/sessions" element={<CoachSessions />} />
-
-            {/* PAYTR */}
             <Route path="paytr/checkout" element={<PaytrCheckout />} />
             <Route path="paytr-checkout" element={<PaytrCheckout />} />
 
-            {/* BookSession redirect */}
-            <Route path="book-session" element={<Navigate to="/coaches" replace />} />
+            <Route path="session/:id/join" element={<SessionJoin />} />
+            <Route path="dashboard/sessions" element={<UserSessions />} />
+            <Route path="coach/sessions" element={<CoachSessions />} />
 
-            {/* How it works */}
+            <Route path="book-session" element={<Navigate to="/coaches" replace />} />
             <Route path="nasil-calisir" element={<HowItWorks />} />
             <Route path="how-it-works" element={<HowItWorks />} />
 
-            {/* COACHES */}
             <Route path="coaches" element={<Coaches />} />
             <Route path="coach/:slugOrId" element={<CoachPublicProfile />} />
 
-            {/* INFO PAGES */}
             <Route path="for-coaches" element={<ForCoaches />} />
             <Route path="for-companies" element={<ForCompanies />} />
             <Route path="mentor-circle" element={<MentorCircle />} />
@@ -251,7 +203,6 @@ export default function App() {
             <Route path="corporate/dashboard" element={<CorporateDashboard />} />
             <Route path="corporate/profile" element={<CorporateProfile />} />
             <Route path="corporate/settings" element={<CorporateSettings />} />
-            <Route path="corporate/jobs" element={<CorporateJobs />} />
 
             {/* COACH */}
             <Route path="coach/dashboard" element={<CoachDashboard />} />
@@ -266,11 +217,6 @@ export default function App() {
             <Route path="distance-sales" element={<DistanceSales />} />
             <Route path="terms" element={<Terms />} />
             <Route path="ethics" element={<Ethics />} />
-
-            {/* EKLEDİĞİNİZ YENİ ROTARLAR */}
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/distance-sales" element={<DistanceSales />} />
-            <Route path="/returns" element={<Returns />} />
 
             {/* AUTH */}
             <Route path="login" element={<Login />} />

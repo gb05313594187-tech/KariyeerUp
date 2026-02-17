@@ -439,7 +439,17 @@ const Navbar = memo(function Navbar() {
                 {premiumConfig.label}
               </div>
             </Link>
-
+{/* MOBİL BOOST BUTONU */}
+<button
+  onClick={() => {
+    navigate("/boost");
+    setMobileOpen(false);
+  }}
+  className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-left hover:from-purple-700 hover:to-pink-700 transition flex items-center gap-2 shadow-md"
+>
+  <Sparkles className="h-5 w-5" />
+  Boost
+</button>
             <div className="pt-2 border-t space-y-2">
               {!me ? (
                 <>

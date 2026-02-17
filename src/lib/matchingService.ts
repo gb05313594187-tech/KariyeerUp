@@ -578,3 +578,17 @@ export const boostService = {
     return data || [];
   },
 };
+// fetchExistingMatches — UserProfile.tsx için gerekli
+export async function fetchExistingMatches(userId: string) {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("user_id", userId)
+    .order("score", { ascending: false });
+
+  if (error) {
+    console.error("fetchExistingMatches error:", error);
+    return [];
+  }
+  return data || [];
+}

@@ -13,7 +13,7 @@ export interface BoostPrice {
 
 export interface BoostPackage {
   name: string;
-  targetRole: "user" | "coach" | "company";  // ← corporate → company
+  targetRole: "user" | "coach" | "company";
   prices: BoostPrice[];
 }
 
@@ -37,7 +37,7 @@ export const PRICING: Record<string, BoostPackage> = {
   },
   corporate_boost: {
     name: "Şirket AI Boost",
-    targetRole: "company",  // ← corporate → company
+    targetRole: "company",
     prices: [
       { slug: "corporate_boost_7",  duration: 7,  amount: 29900 },
       { slug: "corporate_boost_30", duration: 30, amount: 49900 },
@@ -50,11 +50,27 @@ export async function initiateBoostPayment(params: {
   userId: string;
   packageSlug: string;
 }) {
-  const { data: session } = await supabase.auth.getSession();
-  const token = session?.session?.access_token;
-  if (!token) return { success: false as const, error: "Oturum bulunamadı" };
-
   try {
+    // ✅ Session timeout'u handle et
+    const { data: session, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error("Session error:", sessionError);
+      return { 
+        success: false as const, 
+        error: "Oturum hatası. Lütfen tekrar giriş yapın." 
+      };
+    }
+
+    const token = session?.session?.access_token;
+    
+    if (!token) {
+      return { 
+        success: false as const, 
+        error: "Oturum bulunamadı. Lütfen giriş yapın." 
+      };
+    }
+
     const res = await fetch(
       `${SUPABASE_URL}/functions/v1/paytr-get-token-boost`,
       {
@@ -62,6 +78,7 @@ export async function initiateBoostPayment(params: {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
         },
         body: JSON.stringify({
           package_slug: params.packageSlug,
@@ -69,6 +86,15 @@ export async function initiateBoostPayment(params: {
         }),
       }
     );
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("PayTR API Error:", res.status, errorText);
+      return {
+        success: false as const,
+        error: `Ödeme başlatılamadı (HTTP ${res.status})`,
+      };
+    }
 
     const result = await res.json();
 
@@ -86,6 +112,7 @@ export async function initiateBoostPayment(params: {
       error: result.error || "Token alınamadı",
     };
   } catch (err: any) {
+    console.error("initiateBoostPayment error:", err);
     return {
       success: false as const,
       error: err.message || "Bağlantı hatası",

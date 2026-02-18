@@ -565,7 +565,7 @@ export default function Pricing() {
         ? "grid-cols-1 lg:grid-cols-2 max-w-4xl mx-auto"
         : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
-  /* ── ÖDEME ── */
+  /* ── ÖDEME FONKSİYONU ── */
   const handleBuy = async (pkgKey: string) => {
     if (!isLoggedIn || !userId) {
       navigate("/register");
@@ -577,15 +577,22 @@ export default function Pricing() {
 
     setPaymentLoading(pkgKey);
 
-    const result = await initiateBoostPayment({
-      userId,
-      packageSlug: price.slug,
-    });
+    try {
+      const result = await initiateBoostPayment({
+        userId,
+        packageSlug: price.slug,
+      });
 
-    if (result.success) {
-      window.location.href = result.iframeUrl;
-    } else {
-      toast.error(result.error || t.payError);
+      if (result.success && result.iframeUrl) {
+        // Yeni sekmede aç
+        window.open(result.iframeUrl, "_blank");
+        toast.success("Ödeme sayfası açıldı. Lütfen işlemi tamamlayın.");
+      } else {
+        toast.error(result.error || t.payError);
+      }
+    } catch (err: any) {
+      toast.error(err.message || t.payError);
+    } finally {
       setPaymentLoading(null);
     }
   };
@@ -797,11 +804,14 @@ export default function Pricing() {
                       disabled={paymentLoading === cfg.key}
                       className={`mt-7 w-full h-12 text-sm font-bold bg-gradient-to-r ${cfg.gradient} hover:opacity-90 text-white shadow-lg ${cfg.shadow} disabled:opacity-60`}
                     >
-                      {paymentLoading === cfg.key
-                        ? t.processing
-                        : isLoggedIn
-                          ? t.buyNow
-                          : t.registerCta}
+                      {paymentLoading === cfg.key ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t.processing}
+                        </span>
+                      ) : (
+                        isLoggedIn ? t.buyNow : t.registerCta
+                      )}
                     </Button>
                   </CardContent>
                 </Card>

@@ -11,6 +11,16 @@ import {
   Zap,
   Headphones,
   Loader2,
+  Target,
+  Brain,
+  Video,
+  Rocket,
+  Clock,
+  BarChart3,
+  Globe,
+  DollarSign,
+  Star,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,11 +32,48 @@ import { PRICING, initiateBoostPayment } from "@/lib/boostPayment";
    ════════════════════════════════════════════ */
 const translations = {
   tr: {
+    // Hero - User
+    userHeroTitle: "Hayalindeki İşe Daha Hızlı Ulaş",
+    userHeroSub: "Vakit kaybetme! Doğru şirketlerle eşleş, kişilik envanteriyle öne çık, online mülakatla zaman kazan.",
+    userFeatures: [
+      { icon: "target", text: "AI ile Doğru Eşleşme" },
+      { icon: "brain", text: "Kişilik Envanteri" },
+      { icon: "video", text: "Online Mülakat" },
+      { icon: "rocket", text: "Öne Çıkan Profil" },
+    ],
+
+    // Hero - Corporate
+    corpHeroTitle: "Vakit Kaybetmeyin, Doğru Adayla Tanışın",
+    corpHeroSub: "İşe alım sürenizi kısaltın. Özgeçmiş yığınlarında kaybolmayın - AI ön eleme yapsın, envanter göndersin, skorlasın. Siz sadece en uygun adaylarla görüşün.",
+    corpFeatures: [
+      { icon: "clock", text: "Kısalan İşe Alım Süreci" },
+      { icon: "target", text: "AI Ön Eleme" },
+      { icon: "brain", text: "Otomatik Envanter" },
+      { icon: "chart", text: "Akıllı Skorlama" },
+      { icon: "video", text: "Tek Tıkla Mülakat" },
+    ],
+
+    // Hero - Coach
+    coachHeroTitle: "Uzmanlığını Sınırsız Danışana Ulaştır",
+    coachHeroSub: "Coğrafi engel yok, dünyanın her yerinden danışanlarla çalış. Uzmanlığını gelire dönüştür.",
+    coachFeatures: [
+      { icon: "globe", text: "Sınırsız Erişim" },
+      { icon: "video", text: "Jitsi Online Seans" },
+      { icon: "dollar", text: "Uzmanlığını Gelire Dönüştür" },
+      { icon: "star", text: "Öne Çıkan Profil" },
+    ],
+
+    // Hero - Genel (giriş yapmamış veya admin)
+    defaultHeroTitle: "Kariyerini Boost'la",
+    defaultHeroSub: "AI destekli eşleşme sistemiyle öne çıkın, doğru fırsatları yakalayın!",
+    defaultFeatures: [
+      { icon: "target", text: "AI Eşleşme" },
+      { icon: "brain", text: "Kişilik Envanteri" },
+      { icon: "video", text: "Online Mülakat" },
+      { icon: "rocket", text: "Öne Çıkan Profil" },
+    ],
+
     heroPill: "Premium Boost Paketleri",
-    heroTitle1: "Kariyerini",
-    heroTitle2: "Boost'la",
-    heroSub:
-      "AI destekli eşleşme sistemiyle öne çıkın, doğru fırsatları yakalayın!",
 
     weekly: "Haftalık",
     monthly: "Aylık",
@@ -81,16 +128,48 @@ const translations = {
     faq3Q: "İptal edebilir miyim?",
     faq3A: "Boost süresi dolduğunda otomatik sonlanır. İstediğiniz zaman yeniden satın alabilirsiniz.",
 
-    roleNote: "Hesap türünüze uygun boost paketi gösterilmektedir.",
     loginNote: "Boost satın almak için giriş yapın veya kayıt olun.",
     payError: "Ödeme başlatılamadı",
   },
   en: {
+    userHeroTitle: "Reach Your Dream Job Faster",
+    userHeroSub: "Don't waste time! Match with the right companies, stand out with personality inventory, save time with online interviews.",
+    userFeatures: [
+      { icon: "target", text: "AI Matching" },
+      { icon: "brain", text: "Personality Inventory" },
+      { icon: "video", text: "Online Interview" },
+      { icon: "rocket", text: "Featured Profile" },
+    ],
+
+    corpHeroTitle: "Don't Waste Time, Meet the Right Candidate",
+    corpHeroSub: "Shorten your hiring process. Don't get lost in resume piles - let AI pre-screen, send inventory, score. You only interview the best matches.",
+    corpFeatures: [
+      { icon: "clock", text: "Faster Hiring" },
+      { icon: "target", text: "AI Pre-screening" },
+      { icon: "brain", text: "Auto Inventory" },
+      { icon: "chart", text: "Smart Scoring" },
+      { icon: "video", text: "One-Click Interview" },
+    ],
+
+    coachHeroTitle: "Reach Unlimited Clients with Your Expertise",
+    coachHeroSub: "No geographic barriers, work with clients from all over the world. Turn your expertise into income.",
+    coachFeatures: [
+      { icon: "globe", text: "Unlimited Access" },
+      { icon: "video", text: "Jitsi Online Session" },
+      { icon: "dollar", text: "Expertise to Income" },
+      { icon: "star", text: "Featured Profile" },
+    ],
+
+    defaultHeroTitle: "Boost Your Career",
+    defaultHeroSub: "Stand out with AI-powered matching and reach the right opportunities!",
+    defaultFeatures: [
+      { icon: "target", text: "AI Matching" },
+      { icon: "brain", text: "Personality Inventory" },
+      { icon: "video", text: "Online Interview" },
+      { icon: "rocket", text: "Featured Profile" },
+    ],
+
     heroPill: "Premium Boost Packages",
-    heroTitle1: "Boost Your",
-    heroTitle2: "Career",
-    heroSub:
-      "Stand out with AI-powered matching and reach the right opportunities!",
 
     weekly: "Weekly",
     monthly: "Monthly",
@@ -145,15 +224,48 @@ const translations = {
     faq3Q: "Can I cancel?",
     faq3A: "The boost automatically expires at the end of the period. You can repurchase anytime.",
 
-    roleNote: "Showing the boost package suitable for your account type.",
     loginNote: "Log in or register to purchase a boost.",
     payError: "Payment could not be initiated",
   },
   ar: {
+    userHeroTitle: "الوصول إلى وظيفة أحلامك بشكل أسرع",
+    userHeroSub: "لا تضيع الوقت! تطابق مع الشركات المناسبة، تميز بجرد الشخصية، وفر الوقت مع المقابلات عبر الإنترنت.",
+    userFeatures: [
+      { icon: "target", text: "مطابقة AI" },
+      { icon: "brain", text: "جرد الشخصية" },
+      { icon: "video", text: "مقابلة أونلاين" },
+      { icon: "rocket", text: "ملف مميز" },
+    ],
+
+    corpHeroTitle: "لا تضيعوا الوقت، قابلوا المرشح المناسب",
+    corpHeroSub: "اختصروا عملية التوظيف. لا تضيعوا في أكوام السير الذاتية - دع AI يفرز، يرسل الجرد، يسجل. أنتم فقط تقابلون الأنسب.",
+    corpFeatures: [
+      { icon: "clock", text: "توظيف أسرع" },
+      { icon: "target", text: "فرز AI" },
+      { icon: "brain", text: "جرد تلقائي" },
+      { icon: "chart", text: "تسجيل ذكي" },
+      { icon: "video", text: "مقابلة بنقرة" },
+    ],
+
+    coachHeroTitle: "أوصل خبرتك لعملاء بلا حدود",
+    coachHeroSub: "لا حواجز جغرافية، اعمل مع عملاء من جميع أنحاء العالم. حول خبرتك إلى دخل.",
+    coachFeatures: [
+      { icon: "globe", text: "وصول غير محدود" },
+      { icon: "video", text: "جلسة Jitsi" },
+      { icon: "dollar", text: "خبرة لدخل" },
+      { icon: "star", text: "ملف مميز" },
+    ],
+
+    defaultHeroTitle: "عزز مسيرتك المهنية",
+    defaultHeroSub: "تميّز بنظام المطابقة الذكي واحصل على الفرص المناسبة!",
+    defaultFeatures: [
+      { icon: "target", text: "مطابقة AI" },
+      { icon: "brain", text: "جرد الشخصية" },
+      { icon: "video", text: "مقابلة أونلاين" },
+      { icon: "rocket", text: "ملف مميز" },
+    ],
+
     heroPill: "حزم Boost المميزة",
-    heroTitle1: "عزّز",
-    heroTitle2: "مسيرتك المهنية",
-    heroSub: "تميّز بنظام المطابقة الذكي واحصل على الفرص المناسبة!",
 
     weekly: "أسبوعي",
     monthly: "شهري",
@@ -208,16 +320,48 @@ const translations = {
     faq3Q: "هل يمكنني الإلغاء؟",
     faq3A: "ينتهي Boost تلقائياً عند انتهاء المدة. يمكنك إعادة الشراء في أي وقت.",
 
-    roleNote: "يتم عرض حزمة Boost المناسبة لنوع حسابك.",
     loginNote: "سجّل الدخول أو أنشئ حساباً لشراء Boost.",
     payError: "تعذر بدء الدفع",
   },
   fr: {
+    userHeroTitle: "Atteignez Votre Job de Rêve Plus Vite",
+    userHeroSub: "Ne perdez pas de temps ! Matchez avec les bonnes entreprises, démarquez-vous avec l'inventaire de personnalité, gagnez du temps avec les entretiens en ligne.",
+    userFeatures: [
+      { icon: "target", text: "Matching IA" },
+      { icon: "brain", text: "Inventaire Personnalité" },
+      { icon: "video", text: "Entretien en Ligne" },
+      { icon: "rocket", text: "Profil en Vedette" },
+    ],
+
+    corpHeroTitle: "Ne Perdez Plus de Temps, Rencontrez le Bon Candidat",
+    corpHeroSub: "Raccourcissez votre processus de recrutement. Ne vous perdez pas dans les CV - laissez l'IA pré-filtrer, envoyer l'inventaire, scorer. Vous n'interviewez que les meilleurs.",
+    corpFeatures: [
+      { icon: "clock", text: "Recrutement Rapide" },
+      { icon: "target", text: "Pré-filtrage IA" },
+      { icon: "brain", text: "Inventaire Auto" },
+      { icon: "chart", text: "Scoring Intelligent" },
+      { icon: "video", text: "Entretien 1-Clic" },
+    ],
+
+    coachHeroTitle: "Partagez Votre Expertise Sans Limites",
+    coachHeroSub: "Pas de barrières géographiques, travaillez avec des clients du monde entier. Transformez votre expertise en revenus.",
+    coachFeatures: [
+      { icon: "globe", text: "Accès Illimité" },
+      { icon: "video", text: "Session Jitsi" },
+      { icon: "dollar", text: "Expertise en Revenus" },
+      { icon: "star", text: "Profil en Vedette" },
+    ],
+
+    defaultHeroTitle: "Boostez Votre Carrière",
+    defaultHeroSub: "Démarquez-vous grâce au matching IA et saisissez les bonnes opportunités !",
+    defaultFeatures: [
+      { icon: "target", text: "Matching IA" },
+      { icon: "brain", text: "Inventaire" },
+      { icon: "video", text: "Entretien" },
+      { icon: "rocket", text: "Profil Vedette" },
+    ],
+
     heroPill: "Forfaits Boost Premium",
-    heroTitle1: "Boostez votre",
-    heroTitle2: "Carrière",
-    heroSub:
-      "Démarquez-vous grâce au matching IA et saisissez les bonnes opportunités !",
 
     weekly: "Hebdomadaire",
     monthly: "Mensuel",
@@ -272,10 +416,28 @@ const translations = {
     faq3Q: "Puis-je annuler ?",
     faq3A: "Le boost expire automatiquement. Vous pouvez racheter à tout moment.",
 
-    roleNote: "Le forfait boost adapté à votre type de compte est affiché.",
     loginNote: "Connectez-vous ou inscrivez-vous pour acheter un boost.",
     payError: "Le paiement n'a pas pu être initié",
   },
+};
+
+/* ════════════════════════════════════════════
+   ICON HELPER
+   ════════════════════════════════════════════ */
+const getIcon = (iconName: string, className: string) => {
+  const icons: Record<string, React.ReactNode> = {
+    target: <Target className={className} />,
+    brain: <Brain className={className} />,
+    video: <Video className={className} />,
+    rocket: <Rocket className={className} />,
+    clock: <Clock className={className} />,
+    chart: <BarChart3 className={className} />,
+    globe: <Globe className={className} />,
+    dollar: <DollarSign className={className} />,
+    star: <Star className={className} />,
+    users: <Users className={className} />,
+  };
+  return icons[iconName] || <Sparkles className={className} />;
 };
 
 /* ════════════════════════════════════════════
@@ -300,6 +462,51 @@ export default function Pricing() {
     corporate_boost: 1,
   });
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+
+  /* ── ROL BAZLI HERO İÇERİĞİ ── */
+  const getHeroContent = () => {
+    if (!isLoggedIn || authLoading) {
+      return {
+        title: t.defaultHeroTitle,
+        subtitle: t.defaultHeroSub,
+        features: t.defaultFeatures,
+        gradient: "from-red-600 to-orange-600",
+      };
+    }
+
+    switch (role) {
+      case "corporate":
+        return {
+          title: t.corpHeroTitle,
+          subtitle: t.corpHeroSub,
+          features: t.corpFeatures,
+          gradient: "from-emerald-500 to-teal-500",
+        };
+      case "coach":
+        return {
+          title: t.coachHeroTitle,
+          subtitle: t.coachHeroSub,
+          features: t.coachFeatures,
+          gradient: "from-purple-500 to-pink-500",
+        };
+      case "user":
+        return {
+          title: t.userHeroTitle,
+          subtitle: t.userHeroSub,
+          features: t.userFeatures,
+          gradient: "from-blue-500 to-cyan-500",
+        };
+      default:
+        return {
+          title: t.defaultHeroTitle,
+          subtitle: t.defaultHeroSub,
+          features: t.defaultFeatures,
+          gradient: "from-red-600 to-orange-600",
+        };
+    }
+  };
+
+  const heroContent = getHeroContent();
 
   /* ── KİM NE GÖRÜR ── */
   const canSeeUser =
@@ -395,30 +602,41 @@ export default function Pricing() {
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* ══════════ HERO ══════════ */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-red-200 text-red-700 font-semibold text-sm shadow-sm">
             <Sparkles className="w-4 h-4" />
             {t.heroPill}
           </span>
 
           <h1 className="mt-6 text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
-            {t.heroTitle1}{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
-              {t.heroTitle2}
+            <span className={`text-transparent bg-clip-text bg-gradient-to-r ${heroContent.gradient}`}>
+              {heroContent.title}
             </span>
           </h1>
 
-          <p className="mt-4 text-gray-600 text-base sm:text-lg max-w-2xl mx-auto">
-            {t.heroSub}
+          <p className="mt-4 text-gray-600 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed">
+            {heroContent.subtitle}
           </p>
         </div>
 
-        {/* ── ROL NOTU ── */}
-        {!authLoading && isLoggedIn && role !== "admin" && (
-          <div className="mb-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-200 p-4 text-center text-sm text-gray-700">
-            <span className="font-bold capitalize">{role}</span> — {t.roleNote}
-          </div>
-        )}
+        {/* ══════════ TEŞVİK BARI ══════════ */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
+          {heroContent.features.map((feature, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 backdrop-blur-sm shadow-md border border-white/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${heroContent.gradient} flex items-center justify-center shadow-sm`}>
+                {getIcon(feature.icon, "w-4 h-4 text-white")}
+              </div>
+              <span className="font-medium text-gray-700 text-sm">
+                {feature.text}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── GİRİŞ YAPILMAMIŞ NOTU ── */}
         {!authLoading && !isLoggedIn && (
           <div className="mb-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-200 p-4 text-center text-sm text-gray-700">
             {t.loginNote}

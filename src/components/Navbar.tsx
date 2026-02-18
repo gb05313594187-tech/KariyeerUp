@@ -96,11 +96,9 @@ const Navbar = memo(function Navbar() {
 
         {/* Orta kısım - Menü (1024px+) */}
         <nav className="hidden lg:flex items-center gap-1.5 flex-1 justify-center">
-          {me && (
-            <Link to="/jobs" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/jobs") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
-              <Briefcase className="h-4 w-4 inline mr-1.5" />{t.jobs}
-            </Link>
-          )}
+          <Link to="/jobs" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/jobs") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
+            <Briefcase className="h-4 w-4 inline mr-1.5" />{t.jobs}
+          </Link>
           <Link to="/mentor-circle" className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${isActive("/mentor-circle") ? "bg-red-50 text-red-700" : "text-gray-700 hover:bg-gray-100"}`}>
             <Sparkles className="h-4 w-4 inline mr-1.5" />{t.mentor}
           </Link>

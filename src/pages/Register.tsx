@@ -36,7 +36,7 @@ export default function Register() {
       password: "Şifre (En az 6 karakter)",
       confirmPassword: "Şifre Tekrar",
       accountType: "Hesap Türü",
-      individual: "Bireysel",
+      individual: "Bireysel Kullanıcı",
       coach: "Koç",
       company: "Şirket",
       submit: "Kayıt Ol",
@@ -61,7 +61,7 @@ export default function Register() {
       password: "Password (Min. 6 characters)",
       confirmPassword: "Confirm Password",
       accountType: "Account Type",
-      individual: "Individual",
+      individual: "Individual User",
       coach: "Coach",
       company: "Company",
       submit: "Register",
@@ -86,7 +86,7 @@ export default function Register() {
       password: "كلمة المرور (6 أحرف على الأقل)",
       confirmPassword: "تأكيد كلمة المرور",
       accountType: "نوع الحساب",
-      individual: "فردي",
+      individual: "مستخدم فردي",
       coach: "مدرب",
       company: "شركة",
       submit: "إنشاء حساب",
@@ -111,7 +111,7 @@ export default function Register() {
       password: "Mot de passe (Min. 6 caractères)",
       confirmPassword: "Confirmer le mot de passe",
       accountType: "Type de compte",
-      individual: "Individuel",
+      individual: "Utilisateur individuel",
       coach: "Coach",
       company: "Entreprise",
       submit: "S'inscrire",
@@ -150,14 +150,14 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!kvkkAccepted)                                  { toast.error(t.kvkkError);        return; }
-    if (formData.password.length < 6)                   { toast.error(t.passwordLength);   return; }
-    if (formData.password !== formData.confirmPassword) { toast.error(t.passwordMismatch); return; }
+    if (!kvkkAccepted)                                     { toast.error(t.kvkkError);        return; }
+    if (formData.password.length < 6)                      { toast.error(t.passwordLength);   return; }
+    if (formData.password !== formData.confirmPassword)    { toast.error(t.passwordMismatch); return; }
 
     setIsLoading(true);
     try {
       const role =
-        formData.userType === "coach"   ? "coach"
+        formData.userType === "coach"    ? "coach"
         : formData.userType === "company" ? "corporate"
         : "user";
 
@@ -185,39 +185,38 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 flex items-center justify-center p-4">
-      {/* arka plan blob */}
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 flex items-center justify-center p-6">
+      {/* Arka plan blob'ları */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 -left-32 w-96 h-96 bg-red-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
         <div className="absolute bottom-0 -right-32 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
       </div>
 
-      {/* ── KART — Login ile aynı max-w-md ── */}
-      <Card className="relative w-full max-w-md shadow-2xl border-0 overflow-hidden">
+      <Card className="relative w-full max-w-lg shadow-2xl border-0 overflow-hidden">
+        {/* Üst renk şeridi */}
         <div className="h-1.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500" />
 
-        {/* HEADER */}
-        <CardHeader className="text-center pt-7 pb-3">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
-            <span className="text-white text-xl font-black">K</span>
+        {/* ── HEADER ── */}
+        <CardHeader className="text-center pt-8 pb-4">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
+            <span className="text-white text-2xl font-black">K</span>
           </div>
-          <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
             {t.title}
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{t.subtitle}</p>
+          <p className="mt-1 text-sm text-gray-500">{t.subtitle}</p>
         </CardHeader>
 
-        <CardContent className="px-6 pb-7">
+        <CardContent className="px-8 pb-8">
 
-          {/* SOSYAL BUTONLAR */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          {/* ── SOSYAL BUTONLAR ── */}
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <Button
               variant="outline"
-              size="sm"
-              className="h-9 text-xs font-semibold border border-gray-200 hover:border-red-300 hover:bg-red-50/50"
+              className="h-10 text-sm font-semibold border border-gray-200 hover:border-red-300 hover:bg-red-50/50"
               onClick={() => handleSocialLogin("google")}
             >
-              <svg className="w-3.5 h-3.5 mr-1.5 shrink-0" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -227,136 +226,154 @@ export default function Register() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              className="h-9 text-xs font-semibold border border-gray-200 hover:border-blue-400 hover:bg-blue-50/50"
+              className="h-10 text-sm font-semibold border border-gray-200 hover:border-blue-400 hover:bg-blue-50/50"
               onClick={() => handleSocialLogin("linkedin_oidc")}
             >
-              <svg className="w-3.5 h-3.5 mr-1.5 shrink-0" fill="#0A66C2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 shrink-0" fill="#0A66C2" viewBox="0 0 24 24">
                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
               </svg>
               {t.linkedin}
             </Button>
           </div>
 
-          {/* AYRAÇ */}
-          <div className="relative mb-4">
+          {/* ── AYRAÇ ── */}
+          <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-2 bg-white text-xs text-gray-400">{t.or}</span>
+              <span className="px-3 bg-white text-xs text-gray-400">{t.or}</span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Ad Soyad */}
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-700">{t.fullName} *</Label>
-              <Input
-                required
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="h-9 text-sm"
-                placeholder={t.fullName}
-              />
-            </div>
-
-            {/* E-posta */}
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-700">{t.email} *</Label>
-              <Input
-                required
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="h-9 text-sm"
-                placeholder="ornek@email.com"
-              />
-            </div>
-
-            {/* Şifre */}
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-700">{t.password} *</Label>
-              <div className="relative">
+            {/* Ad Soyad + E-posta */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-gray-700">
+                  {t.fullName} *
+                </Label>
                 <Input
                   required
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="h-9 text-sm pr-9"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  className="h-10 text-sm"
+                  placeholder={t.fullName}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-gray-700">
+                  {t.email} *
+                </Label>
+                <Input
+                  required
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="h-10 text-sm"
+                  placeholder="ornek@email.com"
+                />
               </div>
             </div>
 
-            {/* Şifre Tekrar */}
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-700">{t.confirmPassword} *</Label>
-              <div className="relative">
-                <Input
-                  required
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="h-9 text-sm pr-9"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
+            {/* Şifre + Şifre Tekrar */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-gray-700">
+                  {t.password} *
+                </Label>
+                <div className="relative">
+                  <Input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="h-10 text-sm pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-gray-700">
+                  {t.confirmPassword} *
+                </Label>
+                <div className="relative">
+                  <Input
+                    required
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="h-10 text-sm pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* HESAP TÜRÜ */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-700">{t.accountType}</Label>
+            {/* ── HESAP TÜRÜ ── */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700">
+                {t.accountType}
+              </Label>
               <RadioGroup
                 value={formData.userType}
                 onValueChange={(v) => setFormData({ ...formData, userType: v })}
-                className="grid grid-cols-3 gap-2"
+                className="grid grid-cols-3 gap-3"
               >
                 {accountTypes.map((item) => {
-                  const sel = formData.userType === item.value;
+                  const isSelected = formData.userType === item.value;
                   return (
                     <div key={item.value}>
                       <RadioGroupItem value={item.value} id={item.value} className="sr-only" />
                       <label
                         htmlFor={item.value}
                         className={`
-                          relative flex flex-col items-center justify-center gap-1.5
-                          h-20 rounded-xl cursor-pointer select-none overflow-hidden
+                          relative flex flex-col items-center justify-center gap-2
+                          h-24 rounded-2xl cursor-pointer select-none overflow-hidden
                           transition-all duration-200
-                          ${sel
-                            ? `ring-2 ${item.ring} shadow-md scale-[1.03]`
-                            : "border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                          ${isSelected
+                            ? `ring-2 ${item.ring} shadow-lg scale-[1.03]`
+                            : "border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
                           }
                         `}
                       >
-                        {sel && (
+                        {/* Seçili gradient arka plan */}
+                        {isSelected && (
                           <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
                         )}
-                        <div className="relative z-10 flex flex-col items-center gap-1">
-                          <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-xl ${sel ? "bg-white/25" : "bg-gray-100"}`}>
+
+                        <div className="relative z-10 flex flex-col items-center gap-1.5">
+                          <span className={`
+                            w-10 h-10 rounded-xl flex items-center justify-center text-2xl
+                            ${isSelected ? "bg-white/25" : "bg-gray-100"}
+                          `}>
                             {item.icon}
                           </span>
-                          <span className={`text-xs font-semibold leading-tight text-center ${sel ? "text-white" : "text-gray-700"}`}>
+                          <span className={`
+                            text-xs font-bold leading-tight text-center
+                            ${isSelected ? "text-white" : "text-gray-700"}
+                          `}>
                             {item.label}
                           </span>
                         </div>
-                        {sel && (
-                          <CheckCircle2 className="absolute top-1.5 right-1.5 w-3.5 h-3.5 text-white drop-shadow z-20" />
+
+                        {isSelected && (
+                          <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-white drop-shadow z-20" />
                         )}
                       </label>
                     </div>
@@ -365,14 +382,14 @@ export default function Register() {
               </RadioGroup>
             </div>
 
-            {/* KVKK */}
+            {/* ── KVKK ── */}
             <div className="flex items-start gap-2">
               <input
                 type="checkbox"
                 id="kvkk"
                 checked={kvkkAccepted}
                 onChange={(e) => setKvkkAccepted(e.target.checked)}
-                className="mt-0.5 w-3.5 h-3.5 accent-red-600 cursor-pointer shrink-0"
+                className="mt-0.5 w-4 h-4 accent-red-600 cursor-pointer shrink-0"
               />
               <label htmlFor="kvkk" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
                 <Link to="/privacy" className="font-semibold text-red-600 hover:underline">
@@ -382,17 +399,18 @@ export default function Register() {
               </label>
             </div>
 
-            {/* SUBMIT */}
+            {/* ── SUBMIT ── */}
             <Button
               type="submit"
               disabled={isLoading || !kvkkAccepted}
-              className="w-full h-10 text-sm font-bold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-md shadow-red-500/20 disabled:opacity-60"
+              className="w-full h-11 text-sm font-bold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg shadow-red-500/20 disabled:opacity-60"
             >
               {isLoading ? t.submitting : t.submit}
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-gray-500">
+          {/* ── ALT LİNK ── */}
+          <p className="mt-5 text-center text-sm text-gray-500">
             {t.alreadyHaveAccount}{" "}
             <Link to="/login" className="font-semibold text-red-600 hover:underline">
               {t.login}

@@ -1,7 +1,7 @@
 // src/App.tsx
 // @ts-nocheck
 
-import { useEffect } from "react"; 
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -97,8 +97,7 @@ import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
 import MeetingRoom from "@/pages/MeetingRoom";
 
-// YENİ: BOOST SAYFASI
-import Boost from "@/pages/Boost";
+// ✅ Boost import KALDIRILDI — artık /boost → /pricing redirect
 
 // ANALYTICS ID
 const GA_ID = "G-R39ELRDLKQ";
@@ -107,14 +106,17 @@ function AnalyticsTracker() {
   const location = useLocation();
 
   useEffect(() => {
-    const consent = localStorage.getItem('kariyeer_cookie_consent');
-    
-    if (consent === 'accepted') {
+    const consent = localStorage.getItem("kariyeer_cookie_consent");
+
+    if (consent === "accepted") {
       if (!window.__ga_initialized) {
         ReactGA.initialize(GA_ID);
         window.__ga_initialized = true;
       }
-      ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+      ReactGA.send({
+        hitType: "pageview",
+        page: location.pathname + location.search,
+      });
     }
   }, [location]);
 
@@ -141,7 +143,6 @@ export default function App() {
         <AnalyticsTracker />
         <Toaster richColors position="top-right" />
         <Routes>
-
           {/* TAM EKRAN SAYFALAR (Navbar/Footer yok) */}
           <Route path="/meeting/:roomName" element={<MeetingRoom />} />
           <Route path="/interview/:roomName" element={<InterviewPage />} />
@@ -163,8 +164,11 @@ export default function App() {
             <Route path="jobs/new" element={<CreateJob />} />
             <Route path="corporate/jobs" element={<CorporateJobs />} />
 
-            {/* BOOST SAYFASI EKLENDİ */}
-            <Route path="boost" element={<Boost />} />
+            {/* ✅ BOOST → PRICING REDIRECT */}
+            <Route
+              path="boost"
+              element={<Navigate to="/pricing" replace />}
+            />
 
             <Route path="sitemap.xml" element={<Sitemap />} />
             <Route path="bireysel-premium" element={<BireyselPremium />} />
@@ -179,7 +183,10 @@ export default function App() {
             <Route path="dashboard/sessions" element={<UserSessions />} />
             <Route path="coach/sessions" element={<CoachSessions />} />
 
-            <Route path="book-session" element={<Navigate to="/coaches" replace />} />
+            <Route
+              path="book-session"
+              element={<Navigate to="/coaches" replace />}
+            />
             <Route path="nasil-calisir" element={<HowItWorks />} />
             <Route path="how-it-works" element={<HowItWorks />} />
 
@@ -190,7 +197,10 @@ export default function App() {
             <Route path="for-companies" element={<ForCompanies />} />
             <Route path="mentor-circle" element={<MentorCircle />} />
             <Route path="webinars" element={<Webinars />} />
-            <Route path="coach-selection-process" element={<CoachSelection />} />
+            <Route
+              path="coach-selection-process"
+              element={<CoachSelection />}
+            />
             <Route path="coach-application" element={<CoachApplication />} />
 
             {/* USER */}
@@ -200,9 +210,15 @@ export default function App() {
             <Route path="user/settings" element={<UserSettings />} />
 
             {/* CORPORATE */}
-            <Route path="corporate/dashboard" element={<CorporateDashboard />} />
+            <Route
+              path="corporate/dashboard"
+              element={<CorporateDashboard />}
+            />
             <Route path="corporate/profile" element={<CorporateProfile />} />
-            <Route path="corporate/settings" element={<CorporateSettings />} />
+            <Route
+              path="corporate/settings"
+              element={<CorporateSettings />}
+            />
 
             {/* COACH */}
             <Route path="coach/dashboard" element={<CoachDashboard />} />
@@ -225,9 +241,18 @@ export default function App() {
             <Route path="reset-password" element={<ResetPassword />} />
 
             {/* LEGACY REDIRECTS */}
-            <Route path="dashboard" element={<Navigate to="/user/dashboard" replace />} />
-            <Route path="profile" element={<Navigate to="/user/profile" replace />} />
-            <Route path="coach-dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+            <Route
+              path="dashboard"
+              element={<Navigate to="/user/dashboard" replace />}
+            />
+            <Route
+              path="profile"
+              element={<Navigate to="/user/profile" replace />}
+            />
+            <Route
+              path="coach-dashboard"
+              element={<Navigate to="/coach/dashboard" replace />}
+            />
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />

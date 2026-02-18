@@ -7,13 +7,13 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 /* ───────────────── TYPES ───────────────── */
 export interface BoostPrice {
   slug: string;
-  duration: number;   // gün
-  amount: number;     // kuruş (9900 = 99₺)
+  duration: number;
+  amount: number;
 }
 
 export interface BoostPackage {
   name: string;
-  targetRole: "user" | "coach" | "corporate";
+  targetRole: "user" | "coach" | "company";  // ← corporate → company
   prices: BoostPrice[];
 }
 
@@ -37,7 +37,7 @@ export const PRICING: Record<string, BoostPackage> = {
   },
   corporate_boost: {
     name: "Şirket AI Boost",
-    targetRole: "corporate",
+    targetRole: "company",  // ← corporate → company
     prices: [
       { slug: "corporate_boost_7",  duration: 7,  amount: 29900 },
       { slug: "corporate_boost_30", duration: 30, amount: 49900 },

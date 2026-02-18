@@ -1,74 +1,54 @@
 // src/lib/boostPayment.ts
-// @ts-nocheck
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabase";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-/* ───────────────── TYPES ───────────────── */
-export interface BoostPrice {
-  slug: string;
-  duration: number;
-  amount: number;
-}
-
-export interface BoostPackage {
-  name: string;
-  targetRole: "user" | "coach" | "company";
-  prices: BoostPrice[];
-}
-
-/* ───────────────── PRICING ───────────────── */
-export const PRICING: Record<string, BoostPackage> = {
+// ✅ PRICING sabitini boost_packages tablosundaki slug'larla eşleştir
+export const PRICING: Record<
+  string,
+  { prices: { slug: string; amount: number; duration: number }[] }
+> = {
   user_boost: {
-    name: "Aday AI Boost",
-    targetRole: "user",
     prices: [
-      { slug: "user_boost_7",  duration: 7,  amount: 9900  },
-      { slug: "user_boost_30", duration: 30, amount: 19900 },
+      { slug: "profile_boost_7", amount: 9900, duration: 7 },   // 99₺/hafta
+      { slug: "profile_boost_30", amount: 29900, duration: 30 }, // 299₺/ay
     ],
   },
   coach_boost: {
-    name: "Koç Öne Çıkarma",
-    targetRole: "coach",
     prices: [
-      { slug: "coach_boost_7",  duration: 7,  amount: 19900 },
-      { slug: "coach_boost_30", duration: 30, amount: 39900 },
+      { slug: "coach_boost_7", amount: 14900, duration: 7 },    // 149₺/hafta
+      { slug: "coach_boost_30", amount: 39900, duration: 30 },  // 399₺/ay
     ],
   },
   corporate_boost: {
-    name: "Şirket AI Boost",
-    targetRole: "company",
     prices: [
-      { slug: "corporate_boost_7",  duration: 7,  amount: 29900 },
-      { slug: "corporate_boost_30", duration: 30, amount: 49900 },
+      { slug: "job_boost_7", amount: 19900, duration: 7 },      // 199₺/hafta
+      { slug: "job_boost_30", amount: 49900, duration: 30 },    // 499₺/ay
     ],
   },
 };
 
-/* ───────────────── PAYMENT ───────────────── */
-export async function initiateBoostPayment(params: {
+export interface BoostPaymentResult {
+  success: boolean;
+  iframeUrl?: string;
+  merchantOid?: string;
+  error?: string;
+}
+
+export async function initiateBoostPayment({
+  userId,
+  packageSlug,
+}: {
   userId: string;
   packageSlug: string;
-}) {
+}): Promise<BoostPaymentResult> {
   try {
-    // ✅ Session timeout'u handle et
-    const { data: session, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error("Session error:", sessionError);
-      return { 
-        success: false as const, 
-        error: "Oturum hatası. Lütfen tekrar giriş yapın." 
-      };
-    }
+    const { data: session } = await supabase.auth.getSession();
+    const accessToken = session?.session?.access_token;
 
-    const token = session?.session?.access_token;
-    
-    if (!token) {
-      return { 
-        success: false as const, 
-        error: "Oturum bulunamadı. Lütfen giriş yapın." 
-      };
+    if (!accessToken) {
+      return { success: false, error: "Oturum bulunamadı. Lütfen giriş yapın." };
     }
 
     const res = await fetch(
@@ -77,45 +57,57 @@ export async function initiateBoostPayment(params: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
+          apikey: ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          package_slug: params.packageSlug,
-          user_id: params.userId,
+          package_slug: packageSlug,
+          user_id: userId,
         }),
       }
     );
 
+    // ✅ Yanıtı önce text olarak al, sonra parse et
+    const rawText = await res.text();
+    let body: any = {};
+    try {
+      body = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      body = { raw: rawText };
+    }
+
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("PayTR API Error:", res.status, errorText);
+      console.error("paytr-get-token-boost HTTP error:", res.status, body);
       return {
-        success: false as const,
-        error: `Ödeme başlatılamadı (HTTP ${res.status})`,
+        success: false,
+        error:
+          body?.error ||
+          `Sunucu hatası (HTTP ${res.status}). Lütfen tekrar deneyin.`,
       };
     }
 
-    const result = await res.json();
-
-    if (result.success && result.token) {
+    if (!body?.success) {
       return {
-        success: true as const,
-        token: result.token,
-        merchantOid: result.merchant_oid,
-        iframeUrl: `https://www.paytr.com/odeme/guvenli/${result.token}`,
+        success: false,
+        error: body?.error || "Ödeme başlatılamadı.",
       };
+    }
+
+    const token = body?.token;
+    if (!token) {
+      return { success: false, error: "PayTR token alınamadı." };
     }
 
     return {
-      success: false as const,
-      error: result.error || "Token alınamadı",
+      success: true,
+      iframeUrl: `https://www.paytr.com/odeme/guvenli/${token}`,
+      merchantOid: body?.merchant_oid,
     };
   } catch (err: any) {
     console.error("initiateBoostPayment error:", err);
     return {
-      success: false as const,
-      error: err.message || "Bağlantı hatası",
+      success: false,
+      error: err?.message || "Beklenmeyen bir hata oluştu.",
     };
   }
 }

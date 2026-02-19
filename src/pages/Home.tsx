@@ -71,6 +71,7 @@ export default function Home() {
     const fetchProfile = async () => {
       if (!user?.id) return;
       
+      // Sadece bu kullanıcıya ait kaydı çek
       const { data, error } = await supabase
         .from("profiles")
         .select("full_name, title, avatar_url, country, city, cv_data")
@@ -78,22 +79,34 @@ export default function Home() {
         .maybeSingle();
 
       if (data) {
-        // Avatar ve Title için öncelik: DB Kolonu -> CV Data -> Auth User Meta
-        const cv = data.cv_data || {};
-        const finalAvatar = data.avatar_url || cv.avatar_url || user?.user_metadata?.avatar_url;
-        const finalTitle = data.title || "Kariyer Yolculuğu Üyesi";
+        // ✅ BURASI ÇOK ÖNEMLİ:
+        // Veritabanındaki kolonlar (data.title, data.avatar_url) EN YÜKSEK önceliğe sahip.
+        // Eğer onlar boşsa cv_data'ya bak.
         
+        const dbTitle = data.title;
+        const cvTitle = data.cv_data?.title;
+        
+        const dbAvatar = data.avatar_url;
+        const cvAvatar = data.cv_data?.avatar_url;
+
         setProfileData({
-          ...data,
-          avatar_url: finalAvatar,
-          title: finalTitle
+          full_name: data.full_name || user.user_metadata?.full_name,
+          
+          // Ünvan: DB > CV > Varsayılan
+          title: dbTitle || cvTitle || "Kariyer Yolculuğu Üyesi",
+          
+          // Avatar: DB > CV > Auth > Dicebear
+          avatar_url: dbAvatar || cvAvatar || user.user_metadata?.avatar_url,
+          
+          city: data.city,
+          country: data.country
         });
       }
     };
 
     fetchProfile();
     fetchFeed();
-  }, [user?.id]);
+  }, [user?.id]); // User ID değişirse tekrar çek
 
   /* ---------------------------------------------------
      3. POST PAYLAŞ
@@ -138,10 +151,14 @@ export default function Home() {
   };
 
   // Görüntülenecek Veriler (Fallback mekanizmalı)
-  const displayAvatar = profileData?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+  // Eğer profileData henüz yüklenmediyse (null ise), AuthContext verisini kullan
+  const displayAvatar = profileData?.avatar_url || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
   const displayName = profileData?.full_name || user?.fullName || "Kullanıcı";
   const displayTitle = profileData?.title || "Kariyer Yolculuğu Üyesi";
-  const displayLocation = profileData?.city && profileData?.country ? `${profileData.city}, ${profileData.country}` : null;
+  
+  const displayLocation = profileData?.city && profileData?.country 
+    ? `${profileData.city}, ${profileData.country}` 
+    : null;
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">

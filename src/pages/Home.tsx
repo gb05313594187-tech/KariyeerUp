@@ -28,6 +28,10 @@ export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Kısa profil state (profiles tablosundan)
+  const [profile, setProfile] = useState<any | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   // Composer state
   const [content, setContent] = useState("");
   const [visibility, setVisibility] = useState("public");
@@ -70,6 +74,34 @@ export default function Home() {
   useEffect(() => {
     fetchFeed();
   }, []);
+
+  /* ---------------------------------------------------
+     PROFİLİ PROFILES TABLOSUNDAN ÇEK
+  --------------------------------------------------- */
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      try {
+        setProfileLoading(true);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, title, avatar_url, country, city")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("profiles fetch error:", error);
+        } else {
+          setProfile(data || null);
+        }
+      } catch (e) {
+        console.error("profiles fetch exception:", e);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    loadProfile();
+  }, [user?.id]);
 
   /* ---------------------------------------------------
      RESİM İŞLEMLERİ
@@ -124,9 +156,21 @@ export default function Home() {
     setSubmitting(false);
   };
 
+  // Avatar ve metinler için öncelik: profiles → user_metadata → fallback
   const avatarSrc =
+    profile?.avatar_url ||
     user?.user_metadata?.avatar_url ||
     `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || "anon"}`;
+
+  const displayName =
+    profile?.full_name || user?.fullName || "Misafir Kullanıcı";
+
+  const displayTitle = profile?.title || "Kariyer Yolculuğu Üyesi";
+
+  const displayLocation =
+    profile?.city && profile?.country
+      ? `${profile.city}, ${profile.country}`
+      : null;
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
@@ -138,18 +182,22 @@ export default function Home() {
             <CardContent className="p-4 flex items-center gap-3">
               <img
                 src={avatarSrc}
-                alt={user?.fullName || "Profil"}
+                alt={displayName}
                 className="w-12 h-12 rounded-xl border border-gray-100 object-cover"
               />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">
-                  {user?.fullName || "Misafir Kullanıcı"}
+                  {displayName}
                 </div>
                 <div className="text-[11px] text-gray-500 truncate">
-                  {/* Profil title'ı UserProfile üzerinden güncellendiği için
-                     burada basit bir fallback bırakıyoruz */}
-                  Kariyer Yolculuğu Üyesi
+                  {displayTitle}
                 </div>
+                {displayLocation && (
+                  <div className="text-[10px] text-gray-400 truncate flex items-center gap-1">
+                    <Globe className="w-3 h-3" />
+                    <span>{displayLocation}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -311,9 +359,7 @@ export default function Home() {
                 </p>
               </div>
             ) : posts.length > 0 ? (
-              posts.map((post) => (
-                <AIEnhancedPostCard key={post.id} post={post} />
-              ))
+              posts.map((post) => <AIEnhancedPostCard key={post.id} post={post} />)
             ) : (
               <div className="text-center py-24 bg-white rounded-[40px] border-2 border-dashed border-gray-100 shadow-inner">
                 <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">

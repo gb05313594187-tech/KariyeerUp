@@ -1,4 +1,4 @@
-// src/pages/CorporateProfile.tsx
+// src/pages/CorporateProfile.tsx - GÜNCELLENMİŞ VERSİYON
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -75,7 +75,6 @@ export default function CorporateProfile() {
   const [me, setMe] = useState<any>(null);
 
   // ---------- ALL COUNTRIES (ISO) ----------
-  // Uses modern browser API. Falls back to a minimal list if not available.
   const ALL_REGIONS = useMemo(() => {
     try {
       const regions =
@@ -85,7 +84,6 @@ export default function CorporateProfile() {
             Intl.supportedValuesOf("region")
           : ["TR", "US", "DE", "TN", "FR", "GB", "NL", "IT", "ES"];
 
-      // Build name from ISO, localized to TR (you can switch to "en" if you want)
       // @ts-ignore
       const dn = typeof Intl !== "undefined" ? new Intl.DisplayNames(["tr"], { type: "region" }) : null;
 
@@ -108,47 +106,11 @@ export default function CorporateProfile() {
     }
   }, []);
 
-  // Calling code map (best-effort). If missing, user can type dial manually.
   const DIAL_BY_ISO: Record<string, string> = {
-    TR: "+90",
-    US: "+1",
-    CA: "+1",
-    DE: "+49",
-    FR: "+33",
-    GB: "+44",
-    NL: "+31",
-    IT: "+39",
-    ES: "+34",
-    PT: "+351",
-    BE: "+32",
-    CH: "+41",
-    AT: "+43",
-    SE: "+46",
-    NO: "+47",
-    DK: "+45",
-    FI: "+358",
-    IE: "+353",
-    PL: "+48",
-    CZ: "+420",
-    HU: "+36",
-    RO: "+40",
-    BG: "+359",
-    GR: "+30",
-    TN: "+216",
-    MA: "+212",
-    DZ: "+213",
-    EG: "+20",
-    AE: "+971",
-    SA: "+966",
-    QA: "+974",
-    KW: "+965",
-    BH: "+973",
-    OM: "+968",
-    JO: "+962",
-    LB: "+961",
-    IQ: "+964",
-    SY: "+963",
-    IL: "+972",
+    TR: "+90", US: "+1", CA: "+1", DE: "+49", FR: "+33", GB: "+44", NL: "+31", IT: "+39", ES: "+34", PT: "+351",
+    BE: "+32", CH: "+41", AT: "+43", SE: "+46", NO: "+47", DK: "+45", FI: "+358", IE: "+353", PL: "+48", CZ: "+420",
+    HU: "+36", RO: "+40", BG: "+359", GR: "+30", TN: "+216", MA: "+212", DZ: "+213", EG: "+20", AE: "+971", SA: "+966",
+    QA: "+974", KW: "+965", BH: "+973", OM: "+968", JO: "+962", LB: "+961", IQ: "+964", SY: "+963", IL: "+972",
   };
 
   const buildE164 = (dial: string, local: string) => {
@@ -165,40 +127,31 @@ export default function CorporateProfile() {
     legal_name: "",
     brand_name: "",
     logo_url: "",
-
     industry: "",
     activity_tags: [],
-
     founded_year: null,
     employee_range: "1-10",
     company_type: "Limited",
-
     hq_country: "",
     hq_city: "",
-
     website: "",
     corporate_email: "",
-
     phone_country_iso: "TR",
     phone_dial: "+90",
     phone_local: "",
     phone_e164: "",
-
     kep_address: "",
     linkedin_url: "",
     instagram_url: "",
     x_url: "",
     youtube_url: "",
-
     tax_office: "",
     vkn: "",
     mersis: "",
     trade_registry_no: "",
-
     tagline: "",
     about: "",
     products_services: [""],
-
     status: "draft",
   });
 
@@ -290,9 +243,8 @@ export default function CorporateProfile() {
         .maybeSingle();
 
       if (error) {
-        // If table not ready, show error clearly.
         console.error(error);
-        toast.error("Profil verisi okunamadı. (corporate_profiles tablosu / policy kontrol et)");
+        toast.error("Profil verisi okunamadı.");
         return;
       }
 
@@ -300,7 +252,6 @@ export default function CorporateProfile() {
         setForm((p: any) => ({
           ...p,
           ...data,
-          // backfill:
           activity_tags: Array.isArray(data.activity_tags) ? data.activity_tags : [],
           products_services: Array.isArray(data.products_services) ? data.products_services : [""],
           phone_country_iso: data.phone_country_iso || "TR",
@@ -309,7 +260,6 @@ export default function CorporateProfile() {
           corporate_email: data.corporate_email || me?.email || "",
         }));
       } else {
-        // Default corporate_email from auth user
         setForm((p: any) => ({ ...p, corporate_email: me?.email || "" }));
       }
     } catch (e: any) {
@@ -329,6 +279,7 @@ export default function CorporateProfile() {
 
     setSaving(true);
     try {
+      // 1. Önce corporate_profiles tablosuna kaydet
       const payload = normalizeForSave({
         ...form,
         user_id: me?.id,
@@ -343,11 +294,32 @@ export default function CorporateProfile() {
 
       if (error) {
         console.error(error);
-        toast.error("Kaydedilemedi. (RLS / tablo kolonları / onConflict kontrol et)");
+        toast.error("Kaydedilemedi.");
         return;
       }
 
       if (data) setForm((p: any) => ({ ...p, ...data }));
+
+      // 2. profiles tablosunu da güncelle (Home sol sütun için)
+      // Şirket adını full_name'e, Logo'yu avatar_url'e yazıyoruz
+      const profileUpdate = {
+        full_name: form.brand_name || form.legal_name,
+        title: form.industry || "Kurumsal Hesap", // Sektörü veya sabit bir başlık
+        avatar_url: form.logo_url, // Varsa logo
+        city: form.hq_city,
+        country: form.hq_country,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: profileErr } = await supabase
+        .from("profiles")
+        .update(profileUpdate)
+        .eq("id", me.id);
+
+      if (profileErr) {
+        console.warn("profiles tablosu güncellenemedi:", profileErr);
+      }
+
       toast.success(mode === "completed" ? "Profil tamamlandı." : "Taslak kaydedildi.");
     } catch (e: any) {
       console.error(e);
@@ -368,7 +340,6 @@ export default function CorporateProfile() {
         return;
       }
 
-      // init user_id
       setForm((p: any) => ({
         ...p,
         user_id: user.id,
@@ -378,7 +349,6 @@ export default function CorporateProfile() {
       await loadCorporateProfile(user.id);
       setLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <div className="p-10">Yükleniyor...</div>;
@@ -412,7 +382,7 @@ export default function CorporateProfile() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">Şirket Profili</h1>
-              <p className="text-xs mt-1 opacity-90">BUILD_MARK: CorporateProfile</p>
+              <p className="text-xs mt-1 opacity-90">Kurumsal Kimlik ve Ayarlar</p>
             </div>
 
             <div className="hidden md:flex items-center gap-2">
@@ -441,7 +411,6 @@ export default function CorporateProfile() {
           </CardHeader>
           <CardContent className="text-sm space-y-1">
             <div>Email: {me?.email}</div>
-            <div>User ID: {me?.id}</div>
             <div className="text-xs text-gray-500">
               Durum: <span className="font-medium">{form.status || "draft"}</span>
             </div>
@@ -492,17 +461,14 @@ export default function CorporateProfile() {
               <div>
                 <label className="text-xs text-gray-600 flex items-center gap-2 mb-1">
                   <Upload className="w-4 h-4" />
-                  Logo URL (Şimdilik URL — dosya yükleme sonra)
+                  Logo URL (URL girin)
                 </label>
                 <input
                   className="w-full border p-2 rounded"
-                  placeholder="https://.../logo.png"
+                  placeholder="https://..."
                   value={form.logo_url || ""}
                   onChange={(e) => setField("logo_url", e.target.value)}
                 />
-                <div className="text-[11px] text-gray-500 mt-1">
-                  Not: Supabase Storage bağlayınca dosya yükleme ekleriz.
-                </div>
               </div>
 
               {/* Industry / Tags */}
@@ -712,9 +678,6 @@ export default function CorporateProfile() {
                       </option>
                     ))}
                   </select>
-                  <div className="text-[11px] text-gray-500 mt-1">
-                    Not: Dial code yoksa “+” kalır, manuel girilir.
-                  </div>
                 </div>
 
                 <div>
@@ -741,12 +704,6 @@ export default function CorporateProfile() {
                     value={form.phone_local}
                     onChange={(e) => setField("phone_local", e.target.value)}
                   />
-                  <div className="text-[11px] text-gray-500 mt-1">
-                    Kaydedilecek format (best-effort):{" "}
-                    <span className="font-medium">
-                      {buildE164(form.phone_dial, form.phone_local) || "—"}
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -759,7 +716,7 @@ export default function CorporateProfile() {
                   </label>
                   <input
                     className="w-full border p-2 rounded"
-                    placeholder="https://linkedin.com/company/abc-tech"
+                    placeholder="https://linkedin.com/company/..."
                     value={form.linkedin_url}
                     onChange={(e) => setField("linkedin_url", e.target.value)}
                   />
@@ -824,7 +781,7 @@ export default function CorporateProfile() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Vergi Kimlik No (VKN / Tax ID)</label>
+                    <label className="text-xs text-gray-600 mb-1 block">Vergi Kimlik No</label>
                     <input
                       className="w-full border p-2 rounded"
                       placeholder="..."
@@ -834,7 +791,7 @@ export default function CorporateProfile() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-600 mb-1 block">MERSİS No (TR)</label>
+                    <label className="text-xs text-gray-600 mb-1 block">MERSİS No</label>
                     <input
                       className="w-full border p-2 rounded"
                       placeholder="..."
@@ -854,7 +811,7 @@ export default function CorporateProfile() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="text-xs text-gray-600 mb-1 block">KEP Adresi (Opsiyonel)</label>
+                    <label className="text-xs text-gray-600 mb-1 block">KEP Adresi</label>
                     <input
                       className="w-full border p-2 rounded"
                       placeholder="..."
@@ -918,9 +875,6 @@ export default function CorporateProfile() {
                   value={form.tagline}
                   onChange={(e) => setField("tagline", e.target.value)}
                 />
-                <div className="text-[11px] text-gray-500 mt-1">
-                  {String(form.tagline || "").length}/100
-                </div>
               </div>
 
               <div>
@@ -939,7 +893,7 @@ export default function CorporateProfile() {
               <div>
                 <div className="text-xs text-gray-600 flex items-center gap-2 mb-2">
                   <Plus className="w-4 h-4" />
-                  Ürün / Hizmet Listesi (Dinamik)
+                  Ürün / Hizmet Listesi
                 </div>
 
                 <div className="space-y-2">
@@ -998,15 +952,11 @@ export default function CorporateProfile() {
                   {saving ? "Kaydediliyor..." : "Tamamla & Kaydet"}
                 </Button>
               </div>
-
-              <div className="text-[11px] text-gray-500 pt-2">
-                “Tamamla” sonrası: doğrulama sürecini (admin) ayrı akışta başlatabilirsin.
-              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Quick Preview (Public view summary) */}
+        {/* Quick Preview */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
@@ -1018,28 +968,10 @@ export default function CorporateProfile() {
             <div className="font-semibold">{form.brand_name || "—"}</div>
             <div className="text-xs text-gray-600">{form.tagline || "—"}</div>
             <div className="text-xs">
-              <span className="font-medium">Sektör:</span> {form.industry || "—"}{" "}
-              <span className="mx-2">•</span>
-              <span className="font-medium">Lokasyon:</span> {form.hq_city || "—"} / {form.hq_country || "—"}
-            </div>
-            <div className="text-xs">
-              <span className="font-medium">Etiketler:</span>{" "}
-              {(form.activity_tags || []).length ? form.activity_tags.map((t: string) => `#${t}`).join(" ") : "—"}
-            </div>
-            <div className="text-xs">
-              <span className="font-medium">İletişim:</span>{" "}
-              {form.corporate_email || "—"}{" "}
-              <span className="mx-2">•</span>
-              {buildE164(form.phone_dial, form.phone_local) || "—"}
+              <span className="font-medium">Sektör:</span> {form.industry || "—"}
             </div>
           </CardContent>
         </Card>
-
-        {/* Dev note */}
-        <div className="text-[11px] text-gray-500">
-          Not: Bu sayfa <b>corporate_profiles</b> tablosuna upsert yapar. Tablo yoksa veya RLS yanlışsa “Kaydedilemedi”
-          görürsün.
-        </div>
       </div>
     </div>
   );

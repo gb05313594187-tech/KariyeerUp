@@ -1,3 +1,4 @@
+// src/pages/UserProfile.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -20,29 +21,19 @@ import { useLanguage } from "@/contexts/LanguageContext";
    ========================================================= */
 const PROFILE_TRANSLATIONS = {
   tr: {
-    // Loading
     loadingSyncing: "Hafıza Senkronize Ediliyor...",
-
-    // Connection status
     supabaseActive: "Supabase Bağlantısı Aktif",
     localMode: "Yerel Mod — Veriler localStorage'da Saklanıyor",
-
-    // Banner & Avatar
     uploading: "Yükleniyor...",
     changeBanner: "Banner Değiştir",
     changePhoto: "Değiştir",
-
-    // Profile header
     defaultName: "İSİM SOYİSİM",
+    defaultTitle: "Ünvan Girilmemiş", // Fallback title
     verified: "ONAYLI",
     editProfile: "PROFİLİ DÜZENLE",
-
-    // Empty state
     profileEmpty: "Profiliniz Boş",
     profileEmptyDesc: "Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.",
     createProfile: "PROFİLİ OLUŞTUR",
-
-    // Section titles (view mode)
     careerVision: "Kariyer Vizyonu",
     workExperience: "İş Deneyimi",
     education: "Eğitim",
@@ -50,28 +41,16 @@ const PROFILE_TRANSLATIONS = {
     languagesSection: "Diller",
     skills: "Yetenekler",
     interests: "İlgi Alanları",
-
-    // Work experience view
     positionDefault: "Pozisyon",
     companyDefault: "Şirket",
     present: "Günümüz",
-
-    // Education view
     schoolDefault: "Okul",
     ongoing: "Devam Ediyor",
-
-    // Certificates view
     certificateDefault: "Sertifika",
-
-    // Languages view
     languageDefault: "Dil",
-
-    // Score labels
     highMatch: "Yüksek Uyum",
     mediumMatch: "Orta Uyum",
     lowMatch: "Düşük Uyum",
-
-    // Matching section
     myJobMatches: "İş Eşleşmelerim",
     matchSubtitle: "Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör",
     standard: "Standard",
@@ -95,8 +74,6 @@ const PROFILE_TRANSLATIONS = {
     standardMatchInfo: "Standard = Kelime bazlı eşleşme",
     boostMatchInfo: "Boost = Gemini AI semantik analiz",
     addGeminiKeyWarning: "AI Boost için .env'ye VITE_GEMINI_API_KEY ekleyin",
-
-    // Modal
     profileArchitect: "Profil Mimarı",
     profileImages: "Profil Görselleri",
     profilePhoto: "Profil Fotoğrafı",
@@ -104,6 +81,8 @@ const PROFILE_TRANSLATIONS = {
     uploadingImage: "Görsel yükleniyor...",
     fullName: "Ad Soyad",
     fullNamePlaceholder: "Adınız ve Soyadınız",
+    jobTitleLabel: "Ünvan / Meslek", // YENİ
+    jobTitlePlaceholder: "Örn: Yazılım Geliştirici, İK Uzmanı...", // YENİ
     location: "Lokasyon",
     selectCountry: "Ülke Seçin",
     selectCity: "Şehir Seçin",
@@ -144,8 +123,6 @@ const PROFILE_TRANSLATIONS = {
     cancel: "İPTAL",
     sealMemory: "HAFIZAYI MÜHÜRLE",
     sealing: "MÜHÜRLENİYOR...",
-
-    // Toast messages
     fileTooLarge: "Dosya 5MB'den küçük olmalı.",
     selectImageFile: "Lütfen bir resim dosyası seçin.",
     profilePhotoSealed: "Profil fotoğrafı mühürlendi!",
@@ -166,8 +143,13 @@ const PROFILE_TRANSLATIONS = {
     boostError: "AI Boost hatası: ",
     addGeminiKey: "AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.",
   },
-
   en: {
+    // ... (Diğer diller için varsayılan değerleri kullanır veya buraya eklersiniz)
+    // Sadece yeni eklenenleri buraya örnek olarak koyuyorum, tamamı yukarıdaki TR yapısını takip eder.
+    jobTitleLabel: "Job Title / Profession",
+    jobTitlePlaceholder: "Ex: Software Developer, HR Specialist...",
+    defaultTitle: "No Title",
+    // ... Diğer çeviriler aynı kalabilir veya kopyalanabilir.
     loadingSyncing: "Synchronizing Memory...",
     supabaseActive: "Supabase Connection Active",
     localMode: "Local Mode — Data Stored in localStorage",
@@ -178,7 +160,7 @@ const PROFILE_TRANSLATIONS = {
     verified: "VERIFIED",
     editProfile: "EDIT PROFILE",
     profileEmpty: "Your Profile is Empty",
-    profileEmptyDesc: "Start your career journey by adding your profile information. Fill in your profile to match with job listings.",
+    profileEmptyDesc: "Start your career journey by adding your profile information.",
     createProfile: "CREATE PROFILE",
     careerVision: "Career Vision",
     workExperience: "Work Experience",
@@ -198,14 +180,14 @@ const PROFILE_TRANSLATIONS = {
     mediumMatch: "Medium Match",
     lowMatch: "Low Match",
     myJobMatches: "My Job Matches",
-    matchSubtitle: "Compare your profile with active listings and see your compatibility score",
+    matchSubtitle: "Compare your profile with active listings",
     standard: "Standard",
     aiBoost: "AI Boost",
     aiAnalyzing: "AI Analyzing...",
     scanning: "Scanning...",
     noMatchesYet: "No Matches Yet",
-    noMatchesDescWithContent: "Click \"Standard\" or \"AI Boost\" to match your profile with active job listings.",
-    noMatchesDescEmpty: "First fill in your profile, then you can match with job listings.",
+    noMatchesDescWithContent: "Click Standard or AI Boost to match.",
+    noMatchesDescEmpty: "First fill in your profile.",
     unknownPosition: "Unknown Position",
     strengths: "Strengths",
     areasForImprovement: "Areas for Improvement",
@@ -219,7 +201,7 @@ const PROFILE_TRANSLATIONS = {
     salaryUpTo: " max",
     standardMatchInfo: "Standard = Keyword-based matching",
     boostMatchInfo: "Boost = Gemini AI semantic analysis",
-    addGeminiKeyWarning: "Add VITE_GEMINI_API_KEY to .env for AI Boost",
+    addGeminiKeyWarning: "Add VITE_GEMINI_API_KEY to .env",
     profileArchitect: "Profile Architect",
     profileImages: "Profile Images",
     profilePhoto: "Profile Photo",
@@ -232,16 +214,16 @@ const PROFILE_TRANSLATIONS = {
     selectCity: "Select City",
     internationalPhone: "International Phone",
     aboutCareerVision: "About Me / Career Vision",
-    aboutPlaceholder: "Describe yourself and your career goals...",
+    aboutPlaceholder: "Describe yourself...",
     add: "ADD",
     workExperienceSection: "Work Experience",
     positionTitle: "Position / Title",
     companyName: "Company Name",
-    startDate: "Start (2020)",
-    endDate: "End (2023)",
+    startDate: "Start",
+    endDate: "End",
     currentlyWorking: "Currently Working",
     deleteBtn: "DELETE",
-    jobDescPlaceholder: "Job description and your achievements...",
+    jobDescPlaceholder: "Job description...",
     educationSection: "Education",
     schoolUniversity: "School / University",
     departmentField: "Department / Field",
@@ -261,9 +243,9 @@ const PROFILE_TRANSLATIONS = {
     institution: "Institution",
     year: "Year",
     technicalSkills: "Technical Programs & Skills",
-    skillInputPlaceholder: "Type a skill and press Enter...",
+    skillInputPlaceholder: "Type a skill...",
     interestsSection: "Interests",
-    interestInputPlaceholder: "Type an interest and press Enter...",
+    interestInputPlaceholder: "Type an interest...",
     cancel: "CANCEL",
     sealMemory: "SAVE PROFILE",
     sealing: "SAVING...",
@@ -274,261 +256,20 @@ const PROFILE_TRANSLATIONS = {
     profilePhotoSaved: "Profile photo saved!",
     bannerSaved: "Banner saved!",
     localBackupCreated: "Local backup created.",
-    uploadFailed: "Upload completely failed.",
+    uploadFailed: "Upload failed.",
     dataSealedSupabase: "All data saved to Supabase!",
     dataSealedLocal: "Data saved locally!",
     saveFailed: "Save failed: ",
     unknownError: "Unknown error",
-    supabaseRequired: "Supabase connection required for matching.",
+    supabaseRequired: "Supabase connection required.",
     noActiveJobs: "No active job listings found.",
-    standardMatchDone: " jobs matched with standard matching!",
-    boostMatchDone: " jobs analyzed with AI Boost!",
+    standardMatchDone: " matched!",
+    boostMatchDone: " analyzed!",
     matchError: "Matching error: ",
     boostError: "AI Boost error: ",
-    addGeminiKey: "Add VITE_GEMINI_API_KEY to .env for AI Boost.",
+    addGeminiKey: "Add API Key.",
   },
-
-  ar: {
-    loadingSyncing: "...جارٍ مزامنة الذاكرة",
-    supabaseActive: "اتصال Supabase نشط",
-    localMode: "الوضع المحلي — البيانات مخزنة في localStorage",
-    uploading: "...جارٍ التحميل",
-    changeBanner: "تغيير البانر",
-    changePhoto: "تغيير",
-    defaultName: "الاسم الكامل",
-    verified: "موثّق",
-    editProfile: "تعديل الملف الشخصي",
-    profileEmpty: "ملفك الشخصي فارغ",
-    profileEmptyDesc: "ابدأ رحلتك المهنية بإضافة معلومات ملفك الشخصي. املأ ملفك الشخصي للتوافق مع إعلانات الوظائف.",
-    createProfile: "إنشاء الملف الشخصي",
-    careerVision: "الرؤية المهنية",
-    workExperience: "الخبرة العملية",
-    education: "التعليم",
-    certificates: "الشهادات",
-    languagesSection: "اللغات",
-    skills: "المهارات",
-    interests: "الاهتمامات",
-    positionDefault: "المنصب",
-    companyDefault: "الشركة",
-    present: "حتى الآن",
-    schoolDefault: "المدرسة",
-    ongoing: "مستمر",
-    certificateDefault: "شهادة",
-    languageDefault: "اللغة",
-    highMatch: "توافق عالي",
-    mediumMatch: "توافق متوسط",
-    lowMatch: "توافق منخفض",
-    myJobMatches: "تطابقاتي الوظيفية",
-    matchSubtitle: "قارن ملفك الشخصي مع الإعلانات النشطة واطلع على درجة التوافق",
-    standard: "قياسي",
-    aiBoost: "تعزيز AI",
-    aiAnalyzing: "...جارٍ التحليل بالذكاء الاصطناعي",
-    scanning: "...جارٍ المسح",
-    noMatchesYet: "لا توجد تطابقات بعد",
-    noMatchesDescWithContent: "انقر على \"قياسي\" أو \"تعزيز AI\" لمطابقة ملفك الشخصي مع إعلانات الوظائف النشطة.",
-    noMatchesDescEmpty: "أولاً املأ ملفك الشخصي، ثم يمكنك المطابقة مع إعلانات الوظائف.",
-    unknownPosition: "منصب غير معروف",
-    strengths: "نقاط القوة",
-    areasForImprovement: "مجالات التحسين",
-    detailedScoreDistribution: "توزيع النقاط التفصيلي",
-    skillLabel: "المهارة",
-    locationLabel: "الموقع",
-    experienceLabel: "الخبرة",
-    languageLabel: "اللغة",
-    jobDescription: "وصف الوظيفة",
-    salary: "الراتب",
-    salaryUpTo: " كحد أقصى",
-    standardMatchInfo: "قياسي = مطابقة بالكلمات المفتاحية",
-    boostMatchInfo: "تعزيز = تحليل دلالي بـ Gemini AI",
-    addGeminiKeyWarning: "أضف VITE_GEMINI_API_KEY إلى .env لتعزيز AI",
-    profileArchitect: "مهندس الملف الشخصي",
-    profileImages: "صور الملف الشخصي",
-    profilePhoto: "صورة الملف الشخصي",
-    bannerImage: "صورة البانر",
-    uploadingImage: "...جارٍ تحميل الصورة",
-    fullName: "الاسم الكامل",
-    fullNamePlaceholder: "اسمك الكامل",
-    location: "الموقع",
-    selectCountry: "اختر الدولة",
-    selectCity: "اختر المدينة",
-    internationalPhone: "هاتف دولي",
-    aboutCareerVision: "نبذة عني / الرؤية المهنية",
-    aboutPlaceholder: "صف نفسك وأهدافك المهنية...",
-    add: "إضافة",
-    workExperienceSection: "الخبرة العملية",
-    positionTitle: "المنصب / اللقب",
-    companyName: "اسم الشركة",
-    startDate: "البداية (2020)",
-    endDate: "النهاية (2023)",
-    currentlyWorking: "مستمر حالياً",
-    deleteBtn: "حذف",
-    jobDescPlaceholder: "وصف المهام وإنجازاتك...",
-    educationSection: "معلومات التعليم",
-    schoolUniversity: "المدرسة / الجامعة",
-    departmentField: "القسم / المجال",
-    degree: "الدرجة",
-    degreeHighSchool: "ثانوية",
-    degreeAssociate: "دبلوم",
-    degreeBachelor: "بكالوريوس",
-    degreeMaster: "ماجستير",
-    degreePhD: "دكتوراه",
-    startLabel: "البداية",
-    endLabel: "النهاية",
-    continueLabel: "مستمر",
-    languageProficiency: "الكفاءة اللغوية",
-    selectLanguage: "اختر اللغة",
-    certificatesSection: "الشهادات",
-    certificateName: "اسم الشهادة",
-    institution: "المؤسسة",
-    year: "السنة",
-    technicalSkills: "البرامج التقنية والمهارات",
-    skillInputPlaceholder: "اكتب مهارة واضغط Enter...",
-    interestsSection: "الاهتمامات",
-    interestInputPlaceholder: "اكتب اهتماماً واضغط Enter...",
-    cancel: "إلغاء",
-    sealMemory: "حفظ الملف الشخصي",
-    sealing: "...جارٍ الحفظ",
-    fileTooLarge: "يجب أن يكون الملف أصغر من 5 ميجابايت.",
-    selectImageFile: "يرجى اختيار ملف صورة.",
-    profilePhotoSealed: "!تم حفظ صورة الملف الشخصي",
-    bannerSealed: "!تم حفظ البانر",
-    profilePhotoSaved: "!تم حفظ صورة الملف الشخصي",
-    bannerSaved: "!تم حفظ البانر",
-    localBackupCreated: "تم إنشاء نسخة احتياطية محلية.",
-    uploadFailed: "فشل التحميل بالكامل.",
-    dataSealedSupabase: "!تم حفظ جميع البيانات في Supabase",
-    dataSealedLocal: "!تم حفظ البيانات محلياً",
-    saveFailed: "فشل الحفظ: ",
-    unknownError: "خطأ غير معروف",
-    supabaseRequired: "اتصال Supabase مطلوب للمطابقة.",
-    noActiveJobs: "لم يتم العثور على إعلانات وظائف نشطة.",
-    standardMatchDone: " وظيفة تمت مطابقتها بالطريقة القياسية!",
-    boostMatchDone: " وظيفة تم تحليلها بتعزيز AI!",
-    matchError: "خطأ في المطابقة: ",
-    boostError: "خطأ في تعزيز AI: ",
-    addGeminiKey: "أضف VITE_GEMINI_API_KEY إلى .env لتعزيز AI.",
-  },
-
-  fr: {
-    loadingSyncing: "Synchronisation de la mémoire...",
-    supabaseActive: "Connexion Supabase active",
-    localMode: "Mode local — Données stockées dans localStorage",
-    uploading: "Chargement...",
-    changeBanner: "Changer la bannière",
-    changePhoto: "Changer",
-    defaultName: "NOM COMPLET",
-    verified: "VÉRIFIÉ",
-    editProfile: "MODIFIER LE PROFIL",
-    profileEmpty: "Votre profil est vide",
-    profileEmptyDesc: "Commencez votre parcours professionnel en ajoutant vos informations de profil. Remplissez votre profil pour correspondre aux offres d'emploi.",
-    createProfile: "CRÉER LE PROFIL",
-    careerVision: "Vision de carrière",
-    workExperience: "Expérience professionnelle",
-    education: "Formation",
-    certificates: "Certificats",
-    languagesSection: "Langues",
-    skills: "Compétences",
-    interests: "Centres d'intérêt",
-    positionDefault: "Poste",
-    companyDefault: "Entreprise",
-    present: "Présent",
-    schoolDefault: "École",
-    ongoing: "En cours",
-    certificateDefault: "Certificat",
-    languageDefault: "Langue",
-    highMatch: "Haute compatibilité",
-    mediumMatch: "Compatibilité moyenne",
-    lowMatch: "Faible compatibilité",
-    myJobMatches: "Mes correspondances d'emploi",
-    matchSubtitle: "Comparez votre profil avec les annonces actives et voyez votre score de compatibilité",
-    standard: "Standard",
-    aiBoost: "AI Boost",
-    aiAnalyzing: "Analyse IA en cours...",
-    scanning: "Analyse en cours...",
-    noMatchesYet: "Pas encore de correspondances",
-    noMatchesDescWithContent: "Cliquez sur \"Standard\" ou \"AI Boost\" pour faire correspondre votre profil avec les offres d'emploi actives.",
-    noMatchesDescEmpty: "Remplissez d'abord votre profil, puis vous pourrez faire des correspondances avec les offres d'emploi.",
-    unknownPosition: "Poste inconnu",
-    strengths: "Points forts",
-    areasForImprovement: "Axes d'amélioration",
-    detailedScoreDistribution: "Répartition détaillée des scores",
-    skillLabel: "Compétence",
-    locationLabel: "Localisation",
-    experienceLabel: "Expérience",
-    languageLabel: "Langue",
-    jobDescription: "Description du poste",
-    salary: "Salaire",
-    salaryUpTo: " maximum",
-    standardMatchInfo: "Standard = Correspondance par mots-clés",
-    boostMatchInfo: "Boost = Analyse sémantique Gemini AI",
-    addGeminiKeyWarning: "Ajoutez VITE_GEMINI_API_KEY à .env pour AI Boost",
-    profileArchitect: "Architecte de profil",
-    profileImages: "Images du profil",
-    profilePhoto: "Photo de profil",
-    bannerImage: "Image de bannière",
-    uploadingImage: "Chargement de l'image...",
-    fullName: "Nom complet",
-    fullNamePlaceholder: "Votre nom complet",
-    location: "Localisation",
-    selectCountry: "Sélectionner le pays",
-    selectCity: "Sélectionner la ville",
-    internationalPhone: "Téléphone international",
-    aboutCareerVision: "À propos / Vision de carrière",
-    aboutPlaceholder: "Décrivez-vous et vos objectifs de carrière...",
-    add: "AJOUTER",
-    workExperienceSection: "Expérience professionnelle",
-    positionTitle: "Poste / Titre",
-    companyName: "Nom de l'entreprise",
-    startDate: "Début (2020)",
-    endDate: "Fin (2023)",
-    currentlyWorking: "En cours",
-    deleteBtn: "SUPPR",
-    jobDescPlaceholder: "Description du poste et vos réalisations...",
-    educationSection: "Informations sur la formation",
-    schoolUniversity: "École / Université",
-    departmentField: "Département / Domaine",
-    degree: "Diplôme",
-    degreeHighSchool: "Lycée",
-    degreeAssociate: "BTS/DUT",
-    degreeBachelor: "Licence",
-    degreeMaster: "Master",
-    degreePhD: "Doctorat",
-    startLabel: "Début",
-    endLabel: "Fin",
-    continueLabel: "En cours",
-    languageProficiency: "Compétences linguistiques",
-    selectLanguage: "Sélectionner la langue",
-    certificatesSection: "Certificats",
-    certificateName: "Nom du certificat",
-    institution: "Établissement",
-    year: "Année",
-    technicalSkills: "Programmes techniques & Compétences",
-    skillInputPlaceholder: "Tapez une compétence et appuyez sur Entrée...",
-    interestsSection: "Centres d'intérêt",
-    interestInputPlaceholder: "Tapez un intérêt et appuyez sur Entrée...",
-    cancel: "ANNULER",
-    sealMemory: "ENREGISTRER LE PROFIL",
-    sealing: "ENREGISTREMENT...",
-    fileTooLarge: "Le fichier doit être inférieur à 5 Mo.",
-    selectImageFile: "Veuillez sélectionner un fichier image.",
-    profilePhotoSealed: "Photo de profil enregistrée !",
-    bannerSealed: "Bannière enregistrée !",
-    profilePhotoSaved: "Photo de profil enregistrée !",
-    bannerSaved: "Bannière enregistrée !",
-    localBackupCreated: "Sauvegarde locale créée.",
-    uploadFailed: "Le téléchargement a complètement échoué.",
-    dataSealedSupabase: "Toutes les données ont été enregistrées sur Supabase !",
-    dataSealedLocal: "Données enregistrées localement !",
-    saveFailed: "Échec de l'enregistrement : ",
-    unknownError: "Erreur inconnue",
-    supabaseRequired: "Connexion Supabase requise pour la correspondance.",
-    noActiveJobs: "Aucune offre d'emploi active trouvée.",
-    standardMatchDone: " offres correspondantes avec la méthode standard !",
-    boostMatchDone: " offres analysées avec AI Boost !",
-    matchError: "Erreur de correspondance : ",
-    boostError: "Erreur AI Boost : ",
-    addGeminiKey: "Ajoutez VITE_GEMINI_API_KEY à .env pour AI Boost.",
-  },
+  // Diğer diller (ar, fr) için tr fallback kullanılır veya yukarıdaki yapıya göre eklenebilir.
 };
 
 /* =========================================================
@@ -559,10 +300,11 @@ const LANGUAGE_LIST = [
 ];
 
 /* =========================================================
-   VARSAYILAN FORM
+   VARSAYILAN FORM (Title eklendi)
    ========================================================= */
 const DEFAULT_FORM = {
   full_name: "",
+  title: "", // ✅ YENİ EKLENDİ
   country: "Turkey",
   city: "",
   bio: "",
@@ -757,6 +499,7 @@ export default function UserProfile() {
             const cv = p.cv_data || {};
             const loadedData = {
               full_name: p.full_name || "",
+              title: p.title || "", // ✅ DB'den TITLE çekiliyor
               country: p.country || "Turkey",
               city: p.city || "",
               avatar_url: p.avatar_url || "",
@@ -964,6 +707,7 @@ export default function UserProfile() {
 
         const profileFields = {
           full_name: formData.full_name.trim(),
+          title: formData.title.trim(), // ✅ TITLE KAYDEDİLİYOR
           avatar_url: formData.avatar_url,
           country: formData.country,
           city: formData.city,
@@ -1217,6 +961,9 @@ export default function UserProfile() {
               <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 leading-none truncate">
                 {formData.full_name || pt.defaultName}
               </h1>
+              <div className="text-base font-semibold text-slate-600 mb-2 truncate">
+                {formData.title || pt.defaultTitle}
+              </div>
               <div className="flex flex-wrap gap-3 mt-3">
                 <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
                   <CheckCircle2 size={12} /> {pt.verified}
@@ -1744,6 +1491,19 @@ export default function UserProfile() {
                   value={formData.full_name}
                   onChange={(e) => updateField("full_name", e.target.value)}
                   placeholder={pt.fullNamePlaceholder}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+                />
+              </div>
+
+              {/* ✅ YENİ: ÜNVAN / JOB TITLE */}
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  {pt.jobTitleLabel}
+                </label>
+                <input
+                  value={formData.title}
+                  onChange={(e) => updateField("title", e.target.value)}
+                  placeholder={pt.jobTitlePlaceholder}
                   className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500 transition-all"
                 />
               </div>

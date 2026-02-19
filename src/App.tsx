@@ -21,6 +21,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
+import UserLayout from "@/layouts/UserLayout"; // ✅ YENİ: UserLayout eklendi
 
 // SAYFALAR
 import Home from "@/pages/Index";
@@ -210,22 +211,24 @@ export default function App() {
             />
             <Route path="coach-application" element={<CoachApplication />} />
 
-            {/* USER & YENİ MENÜ ROTALARI */}
+            {/* USER ROUTE - DİĞERLERİ */}
             <Route path="user/dashboard" element={<UserDashboard />} />
             <Route path="user/profile" element={<UserProfile />} />
             <Route path="user/profile/edit" element={<UserProfileEdit />} />
             <Route path="user/settings" element={<UserSettings />} />
             
-            {/* Eski Rotalar (Geriye uyumluluk için) */}
+            {/* Eski Rotalar (Geriye uyumluluk) */}
             <Route path="saved" element={<SavedItemsPage />} />
             <Route path="user/assessments" element={<MyAssessmentsPage />} />
 
-            {/* --- YENİ EKLENEN ROTALAR --- */}
-            <Route path="my-applications" element={<MyApplicationsPage />} />
-            <Route path="my-reports" element={<MyReportsPage />} />
-            <Route path="calendar" element={<MyCalendarPage />} />
-            <Route path="my-interviews" element={<MyInterviewsPage />} />
-            <Route path="my-sessions-hub" element={<MySessionsHubPage />} />
+            {/* ✅ YENİ: KULLANICI DASHBOARD LAYOUT (Sol Sütunlu Sayfalar) */}
+            <Route element={<UserLayout />}>
+              <Route path="my-applications" element={<MyApplicationsPage />} />
+              <Route path="my-reports" element={<MyReportsPage />} />
+              <Route path="calendar" element={<MyCalendarPage />} />
+              <Route path="my-interviews" element={<MyInterviewsPage />} />
+              <Route path="my-sessions-hub" element={<MySessionsHubPage />} />
+            </Route>
 
             {/* CORPORATE */}
             <Route

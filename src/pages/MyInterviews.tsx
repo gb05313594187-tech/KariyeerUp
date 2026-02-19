@@ -5,19 +5,16 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Video, Calendar, User, Globe, Clock } from "lucide-react";
+import { Video, Calendar as CalendarIcon } from "lucide-react"; // Calendar alias eklendi
 
 export default function MyInterviewsPage() {
   const { user } = useAuth();
   const [interviews, setInterviews] = useState([]);
-  
-  // Profil Verisi (Sol Sütun İçin)
-  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
 
-    // 1. Mülakatları Çek
+    // Mülakatları Çek
     async function loadInterviews() {
       const { data } = await supabase
         .from("interviews")
@@ -27,52 +24,19 @@ export default function MyInterviewsPage() {
       setInterviews(data || []);
     }
 
-    // 2. Profil Çek (Home'daki mantığın aynısı)
-    async function loadProfile() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name, title, avatar_url, country, city")
-        .eq("id", user.id)
-        .single();
-      setProfile(data);
-    }
-
     loadInterviews();
-    loadProfile();
   }, [user]);
 
-  // Avatar ve İsim Mantığı
-  const avatarSrc = profile?.avatar_url || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
-  const displayName = profile?.full_name || user?.fullName || "Kullanıcı";
-  const displayTitle = profile?.title || "Aday";
-
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* === SOL SÜTUN: SABİT PROFİL === */}
-        <div className="lg:col-span-3 space-y-4">
-          <Card className="bg-white border border-gray-200 sticky top-20">
-            <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-              <img src={avatarSrc} className="w-20 h-20 rounded-full border-4 border-gray-50 object-cover" />
-              <div>
-                <div className="font-bold text-gray-900">{displayName}</div>
-                <div className="text-xs text-gray-500">{displayTitle}</div>
-                <div className="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
-                  <Globe size={12} /> {profile?.city}, {profile?.country}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* === ORTA SÜTUN: MÜLAKATLAR === */}
-        <div className="lg:col-span-6 space-y-6">
+        {/* === ORTA ALAN: MÜLAKAT LİSTESİ === */}
+        <div className="lg:col-span-8 space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Video className="text-red-500" /> Mülakatlarım
           </h2>
 
-          {/* Yaklaşan Mülakatlar */}
           <div className="space-y-4">
             {interviews.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-dashed">
@@ -110,16 +74,15 @@ export default function MyInterviewsPage() {
           </div>
         </div>
 
-        {/* === SAĞ SÜTUN: TAKVİM WIDGET === */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* === SAĞ ALAN: MİNİ TAKVİM WIDGET === */}
+        <div className="lg:col-span-4 space-y-4">
           <Card className="bg-white border border-gray-200 sticky top-20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-500" /> Takvim
+                <CalendarIcon className="w-4 h-4 text-orange-500" /> Takvim Özeti
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Basit Takvim Görüntüsü */}
               <div className="bg-gray-50 rounded-lg p-4 text-center text-xs text-gray-500">
                 Takvim entegrasyonu aktif.
                 <br />

@@ -46,8 +46,15 @@ import Ethics from "@/pages/Ethics";
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
 import Sitemap from "@/pages/Sitemap";
-import SavedItemsPage from "@/pages/SavedItems";
-import MyAssessmentsPage from "@/pages/MyAssessments";
+
+// --- YENİ EKLENEN/GÜNCELLENEN SAYFALAR ---
+import SavedItemsPage from "@/pages/SavedItems"; // (Artık MyApplications'a entegre ama eski link bozulmasın diye kalsın)
+import MyAssessmentsPage from "@/pages/MyAssessments"; // (Artık MyReports'a entegre ama kalsın)
+import MyApplicationsPage from "@/pages/MyApplications";
+import MyReportsPage from "@/pages/MyReports";
+import MyCalendarPage from "@/pages/MyCalendar";
+import MyInterviewsPage from "@/pages/MyInterviews";
+import MySessionsHubPage from "@/pages/MySessionsHub";
 
 // USER
 import UserDashboard from "@/pages/UserDashboard";
@@ -98,8 +105,6 @@ import CreateJob from "@/pages/CreateJob";
 import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
 import MeetingRoom from "@/pages/MeetingRoom";
-
-// ✅ Boost import KALDIRILDI — artık /boost → /pricing redirect
 
 // ANALYTICS ID
 const GA_ID = "G-R39ELRDLKQ";
@@ -205,13 +210,22 @@ export default function App() {
             />
             <Route path="coach-application" element={<CoachApplication />} />
 
-            {/* USER */}
+            {/* USER & YENİ MENÜ ROTALARI */}
             <Route path="user/dashboard" element={<UserDashboard />} />
             <Route path="user/profile" element={<UserProfile />} />
             <Route path="user/profile/edit" element={<UserProfileEdit />} />
             <Route path="user/settings" element={<UserSettings />} />
+            
+            {/* Eski Rotalar (Geriye uyumluluk için) */}
             <Route path="saved" element={<SavedItemsPage />} />
             <Route path="user/assessments" element={<MyAssessmentsPage />} />
+
+            {/* --- YENİ EKLENEN ROTALAR --- */}
+            <Route path="my-applications" element={<MyApplicationsPage />} />
+            <Route path="my-reports" element={<MyReportsPage />} />
+            <Route path="calendar" element={<MyCalendarPage />} />
+            <Route path="my-interviews" element={<MyInterviewsPage />} />
+            <Route path="my-sessions-hub" element={<MySessionsHubPage />} />
 
             {/* CORPORATE */}
             <Route

@@ -21,9 +21,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
    ========================================================= */
 const PROFILE_TRANSLATIONS = {
   tr: {
-    loadingSyncing: "Hafıza Senkronize Ediliyor...",
-    supabaseActive: "Supabase Bağlantısı Aktif",
-    localMode: "Yerel Mod — Veriler localStorage'da Saklanıyor",
+    loadingSyncing: "Profil Verileri Yükleniyor...",
+    supabaseActive: "Veriler Buluttan Çekildi",
+    localMode: "Yerel Mod — Veriler Cihazınızda",
     uploading: "Yükleniyor...",
     changeBanner: "Banner Değiştir",
     changePhoto: "Değiştir",
@@ -121,19 +121,19 @@ const PROFILE_TRANSLATIONS = {
     interestsSection: "İlgi Alanları",
     interestInputPlaceholder: "İlgi alanı yazıp Enter'a basın...",
     cancel: "İPTAL",
-    sealMemory: "HAFIZAYI MÜHÜRLE",
-    sealing: "MÜHÜRLENİYOR...",
+    sealMemory: "KAYDET VE GÜNCELLE",
+    sealing: "KAYDEDİLİYOR...",
     fileTooLarge: "Dosya 5MB'den küçük olmalı.",
     selectImageFile: "Lütfen bir resim dosyası seçin.",
-    profilePhotoSealed: "Profil fotoğrafı mühürlendi!",
-    bannerSealed: "Banner mühürlendi!",
+    profilePhotoSealed: "Profil fotoğrafı güncellendi!",
+    bannerSealed: "Banner güncellendi!",
     profilePhotoSaved: "Profil fotoğrafı kaydedildi!",
     bannerSaved: "Banner kaydedildi!",
     localBackupCreated: "Yerel yedek kayıt oluşturuldu.",
     uploadFailed: "Yükleme tamamen başarısız oldu.",
-    dataSealedSupabase: "Tüm veriler Supabase'e mühürlendi!",
-    dataSealedLocal: "Veriler yerel olarak mühürlendi!",
-    saveFailed: "Kayıt mühürlenemedi: ",
+    dataSealedSupabase: "Profiliniz başarıyla güncellendi!",
+    dataSealedLocal: "Veriler yerel olarak saklandı!",
+    saveFailed: "Kayıt işlemi başarısız: ",
     unknownError: "Bilinmeyen hata",
     supabaseRequired: "Eşleştirme için Supabase bağlantısı gerekli.",
     noActiveJobs: "Henüz aktif ilan bulunamadı.",
@@ -143,7 +143,6 @@ const PROFILE_TRANSLATIONS = {
     boostError: "AI Boost hatası: ",
     addGeminiKey: "AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.",
   },
-  // ... Diğer diller (en, ar, fr) varsayılan olarak tr kullanacak veya eklenebilir
 };
 
 /* =========================================================
@@ -329,8 +328,8 @@ export default function UserProfile() {
   // ─── MATCHING STATE ───
   const [matches, setMatches] = useState([]);
   const [matching, setMatching] = useState(false);
-  const [matchMode, setMatchMode] = useState(null); 
-  const [expandedMatch, setExpandedMatch] = useState(null); 
+  const [matchMode, setMatchMode] = useState(null); // "standard" | "boost" | null
+  const [expandedMatch, setExpandedMatch] = useState(null); // expanded match index
 
   const { show: toast, ToastContainer } = useToast();
 
@@ -359,6 +358,7 @@ export default function UserProfile() {
           setMe(user);
           setConnectionMode("supabase");
 
+          // PROFILES tablosundan veri çek
           const { data: p, error: profileErr } = await supabase
             .from("profiles")
             .select("*")
@@ -376,9 +376,12 @@ export default function UserProfile() {
               title: p.title || "",
               country: p.country || "Turkey",
               city: p.city || "",
-              // ✅ GÜNCELLEME: Avatar ve Cover için öncelik sıralaması
-              avatar_url: p.avatar_url || cv.avatar_url || "", 
-              cover_url: p.cover_url || cv.cover_url || "",
+              
+              // ✅ KRİTİK DÜZELTME: Veritabanındaki ana kolonlar (p) ÖNCELİKLİDİR.
+              // Eğer p.avatar_url doluysa onu kullan, yoksa cv.avatar_url'e bak.
+              avatar_url: p.avatar_url && p.avatar_url !== "" ? p.avatar_url : (cv.avatar_url || ""),
+              cover_url: p.cover_url && p.cover_url !== "" ? p.cover_url : (cv.cover_url || ""),
+              
               bio: p.bio || cv.about || "",
               phone_code: cv.phone_code || "+90",
               phone: p.phone || cv.phone_number || "",
@@ -390,6 +393,8 @@ export default function UserProfile() {
               interests: Array.isArray(cv.interests) ? cv.interests : [],
             };
             setFormData(loadedData);
+            
+            // LocalStorage'ı güncelle ama sayfa açılışında kullanma
             saveToLocal(loadedData);
           }
 
@@ -400,6 +405,7 @@ export default function UserProfile() {
         }
       }
 
+      // Supabase yoksa veya hata varsa local'e dön
       setConnectionMode("local");
       setFormData(loadFromLocal());
       setLoading(false);
@@ -450,7 +456,7 @@ export default function UserProfile() {
   };
 
   /* ─────────────────────────────────────────────────────────
-     FOTOĞRAF YÜKLEME
+     FOTOĞRAF YÜKLEME (GÜNCELLENDİ)
      ───────────────────────────────────────────────────────── */
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
@@ -499,15 +505,28 @@ export default function UserProfile() {
         }
 
         try {
-          // Hem ana tabloyu hem de CV datasını güncelle (garanti olsun)
+          // ✅ GÜNCELLEME: Fotoğraf yüklenince hem ana tabloyu hem CV datasını güncelle
+          // Böylece sayfa yenilenince veri kaybı olmaz
           const updateData = type === "avatar" 
             ? { avatar_url: finalUrl } 
-            : { cover_url: finalUrl }; // cover_url ayrı kolon olarak varsa buraya yazar
+            : { cover_url: finalUrl };
+
+          // CV Data içindeki ilgili alanı da güncellemek için önce mevcut veriyi çekelim
+          const { data: currentP } = await supabase
+            .from("profiles")
+            .select("cv_data")
+            .eq("id", me.id)
+            .single();
+          
+          const currentCv = currentP?.cv_data || {};
+          if (type === "avatar") currentCv.avatar_url = finalUrl;
+          else currentCv.cover_url = finalUrl;
 
           const { error: dbErr } = await supabase
             .from("profiles")
             .update({ 
               ...updateData,
+              cv_data: currentCv,
               updated_at: new Date().toISOString() 
             })
             .eq("id", me.id);
@@ -560,7 +579,7 @@ export default function UserProfile() {
 
       if (connectionMode === "supabase" && me) {
         const cvData = {
-          // CV Data içine de yazalım (yedek)
+          // ✅ GÜNCELLEME: CV Data içine de yazalım (yedekleme için)
           cover_url: formData.cover_url,
           avatar_url: formData.avatar_url,
           phone_code: formData.phone_code,
@@ -577,7 +596,7 @@ export default function UserProfile() {
         const profileFields = {
           full_name: formData.full_name.trim(),
           title: formData.title.trim(),
-          // Ana tabloya da yazalım
+          // ✅ GÜNCELLEME: Ana tabloya kesin yazılıyor
           avatar_url: formData.avatar_url,
           cover_url: formData.cover_url, 
           country: formData.country,

@@ -47,6 +47,7 @@ import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
 import Sitemap from "@/pages/Sitemap";
 import SavedItemsPage from "@/pages/SavedItems";
+import MyAssessmentsPage from "@/pages/MyAssessments";
 
 // USER
 import UserDashboard from "@/pages/UserDashboard";
@@ -210,6 +211,7 @@ export default function App() {
             <Route path="user/profile/edit" element={<UserProfileEdit />} />
             <Route path="user/settings" element={<UserSettings />} />
             <Route path="saved" element={<SavedItemsPage />} />
+            <Route path="user/assessments" element={<MyAssessmentsPage />} />
 
             {/* CORPORATE */}
             <Route

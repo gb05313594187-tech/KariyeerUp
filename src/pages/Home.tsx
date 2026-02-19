@@ -15,8 +15,8 @@ import {
   X,
   Globe,
   Users,
-  Bookmark,
   Brain,
+  Video, // Mülakatlar ikonu için eklendi
 } from "lucide-react";
 import { toast } from "sonner";
 import AIEnhancedPostCard from "@/components/AIEnhancedPostCard";
@@ -175,6 +175,7 @@ export default function Home() {
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
         {/* =============== SOL SÜTUN: PROFİL + MENÜ =============== */}
         <div className="lg:col-span-3 space-y-4">
           {/* Profil Kartı */}
@@ -202,23 +203,55 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Kısa Menü */}
+          {/* Kısa Menü - YENİLENMİŞ 5 MADDELİK YAPI */}
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-3 space-y-1 text-sm">
+              
+              {/* 1. Başvurularım */}
               <button
-                onClick={() => navigate("/saved")}
-                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                onClick={() => navigate("/my-applications")}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700 transition-colors"
               >
-                <Bookmark className="w-4 h-4 text-red-500" />
-                <span>Kaydedilenlerim</span>
+                <Briefcase className="w-4 h-4 text-blue-600" />
+                <span>Başvurularım</span>
               </button>
+
+              {/* 2. Raporlar */}
               <button
-                onClick={() => navigate("/user/assessments")}
-                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                onClick={() => navigate("/my-reports")}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700 transition-colors"
               >
-                <Brain className="w-4 h-4 text-indigo-500" />
-                <span>Kişilik Envanteri Raporlarım</span>
+                <Brain className="w-4 h-4 text-indigo-600" />
+                <span>Raporlar & Envanterler</span>
               </button>
+
+              {/* 3. Takvim */}
+              <button
+                onClick={() => navigate("/calendar")}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700 transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-orange-600" />
+                <span>Takvimim</span>
+              </button>
+
+              {/* 4. Mülakatlarım */}
+              <button
+                onClick={() => navigate("/my-interviews")}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700 transition-colors"
+              >
+                <Video className="w-4 h-4 text-red-600" />
+                <span>Mülakatlarım</span>
+              </button>
+
+              {/* 5. Seanslarım */}
+              <button
+                onClick={() => navigate("/my-sessions-hub")}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700 transition-colors"
+              >
+                <Users className="w-4 h-4 text-purple-600" />
+                <span>Seanslarım</span>
+              </button>
+
             </CardContent>
           </Card>
         </div>

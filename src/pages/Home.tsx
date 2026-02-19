@@ -42,6 +42,32 @@ export default function Home() {
   const fileInputRef = useRef(null);
 
   /* ---------------------------------------------------
+     DEBUG KODU (BURASI YENİ)
+  --------------------------------------------------- */
+  useEffect(() => {
+    console.log("=== DEBUG BAŞLIYOR ===");
+    console.log("Auth User:", user);
+    if (user?.id) {
+      supabase
+        .from("profiles")
+        .select("full_name, title, avatar_url, country, city, cv_data")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          console.log("--------------------------------");
+          console.log("Supabase Profil Yanıtı:", data);
+          console.log("Supabase Hatası:", error);
+          console.log("Beklenen Ünvan (title):", data?.title);
+          console.log("Beklenen Foto (avatar_url):", data?.avatar_url);
+          console.log("CV Data İçindeki Title:", data?.cv_data?.title);
+          console.log("--------------------------------");
+        });
+    } else {
+      console.log("Kullanıcı ID yok! (Login olmamış olabilir)");
+    }
+  }, [user]);
+
+  /* ---------------------------------------------------
      1. FEED YÜKLE
   --------------------------------------------------- */
   const fetchFeed = async () => {
@@ -65,13 +91,12 @@ export default function Home() {
   };
 
   /* ---------------------------------------------------
-     2. GÜNCEL PROFİL VERİSİNİ ÇEK (CRITICAL FIX)
+     2. GÜNCEL PROFİL VERİSİNİ ÇEK
   --------------------------------------------------- */
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
       
-      // Sadece bu kullanıcıya ait kaydı çek
       const { data, error } = await supabase
         .from("profiles")
         .select("full_name, title, avatar_url, country, city, cv_data")
@@ -79,34 +104,21 @@ export default function Home() {
         .maybeSingle();
 
       if (data) {
-        // ✅ BURASI ÇOK ÖNEMLİ:
-        // Veritabanındaki kolonlar (data.title, data.avatar_url) EN YÜKSEK önceliğe sahip.
-        // Eğer onlar boşsa cv_data'ya bak.
+        const cv = data.cv_data || {};
+        const finalAvatar = data.avatar_url || cv.avatar_url || user?.user_metadata?.avatar_url;
+        const finalTitle = data.title || cv.title || "Kariyer Yolculuğu Üyesi";
         
-        const dbTitle = data.title;
-        const cvTitle = data.cv_data?.title;
-        
-        const dbAvatar = data.avatar_url;
-        const cvAvatar = data.cv_data?.avatar_url;
-
         setProfileData({
-          full_name: data.full_name || user.user_metadata?.full_name,
-          
-          // Ünvan: DB > CV > Varsayılan
-          title: dbTitle || cvTitle || "Kariyer Yolculuğu Üyesi",
-          
-          // Avatar: DB > CV > Auth > Dicebear
-          avatar_url: dbAvatar || cvAvatar || user.user_metadata?.avatar_url,
-          
-          city: data.city,
-          country: data.country
+          ...data,
+          avatar_url: finalAvatar,
+          title: finalTitle
         });
       }
     };
 
     fetchProfile();
     fetchFeed();
-  }, [user?.id]); // User ID değişirse tekrar çek
+  }, [user?.id]);
 
   /* ---------------------------------------------------
      3. POST PAYLAŞ
@@ -150,21 +162,15 @@ export default function Home() {
     setSubmitting(false);
   };
 
-  // Görüntülenecek Veriler (Fallback mekanizmalı)
-  // Eğer profileData henüz yüklenmediyse (null ise), AuthContext verisini kullan
   const displayAvatar = profileData?.avatar_url || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
   const displayName = profileData?.full_name || user?.fullName || "Kullanıcı";
   const displayTitle = profileData?.title || "Kariyer Yolculuğu Üyesi";
-  
-  const displayLocation = profileData?.city && profileData?.country 
-    ? `${profileData.city}, ${profileData.country}` 
-    : null;
+  const displayLocation = profileData?.city && profileData?.country ? `${profileData.city}, ${profileData.country}` : null;
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* === SOL SÜTUN: PROFİL KARTI === */}
         <div className="lg:col-span-3 space-y-4">
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
@@ -190,7 +196,6 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Menü */}
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardContent className="p-2 space-y-1 text-sm">
               <MenuItem icon={Briefcase} label="Başvurularım" path="/my-applications" color="text-blue-600" nav={navigate} />
@@ -202,7 +207,6 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* === ORTA SÜTUN: COMPOSER + FEED === */}
         <div className="lg:col-span-6 space-y-6">
           <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
             <CardHeader className="pb-3 pt-4 px-4">
@@ -248,7 +252,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* === SAĞ SÜTUN: GÜNDEM === */}
         <div className="lg:col-span-3 space-y-4">
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardHeader className="pb-2 pt-4 px-4">

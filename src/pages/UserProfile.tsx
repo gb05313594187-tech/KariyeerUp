@@ -28,7 +28,7 @@ const PROFILE_TRANSLATIONS = {
     changeBanner: "Banner Değiştir",
     changePhoto: "Değiştir",
     defaultName: "İSİM SOYİSİM",
-    defaultTitle: "Ünvan Girilmemiş", // Fallback title
+    defaultTitle: "Ünvan Girilmemiş",
     verified: "ONAYLI",
     editProfile: "PROFİLİ DÜZENLE",
     profileEmpty: "Profiliniz Boş",
@@ -81,8 +81,8 @@ const PROFILE_TRANSLATIONS = {
     uploadingImage: "Görsel yükleniyor...",
     fullName: "Ad Soyad",
     fullNamePlaceholder: "Adınız ve Soyadınız",
-    jobTitleLabel: "Ünvan / Meslek", // YENİ
-    jobTitlePlaceholder: "Örn: Yazılım Geliştirici, İK Uzmanı...", // YENİ
+    jobTitleLabel: "Ünvan / Meslek",
+    jobTitlePlaceholder: "Örn: Yazılım Geliştirici, İK Uzmanı...",
     location: "Lokasyon",
     selectCountry: "Ülke Seçin",
     selectCity: "Şehir Seçin",
@@ -143,133 +143,7 @@ const PROFILE_TRANSLATIONS = {
     boostError: "AI Boost hatası: ",
     addGeminiKey: "AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.",
   },
-  en: {
-    // ... (Diğer diller için varsayılan değerleri kullanır veya buraya eklersiniz)
-    // Sadece yeni eklenenleri buraya örnek olarak koyuyorum, tamamı yukarıdaki TR yapısını takip eder.
-    jobTitleLabel: "Job Title / Profession",
-    jobTitlePlaceholder: "Ex: Software Developer, HR Specialist...",
-    defaultTitle: "No Title",
-    // ... Diğer çeviriler aynı kalabilir veya kopyalanabilir.
-    loadingSyncing: "Synchronizing Memory...",
-    supabaseActive: "Supabase Connection Active",
-    localMode: "Local Mode — Data Stored in localStorage",
-    uploading: "Uploading...",
-    changeBanner: "Change Banner",
-    changePhoto: "Change",
-    defaultName: "FULL NAME",
-    verified: "VERIFIED",
-    editProfile: "EDIT PROFILE",
-    profileEmpty: "Your Profile is Empty",
-    profileEmptyDesc: "Start your career journey by adding your profile information.",
-    createProfile: "CREATE PROFILE",
-    careerVision: "Career Vision",
-    workExperience: "Work Experience",
-    education: "Education",
-    certificates: "Certificates",
-    languagesSection: "Languages",
-    skills: "Skills",
-    interests: "Interests",
-    positionDefault: "Position",
-    companyDefault: "Company",
-    present: "Present",
-    schoolDefault: "School",
-    ongoing: "Ongoing",
-    certificateDefault: "Certificate",
-    languageDefault: "Language",
-    highMatch: "High Match",
-    mediumMatch: "Medium Match",
-    lowMatch: "Low Match",
-    myJobMatches: "My Job Matches",
-    matchSubtitle: "Compare your profile with active listings",
-    standard: "Standard",
-    aiBoost: "AI Boost",
-    aiAnalyzing: "AI Analyzing...",
-    scanning: "Scanning...",
-    noMatchesYet: "No Matches Yet",
-    noMatchesDescWithContent: "Click Standard or AI Boost to match.",
-    noMatchesDescEmpty: "First fill in your profile.",
-    unknownPosition: "Unknown Position",
-    strengths: "Strengths",
-    areasForImprovement: "Areas for Improvement",
-    detailedScoreDistribution: "Detailed Score Distribution",
-    skillLabel: "Skill",
-    locationLabel: "Location",
-    experienceLabel: "Experience",
-    languageLabel: "Language",
-    jobDescription: "Job Description",
-    salary: "Salary",
-    salaryUpTo: " max",
-    standardMatchInfo: "Standard = Keyword-based matching",
-    boostMatchInfo: "Boost = Gemini AI semantic analysis",
-    addGeminiKeyWarning: "Add VITE_GEMINI_API_KEY to .env",
-    profileArchitect: "Profile Architect",
-    profileImages: "Profile Images",
-    profilePhoto: "Profile Photo",
-    bannerImage: "Banner Image",
-    uploadingImage: "Uploading image...",
-    fullName: "Full Name",
-    fullNamePlaceholder: "Your Full Name",
-    location: "Location",
-    selectCountry: "Select Country",
-    selectCity: "Select City",
-    internationalPhone: "International Phone",
-    aboutCareerVision: "About Me / Career Vision",
-    aboutPlaceholder: "Describe yourself...",
-    add: "ADD",
-    workExperienceSection: "Work Experience",
-    positionTitle: "Position / Title",
-    companyName: "Company Name",
-    startDate: "Start",
-    endDate: "End",
-    currentlyWorking: "Currently Working",
-    deleteBtn: "DELETE",
-    jobDescPlaceholder: "Job description...",
-    educationSection: "Education",
-    schoolUniversity: "School / University",
-    departmentField: "Department / Field",
-    degree: "Degree",
-    degreeHighSchool: "High School",
-    degreeAssociate: "Associate",
-    degreeBachelor: "Bachelor's",
-    degreeMaster: "Master's",
-    degreePhD: "PhD",
-    startLabel: "Start",
-    endLabel: "End",
-    continueLabel: "Ongoing",
-    languageProficiency: "Language Proficiency",
-    selectLanguage: "Select Language",
-    certificatesSection: "Certificates",
-    certificateName: "Certificate Name",
-    institution: "Institution",
-    year: "Year",
-    technicalSkills: "Technical Programs & Skills",
-    skillInputPlaceholder: "Type a skill...",
-    interestsSection: "Interests",
-    interestInputPlaceholder: "Type an interest...",
-    cancel: "CANCEL",
-    sealMemory: "SAVE PROFILE",
-    sealing: "SAVING...",
-    fileTooLarge: "File must be smaller than 5MB.",
-    selectImageFile: "Please select an image file.",
-    profilePhotoSealed: "Profile photo saved!",
-    bannerSealed: "Banner saved!",
-    profilePhotoSaved: "Profile photo saved!",
-    bannerSaved: "Banner saved!",
-    localBackupCreated: "Local backup created.",
-    uploadFailed: "Upload failed.",
-    dataSealedSupabase: "All data saved to Supabase!",
-    dataSealedLocal: "Data saved locally!",
-    saveFailed: "Save failed: ",
-    unknownError: "Unknown error",
-    supabaseRequired: "Supabase connection required.",
-    noActiveJobs: "No active job listings found.",
-    standardMatchDone: " matched!",
-    boostMatchDone: " analyzed!",
-    matchError: "Matching error: ",
-    boostError: "AI Boost error: ",
-    addGeminiKey: "Add API Key.",
-  },
-  // Diğer diller (ar, fr) için tr fallback kullanılır veya yukarıdaki yapıya göre eklenebilir.
+  // ... Diğer diller (en, ar, fr) varsayılan olarak tr kullanacak veya eklenebilir
 };
 
 /* =========================================================
@@ -300,11 +174,11 @@ const LANGUAGE_LIST = [
 ];
 
 /* =========================================================
-   VARSAYILAN FORM (Title eklendi)
+   VARSAYILAN FORM
    ========================================================= */
 const DEFAULT_FORM = {
   full_name: "",
-  title: "", // ✅ YENİ EKLENDİ
+  title: "",
   country: "Turkey",
   city: "",
   bio: "",
@@ -455,8 +329,8 @@ export default function UserProfile() {
   // ─── MATCHING STATE ───
   const [matches, setMatches] = useState([]);
   const [matching, setMatching] = useState(false);
-  const [matchMode, setMatchMode] = useState(null); // "standard" | "boost" | null
-  const [expandedMatch, setExpandedMatch] = useState(null); // expanded match index
+  const [matchMode, setMatchMode] = useState(null); 
+  const [expandedMatch, setExpandedMatch] = useState(null); 
 
   const { show: toast, ToastContainer } = useToast();
 
@@ -465,7 +339,7 @@ export default function UserProfile() {
   const pt = PROFILE_TRANSLATIONS[language] || PROFILE_TRANSLATIONS.tr;
 
   /* ─────────────────────────────────────────────────────────
-     PROFİL YÜKLEME
+     PROFİL YÜKLEME (GÜNCELLENDİ)
      ───────────────────────────────────────────────────────── */
   useEffect(() => {
     const fetchProfile = async () => {
@@ -499,11 +373,12 @@ export default function UserProfile() {
             const cv = p.cv_data || {};
             const loadedData = {
               full_name: p.full_name || "",
-              title: p.title || "", // ✅ DB'den TITLE çekiliyor
+              title: p.title || "",
               country: p.country || "Turkey",
               city: p.city || "",
-              avatar_url: p.avatar_url || "",
-              cover_url: cv.cover_url || "",
+              // ✅ GÜNCELLEME: Avatar ve Cover için öncelik sıralaması
+              avatar_url: p.avatar_url || cv.avatar_url || "", 
+              cover_url: p.cover_url || cv.cover_url || "",
               bio: p.bio || cv.about || "",
               phone_code: cv.phone_code || "+90",
               phone: p.phone || cv.phone_number || "",
@@ -624,30 +499,22 @@ export default function UserProfile() {
         }
 
         try {
-          if (type === "avatar") {
-            const { error: dbErr } = await supabase
-              .from("profiles")
-              .update({ avatar_url: finalUrl, updated_at: new Date().toISOString() })
-              .eq("id", me.id);
-            if (dbErr) console.error("Avatar DB hatası:", dbErr);
-            else toast(pt.profilePhotoSealed, "success");
-          } else {
-            const { data: currentProfile } = await supabase
-              .from("profiles")
-              .select("cv_data")
-              .eq("id", me.id)
-              .maybeSingle();
-            const currentCv = currentProfile?.cv_data || {};
-            const { error: dbErr } = await supabase
-              .from("profiles")
-              .update({
-                cv_data: { ...currentCv, cover_url: finalUrl },
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", me.id);
-            if (dbErr) console.error("Cover DB hatası:", dbErr);
-            else toast(pt.bannerSealed, "success");
-          }
+          // Hem ana tabloyu hem de CV datasını güncelle (garanti olsun)
+          const updateData = type === "avatar" 
+            ? { avatar_url: finalUrl } 
+            : { cover_url: finalUrl }; // cover_url ayrı kolon olarak varsa buraya yazar
+
+          const { error: dbErr } = await supabase
+            .from("profiles")
+            .update({ 
+              ...updateData,
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", me.id);
+
+          if (dbErr) console.error("DB hatası:", dbErr);
+          else toast(type === "avatar" ? pt.profilePhotoSealed : pt.bannerSealed, "success");
+
         } catch (dbError) {
           console.error("DB kayıt hatası:", dbError);
         }
@@ -683,7 +550,7 @@ export default function UserProfile() {
   };
 
   /* ─────────────────────────────────────────────────────────
-     TÜM PROFİLİ KAYDET
+     TÜM PROFİLİ KAYDET (GÜNCELLENDİ)
      ───────────────────────────────────────────────────────── */
   const handleSave = async () => {
     setSaving(true);
@@ -693,7 +560,9 @@ export default function UserProfile() {
 
       if (connectionMode === "supabase" && me) {
         const cvData = {
+          // CV Data içine de yazalım (yedek)
           cover_url: formData.cover_url,
+          avatar_url: formData.avatar_url,
           phone_code: formData.phone_code,
           phone_number: formData.phone,
           about: formData.bio,
@@ -707,8 +576,10 @@ export default function UserProfile() {
 
         const profileFields = {
           full_name: formData.full_name.trim(),
-          title: formData.title.trim(), // ✅ TITLE KAYDEDİLİYOR
+          title: formData.title.trim(),
+          // Ana tabloya da yazalım
           avatar_url: formData.avatar_url,
+          cover_url: formData.cover_url, 
           country: formData.country,
           city: formData.city,
           bio: formData.bio,

@@ -21,11 +21,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
-import UserLayout from "@/layouts/UserLayout"; // ✅ YENİ: UserLayout eklendi
+import UserLayout from "@/layouts/UserLayout";
 
 // SAYFALAR
 import Home from "@/pages/Index";
 import Pricing from "@/pages/Pricing";
+import Boost from "@/pages/Boost"; // ✅ YENİ: Boost eklendi
 import Coaches from "@/pages/Coaches";
 import ForCoaches from "@/pages/ForCoaches";
 import ForCompanies from "@/pages/ForCompanies";
@@ -49,8 +50,8 @@ import CoachSelfProfile from "@/pages/CoachProfile";
 import Sitemap from "@/pages/Sitemap";
 
 // --- YENİ EKLENEN/GÜNCELLENEN SAYFALAR ---
-import SavedItemsPage from "@/pages/SavedItems"; // (Artık MyApplications'a entegre ama eski link bozulmasın diye kalsın)
-import MyAssessmentsPage from "@/pages/MyAssessments"; // (Artık MyReports'a entegre ama kalsın)
+import SavedItemsPage from "@/pages/SavedItems";
+import MyAssessmentsPage from "@/pages/MyAssessments";
 import MyApplicationsPage from "@/pages/MyApplications";
 import MyReportsPage from "@/pages/MyReports";
 import MyCalendarPage from "@/pages/MyCalendar";
@@ -172,11 +173,8 @@ export default function App() {
             <Route path="jobs/new" element={<CreateJob />} />
             <Route path="corporate/jobs" element={<CorporateJobs />} />
 
-            {/* ✅ BOOST → PRICING REDIRECT */}
-            <Route
-              path="boost"
-              element={<Navigate to="/pricing" replace />}
-            />
+            {/* ✅ BOOST SAYFASI */}
+            <Route path="boost" element={<Boost />} />
 
             <Route path="sitemap.xml" element={<Sitemap />} />
             <Route path="bireysel-premium" element={<BireyselPremium />} />
@@ -216,7 +214,7 @@ export default function App() {
             <Route path="user/profile" element={<UserProfile />} />
             <Route path="user/profile/edit" element={<UserProfileEdit />} />
             <Route path="user/settings" element={<UserSettings />} />
-            
+
             {/* Eski Rotalar (Geriye uyumluluk) */}
             <Route path="saved" element={<SavedItemsPage />} />
             <Route path="user/assessments" element={<MyAssessmentsPage />} />

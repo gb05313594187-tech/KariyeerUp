@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const initializedRef = useRef(false);
 
   const clearAuth = useCallback(() => {
     setUser(null);
@@ -57,44 +58,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!mountedRef.current) return;
 
     try {
+      console.log("📥 Loading user profile for:", supabaseUserData.email);
+      
       setSupabaseUser(supabaseUserData);
       const meta = supabaseUserData.user_metadata || {};
 
+      // ✅ Email için fallback'ler
+      const userEmail = supabaseUserData.email || meta.email || "";
+      
+      // ✅ FullName için çoklu fallback
+      const userFullName = 
+        meta.full_name || 
+        meta.fullName || 
+        meta.display_name || 
+        meta.name ||
+        (userEmail ? userEmail.split("@")[0] : "User");
+
       const quickUser: User = {
         id: supabaseUserData.id,
-        email: supabaseUserData.email || "",
-        fullName: meta.full_name || meta.fullName || meta.display_name || supabaseUserData.email?.split("@")[0] || "User",
+        email: userEmail,
+        fullName: userFullName,
         role: normalizeRole(meta.role || meta.user_type),
-        phone: null,
-        country: null,
+        phone: meta.phone || null,
+        country: meta.country || null,
       };
+
+      console.log("👤 Quick user created:", quickUser);
 
       setUser(quickUser);
       setRole(quickUser.role);
       setIsAuthenticated(true);
-      
-      // ✅ Profil yüklendi, loading'i kapat
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
 
-      // Arka planda profiles'ı al
+      // Arka planda profiles tablosundan detaylı bilgi al
       try {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("full_name, display_name, role, phone, country, user_type")
+          .select("full_name, display_name, role, phone, country, user_type, email")
           .eq("id", supabaseUserData.id)
           .maybeSingle();
 
+        if (profileError) {
+          console.warn("Profile fetch warning:", profileError.message);
+        }
+
         if (profile && mountedRef.current) {
           const finalRole = normalizeRole(profile.role || profile.user_type || quickUser.role);
-          setUser({
-            ...quickUser,
+          const finalUser: User = {
+            id: supabaseUserData.id,
+            email: profile.email || quickUser.email,
             fullName: profile.full_name || profile.display_name || quickUser.fullName,
             role: finalRole,
-            phone: profile.phone || null,
-            country: profile.country || null,
-          });
+            phone: profile.phone || quickUser.phone,
+            country: profile.country || quickUser.country,
+          };
+          
+          console.log("👤 Final user from profile:", finalUser);
+          setUser(finalUser);
           setRole(finalRole);
         }
       } catch (e) {
@@ -109,42 +129,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [clearAuth]);
 
+  // ✅ Geliştirilmiş session kontrolü
   const checkSession = useCallback(async () => {
+    if (initializedRef.current) return;
+    
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log("🔍 Checking session...");
+      
+      // Önce getSession dene (timeout ile)
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("getSession timeout")), 3000)
+      );
 
-      if (error || !session?.user) {
-        if (mountedRef.current) {
-          clearAuth();
-          setLoading(false); // ✅ Session yoksa da loading'i kapat
+      let session = null;
+      
+      try {
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        session = result?.data?.session;
+        console.log("✅ getSession successful:", !!session);
+      } catch (e) {
+        console.log("⚠️ getSession timeout, trying getUser...");
+        
+        // getSession başarısız olursa getUser dene
+        try {
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (!userError && userData?.user) {
+            console.log("✅ getUser successful");
+            await loadUserProfile(userData.user);
+            initializedRef.current = true;
+            return;
+          }
+        } catch (getUserError) {
+          console.warn("getUser also failed:", getUserError);
         }
-        return;
       }
 
-      await loadUserProfile(session.user);
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        console.log("📭 No session found");
+        clearAuth();
+        setLoading(false);
+      }
+      
+      initializedRef.current = true;
     } catch (e) {
       console.error("Session check error:", e);
       if (mountedRef.current) {
         clearAuth();
-        setLoading(false); // ✅ Hata olsa da loading'i kapat
+        setLoading(false);
       }
+      initializedRef.current = true;
     }
   }, [loadUserProfile, clearAuth]);
 
   const refresh = useCallback(async () => {
+    initializedRef.current = false;
+    setLoading(true);
     await checkSession();
   }, [checkSession]);
 
   useEffect(() => {
     mountedRef.current = true;
+    initializedRef.current = false;
 
-    // ✅ 2 saniye sonra zorla loading'i kapat (emergency fallback)
+    // ✅ 5 saniye sonra zorla loading'i kapat (emergency fallback)
     const emergencyTimeout = setTimeout(() => {
       if (mountedRef.current && loading) {
         console.warn("⚠️ Auth loading timeout - forcing false");
         setLoading(false);
       }
-    }, 2000);
+    }, 5000);
 
     checkSession();
 
@@ -218,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearAuth();
     } finally {
       setLoading(false);
+      initializedRef.current = false;
     }
   }, [clearAuth]);
 

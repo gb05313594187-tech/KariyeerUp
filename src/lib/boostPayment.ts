@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// ✅ PRICING - Boost.tsx ile uyumlu hale getirildi
+// ✅ PRICING - Boost.tsx ile uyumlu
 export const PRICING = {
   user_boost: {
     name: "Aday AI Boost",
@@ -31,39 +31,88 @@ export const PRICING = {
 
 export type BoostType = keyof typeof PRICING;
 
-// ✅ Timeout ile getSession
+// ✅ GELİŞTİRİLMİŞ Token Alma Fonksiyonu
 async function getAccessTokenSafe(): Promise<string | null> {
-  try {
-    const result = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-    ]);
+  console.log("🔑 Getting access token...");
 
-    if (!result) {
-      console.warn("⚠️ getSession timeout, trying getUser...");
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user) {
-        const keys = Object.keys(localStorage);
-        const sessionKey = keys.find((k) => k.includes("auth-token"));
-        if (sessionKey) {
-          try {
-            const raw = localStorage.getItem(sessionKey);
-            const parsed = raw ? JSON.parse(raw) : null;
-            return parsed?.access_token || null;
-          } catch {
-            return null;
-          }
+  // 1. Önce localStorage'dan direkt dene (en hızlı)
+  try {
+    const keys = Object.keys(localStorage);
+    const sessionKey = keys.find((k) => 
+      k.includes("sb-") && k.includes("-auth-token")
+    );
+    
+    if (sessionKey) {
+      const raw = localStorage.getItem(sessionKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.access_token) {
+          console.log("✅ Token found in localStorage");
+          return parsed.access_token;
         }
       }
-      return null;
     }
-
-    return (result as { data: { session: { access_token: string } | null } })
-      ?.data?.session?.access_token || null;
-  } catch (err) {
-    console.error("❌ getAccessTokenSafe error:", err);
-    return null;
+  } catch (e) {
+    console.warn("localStorage token read failed:", e);
   }
+
+  // 2. getSession dene (timeout ile)
+  try {
+    console.log("📡 Trying getSession...");
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise<null>((resolve) => 
+      setTimeout(() => resolve(null), 3000)
+    );
+
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    
+    if (result && (result as any)?.data?.session?.access_token) {
+      console.log("✅ Token from getSession");
+      return (result as any).data.session.access_token;
+    }
+  } catch (e) {
+    console.warn("getSession failed:", e);
+  }
+
+  // 3. getUser ile session refresh dene
+  try {
+    console.log("📡 Trying getUser + refreshSession...");
+    const { data: userData } = await supabase.auth.getUser();
+    
+    if (userData?.user) {
+      // Session'ı refresh et
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      if (refreshData?.session?.access_token) {
+        console.log("✅ Token from refreshSession");
+        return refreshData.session.access_token;
+      }
+    }
+  } catch (e) {
+    console.warn("getUser/refreshSession failed:", e);
+  }
+
+  // 4. Son çare: tekrar localStorage kontrol et
+  try {
+    await new Promise((r) => setTimeout(r, 500)); // Biraz bekle
+    const keys = Object.keys(localStorage);
+    for (const key of keys) {
+      if (key.includes("auth") || key.includes("supabase")) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.access_token) {
+              console.log("✅ Token found in localStorage (retry)");
+              return parsed.access_token;
+            }
+          }
+        } catch {}
+      }
+    }
+  } catch {}
+
+  console.error("❌ No access token found");
+  return null;
 }
 
 export interface BoostPaymentParams {
@@ -83,7 +132,6 @@ export interface BoostPaymentResult {
   error?: string;
 }
 
-// ✅ Boost.tsx'in beklediği parametreleri kabul ediyor
 export async function initiateBoostPayment({
   userId,
   email,
@@ -110,7 +158,7 @@ export async function initiateBoostPayment({
     console.log("📦 Package slug:", packageSlug);
 
     const accessToken = await getAccessTokenSafe();
-    console.log("🔑 Access token:", accessToken ? "✅ Alındı" : "❌ Alınamadı");
+    console.log("🔑 Access token:", accessToken ? `✅ Alındı (${accessToken.substring(0, 20)}...)` : "❌ Alınamadı");
 
     if (!accessToken) {
       return {
@@ -120,6 +168,7 @@ export async function initiateBoostPayment({
     }
 
     console.log("📡 Calling Edge Function: paytr-get-token-boost");
+    console.log("📤 Request body:", { package_slug: packageSlug, user_id: userId, email, full_name: fullName, amount });
 
     const res = await fetch(
       `${SUPABASE_URL}/functions/v1/paytr-get-token-boost`,
@@ -151,7 +200,7 @@ export async function initiateBoostPayment({
     }
 
     if (!res.ok) {
-      const errorMsg = (body?.error as string) || (body?.detail as string) || `HTTP ${res.status} hatası`;
+      const errorMsg = (body?.error as string) || (body?.detail as string) || (body?.message as string) || `HTTP ${res.status} hatası`;
       console.error("❌ Edge Function error:", errorMsg);
       return { success: false, error: errorMsg };
     }

@@ -1,13 +1,15 @@
 // src/lib/supabase.ts
 import { createClient } from "@supabase/supabase-js";
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
 // ✅ matchingService.ts için gerekli export
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
 /* =========================================================
    ✅ Helpers (timeout + token)
    ========================================================= */
-// fetch timeout helper (pending kalmayı engeller)
 const fetchWithTimeout = async (
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -19,7 +21,6 @@ const fetchWithTimeout = async (
     const res = await fetch(input, {
       ...init,
       signal: controller.signal,
-      // network uyku / geri gelme durumlarında cache garipliklerini azaltır
       cache: "no-store",
     });
     return res;
@@ -27,31 +28,59 @@ const fetchWithTimeout = async (
     clearTimeout(id);
   }
 };
-// ✅ Supabase internal fetch'leri de timeout'lu yap
+
 const supabaseFetch: typeof fetch = (input: any, init?: any) => {
   return fetchWithTimeout(input, init || {}, 15000) as any;
 };
+
 /* =========================================================
-   ✅ Supabase Client (Stabilize Edilmiş Versiyon)
+   ✅ Supabase Client — OTURUM KALICILIĞI DÜZELTİLDİ
    ========================================================= */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storageKey: 'kariyeerup-auth-token', // Çakışmaları önlemek için özel key
+    autoRefreshToken: true,       // ✅ Token otomatik yenilenir
+    persistSession: true,         // ✅ Oturum localStorage'da saklanır
+    detectSessionInUrl: true,     // ✅ URL'deki token'ları algılar (OAuth callback)
+    storageKey: "kariyerup-auth-token",  // ✅ Typo düzeltildi (kariyeerup → kariyerup)
+    storage: typeof window !== "undefined" ? window.localStorage : undefined, // ✅ EKSİK OLAN BU — açıkça localStorage belirt
+    flowType: "pkce",             // ✅ Daha güvenli auth flow
   },
   db: { schema: "public" },
   global: {
     fetch: supabaseFetch,
   },
 });
+
+/* =========================================================
+   ✅ OTURUM DURUMUNU KONTROL ET (debug helper)
+   ========================================================= */
+export async function checkSession() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.warn("[Supabase] Session check error:", error.message);
+      return null;
+    }
+    if (data?.session) {
+      console.log("[Supabase] ✅ Active session:", data.session.user.id);
+      return data.session;
+    }
+    console.log("[Supabase] ⚠️ No active session");
+    return null;
+  } catch (err) {
+    console.error("[Supabase] Session check failed:", err);
+    return null;
+  }
+}
+
 async function getAccessToken(): Promise<string | null> {
   const { data, error } = await supabase.auth.getSession();
   if (error) return null;
   return data?.session?.access_token || null;
 }
+
 const nowIso = () => new Date().toISOString();
+
 /* =========================================================
    ✅ DB CHECK CONSTRAINT ile BİREBİR UYUMLU ENUMS
    ========================================================= */
@@ -60,21 +89,27 @@ export const SUBSCRIPTION_TYPES = {
   CORPORATE: "corporate",
   COACH: "coach",
 } as const;
+
 export type SubscriptionType =
-  typeof SUBSCRIPTION_TYPES[keyof typeof SUBSCRIPTION_TYPES];
+  (typeof SUBSCRIPTION_TYPES)[keyof typeof SUBSCRIPTION_TYPES];
+
 export const SUBSCRIPTION_STATUS = {
   ACTIVE: "active",
   CANCELLED: "cancelled",
   EXPIRED: "expired",
   PENDING: "pending",
 } as const;
+
 export type SubscriptionStatus =
-  typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
+  (typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
+
 export const BADGE_TYPES = {
   BLUE: "blue_badge",
   GOLD: "gold_badge",
 } as const;
-export type BadgeType = typeof BADGE_TYPES[keyof typeof BADGE_TYPES];
+
+export type BadgeType = (typeof BADGE_TYPES)[keyof typeof BADGE_TYPES];
+
 /* ---------------- TYPES ---------------- */
 interface AIAnalysis {
   severity?: string;
@@ -84,13 +119,14 @@ interface AIAnalysis {
   estimated_resolution_time?: string;
   raw_response?: string;
 }
+
 export interface PremiumSubscription {
   id: string;
   user_id: string;
-  subscription_type: SubscriptionType; 
-  status: SubscriptionStatus; 
+  subscription_type: SubscriptionType;
+  status: SubscriptionStatus;
   price: number;
-  currency: string; 
+  currency: string;
   start_date: string;
   end_date: string | null;
   auto_renew: boolean | null;
@@ -99,6 +135,7 @@ export interface PremiumSubscription {
   updated_at: string;
   badge_type: BadgeType | null;
 }
+
 export interface Payment {
   id: string;
   user_id: string;
@@ -111,6 +148,7 @@ export interface Payment {
   transaction_id?: string;
   created_at: string;
 }
+
 export interface Invoice {
   id: string;
   user_id: string;
@@ -127,6 +165,7 @@ export interface Invoice {
   created_at: string;
   subscription_type?: SubscriptionType | null;
 }
+
 export interface SupportTicket {
   id: string;
   user_id: string;
@@ -141,6 +180,7 @@ export interface SupportTicket {
   updated_at: string;
   resolved_at?: string;
 }
+
 export interface Coach {
   id: string;
   user_id: string;
@@ -157,6 +197,7 @@ export interface Coach {
   created_at: string;
   updated_at: string;
 }
+
 export interface Session {
   id: string;
   coach_id: string;
@@ -168,11 +209,14 @@ export interface Session {
   created_at: string;
   updated_at: string;
 }
+
 /* =========================================================
    ✅ PREMIUM SUBSCRIPTION SERVICE
    ========================================================= */
 export const subscriptionService = {
-  async getActiveByUserId(userId: string): Promise<PremiumSubscription | null> {
+  async getActiveByUserId(
+    userId: string
+  ): Promise<PremiumSubscription | null> {
     try {
       const { data, error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
@@ -183,11 +227,12 @@ export const subscriptionService = {
         .limit(1)
         .maybeSingle();
       if (error) return null;
-      return (data as any) as PremiumSubscription;
+      return data as any as PremiumSubscription;
     } catch {
       return null;
     }
   },
+
   async getByUserId(userId: string): Promise<PremiumSubscription[]> {
     try {
       const { data, error } = await supabase
@@ -201,6 +246,7 @@ export const subscriptionService = {
       return [];
     }
   },
+
   async getMySubscriptionsViaEdge(): Promise<PremiumSubscription[]> {
     try {
       const token = await getAccessToken();
@@ -224,6 +270,7 @@ export const subscriptionService = {
       return [];
     }
   },
+
   async create(payload: {
     user_id: string;
     subscription_type: SubscriptionType;
@@ -257,12 +304,16 @@ export const subscriptionService = {
         .select("*")
         .single();
       if (error) return null;
-      return (data as any) as PremiumSubscription;
+      return data as any as PremiumSubscription;
     } catch {
       return null;
     }
   },
-  async update(id: string, updates: Partial<PremiumSubscription>): Promise<boolean> {
+
+  async update(
+    id: string,
+    updates: Partial<PremiumSubscription>
+  ): Promise<boolean> {
     try {
       const { error } = await supabase
         .from("app_2dff6511da_premium_subscriptions")
@@ -273,10 +324,14 @@ export const subscriptionService = {
       return false;
     }
   },
+
   async cancel(id: string): Promise<boolean> {
-    return this.update(id, { status: SUBSCRIPTION_STATUS.CANCELLED } as any);
+    return this.update(id, {
+      status: SUBSCRIPTION_STATUS.CANCELLED,
+    } as any);
   },
 };
+
 /* =========================================================
    ✅ PAYMENTS
    ========================================================= */
@@ -313,7 +368,10 @@ export const paymentService = {
       return [];
     }
   },
-  async create(payment: Omit<Payment, "id" | "created_at">): Promise<Payment | null> {
+
+  async create(
+    payment: Omit<Payment, "id" | "created_at">
+  ): Promise<Payment | null> {
     try {
       const { data, error } = await supabase
         .from("app_2dff6511da_payments")
@@ -327,6 +385,7 @@ export const paymentService = {
     }
   },
 };
+
 /* =========================================================
    ✅ INVOICES
    ========================================================= */
@@ -363,7 +422,10 @@ export const invoiceService = {
       return [];
     }
   },
-  async generatePDF(invoiceId: string): Promise<{ success: boolean; html?: string; error?: string }> {
+
+  async generatePDF(
+    invoiceId: string
+  ): Promise<{ success: boolean; html?: string; error?: string }> {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
@@ -380,14 +442,21 @@ export const invoiceService = {
         },
         20000
       );
-      if (!response.ok) return { success: false, error: "Failed to generate PDF" };
+      if (!response.ok)
+        return { success: false, error: "Failed to generate PDF" };
       const result = await response.json();
       return { success: true, html: result.html };
     } catch {
-      return { success: false, error: "An error occurred while generating PDF" };
+      return {
+        success: false,
+        error: "An error occurred while generating PDF",
+      };
     }
   },
-  async sendEmail(invoiceId: string): Promise<{ success: boolean; error?: string }> {
+
+  async sendEmail(
+    invoiceId: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
@@ -404,13 +473,20 @@ export const invoiceService = {
         },
         20000
       );
-      if (!response.ok) return { success: false, error: "Failed to send email" };
+      if (!response.ok)
+        return { success: false, error: "Failed to send email" };
       return { success: true };
     } catch {
-      return { success: false, error: "An error occurred while sending email" };
+      return {
+        success: false,
+        error: "An error occurred while sending email",
+      };
     }
   },
-  async create(invoice: Omit<Invoice, "id" | "created_at">): Promise<Invoice | null> {
+
+  async create(
+    invoice: Omit<Invoice, "id" | "created_at">
+  ): Promise<Invoice | null> {
     try {
       const { data, error } = await supabase
         .from("app_2dff6511da_invoices")
@@ -423,14 +499,18 @@ export const invoiceService = {
       return null;
     }
   },
+
   generateInvoiceNumber(): string {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
     return `INV-${year}${month}-${random}`;
   },
 };
+
 /* =========================================================
    ✅ SUPPORT TICKETS
    ========================================================= */
@@ -439,13 +519,19 @@ export const supportTicketService = {
     subject: string,
     description: string,
     category: string = "badge_issue"
-  ): Promise<{ success: boolean; ticket?: SupportTicket; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    ticket?: SupportTicket;
+    error?: string;
+  }> {
     try {
       const token = await getAccessToken();
       if (!token) return { success: false, error: "No active session" };
+
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (!user) return { success: false, error: "User not found" };
+
       const response = await fetchWithTimeout(
         `${supabaseUrl}/functions/v1/app_2dff6511da_create_support_ticket`,
         {
@@ -460,19 +546,22 @@ export const supportTicketService = {
             category,
             user_metadata: {
               email: user.email,
-              fullName: (user.user_metadata as any)?.full_name || user.email,
+              fullName:
+                (user.user_metadata as any)?.full_name || user.email,
             },
           }),
         },
         20000
       );
-      if (!response.ok) return { success: false, error: "Failed to create support ticket" };
+      if (!response.ok)
+        return { success: false, error: "Failed to create support ticket" };
       const result = await response.json();
       return { success: true, ticket: result.ticket };
     } catch {
       return { success: false, error: "An error occurred" };
     }
   },
+
   async getByUserId(userId: string): Promise<SupportTicket[]> {
     try {
       const { data, error } = await supabase
@@ -487,6 +576,7 @@ export const supportTicketService = {
     }
   },
 };
+
 /* =========================================================
    ✅ COACHES
    ========================================================= */
@@ -504,6 +594,7 @@ export const coachService = {
       return [];
     }
   },
+
   async getById(id: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
@@ -517,6 +608,7 @@ export const coachService = {
       return null;
     }
   },
+
   async getByUserId(userId: string): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
@@ -530,8 +622,12 @@ export const coachService = {
       return null;
     }
   },
+
   async create(
-    coach: Omit<Coach, "id" | "created_at" | "updated_at" | "rating" | "total_reviews">
+    coach: Omit<
+      Coach,
+      "id" | "created_at" | "updated_at" | "rating" | "total_reviews"
+    >
   ): Promise<Coach | null> {
     try {
       const { data, error } = await supabase
@@ -546,6 +642,7 @@ export const coachService = {
     }
   },
 };
+
 /* =========================================================
    ✅ SESSIONS
    ========================================================= */
@@ -563,6 +660,7 @@ export const sessionService = {
       return [];
     }
   },
+
   async getByClientId(clientId: string): Promise<Session[]> {
     try {
       const { data, error } = await supabase
@@ -576,7 +674,10 @@ export const sessionService = {
       return [];
     }
   },
-  async create(session: Omit<Session, "id" | "created_at" | "updated_at">): Promise<Session | null> {
+
+  async create(
+    session: Omit<Session, "id" | "created_at" | "updated_at">
+  ): Promise<Session | null> {
     try {
       const { data, error } = await supabase
         .from("app_2dff6511da_sessions")
@@ -590,15 +691,16 @@ export const sessionService = {
     }
   },
 };
+
 /* =========================================================
-   ✅ COMPANY & INTERVIEW SERVICE (Görüşmelerim için TAM FONKSİYONLAR)
+   ✅ COMPANY & INTERVIEW SERVICE
    ========================================================= */
 export const companyService = {
-  /** Şirketin tüm mülakatlarını getirir (CorporateDashboard → Görüşmelerim sekmesi) */
   async getCompanyInterviews(userId: string) {
     const { data, error } = await supabase
       .from("interviews")
-      .select(`
+      .select(
+        `
         id,
         job_id,
         candidate_id,
@@ -622,7 +724,8 @@ export const companyService = {
           full_name,
           avatar_url
         )
-      `)
+      `
+      )
       .eq("company_user_id", userId)
       .order("scheduled_at", { ascending: false });
 
@@ -634,15 +737,16 @@ export const companyService = {
     return data;
   },
 
-  /** Tek bir mülakat detayını getirir (isteğe bağlı) */
   async getInterviewById(interviewId: string) {
     const { data, error } = await supabase
       .from("interviews")
-      .select(`
+      .select(
+        `
         *,
         jobs(position, custom_title),
         profiles!interviews_candidate_id_fkey(full_name, avatar_url)
-      `)
+      `
+      )
       .eq("id", interviewId)
       .single();
 
@@ -650,13 +754,12 @@ export const companyService = {
     return data;
   },
 
-  /** Mülakat durumunu günceller (örneğin: completed, cancelled) */
   async updateInterviewStatus(interviewId: string, status: string) {
     const { data, error } = await supabase
       .from("interviews")
-      .update({ 
+      .update({
         status,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", interviewId)
       .select()

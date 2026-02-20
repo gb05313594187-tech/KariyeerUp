@@ -20,10 +20,8 @@ interface AuthContextType {
   supabaseUser: SupabaseUser | null;
   role: Role | null;
   isAuthenticated: boolean;
-
   loading: boolean;
   refresh: () => Promise<void>;
-
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<boolean>;
@@ -34,13 +32,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function normalizeRole(v: any): Role {
   if (!v) return "user";
   const s = String(v).toLowerCase().trim();
-
   if (s === "company") return "corporate";
   if (s === "corporate") return "corporate";
   if (s === "coach") return "coach";
   if (s === "admin" || s === "super_admin") return "admin";
   if (s === "client" || s === "individual" || s === "user") return "user";
-
   return "user";
 }
 
@@ -49,7 +45,6 @@ async function withTimeout<T>(p: Promise<T>, timeoutMs: number, label = "timeout
   const timeout = new Promise<T>((_, rej) => {
     t = setTimeout(() => rej(new Error(label)), timeoutMs);
   });
-
   try {
     return await Promise.race([p, timeout]);
   } finally {
@@ -64,36 +59,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // "Sessiz yenileme" için ayrı flag
-  const silentRefreshRef = useRef(false);
-
-  // Loading watchdog (kilitlenme önleme)
+  const initialLoadDoneRef = useRef(false);
   const loadingWatchdogRef = useRef<any>(null);
+  const lastFocusRefreshRef = useRef<number>(0);
+  const FOCUS_DEBOUNCE_MS = 30000;
+
   const startLoadingWatchdog = (ms = 12000) => {
     if (loadingWatchdogRef.current) clearTimeout(loadingWatchdogRef.current);
     loadingWatchdogRef.current = setTimeout(() => {
       setLoading(false);
     }, ms);
   };
+
   const stopLoadingWatchdog = () => {
     if (loadingWatchdogRef.current) clearTimeout(loadingWatchdogRef.current);
     loadingWatchdogRef.current = null;
   };
 
-  // Tab focus debounce
-  const lastFocusRefreshRef = useRef<number>(0);
-  const FOCUS_DEBOUNCE_MS = 30000;
-
-  // İlk yükleme tamamlandı mı?
-  const initialLoadDoneRef = useRef(false);
-
-  const clearAuth = () => {
+  // ✅ Auth state'i tamamen temizle
+  const clearAuth = useCallback(() => {
     setUser(null);
     setSupabaseUser(null);
     setRole(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
+  // ✅ Kullanıcı profilini yükle
   const loadUserProfile = useCallback(async (supabaseUserData: SupabaseUser) => {
     try {
       setSupabaseUser(supabaseUserData);
@@ -137,8 +128,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!profileError && profile) {
         finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
-      } else {
-        if (profileError) console.warn("profiles fetch issue:", profileError);
       }
 
       setRole(finalRole);
@@ -155,8 +144,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error loading user profile:", e);
       clearAuth();
     }
-  }, []);
+  }, [clearAuth]);
 
+  // ✅ Session'ı yenile - DÜZELTME BURADA
   const refresh = useCallback(async () => {
     const isSilent = initialLoadDoneRef.current;
 
@@ -166,14 +156,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // EN ÖNEMLİ DEĞİŞİKLİK: getUser() kullanıyoruz, getSession değil!
-      const { data: { user }, error } = await supabase.auth.getUser();
+      // 🔥 ÖNEMLİ: Önce getSession() ile session'ı kontrol et
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-      if (error || !user) {
+      if (sessionError) {
+        console.warn("Session error:", sessionError.message);
         clearAuth();
-      } else {
-        await loadUserProfile(user);
+        return;
       }
+
+      if (!sessionData?.session) {
+        console.log("No active session found");
+        clearAuth();
+        return;
+      }
+
+      // Session varsa user'ı al
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData?.user) {
+        console.warn("User error:", userError?.message);
+        clearAuth();
+        return;
+      }
+
+      // Kullanıcı profilini yükle
+      await loadUserProfile(userData.user);
+
     } catch (e) {
       console.error("Error checking user:", e);
       if (!isSilent) {
@@ -184,13 +193,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       initialLoadDoneRef.current = true;
     }
-  }, [loadUserProfile]);
+  }, [loadUserProfile, clearAuth]);
 
+  // ✅ İlk yükleme ve event listener'lar
   useEffect(() => {
     let alive = true;
 
+    // İlk yükleme
     refresh();
 
+    // Tab focus olduğunda session'ı yenile
     const onFocus = () => {
       if (!alive) return;
       const now = Date.now();
@@ -200,28 +212,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     window.addEventListener("focus", onFocus);
 
+    // Auth state değişikliklerini dinle
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!alive) return;
-      if (event === "INITIAL_SESSION") return;
+      
+      console.log("Auth event:", event);
+
+      if (event === "INITIAL_SESSION") {
+        // İlk yükleme zaten refresh() ile yapıldı
+        return;
+      }
 
       const showLoading = event === "SIGNED_IN" || event === "SIGNED_OUT";
+      
       if (showLoading) {
         setLoading(true);
         startLoadingWatchdog(12000);
       }
 
       try {
-        const u = session?.user;
-
-        if (event === "SIGNED_IN" && u) {
-          await loadUserProfile(u);
+        if (event === "SIGNED_IN" && session?.user) {
+          await loadUserProfile(session.user);
         } else if (event === "SIGNED_OUT") {
           clearAuth();
-        } else if ((event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && u) {
-          await loadUserProfile(u);
+        } else if ((event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user) {
+          await loadUserProfile(session.user);
         } else {
-          if (u) await loadUserProfile(u);
-          else clearAuth();
+          if (session?.user) {
+            await loadUserProfile(session.user);
+          } else {
+            clearAuth();
+          }
         }
       } catch (e) {
         console.error("onAuthStateChange handler error:", e);
@@ -238,8 +259,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stopLoadingWatchdog();
       authListener?.subscription?.unsubscribe();
     };
-  }, [refresh, loadUserProfile]);
+  }, [refresh, loadUserProfile, clearAuth]);
 
+  // ✅ Login fonksiyonu
   const login = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -252,10 +274,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (error) return { success: false, message: error.message };
+      
       if (data.user) {
         await loadUserProfile(data.user);
         return { success: true, message: "Giriş başarılı!" };
       }
+      
       return { success: false, message: "Giriş başarısız oldu" };
     } catch (e) {
       console.error("Login error:", e);
@@ -266,21 +290,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadUserProfile]);
 
+  // ✅ LOGOUT - localStorage temizliği eklendi
   const logout = useCallback(async () => {
     try {
       setLoading(true);
       startLoadingWatchdog(12000);
+      
+      // Supabase logout
       await withTimeout(supabase.auth.signOut(), 8000, "signOut_timeout");
+      
+      // ✅ Manuel localStorage temizliği (bazen Supabase silmiyor)
+      try {
+        localStorage.removeItem('kariyeerup-auth-token');
+        localStorage.removeItem('kariyerup-profile-data');
+        localStorage.removeItem('sb-wzadnstzslxvuwmmjmwn-auth-token'); // Supabase default key
+      } catch (e) {
+        console.warn("localStorage temizleme hatası:", e);
+      }
+      
       clearAuth();
     } catch (e) {
       console.error("Logout error:", e);
+      
+      // ✅ Hata olsa bile temizle
+      try {
+        localStorage.removeItem('kariyeerup-auth-token');
+        localStorage.removeItem('kariyerup-profile-data');
+        localStorage.removeItem('sb-wzadnstzslxvuwmmjmwn-auth-token');
+      } catch {}
+      
       clearAuth();
     } finally {
       stopLoadingWatchdog();
       setLoading(false);
     }
-  }, []);
+  }, [clearAuth]);
 
+  // ✅ Profil güncelle
   const updateProfile = useCallback(async (updates: Partial<User>): Promise<boolean> => {
     if (!user) return false;
 

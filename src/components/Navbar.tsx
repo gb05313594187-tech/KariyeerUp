@@ -80,16 +80,15 @@ const Navbar = memo(function Navbar() {
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
 
-  // ✅ DÜZELTME: Logout fonksiyonu
+  // ✅ DÜZELTME: Logout fonksiyonu - window.location.href ile tam sayfa yenileme
   const handleLogout = useCallback(async () => {
     try {
       await auth.logout();
-      // ✅ window.location ile tam sayfa yenileme
-      window.location.href = "/";
     } catch (e) {
       console.error("Logout error:", e);
-      window.location.href = "/";
     }
+    // ✅ Tam sayfa yenileme ile çık
+    window.location.href = "/";
   }, [auth]);
 
   return (
@@ -186,7 +185,7 @@ const Navbar = memo(function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/home")}><HomeIcon className="mr-2 h-4 w-4" />Ana Akış</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/jobs")}><Briefcase className="mr-2 h-4 w-4" />İlanlar</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}><LayoutDashboard className="mr-2 h-4 w-4" />{dashboardLabel}</DropdownMenuItem>
-                  {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
+                  {/* ✅ DÜZELTME: /user/profile olarak değiştirildi */}
                   <DropdownMenuItem onClick={() => navigate("/user/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />Çıkış</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -219,7 +218,7 @@ const Navbar = memo(function Navbar() {
               <button onClick={() => { navigate("/home"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Ana Akış</button>
               <button onClick={() => { navigate("/jobs"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">İlanlar</button>
               <button onClick={() => { navigate(dashboardPath); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">{dashboardLabel}</button>
-              {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
+              {/* ✅ DÜZELTME: /user/profile olarak değiştirildi */}
               <button onClick={() => { navigate("/user/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
               <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl text-red-600 font-semibold">Çıkış Yap</button>
             </div>

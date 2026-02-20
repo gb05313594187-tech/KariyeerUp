@@ -41,7 +41,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,       // ✅ Token otomatik yenilenir
     persistSession: true,         // ✅ Oturum localStorage'da saklanır
     detectSessionInUrl: true,     // ✅ URL'deki token'ları algılar (OAuth callback)
-    storageKey: "kariyerup-auth-token",  // ✅ Typo düzeltildi (kariyeerup → kariyerup)
+    storageKey: "kariyeerup-auth-token",  // ✅ Typo düzeltildi (kariyeerup → kariyeerup)
     storage: typeof window !== "undefined" ? window.localStorage : undefined, // ✅ EKSİK OLAN BU — açıkça localStorage belirt
     flowType: "pkce",             // ✅ Daha güvenli auth flow
   },

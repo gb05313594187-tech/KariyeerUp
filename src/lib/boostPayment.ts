@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// ✅ PRICING - Veritabanındaki slug'larla uyumlu
 export const PRICING = {
   user_boost: {
     name: "Aday AI Boost",
@@ -31,12 +30,10 @@ export const PRICING = {
 
 export type BoostType = keyof typeof PRICING;
 
-// ✅ Token Alma Fonksiyonu
 async function getAccessTokenSafe(): Promise<string | null> {
   try {
     console.log("🔑 [boostPayment] Getting access token...");
 
-    // 1️⃣ localStorage'dan dene
     const storageKey = "kariyeerup-auth-token";
     try {
       const raw = localStorage.getItem(storageKey);
@@ -51,7 +48,6 @@ async function getAccessTokenSafe(): Promise<string | null> {
       console.warn("⚠️ [boostPayment] localStorage read failed:", e);
     }
 
-    // 2️⃣ getSession (2 saniye timeout)
     try {
       console.log("🔄 [boostPayment] Trying getSession...");
       const sessionPromise = supabase.auth.getSession();
@@ -69,7 +65,6 @@ async function getAccessTokenSafe(): Promise<string | null> {
       console.warn("⚠️ [boostPayment] getSession failed:", e);
     }
 
-    // 3️⃣ refreshSession (son çare)
     try {
       console.log("🔄 [boostPayment] Trying refreshSession...");
       const { data, error } = await supabase.auth.refreshSession();
@@ -125,7 +120,6 @@ export async function initiateBoostPayment({
       durationDays,
     });
 
-    // Package slug'ı bul
     const packageConfig = PRICING[type];
     if (!packageConfig) {
       console.error("❌ Invalid package type:", type);
@@ -141,7 +135,6 @@ export async function initiateBoostPayment({
     const packageSlug = priceOption.slug;
     console.log("📦 [boostPayment] Package slug:", packageSlug);
 
-    // Access token al
     const accessToken = await getAccessTokenSafe();
 
     if (!accessToken) {
@@ -209,4 +202,17 @@ export async function initiateBoostPayment({
       return { success: false, error: "PayTR token alınamadı." };
     }
 
-    console.log("✅ 
+    console.log("✅ [boostPayment] Payment token received");
+
+    return {
+      success: true,
+      token: token,
+      iframeUrl: `https://www.paytr.com/odeme/guvenli/${token}`,
+      merchantOid: body?.merchant_oid as string,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("💥 [boostPayment] Exception:", msg);
+    return { success: false, error: msg };
+  }
+}

@@ -22,7 +22,7 @@ import {
   Settings,
   Sparkles,
   Video,
-  Zap, // ✅ YENİ: Boost için eklendi
+  Zap,
   Home as HomeIcon,
   Briefcase,
 } from "lucide-react";
@@ -34,18 +34,28 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
-  const auth = useAuth();
+
+  // ✅ FIX 1: useAuth() güvenli şekilde kullanılıyor
+  let auth: any = null;
+  try {
+    auth = useAuth();
+  } catch (e) {
+    console.warn("⚠️ [Navbar] useAuth failed:", e);
+  }
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ✅ FIX 2: Tüm auth verileri güvenli null-check ile alınıyor
   const me = auth?.user ?? null;
   const role = auth?.role ?? null;
+  const isLoggedIn = !!me; // ✅ YENİ: Giriş durumu flag'i
 
   const translations = {
     tr: {
       jobs: "İlanlar",
       mentor: "MentorCircle",
       webinar: "Webinar",
-      boost: "Boost", // ✅ YENİ
+      boost: "Boost",
       dashboard: "Panel",
       login: "Giriş Yap",
       register: "Kayıt Ol",
@@ -58,7 +68,7 @@ export default function Navbar() {
       jobs: "Jobs",
       mentor: "MentorCircle",
       webinar: "Webinars",
-      boost: "Boost", // ✅ YENİ
+      boost: "Boost",
       dashboard: "Dashboard",
       login: "Login",
       register: "Register",
@@ -71,7 +81,7 @@ export default function Navbar() {
       jobs: "وظائف",
       mentor: "دائرة المنقذ",
       webinar: "ندوة عبر الويب",
-      boost: "تعزيز", // ✅ YENİ
+      boost: "تعزيز",
       dashboard: "لوحة القيادة",
       login: "تسجيل الدخول",
       register: "سجل الآن",
@@ -84,7 +94,7 @@ export default function Navbar() {
       jobs: "Emplois",
       mentor: "Cercle Mentor",
       webinar: "Webinaire",
-      boost: "Boost", // ✅ YENİ
+      boost: "Boost",
       dashboard: "Tableau de bord",
       login: "Connexion",
       register: "S'inscrire",
@@ -95,7 +105,7 @@ export default function Navbar() {
     }
   };
 
-  const t = translations[language || "tr"];
+  const t = translations[language || "tr"] || translations.tr;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -143,11 +153,17 @@ export default function Navbar() {
   const jobsPath = "/jobs";
   const logoPath = "/";
 
-  const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
+  // ✅ FIX 3: displayName güvenli
+  const displayName = me?.fullName 
+    || me?.email?.split("@")?.[0] 
+    || (me as any)?.user_metadata?.full_name
+    || "User";
 
   const handleLogout = async () => {
     try {
-      await auth.logout();
+      if (auth?.logout) {
+        await auth.logout();
+      }
     } catch (e) {
       console.error("Logout error:", e);
     }
@@ -210,7 +226,6 @@ export default function Navbar() {
             {t.webinar}
           </Link>
 
-          {/* ✅ YENİ: Boost butonu */}
           <Link to="/boost">
             <Button className="h-10 rounded-xl px-4 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white shadow-lg">
               <Zap className="h-4 w-4 mr-2" />
@@ -236,11 +251,14 @@ export default function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="hidden sm:block">
-            <NotificationBell />
-          </div>
+          {/* ✅ FIX 4: NotificationBell SADECE giriş yapılmışsa göster */}
+          {isLoggedIn && (
+            <div className="hidden sm:block">
+              <NotificationBell />
+            </div>
+          )}
 
-          {!me ? (
+          {!isLoggedIn ? (
             <div className="hidden md:flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" className="rounded-xl">
@@ -326,7 +344,6 @@ export default function Navbar() {
               {t.webinar}
             </button>
 
-            {/* ✅ YENİ: Boost butonu mobile */}
             <Link to="/boost" className="block" onClick={() => setMobileOpen(false)}>
               <div className={mobilePrimary}>
                 <Zap className="inline h-4 w-4 mr-2" />
@@ -335,7 +352,7 @@ export default function Navbar() {
             </Link>
 
             <div className="pt-2 border-t space-y-2">
-              {!me ? (
+              {!isLoggedIn ? (
                 <>
                   <button onClick={() => navigate("/login")} className={mobileBtn}>
                     {t.login}

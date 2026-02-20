@@ -1,4 +1,3 @@
-
 // src/pages/Home.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef } from "react";
@@ -66,48 +65,58 @@ export default function Home() {
   };
 
   /* ---------------------------------------------------
-     2. GÜNCEL PROFİL VERİSİNİ ÇEK (CRITICAL FIX)
+     2. GÜNCEL PROFİL VERİSİNİ ÇEK (✅ GÜNCELLENDİ)
   --------------------------------------------------- */
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
       
-      // Sadece bu kullanıcıya ait kaydı çek
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, title, avatar_url, country, city, cv_data")
+        .select("full_name, display_name, title, avatar_url, cover_url, country, city, cv_data, bio")
         .eq("id", user.id)
         .maybeSingle();
 
       if (data) {
-        // ✅ BURASI ÇOK ÖNEMLİ:
-        // Veritabanındaki kolonlar (data.title, data.avatar_url) EN YÜKSEK önceliğe sahip.
-        // Eğer onlar boşsa cv_data'ya bak.
+        const cv = data.cv_data || {};
         
-        const dbTitle = data.title;
-        const cvTitle = data.cv_data?.title;
+        // ✅ İsim önceliği: full_name > display_name > cv > auth > fallback
+        const finalName = data.full_name || data.display_name || cv.full_name || user?.user_metadata?.full_name || user?.fullName || "Kullanıcı";
         
-        const dbAvatar = data.avatar_url;
-        const cvAvatar = data.cv_data?.avatar_url;
+        // ✅ Ünvan önceliği: title kolonu > cv_data.title > fallback
+        const finalTitle = data.title || cv.title || "Kariyer Yolculuğu Üyesi";
+        
+        // ✅ Avatar önceliği: avatar_url > cv_data.avatar_url > auth > dicebear
+        const finalAvatar = data.avatar_url || cv.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+        
+        // ✅ Lokasyon
+        const finalCity = data.city || cv.city || "";
+        const finalCountry = data.country || cv.country || "";
 
         setProfileData({
-          full_name: data.full_name || user.user_metadata?.full_name,
-          
-          // Ünvan: DB > CV > Varsayılan
-          title: dbTitle || cvTitle || "Kariyer Yolculuğu Üyesi",
-          
-          // Avatar: DB > CV > Auth > Dicebear
-          avatar_url: dbAvatar || cvAvatar || user.user_metadata?.avatar_url,
-          
-          city: data.city,
-          country: data.country
+          full_name: finalName,
+          title: finalTitle,
+          avatar_url: finalAvatar,
+          city: finalCity,
+          country: finalCountry,
+          bio: data.bio || cv.about || ""
+        });
+      } else {
+        // ✅ Eğer profiles tablosunda kayıt yoksa auth'dan al
+        setProfileData({
+          full_name: user?.user_metadata?.full_name || user?.fullName || "Kullanıcı",
+          title: "Kariyer Yolculuğu Üyesi",
+          avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`,
+          city: "",
+          country: "",
+          bio: ""
         });
       }
     };
 
     fetchProfile();
     fetchFeed();
-  }, [user?.id]); // User ID değişirse tekrar çek
+  }, [user?.id]);
 
   /* ---------------------------------------------------
      3. POST PAYLAŞ
@@ -152,14 +161,13 @@ export default function Home() {
   };
 
   // Görüntülenecek Veriler (Fallback mekanizmalı)
-  // Eğer profileData henüz yüklenmediyse (null ise), AuthContext verisini kullan
   const displayAvatar = profileData?.avatar_url || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
   const displayName = profileData?.full_name || user?.fullName || "Kullanıcı";
   const displayTitle = profileData?.title || "Kariyer Yolculuğu Üyesi";
   
   const displayLocation = profileData?.city && profileData?.country 
     ? `${profileData.city}, ${profileData.country}` 
-    : null;
+    : profileData?.country || null;
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4">

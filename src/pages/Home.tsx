@@ -1,4 +1,4 @@
-// src/pages/Home.tsx - REALTIME FIX
+// src/pages/Home.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Image, BarChart2, Calendar, Briefcase, X, Globe, Users, Brain, Video, Bookmark
+  Image, BarChart2, Calendar, Briefcase, X, Globe, Users, Brain, Video, Bookmark, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import AIEnhancedPostCard from "@/components/AIEnhancedPostCard";
@@ -18,8 +18,10 @@ export default function Home() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
   
+  // PROFİL DATASI
+  const [profileData, setProfileData] = useState<any>(null);
+
   // Composer
   const [content, setContent] = useState("");
   const [visibility, setVisibility] = useState("public");
@@ -34,62 +36,47 @@ export default function Home() {
     setLoading(false);
   };
 
-  // 2. PROFİL YÜKLE (Realtime)
-  useEffect(() => {
+  // 2. PROFİL YÜKLEME (AKILLI KONTROL)
+  const loadProfile = async () => {
     if (!user?.id) return;
+    
+    // Veritabanından en taze veriyi çek
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, title, avatar_url, country, city, cv_data")
+      .eq("id", user.id)
+      .maybeSingle();
 
-    // İlk yükleme
-    const loadProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name, title, avatar_url, country, city, cv_data")
-        .eq("id", user.id)
-        .maybeSingle();
+    if (data) {
+      // Veri varsa, UI'ı güncelle
+      // NOT: DB'deki title boşsa, "Kariyer Yolculuğu Üyesi" göster
+      const finalTitle = data.title && data.title.trim() !== "" ? data.title : "Kariyer Yolculuğu Üyesi";
+      const finalAvatar = data.avatar_url || user?.user_metadata?.avatar_url;
 
-      if (data) {
-        const cv = data.cv_data || {};
-        setProfileData({
-          full_name: data.full_name,
-          title: data.title || cv.title || "Kariyer Yolculuğu Üyesi",
-          avatar_url: data.avatar_url || cv.avatar_url,
-          city: data.city,
-          country: data.country
-        });
-      }
-    };
+      setProfileData({
+        full_name: data.full_name,
+        title: finalTitle,
+        avatar_url: finalAvatar,
+        city: data.city,
+        country: data.country
+      });
+    }
+  };
 
-    loadProfile();
+  useEffect(() => {
     fetchFeed();
+    loadProfile();
 
-    // CANLI DİNLEME (Realtime Subscription)
-    const channel = supabase
-      .channel('public:profiles')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => {
-          console.log("Profil güncellendi!", payload.new);
-          const newData = payload.new;
-          const cv = newData.cv_data || {};
-          
-          setProfileData({
-            full_name: newData.full_name,
-            title: newData.title || cv.title || "Kariyer Yolculuğu Üyesi",
-            avatar_url: newData.avatar_url || cv.avatar_url,
-            city: newData.city,
-            country: newData.country
-          });
-        }
-      )
-      .subscribe();
+    // HER 3 SANİYEDE BİR PROFİLİ KONTROL ET (Otomatik Güncelleme)
+    const interval = setInterval(() => {
+      loadProfile();
+    }, 3000);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(interval);
   }, [user?.id]);
 
-  // ... (Geri kalan createPost ve render kısımları aynı)
-  
+
+  // ... RESİM YÜKLEME & POST ...
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -112,8 +99,8 @@ export default function Home() {
     setSubmitting(false);
   };
 
-  // Görüntüleme değişkenleri
-  const displayAvatar = profileData?.avatar_url || user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+  // Görüntüleme (Fallback'ler)
+  const displayAvatar = profileData?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
   const displayName = profileData?.full_name || user?.fullName || "Kullanıcı";
   const displayTitle = profileData?.title || "Kariyer Yolculuğu Üyesi";
   const displayLocation = profileData?.city ? `${profileData.city}, ${profileData.country}` : null;
@@ -126,7 +113,7 @@ export default function Home() {
         <div className="lg:col-span-3 space-y-4">
           <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <img src={displayAvatar} className="w-12 h-12 rounded-xl object-cover bg-gray-100" />
+              <img src={displayAvatar} className="w-12 h-12 rounded-xl object-cover bg-gray-100 border border-gray-200" />
               <div className="min-w-0">
                 <div className="text-sm font-bold text-gray-900 truncate">{displayName}</div>
                 <div className="text-[11px] text-gray-500 truncate font-medium">{displayTitle}</div>
@@ -151,7 +138,7 @@ export default function Home() {
           <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
             <CardHeader className="pb-3 pt-4 px-4">
               <div className="flex items-start gap-3">
-                <img src={displayAvatar} className="w-10 h-10 rounded-full object-cover" />
+                <img src={displayAvatar} className="w-10 h-10 rounded-full object-cover border border-gray-100" />
                 <div className="flex-1">
                   <Textarea 
                     placeholder="Fikirlerini paylaş..." 

@@ -60,6 +60,8 @@ async function getAccessTokenSafe(): Promise<string | null> {
       if (result && (result as any)?.data?.session?.access_token) {
         console.log("✅ [boostPayment] Token from getSession");
         return (result as any).data.session.access_token;
+      } else {
+        console.warn("⚠️ [boostPayment] getSession timeout or no session");
       }
     } catch (e) {
       console.warn("⚠️ [boostPayment] getSession failed:", e);
@@ -72,6 +74,8 @@ async function getAccessTokenSafe(): Promise<string | null> {
       if (!error && data?.session?.access_token) {
         console.log("✅ [boostPayment] Token from refreshSession");
         return data.session.access_token;
+      } else {
+        console.warn("⚠️ [boostPayment] refreshSession failed:", error?.message);
       }
     } catch (e) {
       console.warn("⚠️ [boostPayment] refreshSession exception:", e);

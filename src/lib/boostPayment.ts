@@ -4,27 +4,27 @@ import { supabase } from "@/lib/supabase";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// ✅ PRICING - Boost.tsx ile uyumlu
+// ✅ PRICING - Veritabanındaki slug'larla uyumlu
 export const PRICING = {
   user_boost: {
     name: "Aday AI Boost",
     prices: [
-      { slug: "profile_boost_7", label: "7 Gün", amount: 9900, duration: 7 },
-      { slug: "profile_boost_30", label: "30 Gün", amount: 29900, duration: 30 },
+      { slug: "user_boost_7", label: "7 Gün", amount: 9900, duration: 7 },
+      { slug: "user_boost_30", label: "30 Gün", amount: 19900, duration: 30 },
     ],
   },
   coach_boost: {
     name: "Koç Öne Çıkarma",
     prices: [
-      { slug: "coach_boost_7", label: "7 Gün", amount: 14900, duration: 7 },
+      { slug: "coach_boost_7", label: "7 Gün", amount: 19900, duration: 7 },
       { slug: "coach_boost_30", label: "30 Gün", amount: 39900, duration: 30 },
     ],
   },
   corporate_boost: {
     name: "Şirket AI Boost",
     prices: [
-      { slug: "job_boost_7", label: "7 Gün", amount: 19900, duration: 7 },
-      { slug: "job_boost_30", label: "30 Gün", amount: 49900, duration: 30 },
+      { slug: "corporate_boost_7", label: "7 Gün", amount: 29900, duration: 7 },
+      { slug: "corporate_boost_30", label: "30 Gün", amount: 49900, duration: 30 },
     ],
   },
 } as const;
@@ -36,7 +36,7 @@ async function getAccessTokenSafe(): Promise<string | null> {
   try {
     console.log("🔑 [boostPayment] Getting access token...");
 
-    // 1️⃣ localStorage'dan dene (kariyeerup-auth-token)
+    // 1️⃣ localStorage'dan dene
     const storageKey = "kariyeerup-auth-token";
     try {
       const raw = localStorage.getItem(storageKey);
@@ -64,8 +64,6 @@ async function getAccessTokenSafe(): Promise<string | null> {
       if (result && (result as any)?.data?.session?.access_token) {
         console.log("✅ [boostPayment] Token from getSession");
         return (result as any).data.session.access_token;
-      } else {
-        console.warn("⚠️ [boostPayment] getSession timeout or no session");
       }
     } catch (e) {
       console.warn("⚠️ [boostPayment] getSession failed:", e);
@@ -79,8 +77,6 @@ async function getAccessTokenSafe(): Promise<string | null> {
       if (!error && data?.session?.access_token) {
         console.log("✅ [boostPayment] Token from refreshSession");
         return data.session.access_token;
-      } else {
-        console.warn("⚠️ [boostPayment] refreshSession failed:", error?.message);
       }
     } catch (e) {
       console.warn("⚠️ [boostPayment] refreshSession exception:", e);
@@ -213,17 +209,4 @@ export async function initiateBoostPayment({
       return { success: false, error: "PayTR token alınamadı." };
     }
 
-    console.log("✅ [boostPayment] Payment token received");
-
-    return {
-      success: true,
-      token: token,
-      iframeUrl: `https://www.paytr.com/odeme/guvenli/${token}`,
-      merchantOid: body?.merchant_oid as string,
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("💥 [boostPayment] Exception:", msg);
-    return { success: false, error: msg };
-  }
-}
+    console.log("✅ 

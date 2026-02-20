@@ -1,7 +1,9 @@
+// src/components/NotificationBell.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, Notification } from '@/contexts/NotificationContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext'; // ✅ YENİ
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,16 +20,42 @@ import { tr, enUS, fr } from 'date-fns/locale';
 
 export default function NotificationBell() {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead } = useNotifications();
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
 
-  const getNavText = (tr: string, en: string, fr: string) => {
+  // ✅ FIX: Auth kontrolü — tüm hook'lar ÜSTTE kalmalı
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth?.user ?? null;
+  } catch {
+    user = null;
+  }
+
+  // ✅ FIX: useNotifications güvenli çağrı
+  let notifications: Notification[] = [];
+  let unreadCount = 0;
+  let markAsRead: (id: string) => void = () => {};
+
+  try {
+    const notifContext = useNotifications();
+    notifications = notifContext?.notifications ?? [];
+    unreadCount = notifContext?.unreadCount ?? 0;
+    markAsRead = notifContext?.markAsRead ?? (() => {});
+  } catch {
+    // Context yoksa veya hata verirse sessizce devam et
+    console.warn('⚠️ [NotificationBell] useNotifications failed');
+  }
+
+  // ✅ FIX: Giriş yapılmamışsa hiçbir şey gösterme
+  if (!user) return null;
+
+  const getNavText = (trText: string, enText: string, frText: string) => {
     switch (language) {
-      case 'tr': return tr;
-      case 'en': return en;
-      case 'fr': return fr;
-      default: return tr;
+      case 'tr': return trText;
+      case 'en': return enText;
+      case 'fr': return frText;
+      default: return trText;
     }
   };
 

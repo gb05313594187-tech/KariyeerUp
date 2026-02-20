@@ -1,310 +1,256 @@
-// src/pages/Home.tsx
+// src/pages/Home.tsx — FİNAL + ESKİ YAPININ ÜZERİNE EFSANE GELİŞTİRME
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, BarChart2, Calendar, Briefcase, X, MapPin, CheckCircle2 } from "lucide-react";
+import {
+  Image, BarChart2, Calendar, Briefcase, X, Globe, Users, Brain, Video, Bookmark, MapPin, CheckCircle2, Edit3
+} from "lucide-react";
 import { toast } from "sonner";
 import AIEnhancedPostCard from "@/components/AIEnhancedPostCard";
 
 const TRANSLATIONS = {
-  tr: {
-    composerPlaceholder: "Bugün kariyerinde ne yaşıyorsun? Fikrini paylaş, ilham ol...",
-    verified: "ONAYLI PROFİL",
-    shareButton: "PAYLAŞ",
-    sending: "Gönderiliyor...",
-    public: "🌍 Herkese Açık",
-    followers: "👥 Takipçiler",
-    private: "🔒 Sadece Ben",
-    noPostsYet: "Henüz kimse paylaşım yapmadı",
-    beFirst: "İlk paylaşımı sen yap, lider ol!",
-    aiFeed: "AI Feed Hazırlanıyor...",
-  },
-  en: {
-    composerPlaceholder: "What's happening in your career today? Share your thoughts...",
-    verified: "VERIFIED PROFILE",
-    shareButton: "POST",
-    sending: "Posting...",
-    public: "🌍 Public",
-    followers: "👥 Followers",
-    private: "🔒 Private",
-    noPostsYet: "No posts yet",
-    beFirst: "Be the first to post!",
-    aiFeed: "AI Feed Loading...",
-  },
-  ar: {
-    composerPlaceholder: "ما الذي يحدث في مسيرتك المهنية اليوم؟ شارك أفكارك...",
-    verified: "ملف موثق",
-    shareButton: "نشر",
-    sending: "جاري النشر...",
-    public: "🌍 عام",
-    followers: "👥 المتابعون",
-    private: "🔒 خاص",
-    noPostsYet: "لا توجد منشورات بعد",
-    beFirst: "كن أول من ينشر!",
-    aiFeed: "جاري تحميل التغذية الذكية...",
-  },
-  fr: {
-    composerPlaceholder: "Que se passe-t-il dans votre carrière aujourd'hui ? Partagez vos pensées...",
-    verified: "PROFIL VÉRIFIÉ",
-    shareButton: "PUBLIER",
-    sending: "Publication en cours...",
-    public: "🌍 Public",
-    followers: "👥 Abonnés",
-    private: "🔒 Privé",
-    noPostsYet: "Aucune publication pour le moment",
-    beFirst: "Soyez le premier à publier !",
-    aiFeed: "Flux IA en cours de chargement...",
-  },
+  tr: { editProfile: "PROFİLİ DÜZENLE", verified: "ONAYLI PROFİL" },
+  en: { editProfile: "EDIT PROFILE", verified: "VERIFIED PROFILE" },
+  ar: { editProfile: "تعديل الملف", verified: "ملف موثق" },
+  fr: { editProfile: "MODIFIER LE PROFIL", verified: "PROFIL VÉRIFIÉ" },
 };
 
 export default function Home() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const t = TRANSLATIONS[language] || TRANSLATIONS.tr;
+  const isRTL = language === "ar";
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const [profileData, setProfileData] = useState<any>(null);
 
-  // Composer
   const [content, setContent] = useState("");
-  const [visibility, setVisibility] = useState("public");
   const [submitting, setSubmitting] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const fileInputRef = useRef(null);
 
-  // DİL YÖNLENDİRME (RTL İÇİN)
-  const isRTL = language === "ar";
-
-  // PROFİL ÇEKME
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
+    const fetchProfile = async () => {
+      if (!user?.id) return;
 
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, title, city, country, avatar_url, cover_url")
+        .select("full_name, title, avatar_url, cover_url, country, city, cv_data")
         .eq("id", user.id)
         .single();
 
       if (data) {
-        setCurrentUserProfile(data);
-      } else {
-        setCurrentUserProfile({
-          full_name: user.user_metadata?.full_name || "Professional",
-          title: "",
-          city: language === "tr" ? "İstanbul" : language === "ar" ? "دبي" : language === "fr" ? "Paris" : "London",
-          country: language === "tr" ? "Türkiye" : language === "ar" ? "الإمارات" : language === "fr" ? "France" : "UK",
-          avatar_url: user.user_metadata?.avatar_url || null,
-          cover_url: null,
+        const cv = data.cv_data || {};
+        setProfileData({
+          full_name: data.full_name || "Kullanıcı",
+          title: data.title || cv.title || "Kariyer Yolcusu",
+          avatar_url: data.avatar_url || cv.avatar_url || user.user_metadata?.avatar_url,
+          cover_url: data.cover_url || cv.cover_url,
+          city: data.city || cv.city || "",
+          country: data.country || cv.country || "Türkiye",
         });
       }
     };
 
-    fetchUserProfile();
-  }, [user, language]);
-
-  // FEED
-  const fetchFeed = async () => {
-    try {
-      setLoading(true);
+    const fetchFeed = async () => {
       const { data } = await supabase
         .from("mentor_circle_feed_ai")
         .select("*")
         .order("ai_score", { ascending: false });
       setPosts(data || []);
-    } catch (err) {
-      toast.error("Feed yüklenemedi");
-    } finally {
       setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
+    fetchProfile();
     fetchFeed();
-  }, []);
+  }, [user]);
 
-  const handleFileChange = (e: any) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
     if (file && file.size < 5 * 1024 * 1024) {
       const reader = new FileReader();
-      reader.onloadend = () => setSelectedImage(reader.result as string);
+      reader.onloadend = () => setSelectedImage(reader.result);
       reader.readAsDataURL(file);
-    } else if (file) {
-      toast.error("Max 5MB");
     }
   };
 
   const createPost = async () => {
     if (!content.trim() && !selectedImage) return;
-
     setSubmitting(true);
-    const { error } = await supabase.from("posts").insert({
+    await supabase.from("posts").insert({
       author_id: user.id,
       type: selectedImage ? "image" : "text",
       content: content.trim(),
-      visibility,
+      visibility: "public",
     });
-
-    if (error) {
-      toast.error("Paylaşım başarısız");
-    } else {
-      toast.success(language === "tr" ? "Paylaşıldı! 🔥" : language === "en" ? "Posted! 🔥" : language === "ar" ? "تم النشر! 🔥" : "Publié ! 🔥");
-      setContent("");
-      setSelectedImage(null);
-      fetchFeed();
-    }
+    toast.success("Paylaşıldı! 🔥");
+    setContent("");
+    setSelectedImage(null);
     setSubmitting(false);
   };
 
-  return (
-    <div className="max-w-4xl mx-auto py-8 px-4" dir={isRTL ? "rtl" : "ltr"}>
-      {/* === PROFİL HEADER (4 DİL) === */}
-      {currentUserProfile && (
-        <div className="mb-12 -mt-10">
-          {/* Banner */}
-          <div className="relative h-72 md:h-96 rounded-3xl overflow-hidden shadow-2xl">
-            {currentUserProfile.cover_url ? (
-              <img src={currentUserProfile.cover_url} alt="cover" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-rose-600 via-purple-600 to-indigo-700" />
-            )}
-            <div className="absolute inset-0 bg-black/40" />
-          </div>
+  if (!profileData) return null;
 
-          {/* Profil Bilgileri */}
-          <div className="relative max-w-4xl mx-auto px-6 -mt-32">
-            <div className={`flex flex-col ${isRTL ? "md:flex-row-reverse" : "md:flex-row"} items-end gap-8`}>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* YENİ HEADER – BANNER + BÜYÜK PROFİL */}
+      <div className="relative bg-white shadow-xl">
+        {/* Banner */}
+        <div className="h-80 overflow-hidden">
+          {profileData.cover_url ? (
+            <img src={profileData.cover_url} alt="cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-700" />
+          )}
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="relative -mt-32 flex flex-col md:flex-row items-end justify-between pb-8">
+            {/* Sol - Profil Foto + Bilgiler */}
+            <div className="flex items-end gap-8">
               <img
-                src={currentUserProfile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserProfile.full_name)}&background=random&size=256`}
-                alt="profile"
-                className="w-44 h-44 md:w-56 md:h-56 rounded-3xl border-8 border-white shadow-2xl object-cover z-10"
+                src={profileData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.full_name)}&size=256`}
+                alt="avatar"
+                className="w-52 h-52 rounded-3xl border-10 border-white shadow-2xl object-cover"
               />
 
-              <div className={`flex-1 text-white ${isRTL ? "text-right" : "text-left"} pb-6`}>
-                <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter drop-shadow-2xl">
-                  {currentUserProfile.full_name}
+              <div className={`text-white ${isRTL ? "text-right" : ""}`}>
+                <h1 className="text-5xl md:text-6xl font-black uppercase drop-shadow-lg">
+                  {profileData.full_name}
                 </h1>
-                {currentUserProfile.title ? (
-                  <p className="text-2xl md:text-4xl font-bold mt-2 opacity-95">
-                    {currentUserProfile.title}
-                  </p>
-                ) : (
-                  <p className="text-xl md:text-2xl font-medium italic mt-2 opacity-80">
-                    {language === "tr" ? "Kariyerini Yükselten Savaşçı" : language === "en" ? "Career Warrior" : language === "ar" ? "محارب المهنة" : "Guerrier de carrière"}
-                  </p>
-                )}
-
-                <div className={`flex flex-wrap items-center gap-4 mt-6 ${isRTL ? "justify-end" : "justify-start"}`}>
-                  <span className="bg-white/25 backdrop-blur-md px-6 py-3 rounded-full text-sm font-black uppercase flex items-center gap-2 border border-white/40">
-                    <CheckCircle2 size={18} /> {t.verified}
+                <p className="text-2xl md:text-3xl font-bold mt-2">
+                  {profileData.title}
+                </p>
+                <div className="flex items-center gap-4 mt-4">
+                  <span className="bg-white/30 backdrop-blur px-6 py-3 rounded-full font-black text-lg flex items-center gap-2">
+                    <CheckCircle2 size={22} /> {t.verified}
                   </span>
-
-                  {(currentUserProfile.city || currentUserProfile.country) && (
-                    <span className="flex items-center gap-3 text-lg font-bold bg-white/25 backdrop-blur-md px-6 py-3 rounded-full border border-white/40">
-                      <MapPin size={22} />
-                      {currentUserProfile.city && `${currentUserProfile.city}, `}
-                      {currentUserProfile.country}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-2 text-xl font-bold">
+                    <MapPin size={26} /> {profileData.city}, {profileData.country}
+                  </span>
                 </div>
               </div>
             </div>
+
+            {/* Sağ - Profil Düzenle Butonu */}
+            <Button
+              onClick={() => navigate("/profile")}
+              className="bg-white text-rose-600 hover:bg-rose-50 font-black px-10 h-16 rounded-2xl shadow-2xl text-xl flex items-center gap-4"
+            >
+              <Edit3 size={28} /> {t.editProfile}
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* === COMPOSER === */}
-      <Card className="border-none shadow-2xl bg-white rounded-3xl overflow-hidden mb-10">
-        <CardHeader className="pb-4">
-          <div className="flex items-start gap-5">
-            <img
-              src={currentUserProfile?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'U'}`}
-              className="w-16 h-16 rounded-3xl border-4 border-white shadow-2xl object-cover flex-shrink-0"
-              alt="avatar"
-            />
-            <div className="flex-1">
-              <Textarea
-                placeholder={t.composerPlaceholder}
-                className="border-none focus-visible:ring-0 text-lg resize-none min-h-[140px] bg-gray-50/70 rounded-2xl p-6 placeholder:text-gray-400 font-medium"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-
-              {selectedImage && (
-                <div className="relative mt-5 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300">
-                  <img src={selectedImage} className="w-full max-h-96 object-cover" alt="preview" />
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="absolute top-4 right-4 bg-black/70 p-2.5 rounded-full text-white hover:bg-red-600 transition-all"
-                  >
-                    <X size={22} />
-                  </button>
+      {/* ESKİ 3 SÜTUN YAPISI – TAM OLARAK KORUNDU */}
+      <div className="max-w-6xl mx-auto py-8 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* SOL SÜTUN – ESKİ HALİ */}
+          <div className="lg:col-span-3 space-y-4">
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-3">
+                <img src={profileData.avatar_url} alt="" className="w-14 h-14 rounded-xl object-cover" />
+                <div>
+                  <div className="font-bold">{profileData.full_name}</div>
+                  <div className="text-xs text-gray-500">{profileData.title}</div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardContent className="p-2 space-y-1 text-sm">
+                <MenuItem icon={Briefcase} label="Başvurularım" path="/my-applications" nav={navigate} />
+                <MenuItem icon={Brain} label="Raporlar" path="/my-reports" nav={navigate} />
+                <MenuItem icon={Calendar} label="Takvimim" path="/calendar" nav={navigate} />
+                <MenuItem icon={Video} label="Mülakatlarım" path="/my-interviews" nav={navigate} />
+                <MenuItem icon={Users} label="Seanslarım" path="/my-sessions-hub" nav={navigate} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ORTA SÜTUN – COMPOSER + FEED */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Composer – Eski hali korundu */}
+            <Card className="border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+              <CardHeader className="pb-3 pt-4 px-4">
+                <div className="flex items-start gap-3">
+                  <img src={profileData.avatar_url} className="w-10 h-10 rounded-full object-cover" />
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="Fikirlerini paylaş..."
+                      className="border-none focus-visible:ring-0 text-base resize-none min-h-[80px] bg-transparent p-0 placeholder:text-gray-400"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                    />
+                    {selectedImage && (
+                      <div className="relative mt-2 group w-fit">
+                        <img src={selectedImage} className="h-20 rounded-lg object-cover border" />
+                        <button onClick={() => setSelectedImage(null)} className="absolute -top-2 -right-2 bg-black text-white rounded-full p-0.5"><X size={12}/></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 border-t border-gray-50 flex justify-between items-center pt-2">
+                <div className="flex gap-3 text-gray-400">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                  <button onClick={() => fileInputRef.current?.click()} className="hover:text-blue-500 transition"><Image size={18} /></button>
+                  <button className="hover:text-blue-500 transition"><BarChart2 size={18} /></button>
+                  <button className="hover:text-blue-500 transition"><Calendar size={18} /></button>
+                </div>
+                <Button size="sm" onClick={createPost} disabled={submitting || !content.trim()} className="bg-blue-600 text-white hover:bg-blue-700 rounded-full px-6">
+                  {submitting ? "..." : "Paylaş"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Feed */}
+            <div className="space-y-4">
+              {loading ? (
+                <div className="text-center py-10 text-gray-400 text-sm">Yükleniyor...</div>
+              ) : posts.length > 0 ? (
+                posts.map((post) => <AIEnhancedPostCard key={post.id} post={post} />)
+              ) : (
+                <div className="text-center py-10 text-gray-400 text-sm">Henüz paylaşım yok.</div>
               )}
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-5 border-t border-gray-100">
-            <div className="flex gap-6 text-gray-500">
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-              <button onClick={() => fileInputRef.current?.click()} className="hover:text-rose-600 transition-all">
-                <Image size={26} />
-              </button>
-              <button onClick={() => toast.info("Yakında!")} className="hover:text-blue-600">
-                <BarChart2 size={26} />
-              </button>
-              <button onClick={() => toast.info("Yakında!")} className="hover:text-green-600">
-                <Calendar size={26} />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value)}
-                className="bg-gray-100 rounded-2xl px-5 py-3.5 text-sm font-bold cursor-pointer outline-none"
-              >
-                <option value="public">{t.public}</option>
-                <option value="followers">{t.followers}</option>
-                <option value="private">{t.private}</option>
-              </select>
-
-              <Button
-                onClick={createPost}
-                disabled={submitting || (!content.trim() && !selectedImage)}
-                className="bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 text-white font-black px-12 h-14 rounded-2xl shadow-2xl text-lg"
-              >
-                {submitting ? t.sending : t.shareButton}
-              </Button>
-            </div>
+          {/* SAĞ SÜTUN – GÜNDEM */}
+          <div className="lg:col-span-3 space-y-4">
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-sm font-bold text-gray-900">Gündem</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 text-xs text-gray-500 space-y-2">
+                <div className="font-medium text-gray-800">#kariyer</div>
+                <div className="font-medium text-gray-800">#teknoloji</div>
+                <div className="font-medium text-gray-800">#yapayzeka</div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* === FEED === */}
-      <div className="space-y-6 pb-20">
-        {loading ? (
-          <div className="text-center py-24">
-            <div className="w-20 h-20 border-6 border-rose-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-gray-500 font-black uppercase tracking-widest text-lg">{t.aiFeed}</p>
-          </div>
-        ) : posts.length > 0 ? (
-          posts.map((post: any) => <AIEnhancedPostCard key={post.id} post={post} />)
-        ) : (
-          <div className="text-center py-32 bg-gradient-to-b from-gray-50 to-white rounded-3xl border-2 border-dashed border-gray-200">
-            <div className="text-8xl mb-8">✨</div>
-            <p className="text-3xl font-black text-gray-800 mb-3">{t.noPostsYet}</p>
-            <p className="text-xl text-gray-600 font-medium">{t.beFirst}</p>
-          </div>
-        )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function MenuItem({ icon: Icon, label, path, nav }) {
+  return (
+    <button onClick={() => nav(path)} className="w-full text-left px-2 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2.5 text-gray-600 transition-colors group">
+      <div className="p-1.5 rounded-md bg-gray-100 group-hover:bg-white">
+        <Icon className="w-4 h-4 text-blue-600" />
+      </div>
+      <span className="font-medium">{label}</span>
+    </button>
   );
 }

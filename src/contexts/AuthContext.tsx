@@ -64,11 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✅ DEĞİŞİKLİK 1: "Sessiz yenileme" için ayrı flag
-  // Bu true olduğunda refresh arka planda çalışır ama Navbar loading skeleton'a DÜŞMEZ
+  // "Sessiz yenileme" için ayrı flag
   const silentRefreshRef = useRef(false);
 
-  // ✅ KORUNAN: Loading watchdog (kilitlenme önleme)
+  // Loading watchdog (kilitlenme önleme)
   const loadingWatchdogRef = useRef<any>(null);
   const startLoadingWatchdog = (ms = 12000) => {
     if (loadingWatchdogRef.current) clearTimeout(loadingWatchdogRef.current);
@@ -81,11 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadingWatchdogRef.current = null;
   };
 
-  // ✅ DEĞİŞİKLİK 2: Tab focus debounce - spam refresh önleme
+  // Tab focus debounce
   const lastFocusRefreshRef = useRef<number>(0);
-  const FOCUS_DEBOUNCE_MS = 30000; // 30 saniye içinde tekrar refresh yapma
+  const FOCUS_DEBOUNCE_MS = 30000;
 
-  // ✅ DEĞİŞİKLİK 3: İlk yükleme tamamlandı mı? (ilk load'dan sonra skeleton gösterme)
+  // İlk yükleme tamamlandı mı?
   const initialLoadDoneRef = useRef(false);
 
   const clearAuth = () => {
@@ -102,7 +101,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const meta = supabaseUserData.user_metadata || {};
       const metaRole = normalizeRole(meta.role || meta.user_type || meta.userType);
 
-      // ✅ KORUNAN: profiles sorgusu timeout ile güvenli
       let profile: any = null;
       let profileError: any = null;
 
@@ -125,7 +123,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let finalRole: Role = metaRole;
 
-      // KORUNAN: isim önceliği
       const fullName =
         profile?.full_name ||
         profile?.display_name ||
@@ -138,7 +135,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const phone: string | null = profile?.phone ?? null;
       const country: string | null = profile?.country ?? null;
 
-      // KORUNAN: profile alınabildiyse rolü oradan normalize et
       if (!profileError && profile) {
         finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
       } else {
@@ -162,8 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refresh = useCallback(async () => {
-    // ✅ DEĞİŞİKLİK 4: İlk yükleme bittikten sonra refresh çağrıldığında
-    // loading'i true yapma (sessiz yenileme)
     const isSilent = initialLoadDoneRef.current;
 
     if (!isSilent) {
@@ -172,16 +166,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { data, error } = await withTimeout(supabase.auth.getSession(), 8000, "getSession_timeout");
-      if (error) throw error;
+      // EN ÖNEMLİ DEĞİŞİKLİK: getUser() kullanıyoruz, getSession değil!
+      const { data: { user }, error } = await supabase.auth.getUser();
 
-      const u = data?.session?.user;
-      if (u) await loadUserProfile(u);
-      else clearAuth();
+      if (error || !user) {
+        clearAuth();
+      } else {
+        await loadUserProfile(user);
+      }
     } catch (e) {
       console.error("Error checking user:", e);
-      // ✅ DEĞİŞİKLİK 5: Sessiz refresh'te hata olursa mevcut user'ı KORUYORUZ
-      // clearAuth yapmıyoruz çünkü sadece network hatası olabilir
       if (!isSilent) {
         clearAuth();
       }
@@ -195,38 +189,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let alive = true;
 
-    // KORUNAN: ilk load
     refresh();
 
-    // ✅ DEĞİŞİKLİK 6: Tab focus handler - debounce + sessiz refresh
     const onFocus = () => {
       if (!alive) return;
-
       const now = Date.now();
-      // 30 saniye içinde tekrar refresh yapma
-      if (now - lastFocusRefreshRef.current < FOCUS_DEBOUNCE_MS) {
-        return;
-      }
+      if (now - lastFocusRefreshRef.current < FOCUS_DEBOUNCE_MS) return;
       lastFocusRefreshRef.current = now;
-
-      // ✅ Sessiz refresh: loading skeleton'a DÜŞMEZ
-      // Arka planda session kontrol eder, UI donmaz
       refresh();
     };
     window.addEventListener("focus", onFocus);
 
-    // ✅ DEĞİŞİKLİK 7: onAuthStateChange - ilk load sonrası loading true YAPMAZ
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!alive) return;
+      if (event === "INITIAL_SESSION") return;
 
-      // ✅ INITIAL_SESSION event'ini atla - zaten refresh() ile hallettik
-      if (event === "INITIAL_SESSION") {
-        return;
-      }
-
-      // ✅ TOKEN_REFRESHED için loading gösterme (arka plan işlemi)
       const showLoading = event === "SIGNED_IN" || event === "SIGNED_OUT";
-
       if (showLoading) {
         setLoading(true);
         startLoadingWatchdog(12000);
@@ -239,10 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await loadUserProfile(u);
         } else if (event === "SIGNED_OUT") {
           clearAuth();
-        } else if (event === "TOKEN_REFRESHED" && u) {
-          // ✅ Sessiz güncelleme - UI titremesin
-          await loadUserProfile(u);
-        } else if (event === "USER_UPDATED" && u) {
+        } else if ((event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && u) {
           await loadUserProfile(u);
         } else {
           if (u) await loadUserProfile(u);
@@ -250,7 +225,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (e) {
         console.error("onAuthStateChange handler error:", e);
-        // Sessiz event'lerde clearAuth yapma
         if (showLoading) clearAuth();
       } finally {
         stopLoadingWatchdog();
@@ -264,10 +238,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stopLoadingWatchdog();
       authListener?.subscription?.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refresh, loadUserProfile]);
 
-  // KORUNAN: login fonksiyonu
   const login = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -280,7 +252,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (error) return { success: false, message: error.message };
-
       if (data.user) {
         await loadUserProfile(data.user);
         return { success: true, message: "Giriş başarılı!" };
@@ -295,12 +266,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadUserProfile]);
 
-  // KORUNAN: logout fonksiyonu
   const logout = useCallback(async () => {
     try {
       setLoading(true);
       startLoadingWatchdog(12000);
-
       await withTimeout(supabase.auth.signOut(), 8000, "signOut_timeout");
       clearAuth();
     } catch (e) {
@@ -312,7 +281,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // KORUNAN: updateProfile fonksiyonu
   const updateProfile = useCallback(async (updates: Partial<User>): Promise<boolean> => {
     if (!user) return false;
 

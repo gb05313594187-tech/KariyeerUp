@@ -79,10 +79,47 @@ export async function checkSession() {
   }
 }
 
-async function getAccessToken(): Promise<string | null> {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) return null;
-  return data?.session?.access_token || null;
+// ✅ Export edildi + localStorage öncelikli (timeout sorunu çözüldü)
+export async function getAccessToken(): Promise<string | null> {
+  // 1. Önce localStorage'dan direkt oku (timeout yok, anında)
+  try {
+    const storageKey = "kariyeerup-auth-token";
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const token = 
+        parsed?.access_token || 
+        parsed?.session?.access_token || 
+        parsed?.currentSession?.access_token;
+      
+      if (token && typeof token === "string" && token.length > 50) {
+        console.log("✅ Token from localStorage");
+        return token;
+      }
+    }
+  } catch (e) {
+    console.warn("localStorage token read error:", e);
+  }
+
+  // 2. Fallback: getSession (timeout ile)
+  try {
+    const timeoutPromise = new Promise<null>((resolve) => 
+      setTimeout(() => resolve(null), 3000)
+    );
+    const sessionPromise = supabase.auth.getSession();
+    
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    
+    if (result && (result as any)?.data?.session?.access_token) {
+      console.log("✅ Token from getSession");
+      return (result as any).data.session.access_token;
+    }
+  } catch (e) {
+    console.warn("getSession error:", e);
+  }
+
+  console.error("❌ No access token found");
+  return null;
 }
 
 const nowIso = () => new Date().toISOString();

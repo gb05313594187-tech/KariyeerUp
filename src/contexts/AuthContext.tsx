@@ -32,8 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function normalizeRole(v: any): Role {
   if (!v) return "user";
   const s = String(v).toLowerCase().trim();
-  if (s === "company") return "corporate";
-  if (s === "corporate") return "corporate";
+  if (s === "company" || s === "corporate") return "corporate";
   if (s === "coach") return "coach";
   if (s === "admin" || s === "super_admin") return "admin";
   return "user";
@@ -45,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<Role | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-
   const mountedRef = useRef(true);
 
   const clearAuth = useCallback(() => {
@@ -55,16 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
   }, []);
 
-  // ✅ Kullanıcı profilini yükle (hızlı versiyon)
   const loadUserProfile = useCallback(async (supabaseUserData: SupabaseUser) => {
     if (!mountedRef.current) return;
 
     try {
       setSupabaseUser(supabaseUserData);
-
       const meta = supabaseUserData.user_metadata || {};
-      
-      // ✅ Önce metadata'dan hızlıca user oluştur (anında göster)
+
       const quickUser: User = {
         id: supabaseUserData.id,
         email: supabaseUserData.email || "",
@@ -74,13 +69,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         country: null,
       };
 
-      // ✅ Hemen authenticated yap (UI anında güncellenir)
       setUser(quickUser);
       setRole(quickUser.role);
       setIsAuthenticated(true);
-      setLoading(false);
+      
+      // ✅ Profil yüklendi, loading'i kapat
+      if (mountedRef.current) {
+        setLoading(false);
+      }
 
-      // ✅ Arka planda profiles tablosundan detayları al
+      // Arka planda profiles'ı al
       try {
         const { data: profile } = await supabase
           .from("profiles")
@@ -100,25 +98,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRole(finalRole);
         }
       } catch (e) {
-        // Profiles hatası olsa bile user zaten set edildi, sorun yok
-        console.warn("Profile fetch error (non-critical):", e);
+        console.warn("Profile fetch error:", e);
       }
-
     } catch (e) {
       console.error("Error loading user profile:", e);
-      if (mountedRef.current) clearAuth();
+      if (mountedRef.current) {
+        clearAuth();
+        setLoading(false);
+      }
     }
   }, [clearAuth]);
 
-  // ✅ Session kontrolü (hızlı)
   const checkSession = useCallback(async () => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error || !session?.user) {
         if (mountedRef.current) {
           clearAuth();
-          setLoading(false);
+          setLoading(false); // ✅ Session yoksa da loading'i kapat
         }
         return;
       }
@@ -128,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Session check error:", e);
       if (mountedRef.current) {
         clearAuth();
-        setLoading(false);
+        setLoading(false); // ✅ Hata olsa da loading'i kapat
       }
     }
   }, [loadUserProfile, clearAuth]);
@@ -137,18 +135,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await checkSession();
   }, [checkSession]);
 
-  // ✅ İlk yükleme
   useEffect(() => {
     mountedRef.current = true;
 
-    // Hemen session kontrol et
+    // ✅ 2 saniye sonra zorla loading'i kapat (emergency fallback)
+    const emergencyTimeout = setTimeout(() => {
+      if (mountedRef.current && loading) {
+        console.warn("⚠️ Auth loading timeout - forcing false");
+        setLoading(false);
+      }
+    }, 2000);
+
     checkSession();
 
-    // Auth değişikliklerini dinle
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mountedRef.current) return;
 
-      console.log("Auth event:", event);
+      console.log("🔐 Auth event:", event);
 
       if (event === "SIGNED_IN" && session?.user) {
         await loadUserProfile(session.user);
@@ -157,22 +160,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       } else if (event === "TOKEN_REFRESHED" && session?.user) {
         await loadUserProfile(session.user);
-      } else if (event === "INITIAL_SESSION" && session?.user) {
-        await loadUserProfile(session.user);
+      } else if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          await loadUserProfile(session.user);
+        } else {
+          setLoading(false);
+        }
       }
     });
 
     return () => {
       mountedRef.current = false;
+      clearTimeout(emergencyTimeout);
       authListener?.subscription?.unsubscribe();
     };
   }, [checkSession, loadUserProfile, clearAuth]);
 
-  // ✅ Login
   const login = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
-
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
@@ -194,7 +200,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [loadUserProfile]);
 
-  // ✅ Logout
   const logout = useCallback(async () => {
     try {
       setLoading(true);
@@ -204,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         localStorage.removeItem('kariyeerup-auth-token');
         localStorage.removeItem('kariyerup-profile-data');
+        localStorage.removeItem('sb-wzadnstzslxvuwmmjmwn-auth-token');
       } catch {}
       
       clearAuth();
@@ -215,7 +221,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [clearAuth]);
 
-  // ✅ Profil güncelle
   const updateProfile = useCallback(async (updates: Partial<User>): Promise<boolean> => {
     if (!user) return false;
 
@@ -223,10 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
 
       await supabase.auth.updateUser({
-        data: {
-          role: nextRole,
-          full_name: updates.fullName ?? user.fullName,
-        },
+        data: { role: nextRole, full_name: updates.fullName ?? user.fullName },
       });
 
       const { error } = await supabase
@@ -251,17 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const value = useMemo(
-    () => ({
-      user,
-      supabaseUser,
-      role,
-      isAuthenticated,
-      loading,
-      refresh,
-      login,
-      logout,
-      updateProfile,
-    }),
+    () => ({ user, supabaseUser, role, isAuthenticated, loading, refresh, login, logout, updateProfile }),
     [user, supabaseUser, role, isAuthenticated, loading, refresh, login, logout, updateProfile]
   );
 
@@ -270,7 +262,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (context === undefined) {
     return {
       user: null,
@@ -284,6 +275,5 @@ export const useAuth = () => {
       updateProfile: async () => false,
     } as AuthContextType;
   }
-
   return context;
 };

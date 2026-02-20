@@ -17,7 +17,7 @@ import ReactGA from "react-ga4";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // LAYOUTS
-import Navbar from "@/components/ui/Navbar";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";

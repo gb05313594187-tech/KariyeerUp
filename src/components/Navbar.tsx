@@ -22,7 +22,7 @@ import {
   Settings,
   Sparkles,
   Video,
-  Crown,
+  Zap, // ✅ YENİ: Boost için eklendi
   Home as HomeIcon,
   Briefcase,
 } from "lucide-react";
@@ -45,7 +45,7 @@ export default function Navbar() {
       jobs: "İlanlar",
       mentor: "MentorCircle",
       webinar: "Webinar",
-      premium: "Bireysel Premium",
+      boost: "Boost", // ✅ YENİ
       dashboard: "Panel",
       login: "Giriş Yap",
       register: "Kayıt Ol",
@@ -58,7 +58,7 @@ export default function Navbar() {
       jobs: "Jobs",
       mentor: "MentorCircle",
       webinar: "Webinars",
-      premium: "Individual Premium",
+      boost: "Boost", // ✅ YENİ
       dashboard: "Dashboard",
       login: "Login",
       register: "Register",
@@ -71,7 +71,7 @@ export default function Navbar() {
       jobs: "وظائف",
       mentor: "دائرة المنقذ",
       webinar: "ندوة عبر الويب",
-      premium: "بريميوم فردي",
+      boost: "تعزيز", // ✅ YENİ
       dashboard: "لوحة القيادة",
       login: "تسجيل الدخول",
       register: "سجل الآن",
@@ -84,7 +84,7 @@ export default function Navbar() {
       jobs: "Emplois",
       mentor: "Cercle Mentor",
       webinar: "Webinaire",
-      premium: "Premium Individuel",
+      boost: "Boost", // ✅ YENİ
       dashboard: "Tableau de bord",
       login: "Connexion",
       register: "S'inscrire",
@@ -139,7 +139,6 @@ export default function Navbar() {
     return "/user/settings";
   }, [role]);
 
-  const premiumPath = "/bireysel-premium";
   const socialHomePath = "/home";
   const jobsPath = "/jobs";
   const logoPath = "/";
@@ -211,10 +210,11 @@ export default function Navbar() {
             {t.webinar}
           </Link>
 
-          <Link to={premiumPath}>
-            <Button className="h-10 rounded-xl px-4 bg-red-600 hover:bg-red-700 text-white">
-              <Crown className="h-4 w-4 mr-2" />
-              {t.premium}
+          {/* ✅ YENİ: Boost butonu */}
+          <Link to="/boost">
+            <Button className="h-10 rounded-xl px-4 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white shadow-lg">
+              <Zap className="h-4 w-4 mr-2" />
+              {t.boost}
             </Button>
           </Link>
         </nav>
@@ -326,8 +326,12 @@ export default function Navbar() {
               {t.webinar}
             </button>
 
-            <Link to={premiumPath} className="block" onClick={() => setMobileOpen(false)}>
-              <div className={mobilePrimary}>{t.premium}</div>
+            {/* ✅ YENİ: Boost butonu mobile */}
+            <Link to="/boost" className="block" onClick={() => setMobileOpen(false)}>
+              <div className={mobilePrimary}>
+                <Zap className="inline h-4 w-4 mr-2" />
+                {t.boost}
+              </div>
             </Link>
 
             <div className="pt-2 border-t space-y-2">

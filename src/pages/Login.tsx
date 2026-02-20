@@ -117,6 +117,7 @@ export default function Login() {
     }
   };
 
+  // ✅ DÜZELTME: Session'ın yüklenmesini bekle ve window.location ile yönlendir
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -139,9 +140,14 @@ export default function Login() {
 
       toast.success(t.success);
 
+      // ✅ Session'ın tamamen yüklenmesini bekle
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const qs = new URLSearchParams(location.search);
       const next = qs.get("next");
-      navigate(next || "/", { replace: true });
+      
+      // ✅ window.location ile yönlendir (React Router bazen session'ı kaçırıyor)
+      window.location.href = next || "/";
     } catch {
       toast.error(t.errorGeneral);
     } finally {

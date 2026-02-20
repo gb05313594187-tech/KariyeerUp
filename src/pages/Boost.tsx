@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { initiateBoostPayment, PRICING } from "@/lib/boostPayment";
+import { initiateBoostPayment, PRICING, BoostType } from "@/lib/boostPayment";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Sparkles,
@@ -313,12 +313,18 @@ export default function Boost() {
     );
   }
 
-  /* ── ÖDEME (DEBUG EKLENDİ) ── */
-  const handlePayment = async (type: keyof typeof PRICING, price: any) => {
-    console.log("🚀 Payment started:", { type, price, user }); // DEBUG
+  /* ── ÖDEME (DÜZELTİLDİ) ── */
+  const handlePayment = async (type: BoostType, price: typeof PRICING[BoostType]["prices"][0]) => {
+    console.log("🚀 Payment started:", { type, price, user });
 
-    if (!user?.email || !user?.fullName) {
-      console.error("❌ Missing user data:", user); // DEBUG
+    // ✅ Email ve fullName için fallback'ler
+    const userEmail = user.email || (user as any).user_metadata?.email;
+    const userFullName = user.fullName || (user as any).user_metadata?.full_name || user.email?.split("@")[0] || "User";
+
+    console.log("👤 User data:", { userEmail, userFullName });
+
+    if (!userEmail) {
+      console.error("❌ Email missing");
       toast({
         title: t.errorTitle,
         description: t.errorMissing,
@@ -329,70 +335,30 @@ export default function Boost() {
 
     setLoading(`${type}-${price.duration}`);
 
-    console.log("📡 Calling initiateBoostPayment..."); // DEBUG
-
     try {
       const result = await initiateBoostPayment({
         userId: user.id,
-        email: user.email,
-        fullName: user.fullName || user.email.split("@")[0],
+        email: userEmail,
+        fullName: userFullName,
         type,
         amount: price.amount,
         durationDays: price.duration,
       });
 
-      console.log("📦 Payment result:", result); // DEBUG
+      console.log("📦 Payment result:", result);
 
-      if (result.success && result.token) {
-        console.log("✅ Token received, creating form..."); // DEBUG
-
-        const paytrForm = document.createElement("form");
-        paytrForm.action = "https://www.paytr.com/odeme";
-        paytrForm.method = "POST";
-        paytrForm.target = "_blank";
-
-        const inputs = {
-          merchant_id: import.meta.env.VITE_PAYTR_MERCHANT_ID,
-          merchant_key: import.meta.env.VITE_PAYTR_MERCHANT_KEY,
-          merchant_salt: import.meta.env.VITE_PAYTR_MERCHANT_SALT,
-          email: user.email,
-          payment_amount: price.amount,
-          merchant_oid: result.merchantOid,
-          user_name: user.fullName || user.email.split("@")[0],
-          user_basket: JSON.stringify([
-            [
-              PRICING[type].name + " - " + price.label,
-              (price.amount / 100).toFixed(2),
-              "1",
-            ],
-          ]),
-          user_ip: "85.34.78.112",
-          timeout_limit: "30",
-          currency: "TL",
-          test_mode: import.meta.env.DEV ? "1" : "0",
-          token: result.token,
-        };
-
-        console.log("📋 Form inputs:", inputs); // DEBUG
-
-        Object.entries(inputs).forEach(([key, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value as string;
-          paytrForm.appendChild(input);
-        });
-
-        document.body.appendChild(paytrForm);
-        paytrForm.submit();
-        document.body.removeChild(paytrForm);
+      if (result.success && result.iframeUrl) {
+        console.log("✅ Redirecting to:", result.iframeUrl);
+        
+        // ✅ Yeni sekmede aç
+        window.open(result.iframeUrl, "_blank");
 
         toast({
           title: t.successTitle,
           description: t.successDesc,
         });
       } else {
-        console.error("❌ Payment failed:", result.error); // DEBUG
+        console.error("❌ Payment failed:", result.error);
         toast({
           title: t.errorTitle,
           description: result.error || t.errorPayment,
@@ -400,7 +366,7 @@ export default function Boost() {
         });
       }
     } catch (error) {
-      console.error("💥 Payment exception:", error); // DEBUG
+      console.error("💥 Payment exception:", error);
       toast({
         title: t.errorTitle,
         description: error instanceof Error ? error.message : t.errorPayment,
@@ -412,11 +378,11 @@ export default function Boost() {
   };
 
   /* ── ROL BAZLI PAKET ── */
-  const getPackageForRole = () => {
+  const getPackageForRole = (): { type: BoostType; title: string; icon: any; gradient: string; shadow: string } => {
     switch (role) {
       case "corporate":
         return {
-          type: "corporate_boost" as const,
+          type: "corporate_boost",
           title: t.corpBoostTitle,
           icon: Building2,
           gradient: "from-emerald-500 to-teal-500",
@@ -424,7 +390,7 @@ export default function Boost() {
         };
       case "coach":
         return {
-          type: "coach_boost" as const,
+          type: "coach_boost",
           title: t.coachBoostTitle,
           icon: Crown,
           gradient: "from-purple-500 to-pink-500",
@@ -432,7 +398,7 @@ export default function Boost() {
         };
       default:
         return {
-          type: "user_boost" as const,
+          type: "user_boost",
           title: t.userBoostTitle,
           icon: Zap,
           gradient: "from-blue-500 to-cyan-500",
@@ -555,17 +521,11 @@ export default function Boost() {
                     </div>
 
                     <Button
-                      onClick={() =>
-                        handlePayment(currentPackage.type, price)
-                      }
-                      disabled={
-                        loading ===
-                        `${currentPackage.type}-${price.duration}`
-                      }
+                      onClick={() => handlePayment(currentPackage.type, price)}
+                      disabled={loading === `${currentPackage.type}-${price.duration}`}
                       className={`h-12 px-6 font-bold bg-gradient-to-r ${currentPackage.gradient} hover:opacity-90 text-white shadow-lg ${currentPackage.shadow} disabled:opacity-60 min-w-[140px]`}
                     >
-                      {loading ===
-                      `${currentPackage.type}-${price.duration}` ? (
+                      {loading === `${currentPackage.type}-${price.duration}` ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           {t.redirecting}

@@ -1,4 +1,4 @@
-// src/components/Navbar.tsx
+// src/components/ui/Navbar.tsx
 // @ts-nocheck
 import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -80,10 +80,17 @@ const Navbar = memo(function Navbar() {
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "User";
 
+  // ✅ DÜZELTME: Logout fonksiyonu
   const handleLogout = useCallback(async () => {
-    await auth.logout();
-    navigate("/");
-  }, [auth, navigate]);
+    try {
+      await auth.logout();
+      // ✅ window.location ile tam sayfa yenileme
+      window.location.href = "/";
+    } catch (e) {
+      console.error("Logout error:", e);
+      window.location.href = "/";
+    }
+  }, [auth]);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -179,7 +186,8 @@ const Navbar = memo(function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/home")}><HomeIcon className="mr-2 h-4 w-4" />Ana Akış</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/jobs")}><Briefcase className="mr-2 h-4 w-4" />İlanlar</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}><LayoutDashboard className="mr-2 h-4 w-4" />{dashboardLabel}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/user/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
+                  {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
+                  <DropdownMenuItem onClick={() => navigate("/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />Çıkış</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -211,7 +219,8 @@ const Navbar = memo(function Navbar() {
               <button onClick={() => { navigate("/home"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Ana Akış</button>
               <button onClick={() => { navigate("/jobs"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">İlanlar</button>
               <button onClick={() => { navigate(dashboardPath); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">{dashboardLabel}</button>
-              <button onClick={() => { navigate("/user/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
+              {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
+              <button onClick={() => { navigate("/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
               <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl text-red-600 font-semibold">Çıkış Yap</button>
             </div>
           </div>

@@ -46,7 +46,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: "kariyerup-auth-token",
+    storageKey: "kariyeerup-auth-token",
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
     // ❌ flowType: "pkce" KALDIRILDI — Google OAuth implicit flow kullanır,
     //    PKCE bununla çakışıp login'i bozuyordu

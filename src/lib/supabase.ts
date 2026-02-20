@@ -34,16 +34,22 @@ const supabaseFetch: typeof fetch = (input: any, init?: any) => {
 };
 
 /* =========================================================
-   ✅ Supabase Client — OTURUM KALICILIĞI DÜZELTİLDİ
+   ✅ Supabase Client
+   
+   DEĞİŞİKLİKLER:
+   1. flowType: "pkce" KALDIRILDI → Google OAuth'u bozuyordu
+   2. storage: localStorage açıkça belirtildi → oturum kalıcılığı
+   3. storageKey tutarlı tutuldu
    ========================================================= */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: true,       // ✅ Token otomatik yenilenir
-    persistSession: true,         // ✅ Oturum localStorage'da saklanır
-    detectSessionInUrl: true,     // ✅ URL'deki token'ları algılar (OAuth callback)
-    storageKey: "kariyeerup-auth-token",  // ✅ Typo düzeltildi (kariyeerup → kariyeerup)
-    storage: typeof window !== "undefined" ? window.localStorage : undefined, // ✅ EKSİK OLAN BU — açıkça localStorage belirt
-    flowType: "pkce",             // ✅ Daha güvenli auth flow
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    storageKey: "kariyerup-auth-token",
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    // ❌ flowType: "pkce" KALDIRILDI — Google OAuth implicit flow kullanır,
+    //    PKCE bununla çakışıp login'i bozuyordu
   },
   db: { schema: "public" },
   global: {

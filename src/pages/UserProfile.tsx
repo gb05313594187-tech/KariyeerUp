@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -12,7 +11,8 @@ import {
   X, Briefcase, GraduationCap, Cpu, Languages, Target,
   Plus, Trash2, Award, Heart, Phone, MapPin, Star, CheckCircle2,
   Camera, ImagePlus, Save, Edit3, AlertTriangle, Wifi, WifiOff,
-  Zap, Search, Sparkles, TrendingUp, Building2, Clock, ChevronDown, ChevronUp
+  Zap, Search, Sparkles, TrendingUp, Building2, Clock, ChevronDown,
+  ChevronUp, User
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -21,29 +21,20 @@ import { useLanguage } from "@/contexts/LanguageContext";
    ========================================================= */
 const PROFILE_TRANSLATIONS = {
   tr: {
-    // Loading
     loadingSyncing: "Hafıza Senkronize Ediliyor...",
-
-    // Connection status
     supabaseActive: "Supabase Bağlantısı Aktif",
     localMode: "Yerel Mod — Veriler localStorage'da Saklanıyor",
-
-    // Banner & Avatar
     uploading: "Yükleniyor...",
     changeBanner: "Banner Değiştir",
     changePhoto: "Değiştir",
-
-    // Profile header
     defaultName: "İSİM SOYİSİM",
+    defaultTitle: "Ünvanınızı Ekleyin",
     verified: "ONAYLI",
     editProfile: "PROFİLİ DÜZENLE",
-
-    // Empty state
     profileEmpty: "Profiliniz Boş",
-    profileEmptyDesc: "Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.",
+    profileEmptyDesc:
+      "Profil bilgilerinizi ekleyerek kariyer yolculuğunuza başlayın. İş ilanlarıyla eşleşme yapabilmek için profilinizi doldurun.",
     createProfile: "PROFİLİ OLUŞTUR",
-
-    // Section titles (view mode)
     careerVision: "Kariyer Vizyonu",
     workExperience: "İş Deneyimi",
     education: "Eğitim",
@@ -51,37 +42,28 @@ const PROFILE_TRANSLATIONS = {
     languagesSection: "Diller",
     skills: "Yetenekler",
     interests: "İlgi Alanları",
-
-    // Work experience view
     positionDefault: "Pozisyon",
     companyDefault: "Şirket",
     present: "Günümüz",
-
-    // Education view
     schoolDefault: "Okul",
     ongoing: "Devam Ediyor",
-
-    // Certificates view
     certificateDefault: "Sertifika",
-
-    // Languages view
     languageDefault: "Dil",
-
-    // Score labels
     highMatch: "Yüksek Uyum",
     mediumMatch: "Orta Uyum",
     lowMatch: "Düşük Uyum",
-
-    // Matching section
     myJobMatches: "İş Eşleşmelerim",
-    matchSubtitle: "Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör",
+    matchSubtitle:
+      "Profilini aktif ilanlarla karşılaştır ve uygunluk puanını gör",
     standard: "Standard",
     aiBoost: "AI Boost",
     aiAnalyzing: "AI Analiz Ediliyor...",
     scanning: "Taranıyor...",
     noMatchesYet: "Henüz Eşleşme Yok",
-    noMatchesDescWithContent: "\"Standard\" veya \"AI Boost\" butonuna tıklayarak profilinizi aktif ilanlarla eşleştirin.",
-    noMatchesDescEmpty: "Önce profilinizi doldurun, ardından ilanlarla eşleşme yapabilirsiniz.",
+    noMatchesDescWithContent:
+      '"Standard" veya "AI Boost" butonuna tıklayarak profilinizi aktif ilanlarla eşleştirin.',
+    noMatchesDescEmpty:
+      "Önce profilinizi doldurun, ardından ilanlarla eşleşme yapabilirsiniz.",
     unknownPosition: "Bilinmeyen Pozisyon",
     strengths: "Güçlü Yönler",
     areasForImprovement: "Gelişim Alanları",
@@ -96,8 +78,6 @@ const PROFILE_TRANSLATIONS = {
     standardMatchInfo: "Standard = Kelime bazlı eşleşme",
     boostMatchInfo: "Boost = Gemini AI semantik analiz",
     addGeminiKeyWarning: "AI Boost için .env'ye VITE_GEMINI_API_KEY ekleyin",
-
-    // Modal
     profileArchitect: "Profil Mimarı",
     profileImages: "Profil Görselleri",
     profilePhoto: "Profil Fotoğrafı",
@@ -105,6 +85,8 @@ const PROFILE_TRANSLATIONS = {
     uploadingImage: "Görsel yükleniyor...",
     fullName: "Ad Soyad",
     fullNamePlaceholder: "Adınız ve Soyadınız",
+    titleLabel: "Ünvan / Meslek",
+    titlePlaceholder: "Örn: Frontend Developer, Grafik Tasarımcı...",
     location: "Lokasyon",
     selectCountry: "Ülke Seçin",
     selectCity: "Şehir Seçin",
@@ -145,8 +127,6 @@ const PROFILE_TRANSLATIONS = {
     cancel: "İPTAL",
     sealMemory: "HAFIZAYI MÜHÜRLE",
     sealing: "MÜHÜRLENİYOR...",
-
-    // Toast messages
     fileTooLarge: "Dosya 5MB'den küçük olmalı.",
     selectImageFile: "Lütfen bir resim dosyası seçin.",
     profilePhotoSealed: "Profil fotoğrafı mühürlendi!",
@@ -166,6 +146,8 @@ const PROFILE_TRANSLATIONS = {
     matchError: "Eşleştirme hatası: ",
     boostError: "AI Boost hatası: ",
     addGeminiKey: "AI Boost için .env dosyasına VITE_GEMINI_API_KEY ekleyin.",
+    sessionRestored: "Oturum başarıyla geri yüklendi!",
+    sessionLost: "Oturum bulunamadı, yerel modda çalışılıyor.",
   },
 
   en: {
@@ -176,10 +158,12 @@ const PROFILE_TRANSLATIONS = {
     changeBanner: "Change Banner",
     changePhoto: "Change",
     defaultName: "FULL NAME",
+    defaultTitle: "Add Your Title",
     verified: "VERIFIED",
     editProfile: "EDIT PROFILE",
     profileEmpty: "Your Profile is Empty",
-    profileEmptyDesc: "Start your career journey by adding your profile information. Fill in your profile to match with job listings.",
+    profileEmptyDesc:
+      "Start your career journey by adding your profile information.",
     createProfile: "CREATE PROFILE",
     careerVision: "Career Vision",
     workExperience: "Work Experience",
@@ -199,14 +183,17 @@ const PROFILE_TRANSLATIONS = {
     mediumMatch: "Medium Match",
     lowMatch: "Low Match",
     myJobMatches: "My Job Matches",
-    matchSubtitle: "Compare your profile with active listings and see your compatibility score",
+    matchSubtitle:
+      "Compare your profile with active listings and see your compatibility score",
     standard: "Standard",
     aiBoost: "AI Boost",
     aiAnalyzing: "AI Analyzing...",
     scanning: "Scanning...",
     noMatchesYet: "No Matches Yet",
-    noMatchesDescWithContent: "Click \"Standard\" or \"AI Boost\" to match your profile with active job listings.",
-    noMatchesDescEmpty: "First fill in your profile, then you can match with job listings.",
+    noMatchesDescWithContent:
+      'Click "Standard" or "AI Boost" to match your profile with active job listings.',
+    noMatchesDescEmpty:
+      "First fill in your profile, then you can match with job listings.",
     unknownPosition: "Unknown Position",
     strengths: "Strengths",
     areasForImprovement: "Areas for Improvement",
@@ -228,6 +215,8 @@ const PROFILE_TRANSLATIONS = {
     uploadingImage: "Uploading image...",
     fullName: "Full Name",
     fullNamePlaceholder: "Your Full Name",
+    titleLabel: "Title / Profession",
+    titlePlaceholder: "e.g. Frontend Developer, Graphic Designer...",
     location: "Location",
     selectCountry: "Select Country",
     selectCity: "Select City",
@@ -287,6 +276,8 @@ const PROFILE_TRANSLATIONS = {
     matchError: "Matching error: ",
     boostError: "AI Boost error: ",
     addGeminiKey: "Add VITE_GEMINI_API_KEY to .env for AI Boost.",
+    sessionRestored: "Session successfully restored!",
+    sessionLost: "Session not found, working in local mode.",
   },
 
   ar: {
@@ -297,10 +288,12 @@ const PROFILE_TRANSLATIONS = {
     changeBanner: "تغيير البانر",
     changePhoto: "تغيير",
     defaultName: "الاسم الكامل",
+    defaultTitle: "أضف لقبك المهني",
     verified: "موثّق",
     editProfile: "تعديل الملف الشخصي",
     profileEmpty: "ملفك الشخصي فارغ",
-    profileEmptyDesc: "ابدأ رحلتك المهنية بإضافة معلومات ملفك الشخصي. املأ ملفك الشخصي للتوافق مع إعلانات الوظائف.",
+    profileEmptyDesc:
+      "ابدأ رحلتك المهنية بإضافة معلومات ملفك الشخصي.",
     createProfile: "إنشاء الملف الشخصي",
     careerVision: "الرؤية المهنية",
     workExperience: "الخبرة العملية",
@@ -320,14 +313,17 @@ const PROFILE_TRANSLATIONS = {
     mediumMatch: "توافق متوسط",
     lowMatch: "توافق منخفض",
     myJobMatches: "تطابقاتي الوظيفية",
-    matchSubtitle: "قارن ملفك الشخصي مع الإعلانات النشطة واطلع على درجة التوافق",
+    matchSubtitle:
+      "قارن ملفك الشخصي مع الإعلانات النشطة واطلع على درجة التوافق",
     standard: "قياسي",
     aiBoost: "تعزيز AI",
-    aiAnalyzing: "...جارٍ التحليل بالذكاء الاصطناعي",
+    aiAnalyzing: "...جارٍ التحليل",
     scanning: "...جارٍ المسح",
     noMatchesYet: "لا توجد تطابقات بعد",
-    noMatchesDescWithContent: "انقر على \"قياسي\" أو \"تعزيز AI\" لمطابقة ملفك الشخصي مع إعلانات الوظائف النشطة.",
-    noMatchesDescEmpty: "أولاً املأ ملفك الشخصي، ثم يمكنك المطابقة مع إعلانات الوظائف.",
+    noMatchesDescWithContent:
+      'انقر على "قياسي" أو "تعزيز AI" لمطابقة ملفك الشخصي.',
+    noMatchesDescEmpty:
+      "أولاً املأ ملفك الشخصي، ثم يمكنك المطابقة.",
     unknownPosition: "منصب غير معروف",
     strengths: "نقاط القوة",
     areasForImprovement: "مجالات التحسين",
@@ -341,7 +337,7 @@ const PROFILE_TRANSLATIONS = {
     salaryUpTo: " كحد أقصى",
     standardMatchInfo: "قياسي = مطابقة بالكلمات المفتاحية",
     boostMatchInfo: "تعزيز = تحليل دلالي بـ Gemini AI",
-    addGeminiKeyWarning: "أضف VITE_GEMINI_API_KEY إلى .env لتعزيز AI",
+    addGeminiKeyWarning: "أضف VITE_GEMINI_API_KEY إلى .env",
     profileArchitect: "مهندس الملف الشخصي",
     profileImages: "صور الملف الشخصي",
     profilePhoto: "صورة الملف الشخصي",
@@ -349,6 +345,8 @@ const PROFILE_TRANSLATIONS = {
     uploadingImage: "...جارٍ تحميل الصورة",
     fullName: "الاسم الكامل",
     fullNamePlaceholder: "اسمك الكامل",
+    titleLabel: "اللقب المهني",
+    titlePlaceholder: "مثال: مطور واجهات، مصمم جرافيك...",
     location: "الموقع",
     selectCountry: "اختر الدولة",
     selectCity: "اختر المدينة",
@@ -389,39 +387,43 @@ const PROFILE_TRANSLATIONS = {
     cancel: "إلغاء",
     sealMemory: "حفظ الملف الشخصي",
     sealing: "...جارٍ الحفظ",
-    fileTooLarge: "يجب أن يكون الملف أصغر من 5 ميجابايت.",
+    fileTooLarge: "يجب أن يكون الملف أصغر من 5MB.",
     selectImageFile: "يرجى اختيار ملف صورة.",
-    profilePhotoSealed: "!تم حفظ صورة الملف الشخصي",
+    profilePhotoSealed: "!تم حفظ صورة الملف",
     bannerSealed: "!تم حفظ البانر",
-    profilePhotoSaved: "!تم حفظ صورة الملف الشخصي",
+    profilePhotoSaved: "!تم حفظ صورة الملف",
     bannerSaved: "!تم حفظ البانر",
-    localBackupCreated: "تم إنشاء نسخة احتياطية محلية.",
-    uploadFailed: "فشل التحميل بالكامل.",
-    dataSealedSupabase: "!تم حفظ جميع البيانات في Supabase",
+    localBackupCreated: "تم إنشاء نسخة احتياطية.",
+    uploadFailed: "فشل التحميل.",
+    dataSealedSupabase: "!تم حفظ البيانات في Supabase",
     dataSealedLocal: "!تم حفظ البيانات محلياً",
     saveFailed: "فشل الحفظ: ",
     unknownError: "خطأ غير معروف",
-    supabaseRequired: "اتصال Supabase مطلوب للمطابقة.",
-    noActiveJobs: "لم يتم العثور على إعلانات وظائف نشطة.",
-    standardMatchDone: " وظيفة تمت مطابقتها بالطريقة القياسية!",
-    boostMatchDone: " وظيفة تم تحليلها بتعزيز AI!",
+    supabaseRequired: "اتصال Supabase مطلوب.",
+    noActiveJobs: "لا توجد إعلانات وظائف.",
+    standardMatchDone: " وظيفة تمت مطابقتها!",
+    boostMatchDone: " وظيفة تم تحليلها!",
     matchError: "خطأ في المطابقة: ",
-    boostError: "خطأ في تعزيز AI: ",
-    addGeminiKey: "أضف VITE_GEMINI_API_KEY إلى .env لتعزيز AI.",
+    boostError: "خطأ AI Boost: ",
+    addGeminiKey: "أضف VITE_GEMINI_API_KEY إلى .env.",
+    sessionRestored: "!تمت استعادة الجلسة بنجاح",
+    sessionLost: "لم يتم العثور على جلسة، العمل في الوضع المحلي.",
   },
 
   fr: {
-    loadingSyncing: "Synchronisation de la mémoire...",
+    loadingSyncing: "Synchronisation...",
     supabaseActive: "Connexion Supabase active",
-    localMode: "Mode local — Données stockées dans localStorage",
+    localMode: "Mode local — localStorage",
     uploading: "Chargement...",
     changeBanner: "Changer la bannière",
     changePhoto: "Changer",
     defaultName: "NOM COMPLET",
+    defaultTitle: "Ajoutez votre titre",
     verified: "VÉRIFIÉ",
     editProfile: "MODIFIER LE PROFIL",
     profileEmpty: "Votre profil est vide",
-    profileEmptyDesc: "Commencez votre parcours professionnel en ajoutant vos informations de profil. Remplissez votre profil pour correspondre aux offres d'emploi.",
+    profileEmptyDesc:
+      "Commencez votre parcours professionnel en ajoutant vos informations.",
     createProfile: "CRÉER LE PROFIL",
     careerVision: "Vision de carrière",
     workExperience: "Expérience professionnelle",
@@ -440,52 +442,56 @@ const PROFILE_TRANSLATIONS = {
     highMatch: "Haute compatibilité",
     mediumMatch: "Compatibilité moyenne",
     lowMatch: "Faible compatibilité",
-    myJobMatches: "Mes correspondances d'emploi",
-    matchSubtitle: "Comparez votre profil avec les annonces actives et voyez votre score de compatibilité",
+    myJobMatches: "Mes correspondances",
+    matchSubtitle:
+      "Comparez votre profil avec les annonces actives",
     standard: "Standard",
     aiBoost: "AI Boost",
-    aiAnalyzing: "Analyse IA en cours...",
-    scanning: "Analyse en cours...",
-    noMatchesYet: "Pas encore de correspondances",
-    noMatchesDescWithContent: "Cliquez sur \"Standard\" ou \"AI Boost\" pour faire correspondre votre profil avec les offres d'emploi actives.",
-    noMatchesDescEmpty: "Remplissez d'abord votre profil, puis vous pourrez faire des correspondances avec les offres d'emploi.",
+    aiAnalyzing: "Analyse IA...",
+    scanning: "Analyse...",
+    noMatchesYet: "Pas de correspondances",
+    noMatchesDescWithContent:
+      'Cliquez "Standard" ou "AI Boost" pour correspondre.',
+    noMatchesDescEmpty: "Remplissez votre profil d'abord.",
     unknownPosition: "Poste inconnu",
     strengths: "Points forts",
     areasForImprovement: "Axes d'amélioration",
-    detailedScoreDistribution: "Répartition détaillée des scores",
+    detailedScoreDistribution: "Répartition des scores",
     skillLabel: "Compétence",
     locationLabel: "Localisation",
     experienceLabel: "Expérience",
     languageLabel: "Langue",
     jobDescription: "Description du poste",
     salary: "Salaire",
-    salaryUpTo: " maximum",
-    standardMatchInfo: "Standard = Correspondance par mots-clés",
-    boostMatchInfo: "Boost = Analyse sémantique Gemini AI",
-    addGeminiKeyWarning: "Ajoutez VITE_GEMINI_API_KEY à .env pour AI Boost",
+    salaryUpTo: " max",
+    standardMatchInfo: "Standard = Mots-clés",
+    boostMatchInfo: "Boost = Gemini AI",
+    addGeminiKeyWarning: "Ajoutez VITE_GEMINI_API_KEY",
     profileArchitect: "Architecte de profil",
     profileImages: "Images du profil",
     profilePhoto: "Photo de profil",
-    bannerImage: "Image de bannière",
-    uploadingImage: "Chargement de l'image...",
+    bannerImage: "Image bannière",
+    uploadingImage: "Chargement...",
     fullName: "Nom complet",
     fullNamePlaceholder: "Votre nom complet",
+    titleLabel: "Titre / Profession",
+    titlePlaceholder: "ex: Développeur Frontend, Designer...",
     location: "Localisation",
-    selectCountry: "Sélectionner le pays",
-    selectCity: "Sélectionner la ville",
+    selectCountry: "Sélectionner pays",
+    selectCity: "Sélectionner ville",
     internationalPhone: "Téléphone international",
-    aboutCareerVision: "À propos / Vision de carrière",
-    aboutPlaceholder: "Décrivez-vous et vos objectifs de carrière...",
+    aboutCareerVision: "À propos / Vision",
+    aboutPlaceholder: "Décrivez-vous...",
     add: "AJOUTER",
-    workExperienceSection: "Expérience professionnelle",
+    workExperienceSection: "Expérience",
     positionTitle: "Poste / Titre",
-    companyName: "Nom de l'entreprise",
+    companyName: "Entreprise",
     startDate: "Début (2020)",
     endDate: "Fin (2023)",
     currentlyWorking: "En cours",
     deleteBtn: "SUPPR",
-    jobDescPlaceholder: "Description du poste et vos réalisations...",
-    educationSection: "Informations sur la formation",
+    jobDescPlaceholder: "Description du poste...",
+    educationSection: "Formation",
     schoolUniversity: "École / Université",
     departmentField: "Département / Domaine",
     degree: "Diplôme",
@@ -498,37 +504,39 @@ const PROFILE_TRANSLATIONS = {
     endLabel: "Fin",
     continueLabel: "En cours",
     languageProficiency: "Compétences linguistiques",
-    selectLanguage: "Sélectionner la langue",
+    selectLanguage: "Sélectionner langue",
     certificatesSection: "Certificats",
     certificateName: "Nom du certificat",
     institution: "Établissement",
     year: "Année",
-    technicalSkills: "Programmes techniques & Compétences",
-    skillInputPlaceholder: "Tapez une compétence et appuyez sur Entrée...",
+    technicalSkills: "Compétences techniques",
+    skillInputPlaceholder: "Tapez une compétence + Entrée...",
     interestsSection: "Centres d'intérêt",
-    interestInputPlaceholder: "Tapez un intérêt et appuyez sur Entrée...",
+    interestInputPlaceholder: "Tapez un intérêt + Entrée...",
     cancel: "ANNULER",
-    sealMemory: "ENREGISTRER LE PROFIL",
+    sealMemory: "ENREGISTRER",
     sealing: "ENREGISTREMENT...",
-    fileTooLarge: "Le fichier doit être inférieur à 5 Mo.",
-    selectImageFile: "Veuillez sélectionner un fichier image.",
-    profilePhotoSealed: "Photo de profil enregistrée !",
+    fileTooLarge: "Fichier < 5 Mo.",
+    selectImageFile: "Sélectionnez une image.",
+    profilePhotoSealed: "Photo enregistrée !",
     bannerSealed: "Bannière enregistrée !",
-    profilePhotoSaved: "Photo de profil enregistrée !",
+    profilePhotoSaved: "Photo enregistrée !",
     bannerSaved: "Bannière enregistrée !",
     localBackupCreated: "Sauvegarde locale créée.",
-    uploadFailed: "Le téléchargement a complètement échoué.",
-    dataSealedSupabase: "Toutes les données ont été enregistrées sur Supabase !",
-    dataSealedLocal: "Données enregistrées localement !",
-    saveFailed: "Échec de l'enregistrement : ",
+    uploadFailed: "Échec du téléchargement.",
+    dataSealedSupabase: "Données sauvées sur Supabase !",
+    dataSealedLocal: "Données sauvées localement !",
+    saveFailed: "Échec : ",
     unknownError: "Erreur inconnue",
-    supabaseRequired: "Connexion Supabase requise pour la correspondance.",
-    noActiveJobs: "Aucune offre d'emploi active trouvée.",
-    standardMatchDone: " offres correspondantes avec la méthode standard !",
-    boostMatchDone: " offres analysées avec AI Boost !",
-    matchError: "Erreur de correspondance : ",
+    supabaseRequired: "Connexion Supabase requise.",
+    noActiveJobs: "Aucune offre trouvée.",
+    standardMatchDone: " offres correspondantes !",
+    boostMatchDone: " offres analysées !",
+    matchError: "Erreur : ",
     boostError: "Erreur AI Boost : ",
-    addGeminiKey: "Ajoutez VITE_GEMINI_API_KEY à .env pour AI Boost.",
+    addGeminiKey: "Ajoutez VITE_GEMINI_API_KEY.",
+    sessionRestored: "Session restaurée !",
+    sessionLost: "Session non trouvée, mode local.",
   },
 };
 
@@ -546,24 +554,26 @@ const PHONE_CODES = [
 ];
 
 const LOCATION_DATA = {
-  "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya"],
-  "Tunisia": ["Tunis", "Sfax", "Sousse", "Kairouan"],
+  Turkey: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya"],
+  Tunisia: ["Tunis", "Sfax", "Sousse", "Kairouan"],
   "United Kingdom": ["London", "Manchester", "Birmingham"],
   "Saudi Arabia": ["Riyadh", "Jeddah", "Dammam"],
   "United Arab Emirates": ["Dubai", "Abu Dhabi"],
-  "France": ["Paris", "Lyon", "Marseille"],
-  "Germany": ["Berlin", "Munich", "Hamburg"],
+  France: ["Paris", "Lyon", "Marseille"],
+  Germany: ["Berlin", "Munich", "Hamburg"],
 };
 
 const LANGUAGE_LIST = [
-  "Türkçe", "English", "العربية", "Français", "Deutsch", "Español", "Русский", "中文", "日本語", "한국어",
+  "Türkçe", "English", "العربية", "Français",
+  "Deutsch", "Español", "Русский", "中文", "日本語", "한국어",
 ];
 
 /* =========================================================
-   VARSAYILAN FORM
+   VARSAYILAN FORM  — ✅ title eklendi
    ========================================================= */
 const DEFAULT_FORM = {
   full_name: "",
+  title: "",           // ← YENİ: Ünvan alanı
   country: "Turkey",
   city: "",
   bio: "",
@@ -614,7 +624,9 @@ function loadFromLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...DEFAULT_FORM, ...JSON.parse(raw) };
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { ...DEFAULT_FORM };
 }
 
@@ -627,9 +639,23 @@ function saveToLocal(data) {
 }
 
 function getScoreColor(score, pt) {
-  if (score >= 80) return { bg: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50", border: "border-emerald-200", label: pt.highMatch };
-  if (score >= 50) return { bg: "bg-amber-500", text: "text-amber-600", light: "bg-amber-50", border: "border-amber-200", label: pt.mediumMatch };
-  return { bg: "bg-red-500", text: "text-red-600", light: "bg-red-50", border: "border-red-200", label: pt.lowMatch };
+  if (score >= 80)
+    return {
+      bg: "bg-emerald-500", text: "text-emerald-600",
+      light: "bg-emerald-50", border: "border-emerald-200",
+      label: pt.highMatch,
+    };
+  if (score >= 50)
+    return {
+      bg: "bg-amber-500", text: "text-amber-600",
+      light: "bg-amber-50", border: "border-amber-200",
+      label: pt.mediumMatch,
+    };
+  return {
+    bg: "bg-red-500", text: "text-red-600",
+    light: "bg-red-50", border: "border-red-200",
+    label: pt.lowMatch,
+  };
 }
 
 /* =========================================================
@@ -661,7 +687,13 @@ function useToast() {
               : "bg-red-600 text-white"
           }`}
         >
-          {t.type === "success" ? <CheckCircle2 size={16} /> : t.type === "warning" ? <AlertTriangle size={16} /> : <X size={16} />}
+          {t.type === "success" ? (
+            <CheckCircle2 size={16} />
+          ) : t.type === "warning" ? (
+            <AlertTriangle size={16} />
+          ) : (
+            <X size={16} />
+          )}
           {t.message}
         </div>
       ))}
@@ -714,82 +746,133 @@ export default function UserProfile() {
   // ─── MATCHING STATE ───
   const [matches, setMatches] = useState([]);
   const [matching, setMatching] = useState(false);
-  const [matchMode, setMatchMode] = useState(null); // "standard" | "boost" | null
-  const [expandedMatch, setExpandedMatch] = useState(null); // expanded match index
+  const [matchMode, setMatchMode] = useState(null);
+  const [expandedMatch, setExpandedMatch] = useState(null);
 
   const { show: toast, ToastContainer } = useToast();
-
-  // ─── DİL DESTEĞİ ───
   const { language } = useLanguage();
   const pt = PROFILE_TRANSLATIONS[language] || PROFILE_TRANSLATIONS.tr;
 
   /* ─────────────────────────────────────────────────────────
-     PROFİL YÜKLEME
+     ✅ SUPABASE'DEN PROFİL YÜKLEME FONKSİYONU
+     ───────────────────────────────────────────────────────── */
+  const loadProfileFromSupabase = useCallback(async (user) => {
+    try {
+      const { data: p, error: profileErr } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileErr) {
+        console.error("Profil çekme hatası:", profileErr);
+        return;
+      }
+
+      if (p) {
+        const cv = p.cv_data || {};
+        const loadedData = {
+          full_name: p.full_name || "",
+          title: p.title || cv.title || "",       // ✅ title yükleniyor
+          country: p.country || "Turkey",
+          city: p.city || "",
+          avatar_url: p.avatar_url || "",
+          cover_url: p.cover_url || cv.cover_url || "",  // ✅ cover_url önce sütundan
+          bio: p.bio || cv.about || "",
+          phone_code: cv.phone_code || "+90",
+          phone: p.phone || cv.phone_number || "",
+          work_experience: Array.isArray(cv.work_experience) ? cv.work_experience : [],
+          education: Array.isArray(cv.education) ? cv.education : [],
+          skills: Array.isArray(cv.skills) ? cv.skills : [],
+          certificates: Array.isArray(cv.certificates) ? cv.certificates : [],
+          languages: Array.isArray(cv.languages) ? cv.languages : [],
+          interests: Array.isArray(cv.interests) ? cv.interests : [],
+        };
+        setFormData(loadedData);
+        saveToLocal(loadedData); // ✅ Her zaman localStorage'a da yedekle
+      }
+    } catch (err) {
+      console.error("Profil yükleme hatası:", err);
+    }
+  }, []);
+
+  /* ─────────────────────────────────────────────────────────
+     ✅ OTURUM YÖNETİMİ — onAuthStateChange ile kalıcı oturum
      ───────────────────────────────────────────────────────── */
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (isSupabaseConfigured) {
-        try {
-          const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+    let isMounted = true;
 
-          if (sessErr || !sessionData?.session?.user) {
-            console.warn("Oturum yok, localStorage moduna geçiliyor...", sessErr?.message);
+    // 1) İlk yüklemede mevcut oturumu kontrol et
+    const initSession = async () => {
+      if (!isSupabaseConfigured) {
+        setConnectionMode("local");
+        setFormData(loadFromLocal());
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: sessionData, error } = await supabase.auth.getSession();
+
+        if (error || !sessionData?.session?.user) {
+          console.warn("İlk oturum bulunamadı, localStorage'dan yükleniyor...");
+          if (isMounted) {
             setConnectionMode("local");
             setFormData(loadFromLocal());
             setLoading(false);
-            return;
           }
+          return;
+        }
 
-          const user = sessionData.session.user;
+        const user = sessionData.session.user;
+        if (isMounted) {
           setMe(user);
           setConnectionMode("supabase");
-
-          const { data: p, error: profileErr } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (profileErr) {
-            console.error("Profil çekme hatası:", profileErr);
-          }
-
-          if (p) {
-            const cv = p.cv_data || {};
-            const loadedData = {
-              full_name: p.full_name || "",
-              country: p.country || "Turkey",
-              city: p.city || "",
-              avatar_url: p.avatar_url || "",
-              cover_url: cv.cover_url || "",
-              bio: p.bio || cv.about || "",
-              phone_code: cv.phone_code || "+90",
-              phone: p.phone || cv.phone_number || "",
-              work_experience: Array.isArray(cv.work_experience) ? cv.work_experience : [],
-              education: Array.isArray(cv.education) ? cv.education : [],
-              skills: Array.isArray(cv.skills) ? cv.skills : [],
-              certificates: Array.isArray(cv.certificates) ? cv.certificates : [],
-              languages: Array.isArray(cv.languages) ? cv.languages : [],
-              interests: Array.isArray(cv.interests) ? cv.interests : [],
-            };
-            setFormData(loadedData);
-            saveToLocal(loadedData);
-          }
-
+          await loadProfileFromSupabase(user);
           setLoading(false);
-          return;
-        } catch (err) {
-          console.error("Supabase bağlantı hatası:", err);
+        }
+      } catch (err) {
+        console.error("Oturum başlatma hatası:", err);
+        if (isMounted) {
+          setConnectionMode("local");
+          setFormData(loadFromLocal());
+          setLoading(false);
         }
       }
-
-      setConnectionMode("local");
-      setFormData(loadFromLocal());
-      setLoading(false);
     };
 
-    fetchProfile();
-  }, []);
+    initSession();
+
+    // 2) ✅ Auth değişikliklerini dinle — SAYFA YENİLEMEDE OTURUMU KORUR
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth event:", event, session?.user?.id);
+
+        if (!isMounted) return;
+
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          const user = session?.user;
+          if (user) {
+            setMe(user);
+            setConnectionMode("supabase");
+            await loadProfileFromSupabase(user);
+            if (loading) setLoading(false);
+          }
+        }
+
+        if (event === "SIGNED_OUT") {
+          setMe(null);
+          setConnectionMode("local");
+          setFormData(loadFromLocal());
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [loadProfileFromSupabase]);
 
   /* ─────────────────────────────────────────────────────────
      KAYITLI EŞLEŞMELERİ YÜKLE
@@ -812,7 +895,10 @@ export default function UserProfile() {
           .map((m) => {
             const job = jobs.find((j) => j.post_id === m.job_id);
             if (!job) return null;
-            const rawExplanation = (m.explanation || "").replace(/^\[(STANDARD|BOOST)\]\s*/i, "");
+            const rawExplanation = (m.explanation || "").replace(
+              /^\[(STANDARD|BOOST)\]\s*/i,
+              ""
+            );
             const isBoost = (m.explanation || "").includes("[BOOST]");
             return {
               job,
@@ -821,7 +907,10 @@ export default function UserProfile() {
               mode: isBoost ? "boost" : "standard",
               strengths: [],
               gaps: [],
-              details: { skillScore: 0, locationScore: 0, levelScore: 0, languageScore: 0 },
+              details: {
+                skillScore: 0, locationScore: 0,
+                levelScore: 0, languageScore: 0,
+              },
             };
           })
           .filter(Boolean);
@@ -832,8 +921,23 @@ export default function UserProfile() {
     }
   };
 
+  // Helper: Mevcut eşleşmeleri yükle
+  async function fetchExistingMatches(userId) {
+    try {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("user_id", userId)
+        .order("fit_score", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch {
+      return [];
+    }
+  }
+
   /* ─────────────────────────────────────────────────────────
-     FOTOĞRAF YÜKLEME
+     ✅ FOTOĞRAF YÜKLEME — cover_url artık ayrı sütunda
      ───────────────────────────────────────────────────────── */
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
@@ -877,41 +981,57 @@ export default function UserProfile() {
             throw new Error("Public URL alınamadı");
           }
         } catch (storageErr) {
-          console.warn("Storage başarısız, base64'e dönülüyor:", storageErr);
-          finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
+          console.warn("Storage başarısız, base64:", storageErr);
+          finalUrl = await compressImageToBase64(
+            file,
+            type === "avatar" ? 400 : 1200,
+            0.75
+          );
         }
 
+        // ✅ DB'ye kaydet — cover_url artık ayrı sütun
         try {
           if (type === "avatar") {
-            const { error: dbErr } = await supabase
+            await supabase
               .from("profiles")
-              .update({ avatar_url: finalUrl, updated_at: new Date().toISOString() })
+              .update({
+                avatar_url: finalUrl,
+                updated_at: new Date().toISOString(),
+              })
               .eq("id", me.id);
-            if (dbErr) console.error("Avatar DB hatası:", dbErr);
-            else toast(pt.profilePhotoSealed, "success");
+            toast(pt.profilePhotoSealed, "success");
           } else {
+            // cover_url hem ayrı sütuna hem cv_data'ya yaz
             const { data: currentProfile } = await supabase
               .from("profiles")
               .select("cv_data")
               .eq("id", me.id)
               .maybeSingle();
             const currentCv = currentProfile?.cv_data || {};
-            const { error: dbErr } = await supabase
+
+            await supabase
               .from("profiles")
               .update({
-                cv_data: { ...currentCv, cover_url: finalUrl },
+                cover_url: finalUrl,                         // ✅ ayrı sütun
+                cv_data: { ...currentCv, cover_url: finalUrl }, // backward compat
                 updated_at: new Date().toISOString(),
               })
               .eq("id", me.id);
-            if (dbErr) console.error("Cover DB hatası:", dbErr);
-            else toast(pt.bannerSealed, "success");
+            toast(pt.bannerSealed, "success");
           }
         } catch (dbError) {
           console.error("DB kayıt hatası:", dbError);
         }
       } else {
-        finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
-        toast(type === "avatar" ? pt.profilePhotoSaved : pt.bannerSaved, "success");
+        finalUrl = await compressImageToBase64(
+          file,
+          type === "avatar" ? 400 : 1200,
+          0.75
+        );
+        toast(
+          type === "avatar" ? pt.profilePhotoSaved : pt.bannerSaved,
+          "success"
+        );
       }
 
       const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
@@ -924,7 +1044,10 @@ export default function UserProfile() {
       console.error("Upload hatası:", error);
       try {
         const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
-        const base64 = await compressImageToBase64(file, type === "avatar" ? 400 : 1200);
+        const base64 = await compressImageToBase64(
+          file,
+          type === "avatar" ? 400 : 1200
+        );
         setFormData((prev) => {
           const updated = { ...prev, [uploadKey]: base64 };
           saveToLocal(updated);
@@ -941,7 +1064,7 @@ export default function UserProfile() {
   };
 
   /* ─────────────────────────────────────────────────────────
-     TÜM PROFİLİ KAYDET
+     ✅ TÜM PROFİLİ KAYDET — title + cover_url ayrı sütun
      ───────────────────────────────────────────────────────── */
   const handleSave = async () => {
     setSaving(true);
@@ -952,6 +1075,7 @@ export default function UserProfile() {
       if (connectionMode === "supabase" && me) {
         const cvData = {
           cover_url: formData.cover_url,
+          title: formData.title,              // ✅ cv_data içinde de sakla
           phone_code: formData.phone_code,
           phone_number: formData.phone,
           about: formData.bio,
@@ -965,7 +1089,9 @@ export default function UserProfile() {
 
         const profileFields = {
           full_name: formData.full_name.trim(),
+          title: formData.title.trim(),         // ✅ ayrı sütun
           avatar_url: formData.avatar_url,
+          cover_url: formData.cover_url,        // ✅ ayrı sütun
           country: formData.country,
           city: formData.city,
           bio: formData.bio,
@@ -988,7 +1114,10 @@ export default function UserProfile() {
           if (error) throw error;
         } else {
           const userEmail =
-            me.email || me.user_metadata?.email || me.app_metadata?.email || "";
+            me.email ||
+            me.user_metadata?.email ||
+            me.app_metadata?.email ||
+            "";
           const { error } = await supabase
             .from("profiles")
             .insert({ id: me.id, email: userEmail, ...profileFields });
@@ -1014,6 +1143,7 @@ export default function UserProfile() {
      ───────────────────────────────────────────────────────── */
   const buildProfileForMatching = () => ({
     full_name: formData.full_name,
+    title: formData.title,
     bio: formData.bio,
     city: formData.city,
     country: formData.country,
@@ -1036,7 +1166,10 @@ export default function UserProfile() {
     setMatchMode("standard");
     setExpandedMatch(null);
     try {
-      const results = await runStandardMatching(buildProfileForMatching(), me.id);
+      const results = await runStandardMatching(
+        buildProfileForMatching(),
+        me.id
+      );
       setMatches(results);
       if (results.length === 0) {
         toast(pt.noActiveJobs, "warning");
@@ -1065,7 +1198,10 @@ export default function UserProfile() {
     setMatchMode("boost");
     setExpandedMatch(null);
     try {
-      const results = await runBoostMatching(buildProfileForMatching(), me.id);
+      const results = await runBoostMatching(
+        buildProfileForMatching(),
+        me.id
+      );
       setMatches(results);
       if (results.length === 0) {
         toast(pt.noActiveJobs, "warning");
@@ -1081,8 +1217,9 @@ export default function UserProfile() {
     }
   };
 
-  /* ----- Form Güncelleme Helpers ----- */
-  const updateField = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+  /* ----- Form Güncelleme ----- */
+  const updateField = (field, value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
   const updateArrayItem = (field, index, key, value) => {
     setFormData((prev) => {
@@ -1159,77 +1296,124 @@ export default function UserProfile() {
       <ToastContainer />
 
       {/* Gizli file input'lar */}
-      <input type="file" ref={avatarInputRef} className="hidden" accept="image/*"
-        onChange={(e) => handleFileUpload(e, "avatar")} />
-      <input type="file" ref={coverInputRef} className="hidden" accept="image/*"
-        onChange={(e) => handleFileUpload(e, "cover")} />
-
-      {/* BAĞLANTI DURUMU - kaldırıldı */}
+      <input
+        type="file" ref={avatarInputRef} className="hidden" accept="image/*"
+        onChange={(e) => handleFileUpload(e, "avatar")}
+      />
+      <input
+        type="file" ref={coverInputRef} className="hidden" accept="image/*"
+        onChange={(e) => handleFileUpload(e, "cover")}
+      />
 
       {/* ==================== HEADER ==================== */}
       <div className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-6xl mx-auto">
           {/* Banner */}
           <div
-            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden rounded-b-3xl ${uploading ? "pointer-events-none opacity-70" : "cursor-pointer"}`}
+            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden rounded-b-3xl ${
+              uploading ? "pointer-events-none opacity-70" : "cursor-pointer"
+            }`}
             onClick={() => !uploading && coverInputRef.current?.click()}
           >
             {formData.cover_url ? (
-              <img src={formData.cover_url} className="w-full h-full object-cover" alt="banner"
-                onError={(e) => { e.target.style.display = "none"; }} />
+              <img
+                src={formData.cover_url}
+                className="w-full h-full object-cover"
+                alt="banner"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
             ) : null}
-            <div className={`absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 ${formData.cover_url ? "opacity-0" : "opacity-90"}`} />
+            <div
+              className={`absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 ${
+                formData.cover_url ? "opacity-0" : "opacity-90"
+              }`}
+            />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
               {uploading ? (
                 <>
                   <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">{pt.uploading}</span>
+                  <span className="font-black uppercase tracking-widest text-sm">
+                    {pt.uploading}
+                  </span>
                 </>
               ) : (
                 <>
                   <ImagePlus size={32} className="mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">{pt.changeBanner}</span>
+                  <span className="font-black uppercase tracking-widest text-sm">
+                    {pt.changeBanner}
+                  </span>
                 </>
               )}
             </div>
           </div>
 
-          {/* Profil Özet */}
+          {/* ✅ Profil Özet — ünvan + lokasyon eklendi */}
           <div className="px-4 md:px-8 pb-8 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 -mt-16 relative z-10">
+            {/* Avatar */}
             <div
-              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group relative shrink-0 ${uploading ? "pointer-events-none" : "cursor-pointer"}`}
+              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group relative shrink-0 ${
+                uploading ? "pointer-events-none" : "cursor-pointer"
+              }`}
               onClick={() => !uploading && avatarInputRef.current?.click()}
             >
               <img
-                src={formData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || "U")}&size=256&background=f43f5e&color=fff&bold=true`}
+                src={
+                  formData.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    formData.full_name || "U"
+                  )}&size=256&background=f43f5e&color=fff&bold=true`
+                }
                 className="w-full h-full object-cover"
                 alt="avatar"
                 onError={(e) => {
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || "U")}&size=256&background=f43f5e&color=fff&bold=true`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    formData.full_name || "U"
+                  )}&size=256&background=f43f5e&color=fff&bold=true`;
                 }}
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
                 <Camera size={24} className="mb-1" />
-                <span className="font-black text-[9px] uppercase tracking-widest">{pt.changePhoto}</span>
+                <span className="font-black text-[9px] uppercase tracking-widest">
+                  {pt.changePhoto}
+                </span>
               </div>
             </div>
 
+            {/* ✅ İsim + Ünvan + Lokasyon Bilgisi */}
             <div className="flex-1 pb-2 min-w-0">
+              {/* İsim */}
               <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 leading-none truncate">
                 {formData.full_name || pt.defaultName}
               </h1>
+
+              {/* ✅ YENİ: Ünvan */}
+              <p className="text-base md:text-lg font-bold text-slate-500 mt-1 italic truncate">
+                {formData.title || (
+                  <span className="text-slate-300 text-sm">
+                    {pt.defaultTitle}
+                  </span>
+                )}
+              </p>
+
+              {/* ✅ Lokasyon + Ülke + Telefon */}
               <div className="flex flex-wrap gap-3 mt-3">
                 <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
                   <CheckCircle2 size={12} /> {pt.verified}
                 </span>
                 {(formData.city || formData.country) && (
-                  <span className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                    <MapPin size={12} /> {[formData.city, formData.country].filter(Boolean).join(", ")}
+                  <span className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">
+                    <MapPin size={12} className="text-rose-400" />
+                    {[formData.city, formData.country]
+                      .filter(Boolean)
+                      .join(", ")}
                   </span>
                 )}
                 {formData.phone && (
-                  <span className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-lg">
-                    <Phone size={12} /> {formData.phone_code} {formData.phone}
+                  <span className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg">
+                    <Phone size={12} className="text-emerald-400" />
+                    {formData.phone_code} {formData.phone}
                   </span>
                 )}
               </div>
@@ -1272,7 +1456,8 @@ export default function UserProfile() {
               {formData.bio && (
                 <section className="bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Target size={18} className="text-rose-500" /> {pt.careerVision}
+                    <Target size={18} className="text-rose-500" />{" "}
+                    {pt.careerVision}
                   </h3>
                   <p className="text-slate-700 font-bold italic text-lg leading-relaxed">
                     &ldquo;{formData.bio}&rdquo;
@@ -1283,17 +1468,27 @@ export default function UserProfile() {
               {formData.work_experience.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <Briefcase size={20} className="text-rose-500" /> {pt.workExperience}
+                    <Briefcase size={20} className="text-rose-500" />{" "}
+                    {pt.workExperience}
                   </h3>
                   <div className="space-y-4">
                     {formData.work_experience.map((w, i) => (
-                      <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{w.role || pt.positionDefault}</h4>
+                      <div
+                        key={i}
+                        className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50"
+                      >
+                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
+                          {w.role || pt.positionDefault}
+                        </h4>
                         <p className="text-rose-600 font-black text-[10px] uppercase mt-1">
-                          {w.company || pt.companyDefault} • {w.start || "?"} - {w.isCurrent ? pt.present : w.end || "?"}
+                          {w.company || pt.companyDefault} •{" "}
+                          {w.start || "?"} -{" "}
+                          {w.isCurrent ? pt.present : w.end || "?"}
                         </p>
                         {w.desc && (
-                          <p className="text-slate-500 italic text-sm mt-3 pl-4 border-l-2 border-rose-100">&ldquo;{w.desc}&rdquo;</p>
+                          <p className="text-slate-500 italic text-sm mt-3 pl-4 border-l-2 border-rose-100">
+                            &ldquo;{w.desc}&rdquo;
+                          </p>
                         )}
                       </div>
                     ))}
@@ -1304,15 +1499,24 @@ export default function UserProfile() {
               {formData.education.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <GraduationCap size={20} className="text-emerald-500" /> {pt.education}
+                    <GraduationCap size={20} className="text-emerald-500" />{" "}
+                    {pt.education}
                   </h3>
                   <div className="space-y-4">
                     {formData.education.map((ed, i) => (
-                      <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">{ed.school || pt.schoolDefault}</h4>
-                        <p className="text-emerald-600 font-black text-[10px] uppercase mt-1">{ed.degree} • {ed.field}</p>
+                      <div
+                        key={i}
+                        className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50"
+                      >
+                        <h4 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
+                          {ed.school || pt.schoolDefault}
+                        </h4>
+                        <p className="text-emerald-600 font-black text-[10px] uppercase mt-1">
+                          {ed.degree} • {ed.field}
+                        </p>
                         <p className="text-slate-400 font-bold text-[10px] uppercase mt-1">
-                          {ed.start || "?"} - {ed.isCurrent ? pt.ongoing : ed.end || "?"}
+                          {ed.start || "?"} -{" "}
+                          {ed.isCurrent ? pt.ongoing : ed.end || "?"}
                         </p>
                       </div>
                     ))}
@@ -1323,13 +1527,21 @@ export default function UserProfile() {
               {formData.certificates.length > 0 && (
                 <section>
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-3">
-                    <Award size={20} className="text-amber-500" /> {pt.certificates}
+                    <Award size={20} className="text-amber-500" />{" "}
+                    {pt.certificates}
                   </h3>
                   <div className="space-y-4">
                     {formData.certificates.map((c, i) => (
-                      <div key={i} className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50">
-                        <h4 className="text-base font-black uppercase tracking-tight text-slate-800">{c.name || pt.certificateDefault}</h4>
-                        <p className="text-amber-600 font-black text-[10px] uppercase mt-1">{c.issuer} • {c.year}</p>
+                      <div
+                        key={i}
+                        className="p-6 rounded-3xl shadow-sm bg-white border border-slate-50"
+                      >
+                        <h4 className="text-base font-black uppercase tracking-tight text-slate-800">
+                          {c.name || pt.certificateDefault}
+                        </h4>
+                        <p className="text-amber-600 font-black text-[10px] uppercase mt-1">
+                          {c.issuer} • {c.year}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -1342,15 +1554,30 @@ export default function UserProfile() {
               {formData.languages.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Languages size={16} className="text-indigo-500" /> {pt.languagesSection}
+                    <Languages size={16} className="text-indigo-500" />{" "}
+                    {pt.languagesSection}
                   </h3>
                   <div className="space-y-3">
                     {formData.languages.map((l, i) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-2xl">
-                        <span className="font-black uppercase text-[10px] text-slate-700 tracking-widest">{l.lang || pt.languageDefault}</span>
+                      <div
+                        key={i}
+                        className="flex justify-between items-center p-3 bg-slate-50 rounded-2xl"
+                      >
+                        <span className="font-black uppercase text-[10px] text-slate-700 tracking-widest">
+                          {l.lang || pt.languageDefault}
+                        </span>
                         <div className="flex gap-1">
                           {[1, 2, 3, 4, 5].map((s) => (
-                            <Star key={s} size={12} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-200"} />
+                            <Star
+                              key={s}
+                              size={12}
+                              fill={s <= l.level ? "#6366f1" : "none"}
+                              className={
+                                s <= l.level
+                                  ? "text-indigo-500"
+                                  : "text-slate-200"
+                              }
+                            />
                           ))}
                         </div>
                       </div>
@@ -1366,7 +1593,12 @@ export default function UserProfile() {
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {formData.skills.map((s, i) => (
-                      <span key={i} className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full">{s}</span>
+                      <span
+                        key={i}
+                        className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full"
+                      >
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </section>
@@ -1375,11 +1607,17 @@ export default function UserProfile() {
               {formData.interests.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-50">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Heart size={16} className="text-pink-500" /> {pt.interests}
+                    <Heart size={16} className="text-pink-500" />{" "}
+                    {pt.interests}
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {formData.interests.map((s, i) => (
-                      <span key={i} className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full">{s}</span>
+                      <span
+                        key={i}
+                        className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full"
+                      >
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </section>
@@ -1437,12 +1675,14 @@ export default function UserProfile() {
                 </div>
               </div>
 
-              {/* Matching Progress */}
               {matching && (
                 <div className="mt-4 ml-13">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-white/10 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full bg-amber-400 rounded-full animate-pulse" style={{ width: "60%" }} />
+                      <div
+                        className="h-full bg-amber-400 rounded-full animate-pulse"
+                        style={{ width: "60%" }}
+                      />
                     </div>
                     <span className="text-amber-400 text-[10px] font-black uppercase tracking-widest">
                       {matchMode === "boost" ? pt.aiAnalyzing : pt.scanning}
@@ -1465,8 +1705,7 @@ export default function UserProfile() {
                   <p className="text-slate-400 text-xs max-w-sm mx-auto">
                     {hasContent
                       ? pt.noMatchesDescWithContent
-                      : pt.noMatchesDescEmpty
-                    }
+                      : pt.noMatchesDescEmpty}
                   </p>
                 </div>
               ) : (
@@ -1479,15 +1718,18 @@ export default function UserProfile() {
                         key={idx}
                         className={`rounded-2xl border-2 ${sc.border} ${sc.light} overflow-hidden transition-all duration-300`}
                       >
-                        {/* Match Header */}
                         <div
                           className="p-5 cursor-pointer"
-                          onClick={() => setExpandedMatch(isExpanded ? null : idx)}
+                          onClick={() =>
+                            setExpandedMatch(isExpanded ? null : idx)
+                          }
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2">
-                                <div className={`w-8 h-8 rounded-lg ${sc.bg} bg-opacity-20 flex items-center justify-center`}>
+                                <div
+                                  className={`w-8 h-8 rounded-lg ${sc.bg} bg-opacity-20 flex items-center justify-center`}
+                                >
                                   <Building2 size={16} className={sc.text} />
                                 </div>
                                 <div className="min-w-0">
@@ -1507,19 +1749,20 @@ export default function UserProfile() {
                                     )}
                                     {m.job.location_text && (
                                       <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-1">
-                                        • <MapPin size={9} /> {m.job.location_text}
+                                        • <MapPin size={9} />{" "}
+                                        {m.job.location_text}
                                       </span>
                                     )}
                                     {m.job.experience_range && (
                                       <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-1">
-                                        • <Clock size={9} /> {m.job.experience_range}
+                                        • <Clock size={9} />{" "}
+                                        {m.job.experience_range}
                                       </span>
                                     )}
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Score Bar */}
                               <div className="flex items-center gap-3 mt-3">
                                 <div className="flex-1 bg-white rounded-full h-2.5 overflow-hidden shadow-inner">
                                   <div
@@ -1527,39 +1770,48 @@ export default function UserProfile() {
                                     style={{ width: `${m.score}%` }}
                                   />
                                 </div>
-                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${sc.light} ${sc.text}`}>
+                                <span
+                                  className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${sc.light} ${sc.text}`}
+                                >
                                   {m.mode === "boost" ? "BOOST" : "STANDARD"}
                                 </span>
                               </div>
                             </div>
 
-                            {/* Score Circle */}
                             <div className="flex flex-col items-center shrink-0">
-                              <div className={`w-16 h-16 rounded-2xl ${sc.bg} flex items-center justify-center shadow-lg`}>
-                                <span className="text-white font-black text-xl">{m.score}</span>
+                              <div
+                                className={`w-16 h-16 rounded-2xl ${sc.bg} flex items-center justify-center shadow-lg`}
+                              >
+                                <span className="text-white font-black text-xl">
+                                  {m.score}
+                                </span>
                               </div>
-                              <span className={`text-[8px] font-black uppercase tracking-widest mt-1 ${sc.text}`}>
+                              <span
+                                className={`text-[8px] font-black uppercase tracking-widest mt-1 ${sc.text}`}
+                              >
                                 {sc.label}
                               </span>
                               <button className="mt-1 text-slate-400">
-                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                {isExpanded ? (
+                                  <ChevronUp size={14} />
+                                ) : (
+                                  <ChevronDown size={14} />
+                                )}
                               </button>
                             </div>
                           </div>
                         </div>
 
-                        {/* Expanded Details */}
                         {isExpanded && (
                           <div className="px-5 pb-5 space-y-4 border-t border-white/50">
-                            {/* Explanation */}
                             <div className="pt-4">
                               <p className="text-slate-600 text-sm italic">
                                 &ldquo;{m.explanation}&rdquo;
                               </p>
                             </div>
 
-                            {/* Strengths & Gaps */}
-                            {(m.strengths?.length > 0 || m.gaps?.length > 0) && (
+                            {(m.strengths?.length > 0 ||
+                              m.gaps?.length > 0) && (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {m.strengths?.length > 0 && (
                                   <div className="bg-white rounded-xl p-4 space-y-2">
@@ -1567,8 +1819,14 @@ export default function UserProfile() {
                                       <CheckCircle2 size={12} /> {pt.strengths}
                                     </h5>
                                     {m.strengths.map((s, si) => (
-                                      <p key={si} className="text-xs text-slate-600 flex items-start gap-2">
-                                        <span className="text-emerald-500 mt-0.5">✓</span> {s}
+                                      <p
+                                        key={si}
+                                        className="text-xs text-slate-600 flex items-start gap-2"
+                                      >
+                                        <span className="text-emerald-500 mt-0.5">
+                                          ✓
+                                        </span>{" "}
+                                        {s}
                                       </p>
                                     ))}
                                   </div>
@@ -1576,11 +1834,18 @@ export default function UserProfile() {
                                 {m.gaps?.length > 0 && (
                                   <div className="bg-white rounded-xl p-4 space-y-2">
                                     <h5 className="text-[9px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1">
-                                      <AlertTriangle size={12} /> {pt.areasForImprovement}
+                                      <AlertTriangle size={12} />{" "}
+                                      {pt.areasForImprovement}
                                     </h5>
                                     {m.gaps.map((g, gi) => (
-                                      <p key={gi} className="text-xs text-slate-600 flex items-start gap-2">
-                                        <span className="text-amber-500 mt-0.5">!</span> {g}
+                                      <p
+                                        key={gi}
+                                        className="text-xs text-slate-600 flex items-start gap-2"
+                                      >
+                                        <span className="text-amber-500 mt-0.5">
+                                          !
+                                        </span>{" "}
+                                        {g}
                                       </p>
                                     ))}
                                   </div>
@@ -1588,34 +1853,62 @@ export default function UserProfile() {
                               </div>
                             )}
 
-                            {/* Detail Scores (Standard only) */}
-                            {m.mode === "standard" && m.details && (m.details.skillScore > 0 || m.details.locationScore > 0) && (
-                              <div className="bg-white rounded-xl p-4">
-                                <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">
-                                  {pt.detailedScoreDistribution}
-                                </h5>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                  {[
-                                    { label: pt.skillLabel, score: m.details.skillScore, weight: "40%", color: "bg-cyan-500" },
-                                    { label: pt.locationLabel, score: m.details.locationScore, weight: "20%", color: "bg-blue-500" },
-                                    { label: pt.experienceLabel, score: m.details.levelScore, weight: "25%", color: "bg-purple-500" },
-                                    { label: pt.languageLabel, score: m.details.languageScore, weight: "15%", color: "bg-indigo-500" },
-                                  ].map((d, di) => (
-                                    <div key={di} className="text-center">
-                                      <div className="text-xs font-black text-slate-700">{d.score}</div>
-                                      <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 mb-1">
-                                        <div className={`h-full rounded-full ${d.color}`} style={{ width: `${d.score}%` }} />
+                            {m.mode === "standard" &&
+                              m.details &&
+                              (m.details.skillScore > 0 ||
+                                m.details.locationScore > 0) && (
+                                <div className="bg-white rounded-xl p-4">
+                                  <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                                    {pt.detailedScoreDistribution}
+                                  </h5>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {[
+                                      {
+                                        label: pt.skillLabel,
+                                        score: m.details.skillScore,
+                                        weight: "40%",
+                                        color: "bg-cyan-500",
+                                      },
+                                      {
+                                        label: pt.locationLabel,
+                                        score: m.details.locationScore,
+                                        weight: "20%",
+                                        color: "bg-blue-500",
+                                      },
+                                      {
+                                        label: pt.experienceLabel,
+                                        score: m.details.levelScore,
+                                        weight: "25%",
+                                        color: "bg-purple-500",
+                                      },
+                                      {
+                                        label: pt.languageLabel,
+                                        score: m.details.languageScore,
+                                        weight: "15%",
+                                        color: "bg-indigo-500",
+                                      },
+                                    ].map((d, di) => (
+                                      <div key={di} className="text-center">
+                                        <div className="text-xs font-black text-slate-700">
+                                          {d.score}
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 mb-1">
+                                          <div
+                                            className={`h-full rounded-full ${d.color}`}
+                                            style={{
+                                              width: `${d.score}%`,
+                                            }}
+                                          />
+                                        </div>
+                                        <div className="text-[8px] font-bold text-slate-400 uppercase">
+                                          {d.label} ({d.weight})
+                                        </div>
                                       </div>
-                                      <div className="text-[8px] font-bold text-slate-400 uppercase">
-                                        {d.label} ({d.weight})
-                                      </div>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Job Description */}
                             {m.job.description && (
                               <div className="bg-white rounded-xl p-4">
                                 <h5 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
@@ -1627,10 +1920,11 @@ export default function UserProfile() {
                               </div>
                             )}
 
-                            {/* Salary Info */}
                             {(m.job.salary_min || m.job.salary_max) && (
                               <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <span className="font-black text-[9px] uppercase text-slate-400">{pt.salary}:</span>
+                                <span className="font-black text-[9px] uppercase text-slate-400">
+                                  {pt.salary}:
+                                </span>
                                 {m.job.salary_min && m.job.salary_max
                                   ? `${m.job.salary_min.toLocaleString()} - ${m.job.salary_max.toLocaleString()} ₺`
                                   : m.job.salary_min
@@ -1646,14 +1940,14 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {/* Info Footer */}
               <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
                   <span className="flex items-center gap-1">
                     <Search size={10} /> {pt.standardMatchInfo}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Sparkles size={10} className="text-amber-500" /> {pt.boostMatchInfo}
+                    <Sparkles size={10} className="text-amber-500" />{" "}
+                    {pt.boostMatchInfo}
                   </span>
                 </div>
                 {!isGeminiConfigured() && (
@@ -1676,7 +1970,8 @@ export default function UserProfile() {
             {/* MODAL HEADER */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-6 md:px-8 py-6 border-b border-slate-100 z-50 flex justify-between items-center rounded-t-[32px]">
               <h2 className="text-lg font-black uppercase italic tracking-tight text-slate-800">
-                {pt.profileArchitect} <span className="text-rose-500">v33</span>
+                {pt.profileArchitect}{" "}
+                <span className="text-rose-500">v34</span>
               </h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -1688,7 +1983,6 @@ export default function UserProfile() {
 
             {/* MODAL İÇERİK */}
             <div className="p-6 md:p-8 space-y-10">
-
               {/* FOTOĞRAF YÜKLEMELERİ */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -1696,16 +1990,26 @@ export default function UserProfile() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div
-                    className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${uploading ? "pointer-events-none opacity-60" : ""}`}
+                    className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${
+                      uploading ? "pointer-events-none opacity-60" : ""
+                    }`}
                     onClick={() => avatarInputRef.current?.click()}
                   >
                     {formData.avatar_url ? (
-                      <img src={formData.avatar_url} className="w-full h-full object-cover" alt="avatar preview"
-                        onError={(e) => { e.target.style.display = "none"; }} />
+                      <img
+                        src={formData.avatar_url}
+                        className="w-full h-full object-cover"
+                        alt="avatar preview"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <Camera size={28} className="mb-2" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{pt.profilePhoto}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          {pt.profilePhoto}
+                        </span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200">
@@ -1713,16 +2017,26 @@ export default function UserProfile() {
                     </div>
                   </div>
                   <div
-                    className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${uploading ? "pointer-events-none opacity-60" : ""}`}
+                    className={`relative h-40 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-pointer group hover:border-rose-300 transition-colors ${
+                      uploading ? "pointer-events-none opacity-60" : ""
+                    }`}
                     onClick={() => coverInputRef.current?.click()}
                   >
                     {formData.cover_url ? (
-                      <img src={formData.cover_url} className="w-full h-full object-cover" alt="banner preview"
-                        onError={(e) => { e.target.style.display = "none"; }} />
+                      <img
+                        src={formData.cover_url}
+                        className="w-full h-full object-cover"
+                        alt="banner preview"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                         <ImagePlus size={28} className="mb-2" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{pt.bannerImage}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          {pt.bannerImage}
+                        </span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200">
@@ -1740,7 +2054,9 @@ export default function UserProfile() {
 
               {/* AD SOYAD */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{pt.fullName}</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  {pt.fullName}
+                </label>
                 <input
                   value={formData.full_name}
                   onChange={(e) => updateField("full_name", e.target.value)}
@@ -1749,18 +2065,38 @@ export default function UserProfile() {
                 />
               </div>
 
+              {/* ✅ YENİ: ÜNVAN / MESLEK */}
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
+                  <User size={12} className="text-violet-500" /> {pt.titleLabel}
+                </label>
+                <input
+                  value={formData.title}
+                  onChange={(e) => updateField("title", e.target.value)}
+                  placeholder={pt.titlePlaceholder}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-violet-500 transition-all"
+                />
+              </div>
+
               {/* LOKASYON */}
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{pt.location}</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  {pt.location}
+                </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     value={formData.country}
-                    onChange={(e) => { updateField("country", e.target.value); updateField("city", ""); }}
+                    onChange={(e) => {
+                      updateField("country", e.target.value);
+                      updateField("city", "");
+                    }}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500"
                   >
                     <option value="">{pt.selectCountry}</option>
                     {Object.keys(LOCATION_DATA).map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                   <select
@@ -1770,7 +2106,9 @@ export default function UserProfile() {
                   >
                     <option value="">{pt.selectCity}</option>
                     {cities.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1784,11 +2122,15 @@ export default function UserProfile() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select
                     value={formData.phone_code}
-                    onChange={(e) => updateField("phone_code", e.target.value)}
+                    onChange={(e) =>
+                      updateField("phone_code", e.target.value)
+                    }
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
                   >
                     {PHONE_CODES.map((p) => (
-                      <option key={p.code} value={p.code}>{p.label}</option>
+                      <option key={p.code} value={p.code}>
+                        {p.label}
+                      </option>
                     ))}
                   </select>
                   <input
@@ -1816,85 +2158,186 @@ export default function UserProfile() {
 
               {/* İŞ DENEYİMİ */}
               <div className="space-y-4">
-                <SectionTitle icon={Briefcase} color="text-rose-500" title={pt.workExperienceSection}
+                <SectionTitle
+                  icon={Briefcase}
+                  color="text-rose-500"
+                  title={pt.workExperienceSection}
                   addLabel={pt.add}
-                  onAdd={() => addArrayItem("work_experience", { role: "", company: "", start: "", end: "", isCurrent: false, desc: "" })} />
+                  onAdd={() =>
+                    addArrayItem("work_experience", {
+                      role: "", company: "", start: "",
+                      end: "", isCurrent: false, desc: "",
+                    })
+                  }
+                />
                 {formData.work_experience.map((w, i) => (
-                  <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 relative border border-slate-100">
+                  <div
+                    key={i}
+                    className="p-5 bg-slate-50 rounded-2xl space-y-3 relative border border-slate-100"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input placeholder={pt.positionTitle} value={w.role}
-                        onChange={(e) => updateArrayItem("work_experience", i, "role", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
-                      <input placeholder={pt.companyName} value={w.company}
-                        onChange={(e) => updateArrayItem("work_experience", i, "company", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
+                      <input
+                        placeholder={pt.positionTitle}
+                        value={w.role}
+                        onChange={(e) =>
+                          updateArrayItem("work_experience", i, "role", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                      <input
+                        placeholder={pt.companyName}
+                        value={w.company}
+                        onChange={(e) =>
+                          updateArrayItem("work_experience", i, "company", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center">
-                      <input placeholder={pt.startDate} value={w.start}
-                        onChange={(e) => updateArrayItem("work_experience", i, "start", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500" />
-                      <input placeholder={pt.endDate} value={w.end} disabled={w.isCurrent}
-                        onChange={(e) => updateArrayItem("work_experience", i, "end", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-rose-500" />
+                      <input
+                        placeholder={pt.startDate}
+                        value={w.start}
+                        onChange={(e) =>
+                          updateArrayItem("work_experience", i, "start", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                      <input
+                        placeholder={pt.endDate}
+                        value={w.end}
+                        disabled={w.isCurrent}
+                        onChange={(e) =>
+                          updateArrayItem("work_experience", i, "end", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-rose-500"
+                      />
                       <label className="flex items-center gap-2 cursor-pointer justify-center">
-                        <input type="checkbox" checked={w.isCurrent}
-                          onChange={(e) => updateArrayItem("work_experience", i, "isCurrent", e.target.checked)}
-                          className="w-4 h-4 accent-rose-500" />
-                        <span className="text-[9px] font-black uppercase text-slate-400">{pt.currentlyWorking}</span>
+                        <input
+                          type="checkbox"
+                          checked={w.isCurrent}
+                          onChange={(e) =>
+                            updateArrayItem("work_experience", i, "isCurrent", e.target.checked)
+                          }
+                          className="w-4 h-4 accent-rose-500"
+                        />
+                        <span className="text-[9px] font-black uppercase text-slate-400">
+                          {pt.currentlyWorking}
+                        </span>
                       </label>
-                      <button onClick={() => removeArrayItem("work_experience", i)}
-                        className="flex items-center justify-center gap-1 bg-white text-red-400 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[9px] font-black uppercase cursor-pointer">
+                      <button
+                        onClick={() => removeArrayItem("work_experience", i)}
+                        className="flex items-center justify-center gap-1 bg-white text-red-400 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[9px] font-black uppercase cursor-pointer"
+                      >
                         <Trash2 size={14} /> {pt.deleteBtn}
                       </button>
                     </div>
-                    <textarea placeholder={pt.jobDescPlaceholder} value={w.desc}
-                      onChange={(e) => updateArrayItem("work_experience", i, "desc", e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none min-h-[80px] resize-none focus:ring-2 focus:ring-rose-500" />
+                    <textarea
+                      placeholder={pt.jobDescPlaceholder}
+                      value={w.desc}
+                      onChange={(e) =>
+                        updateArrayItem("work_experience", i, "desc", e.target.value)
+                      }
+                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none min-h-[80px] resize-none focus:ring-2 focus:ring-rose-500"
+                    />
                   </div>
                 ))}
               </div>
 
               {/* EĞİTİM */}
               <div className="space-y-4">
-                <SectionTitle icon={GraduationCap} color="text-emerald-500" title={pt.educationSection}
+                <SectionTitle
+                  icon={GraduationCap}
+                  color="text-emerald-500"
+                  title={pt.educationSection}
                   addLabel={pt.add}
-                  onAdd={() => addArrayItem("education", { school: "", degree: "", field: "", start: "", end: "", isCurrent: false })} />
+                  onAdd={() =>
+                    addArrayItem("education", {
+                      school: "", degree: "", field: "",
+                      start: "", end: "", isCurrent: false,
+                    })
+                  }
+                />
                 {formData.education.map((ed, i) => (
-                  <div key={i} className="p-5 bg-slate-50 rounded-2xl space-y-3 border border-slate-100">
+                  <div
+                    key={i}
+                    className="p-5 bg-slate-50 rounded-2xl space-y-3 border border-slate-100"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input placeholder={pt.schoolUniversity} value={ed.school}
-                        onChange={(e) => updateArrayItem("education", i, "school", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
-                      <input placeholder={pt.departmentField} value={ed.field}
-                        onChange={(e) => updateArrayItem("education", i, "field", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
+                      <input
+                        placeholder={pt.schoolUniversity}
+                        value={ed.school}
+                        onChange={(e) =>
+                          updateArrayItem("education", i, "school", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <input
+                        placeholder={pt.departmentField}
+                        value={ed.field}
+                        onChange={(e) =>
+                          updateArrayItem("education", i, "field", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-center">
-                      <select value={ed.degree}
-                        onChange={(e) => updateArrayItem("education", i, "degree", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                      <select
+                        value={ed.degree}
+                        onChange={(e) =>
+                          updateArrayItem("education", i, "degree", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
                         <option value="">{pt.degree}</option>
-                        <option value={pt.degreeHighSchool}>{pt.degreeHighSchool}</option>
-                        <option value={pt.degreeAssociate}>{pt.degreeAssociate}</option>
-                        <option value={pt.degreeBachelor}>{pt.degreeBachelor}</option>
-                        <option value={pt.degreeMaster}>{pt.degreeMaster}</option>
+                        <option value={pt.degreeHighSchool}>
+                          {pt.degreeHighSchool}
+                        </option>
+                        <option value={pt.degreeAssociate}>
+                          {pt.degreeAssociate}
+                        </option>
+                        <option value={pt.degreeBachelor}>
+                          {pt.degreeBachelor}
+                        </option>
+                        <option value={pt.degreeMaster}>
+                          {pt.degreeMaster}
+                        </option>
                         <option value={pt.degreePhD}>{pt.degreePhD}</option>
                       </select>
-                      <input placeholder={pt.startLabel} value={ed.start}
-                        onChange={(e) => updateArrayItem("education", i, "start", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" />
-                      <input placeholder={pt.endLabel} value={ed.end} disabled={ed.isCurrent}
-                        onChange={(e) => updateArrayItem("education", i, "end", e.target.value)}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-emerald-500" />
+                      <input
+                        placeholder={pt.startLabel}
+                        value={ed.start}
+                        onChange={(e) =>
+                          updateArrayItem("education", i, "start", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <input
+                        placeholder={pt.endLabel}
+                        value={ed.end}
+                        disabled={ed.isCurrent}
+                        onChange={(e) =>
+                          updateArrayItem("education", i, "end", e.target.value)
+                        }
+                        className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none disabled:opacity-40 focus:ring-2 focus:ring-emerald-500"
+                      />
                       <div className="flex items-center justify-between gap-2">
                         <label className="flex items-center gap-1 cursor-pointer">
-                          <input type="checkbox" checked={ed.isCurrent}
-                            onChange={(e) => updateArrayItem("education", i, "isCurrent", e.target.checked)}
-                            className="w-4 h-4 accent-emerald-500" />
-                          <span className="text-[8px] font-black uppercase text-slate-400">{pt.continueLabel}</span>
+                          <input
+                            type="checkbox"
+                            checked={ed.isCurrent}
+                            onChange={(e) =>
+                              updateArrayItem("education", i, "isCurrent", e.target.checked)
+                            }
+                            className="w-4 h-4 accent-emerald-500"
+                          />
+                          <span className="text-[8px] font-black uppercase text-slate-400">
+                            {pt.continueLabel}
+                          </span>
                         </label>
-                        <button onClick={() => removeArrayItem("education", i)}
-                          className="text-red-400 hover:text-red-600 transition-all cursor-pointer">
+                        <button
+                          onClick={() => removeArrayItem("education", i)}
+                          className="text-red-400 hover:text-red-600 transition-all cursor-pointer"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1905,29 +2348,58 @@ export default function UserProfile() {
 
               {/* DİLLER */}
               <div className="space-y-4">
-                <SectionTitle icon={Languages} color="text-indigo-500" title={pt.languageProficiency}
+                <SectionTitle
+                  icon={Languages}
+                  color="text-indigo-500"
+                  title={pt.languageProficiency}
                   addLabel={pt.add}
-                  onAdd={() => addArrayItem("languages", { lang: "", level: 1 })} />
+                  onAdd={() => addArrayItem("languages", { lang: "", level: 1 })}
+                />
                 {formData.languages.map((l, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <select value={l.lang}
-                      onChange={(e) => updateArrayItem("languages", i, "lang", e.target.value)}
-                      className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                  <div
+                    key={i}
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                  >
+                    <select
+                      value={l.lang}
+                      onChange={(e) =>
+                        updateArrayItem("languages", i, "lang", e.target.value)
+                      }
+                      className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
                       <option value="">{pt.selectLanguage}</option>
                       {LANGUAGE_LIST.map((lang) => (
-                        <option key={lang} value={lang}>{lang}</option>
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
                       ))}
                     </select>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <button key={s} type="button"
-                          onClick={() => updateArrayItem("languages", i, "level", s)}
-                          className="p-1 hover:scale-125 transition-transform cursor-pointer">
-                          <Star size={20} fill={s <= l.level ? "#6366f1" : "none"} className={s <= l.level ? "text-indigo-500" : "text-slate-200"} />
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() =>
+                            updateArrayItem("languages", i, "level", s)
+                          }
+                          className="p-1 hover:scale-125 transition-transform cursor-pointer"
+                        >
+                          <Star
+                            size={20}
+                            fill={s <= l.level ? "#6366f1" : "none"}
+                            className={
+                              s <= l.level
+                                ? "text-indigo-500"
+                                : "text-slate-200"
+                            }
+                          />
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => removeArrayItem("languages", i)} className="text-red-400 hover:text-red-600 p-2 cursor-pointer">
+                    <button
+                      onClick={() => removeArrayItem("languages", i)}
+                      className="text-red-400 hover:text-red-600 p-2 cursor-pointer"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -1936,22 +2408,51 @@ export default function UserProfile() {
 
               {/* SERTİFİKALAR */}
               <div className="space-y-4">
-                <SectionTitle icon={Award} color="text-amber-500" title={pt.certificatesSection}
+                <SectionTitle
+                  icon={Award}
+                  color="text-amber-500"
+                  title={pt.certificatesSection}
                   addLabel={pt.add}
-                  onAdd={() => addArrayItem("certificates", { name: "", issuer: "", year: "" })} />
+                  onAdd={() =>
+                    addArrayItem("certificates", {
+                      name: "", issuer: "", year: "",
+                    })
+                  }
+                />
                 {formData.certificates.map((c, i) => (
-                  <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-center">
-                    <input placeholder={pt.certificateName} value={c.name}
-                      onChange={(e) => updateArrayItem("certificates", i, "name", e.target.value)}
-                      className="sm:col-span-2 w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
-                    <input placeholder={pt.institution} value={c.issuer}
-                      onChange={(e) => updateArrayItem("certificates", i, "issuer", e.target.value)}
-                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
+                  <div
+                    key={i}
+                    className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-center"
+                  >
+                    <input
+                      placeholder={pt.certificateName}
+                      value={c.name}
+                      onChange={(e) =>
+                        updateArrayItem("certificates", i, "name", e.target.value)
+                      }
+                      className="sm:col-span-2 w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      placeholder={pt.institution}
+                      value={c.issuer}
+                      onChange={(e) =>
+                        updateArrayItem("certificates", i, "issuer", e.target.value)
+                      }
+                      className="w-full p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                    />
                     <div className="flex gap-2 items-center">
-                      <input placeholder={pt.year} value={c.year}
-                        onChange={(e) => updateArrayItem("certificates", i, "year", e.target.value)}
-                        className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500" />
-                      <button onClick={() => removeArrayItem("certificates", i)} className="text-red-400 hover:text-red-600 p-2 cursor-pointer">
+                      <input
+                        placeholder={pt.year}
+                        value={c.year}
+                        onChange={(e) =>
+                          updateArrayItem("certificates", i, "year", e.target.value)
+                        }
+                        className="flex-1 p-3 bg-white rounded-xl border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <button
+                        onClick={() => removeArrayItem("certificates", i)}
+                        className="text-red-400 hover:text-red-600 p-2 cursor-pointer"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -1962,54 +2463,89 @@ export default function UserProfile() {
               {/* YETENEKLER */}
               <div className="space-y-3">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Cpu size={12} className="text-cyan-500" /> {pt.technicalSkills}
+                  <Cpu size={12} className="text-cyan-500" />{" "}
+                  {pt.technicalSkills}
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.skills.map((s, i) => (
-                    <span key={i} className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <span
+                      key={i}
+                      className="bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1"
+                    >
                       {s}
-                      <button onClick={() => updateField("skills", formData.skills.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
+                      <button
+                        onClick={() =>
+                          updateField(
+                            "skills",
+                            formData.skills.filter((_, idx) => idx !== i)
+                          )
+                        }
+                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer"
+                      >
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input placeholder={pt.skillInputPlaceholder}
-                  value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={handleSkillKeyDown}
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-cyan-500" />
+                <input
+                  placeholder={pt.skillInputPlaceholder}
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={handleSkillKeyDown}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                />
               </div>
 
               {/* İLGİ ALANLARI */}
               <div className="space-y-3">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Heart size={12} className="text-pink-500" /> {pt.interestsSection}
+                  <Heart size={12} className="text-pink-500" />{" "}
+                  {pt.interestsSection}
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.interests.map((s, i) => (
-                    <span key={i} className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <span
+                      key={i}
+                      className="bg-pink-50 text-pink-600 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1"
+                    >
                       {s}
-                      <button onClick={() => updateField("interests", formData.interests.filter((_, idx) => idx !== i))}
-                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer">
+                      <button
+                        onClick={() =>
+                          updateField(
+                            "interests",
+                            formData.interests.filter((_, idx) => idx !== i)
+                          )
+                        }
+                        className="text-red-400 hover:text-red-600 ml-1 cursor-pointer"
+                      >
                         <X size={10} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <input placeholder={pt.interestInputPlaceholder}
-                  value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={handleInterestKeyDown}
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-pink-500" />
+                <input
+                  placeholder={pt.interestInputPlaceholder}
+                  value={interestInput}
+                  onChange={(e) => setInterestInput(e.target.value)}
+                  onKeyDown={handleInterestKeyDown}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                />
               </div>
             </div>
 
             {/* MODAL FOOTER */}
             <div className="sticky bottom-0 p-6 bg-white/95 backdrop-blur-sm border-t border-slate-100 flex gap-3 rounded-b-[32px]">
-              <button onClick={() => setEditOpen(false)}
-                className="px-8 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
+              <button
+                onClick={() => setEditOpen(false)}
+                className="px-8 h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+              >
                 {pt.cancel}
               </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl text-lg font-black uppercase italic text-white shadow-xl active:scale-[0.98] transition-all tracking-widest disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 h-14 rounded-2xl text-lg font-black uppercase italic text-white shadow-xl active:scale-[0.98] transition-all tracking-widest disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer"
+              >
                 <Save size={20} />
                 {saving ? pt.sealing : pt.sealMemory}
               </button>

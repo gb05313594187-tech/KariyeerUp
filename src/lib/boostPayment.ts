@@ -31,88 +31,67 @@ export const PRICING = {
 
 export type BoostType = keyof typeof PRICING;
 
-// ✅ GELİŞTİRİLMİŞ Token Alma Fonksiyonu
+// ✅ Token Alma Fonksiyonu
 async function getAccessTokenSafe(): Promise<string | null> {
-  console.log("🔑 Getting access token...");
-
-  // 1. Önce localStorage'dan direkt dene (en hızlı)
   try {
-    const keys = Object.keys(localStorage);
-    const sessionKey = keys.find((k) => 
-      k.includes("sb-") && k.includes("-auth-token")
-    );
-    
-    if (sessionKey) {
-      const raw = localStorage.getItem(sessionKey);
+    console.log("🔑 [boostPayment] Getting access token...");
+
+    // 1️⃣ localStorage'dan dene (kariyeerup-auth-token)
+    const storageKey = "kariyeerup-auth-token";
+    try {
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.access_token) {
-          console.log("✅ Token found in localStorage");
+          console.log("✅ [boostPayment] Token from localStorage");
           return parsed.access_token;
         }
       }
+    } catch (e) {
+      console.warn("⚠️ [boostPayment] localStorage read failed:", e);
     }
-  } catch (e) {
-    console.warn("localStorage token read failed:", e);
-  }
 
-  // 2. getSession dene (timeout ile)
-  try {
-    console.log("📡 Trying getSession...");
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise<null>((resolve) => 
-      setTimeout(() => resolve(null), 3000)
-    );
+    // 2️⃣ getSession (2 saniye timeout)
+    try {
+      console.log("🔄 [boostPayment] Trying getSession...");
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 2000)
+      );
 
-    const result = await Promise.race([sessionPromise, timeoutPromise]);
-    
-    if (result && (result as any)?.data?.session?.access_token) {
-      console.log("✅ Token from getSession");
-      return (result as any).data.session.access_token;
-    }
-  } catch (e) {
-    console.warn("getSession failed:", e);
-  }
+      const result = await Promise.race([sessionPromise, timeoutPromise]);
 
-  // 3. getUser ile session refresh dene
-  try {
-    console.log("📡 Trying getUser + refreshSession...");
-    const { data: userData } = await supabase.auth.getUser();
-    
-    if (userData?.user) {
-      // Session'ı refresh et
-      const { data: refreshData } = await supabase.auth.refreshSession();
-      if (refreshData?.session?.access_token) {
-        console.log("✅ Token from refreshSession");
-        return refreshData.session.access_token;
+      if (result && (result as any)?.data?.session?.access_token) {
+        console.log("✅ [boostPayment] Token from getSession");
+        return (result as any).data.session.access_token;
+      } else {
+        console.warn("⚠️ [boostPayment] getSession timeout or no session");
       }
+    } catch (e) {
+      console.warn("⚠️ [boostPayment] getSession failed:", e);
     }
-  } catch (e) {
-    console.warn("getUser/refreshSession failed:", e);
-  }
 
-  // 4. Son çare: tekrar localStorage kontrol et
-  try {
-    await new Promise((r) => setTimeout(r, 500)); // Biraz bekle
-    const keys = Object.keys(localStorage);
-    for (const key of keys) {
-      if (key.includes("auth") || key.includes("supabase")) {
-        try {
-          const raw = localStorage.getItem(key);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed?.access_token) {
-              console.log("✅ Token found in localStorage (retry)");
-              return parsed.access_token;
-            }
-          }
-        } catch {}
+    // 3️⃣ refreshSession (son çare)
+    try {
+      console.log("🔄 [boostPayment] Trying refreshSession...");
+      const { data, error } = await supabase.auth.refreshSession();
+
+      if (!error && data?.session?.access_token) {
+        console.log("✅ [boostPayment] Token from refreshSession");
+        return data.session.access_token;
+      } else {
+        console.warn("⚠️ [boostPayment] refreshSession failed:", error?.message);
       }
+    } catch (e) {
+      console.warn("⚠️ [boostPayment] refreshSession exception:", e);
     }
-  } catch {}
 
-  console.error("❌ No access token found");
-  return null;
+    console.error("❌ [boostPayment] All token retrieval methods failed");
+    return null;
+  } catch (err) {
+    console.error("❌ [boostPayment] getAccessTokenSafe error:", err);
+    return null;
+  }
 }
 
 export interface BoostPaymentParams {
@@ -141,83 +120,100 @@ export async function initiateBoostPayment({
   durationDays,
 }: BoostPaymentParams): Promise<BoostPaymentResult> {
   try {
-    console.log("🚀 initiateBoostPayment called:", { userId, email, fullName, type, amount, durationDays });
+    console.log("🚀 [boostPayment] initiateBoostPayment called:", {
+      userId,
+      email,
+      fullName,
+      type,
+      amount,
+      durationDays,
+    });
 
     // Package slug'ı bul
     const packageConfig = PRICING[type];
     if (!packageConfig) {
+      console.error("❌ Invalid package type:", type);
       return { success: false, error: `Geçersiz paket tipi: ${type}` };
     }
 
     const priceOption = packageConfig.prices.find((p) => p.duration === durationDays);
     if (!priceOption) {
+      console.error("❌ Invalid duration:", durationDays);
       return { success: false, error: `Geçersiz süre: ${durationDays} gün` };
     }
 
     const packageSlug = priceOption.slug;
-    console.log("📦 Package slug:", packageSlug);
+    console.log("📦 [boostPayment] Package slug:", packageSlug);
 
+    // Access token al
     const accessToken = await getAccessTokenSafe();
-    console.log("🔑 Access token:", accessToken ? `✅ Alındı (${accessToken.substring(0, 20)}...)` : "❌ Alınamadı");
 
     if (!accessToken) {
+      console.error("❌ [boostPayment] No access token");
       return {
         success: false,
-        error: "Oturum bulunamadı. Lütfen sayfayı yenileyip tekrar giriş yapın.",
+        error: "Oturum süresi dolmuş olabilir. Lütfen çıkış yapıp tekrar giriş yapın.",
       };
     }
 
-    console.log("📡 Calling Edge Function: paytr-get-token-boost");
-    console.log("📤 Request body:", { package_slug: packageSlug, user_id: userId, email, full_name: fullName, amount });
+    console.log("✅ [boostPayment] Token received, calling Edge Function...");
 
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/paytr-get-token-boost`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: ANON_KEY,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          package_slug: packageSlug,
-          user_id: userId,
-          email: email,
-          full_name: fullName,
-          amount: amount,
-        }),
-      }
-    );
+    const requestBody = {
+      package_slug: packageSlug,
+      user_id: userId,
+      email: email,
+      full_name: fullName,
+      amount: amount,
+    };
+
+    console.log("📤 [boostPayment] Request body:", requestBody);
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/paytr-get-token-boost`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("📥 [boostPayment] Response status:", res.status);
 
     const rawText = await res.text();
-    console.log("📥 Edge Function response:", res.status, rawText);
+    console.log("📥 [boostPayment] Response body:", rawText);
 
     let body: Record<string, unknown> = {};
     try {
       body = rawText ? JSON.parse(rawText) : {};
     } catch {
-      body = { raw: rawText };
+      console.error("❌ [boostPayment] Failed to parse response");
+      return { success: false, error: "Sunucu yanıtı okunamadı." };
     }
 
     if (!res.ok) {
-      const errorMsg = (body?.error as string) || (body?.detail as string) || (body?.message as string) || `HTTP ${res.status} hatası`;
-      console.error("❌ Edge Function error:", errorMsg);
+      const errorMsg =
+        (body?.error as string) ||
+        (body?.detail as string) ||
+        (body?.message as string) ||
+        `HTTP ${res.status} hatası`;
+      console.error("❌ [boostPayment] Edge Function error:", errorMsg);
       return { success: false, error: errorMsg };
     }
 
     if (!body?.success) {
       const errorMsg = (body?.error as string) || "Ödeme başlatılamadı.";
-      console.error("❌ Payment initiation failed:", errorMsg);
+      console.error("❌ [boostPayment] Payment initiation failed:", errorMsg);
       return { success: false, error: errorMsg };
     }
 
     const token = body?.token as string;
     if (!token) {
-      console.error("❌ No token in response");
+      console.error("❌ [boostPayment] No token in response");
       return { success: false, error: "PayTR token alınamadı." };
     }
 
-    console.log("✅ Payment initiated successfully, token received");
+    console.log("✅ [boostPayment] Payment token received");
 
     return {
       success: true,
@@ -227,7 +223,7 @@ export async function initiateBoostPayment({
     };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("💥 initiateBoostPayment exception:", msg);
+    console.error("💥 [boostPayment] Exception:", msg);
     return { success: false, error: msg };
   }
 }

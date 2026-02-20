@@ -187,7 +187,7 @@ const Navbar = memo(function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/jobs")}><Briefcase className="mr-2 h-4 w-4" />İlanlar</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(dashboardPath)}><LayoutDashboard className="mr-2 h-4 w-4" />{dashboardLabel}</DropdownMenuItem>
                   {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
-                  <DropdownMenuItem onClick={() => navigate("/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/user/profile")}><User className="mr-2 h-4 w-4" />Profil</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" />Çıkış</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -220,7 +220,7 @@ const Navbar = memo(function Navbar() {
               <button onClick={() => { navigate("/jobs"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">İlanlar</button>
               <button onClick={() => { navigate(dashboardPath); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">{dashboardLabel}</button>
               {/* ✅ DÜZELTME: /profile olarak değiştirildi */}
-              <button onClick={() => { navigate("/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
+              <button onClick={() => { navigate("/user/profile"); setMobileOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profil</button>
               <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl text-red-600 font-semibold">Çıkış Yap</button>
             </div>
           </div>

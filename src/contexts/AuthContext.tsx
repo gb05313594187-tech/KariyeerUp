@@ -65,7 +65,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // ✅ Email için fallback'ler
       const userEmail = supabaseUserData.email || meta.email || "";
-      
+      // ✅ URL'den role yakalama (Google OAuth için)
+const urlParams = new URLSearchParams(window.location.search);
+const roleFromUrl = urlParams.get("role");
+
+if (roleFromUrl && !meta.role) {
+  try {
+    await supabase
+      .from("profiles")
+      .update({ role: normalizeRole(roleFromUrl) })
+      .eq("id", supabaseUserData.id);
+
+    // URL'yi temizle (role parametresi kalmasın)
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    console.log("✅ Role updated from URL:", roleFromUrl);
+  } catch (e) {
+    console.warn("Role update from URL failed:", e);
+  }
+}
       // ✅ FullName için çoklu fallback
       const userFullName = 
         meta.full_name || 
@@ -78,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: supabaseUserData.id,
         email: userEmail,
         fullName: userFullName,
-        role: normalizeRole(meta.role || meta.user_type),
+        role: normalizeRole(roleFromUrl || meta.role || meta.user_type),
         phone: meta.phone || null,
         country: meta.country || null,
       };

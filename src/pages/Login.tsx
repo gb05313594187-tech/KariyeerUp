@@ -1,7 +1,8 @@
 // src/pages/Login.tsx
 // @ts-nocheck
+
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,39 +10,47 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, role } = useAuth();
   const navigate = useNavigate();
-  const { language } = useLanguage();
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
-  const handleSocialLogin = async () => {
-    toast.error("Sosyal giriş geçici olarak devre dışı");
-  };
-
-  // ✅ DEBUG EKLENDİ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("LOGIN START");
+
+    if (isLoading) return;
+
     setIsLoading(true);
+    console.log("LOGIN START");
 
     try {
       const res = await login(formData.email, formData.password);
       console.log("LOGIN RESPONSE:", res);
 
       if (!res?.success) {
-        toast.error(res?.message || "Login failed");
+        toast.error(res?.message || "Giriş başarısız");
         setIsLoading(false);
         return;
       }
 
       toast.success("Giriş başarılı!");
-      navigate("/");
+
+      // ⬇️ Rol bazlı yönlendirme
+      if (role === "corporate") {
+        navigate("/corporate/dashboard", { replace: true });
+      } else if (role === "coach") {
+        navigate("/coach/dashboard", { replace: true });
+      } else {
+        navigate("/user/dashboard", { replace: true });
+      }
+
     } catch (err) {
       console.log("LOGIN ERROR:", err);
       toast.error("Beklenmeyen hata oluştu");
@@ -67,23 +76,6 @@ export default function Login() {
         </CardHeader>
 
         <CardContent className="px-8 pb-8">
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <Button
-              variant="outline"
-              className="h-10 text-sm font-semibold"
-              onClick={handleSocialLogin}
-            >
-              Google
-            </Button>
-            <Button
-              variant="outline"
-              className="h-10 text-sm font-semibold"
-              onClick={handleSocialLogin}
-            >
-              LinkedIn
-            </Button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>E-posta *</Label>

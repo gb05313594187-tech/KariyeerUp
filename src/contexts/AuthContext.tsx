@@ -228,8 +228,11 @@ if (roleFromUrl && !meta.role) {
       console.log("🔐 Auth event:", event);
 
       if (event === "SIGNED_IN" && session?.user) {
-        await loadUserProfile(session.user);
-      } else if (event === "SIGNED_OUT") {
+  // Eğer zaten aynı kullanıcı yüklüyse tekrar yükleme
+  if (user?.id !== session.user.id) {
+    await loadUserProfile(session.user);
+  }
+} else if (event === "SIGNED_OUT") {
         clearAuth();
         setLoading(false);
       } else if (event === "TOKEN_REFRESHED" && session?.user) {
@@ -301,10 +304,6 @@ if (roleFromUrl && !meta.role) {
 
     try {
       const nextRole = updates.role ? normalizeRole(updates.role) : user.role;
-
-      await supabase.auth.updateUser({
-        data: { role: nextRole, full_name: updates.fullName ?? user.fullName },
-      });
 
       const { error } = await supabase
         .from("profiles")

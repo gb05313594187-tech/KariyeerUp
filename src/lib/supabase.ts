@@ -54,14 +54,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     storageKey: "kariyeerup-auth-token",
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
-    // ❌ flowType: "pkce" KALDIRILDI — Google OAuth implicit flow kullanır,
-    //    PKCE bununla çakışıp login'i bozuyordu
+    storage:
+      typeof window !== "undefined" ? window.localStorage : undefined,
   },
   db: { schema: "public" },
-  global: {
-    fetch: supabaseFetch,
-  },
 });
 
 export async function getAccessToken(): Promise<string | null> {

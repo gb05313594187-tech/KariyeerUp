@@ -1,11 +1,15 @@
 // src/lib/supabase.ts
 import { createClient } from "@supabase/supabase-js";
 
-console.log("SUPABASE URL:", import.meta.env.VITE_SUPABASE_URL);
-console.log("SUPABASE KEY:", import.meta.env.VITE_SUPABASE_ANON_KEY?.slice(0, 20));
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+console.log("SUPABASE INIT URL:", supabaseUrl);
+console.log("SUPABASE INIT KEY:", supabaseAnonKey);
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Supabase env eksik!");
+}
 
 // ✅ matchingService.ts için gerekli export
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);

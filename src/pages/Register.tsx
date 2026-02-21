@@ -24,7 +24,7 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "individual",
+    userType: "", // 🔴 1️⃣ DEĞİŞTİ: "individual" → ""
   });
 
   const t = {
@@ -52,6 +52,7 @@ export default function Register() {
       linkedin: "LinkedIn ile Kayıt Ol",
       or: "veya",
       socialError: "Giriş sırasında bir hata oluştu.",
+      roleRequired: "Lütfen hesap türünü seçin.", // 🔴 2️⃣ EKLENDİ
     },
     en: {
       title: "Register",
@@ -77,6 +78,7 @@ export default function Register() {
       linkedin: "Sign up with LinkedIn",
       or: "or",
       socialError: "An error occurred during sign in.",
+      roleRequired: "Please select account type.", // 🔴 2️⃣ EKLENDİ
     },
     ar: {
       title: "إنشاء حساب",
@@ -102,6 +104,7 @@ export default function Register() {
       linkedin: "التسجيل باستخدام LinkedIn",
       or: "أو",
       socialError: "حدث خطأ أثناء تسجيل الدخول.",
+      roleRequired: "يرجى اختيار نوع الحساب.", // 🔴 2️⃣ EKLENDİ
     },
     fr: {
       title: "S'inscrire",
@@ -127,21 +130,36 @@ export default function Register() {
       linkedin: "S'inscrire avec LinkedIn",
       or: "ou",
       socialError: "Une erreur s'est produite lors de la connexion.",
+      roleRequired: "Veuillez sélectionner un type de compte.", // 🔴 2️⃣ EKLENDİ
     },
   }[language || "tr"];
 
   const accountTypes = [
-    { value: "individual", label: t.individual, icon: "👤", gradient: "from-blue-500 to-cyan-500",    ring: "ring-blue-400"    },
-    { value: "coach",      label: t.coach,      icon: "🎯", gradient: "from-purple-500 to-pink-500",  ring: "ring-purple-400"  },
-    { value: "company",    label: t.company,    icon: "🏢", gradient: "from-emerald-500 to-teal-500", ring: "ring-emerald-400" },
+    { value: "individual", label: t.individual, icon: "👤", gradient: "from-blue-500 to-cyan-500", ring: "ring-blue-400" },
+    { value: "coach", label: t.coach, icon: "🎯", gradient: "from-purple-500 to-pink-500", ring: "ring-purple-400" },
+    { value: "company", label: t.company, icon: "🏢", gradient: "from-emerald-500 to-teal-500", ring: "ring-emerald-400" },
   ];
 
+  // 🔴 3️⃣ DEĞİŞTİ: Rol kontrolü + URL parametresi ile role gönderimi
   const handleSocialLogin = async (provider: "google" | "linkedin_oidc") => {
+    if (!formData.userType) {
+      toast.error(t.roleRequired);
+      return;
+    }
+
     try {
+      const role =
+        formData.userType === "coach" ? "coach"
+        : formData.userType === "company" ? "corporate"
+        : "user";
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/` },
+        options: {
+          redirectTo: `${window.location.origin}/?role=${role}`,
+        },
       });
+
       if (error) toast.error(t.socialError);
     } catch {
       toast.error(t.socialError);
@@ -150,14 +168,16 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!kvkkAccepted)                                     { toast.error(t.kvkkError);        return; }
-    if (formData.password.length < 6)                      { toast.error(t.passwordLength);   return; }
-    if (formData.password !== formData.confirmPassword)    { toast.error(t.passwordMismatch); return; }
+
+    if (!formData.userType) { toast.error(t.roleRequired); return; }
+    if (!kvkkAccepted) { toast.error(t.kvkkError); return; }
+    if (formData.password.length < 6) { toast.error(t.passwordLength); return; }
+    if (formData.password !== formData.confirmPassword) { toast.error(t.passwordMismatch); return; }
 
     setIsLoading(true);
     try {
       const role =
-        formData.userType === "coach"    ? "coach"
+        formData.userType === "coach" ? "coach"
         : formData.userType === "company" ? "corporate"
         : "user";
 
@@ -168,12 +188,7 @@ export default function Register() {
       });
       if (error) throw error;
 
-      await supabase.from("profiles").insert({
-        id: data.user?.id,
-        full_name: formData.fullName,
-        email: formData.email,
-        role,
-      });
+      // 🔴 4️⃣ SİLİNDİ: profiles insert kaldırıldı (trigger hallediyor)
 
       toast.success(t.success);
       setTimeout(() => navigate("/"), 2000);
@@ -208,6 +223,62 @@ export default function Register() {
         </CardHeader>
 
         <CardContent className="px-8 pb-8">
+
+          {/* ── HESAP TÜRÜ (ÜST KISMA TAŞINDI) ── */}
+          <div className="space-y-2 mb-5">
+            <Label className="text-sm font-semibold text-gray-700">
+              {t.accountType} *
+            </Label>
+            <RadioGroup
+              value={formData.userType}
+              onValueChange={(v) => setFormData({ ...formData, userType: v })}
+              className="grid grid-cols-3 gap-3"
+            >
+              {accountTypes.map((item) => {
+                const isSelected = formData.userType === item.value;
+                return (
+                  <div key={item.value}>
+                    <RadioGroupItem value={item.value} id={item.value} className="sr-only" />
+                    <label
+                      htmlFor={item.value}
+                      className={`
+                        relative flex flex-col items-center justify-center gap-2
+                        h-24 rounded-2xl cursor-pointer select-none overflow-hidden
+                        transition-all duration-200
+                        ${isSelected
+                          ? `ring-2 ${item.ring} shadow-lg scale-[1.03]`
+                          : "border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
+                        }
+                      `}
+                    >
+                      {isSelected && (
+                        <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
+                      )}
+
+                      <div className="relative z-10 flex flex-col items-center gap-1.5">
+                        <span className={`
+                          w-10 h-10 rounded-xl flex items-center justify-center text-2xl
+                          ${isSelected ? "bg-white/25" : "bg-gray-100"}
+                        `}>
+                          {item.icon}
+                        </span>
+                        <span className={`
+                          text-xs font-bold leading-tight text-center
+                          ${isSelected ? "text-white" : "text-gray-700"}
+                        `}>
+                          {item.label}
+                        </span>
+                      </div>
+
+                      {isSelected && (
+                        <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-white drop-shadow z-20" />
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
+            </RadioGroup>
+          </div>
 
           {/* ── SOSYAL BUTONLAR ── */}
           <div className="grid grid-cols-2 gap-3 mb-5">
@@ -325,63 +396,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ── HESAP TÜRÜ ── */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">
-                {t.accountType}
-              </Label>
-              <RadioGroup
-                value={formData.userType}
-                onValueChange={(v) => setFormData({ ...formData, userType: v })}
-                className="grid grid-cols-3 gap-3"
-              >
-                {accountTypes.map((item) => {
-                  const isSelected = formData.userType === item.value;
-                  return (
-                    <div key={item.value}>
-                      <RadioGroupItem value={item.value} id={item.value} className="sr-only" />
-                      <label
-                        htmlFor={item.value}
-                        className={`
-                          relative flex flex-col items-center justify-center gap-2
-                          h-24 rounded-2xl cursor-pointer select-none overflow-hidden
-                          transition-all duration-200
-                          ${isSelected
-                            ? `ring-2 ${item.ring} shadow-lg scale-[1.03]`
-                            : "border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
-                          }
-                        `}
-                      >
-                        {/* Seçili gradient arka plan */}
-                        {isSelected && (
-                          <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
-                        )}
-
-                        <div className="relative z-10 flex flex-col items-center gap-1.5">
-                          <span className={`
-                            w-10 h-10 rounded-xl flex items-center justify-center text-2xl
-                            ${isSelected ? "bg-white/25" : "bg-gray-100"}
-                          `}>
-                            {item.icon}
-                          </span>
-                          <span className={`
-                            text-xs font-bold leading-tight text-center
-                            ${isSelected ? "text-white" : "text-gray-700"}
-                          `}>
-                            {item.label}
-                          </span>
-                        </div>
-
-                        {isSelected && (
-                          <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-white drop-shadow z-20" />
-                        )}
-                      </label>
-                    </div>
-                  );
-                })}
-              </RadioGroup>
-            </div>
-
             {/* ── KVKK ── */}
             <div className="flex items-start gap-2">
               <input
@@ -402,7 +416,7 @@ export default function Register() {
             {/* ── SUBMIT ── */}
             <Button
               type="submit"
-              disabled={isLoading || !kvkkAccepted}
+              disabled={isLoading || !kvkkAccepted || !formData.userType}
               className="w-full h-11 text-sm font-bold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg shadow-red-500/20 disabled:opacity-60"
             >
               {isLoading ? t.submitting : t.submit}

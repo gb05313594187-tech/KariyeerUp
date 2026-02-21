@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  useCallback,
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -28,7 +27,6 @@ interface AuthContextType {
   role: Role | null;
   isAuthenticated: boolean;
   loading: boolean;
-  refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<boolean>;
@@ -85,23 +83,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRole(finalRole);
   };
 
-  const checkSession = useCallback(async () => {
-    try {
+  useEffect(() => {
+    const init = async () => {
       const { data } = await supabase.auth.getSession();
+
       if (data?.session?.user) {
         await loadUserProfile(data.session.user);
       } else {
         clearAuth();
       }
-    } catch {
-      clearAuth();
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  useEffect(() => {
-    checkSession();
+      setLoading(false);
+    };
+
+    init();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -110,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           clearAuth();
         }
+
         setLoading(false);
       }
     );
@@ -121,12 +117,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     if (error) {
       setLoading(false);
       return { success: false, message: error.message };
     }
-    if (data.user) await loadUserProfile(data.user);
+
+    if (data.user) {
+      await loadUserProfile(data.user);
+    }
+
     setLoading(false);
     return { success: true };
   };
@@ -165,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role,
       isAuthenticated: !!user,
       loading,
-      refresh: checkSession,
       login,
       logout,
       updateProfile,

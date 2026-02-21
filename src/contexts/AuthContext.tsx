@@ -1,5 +1,6 @@
 // src/contexts/AuthContext.tsx
 // @ts-nocheck
+
 import React, {
   createContext,
   useContext,
@@ -29,7 +30,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
-  updateProfile: (updates: Partial<User>) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const finalRole = normalizeRole(profile?.role);
 
-    const finalUser: User = {
+    setUser({
       id: sbUser.id,
       email: sbUser.email || "",
       fullName:
@@ -77,14 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: finalRole,
       phone: profile?.phone ?? null,
       country: profile?.country ?? null,
-    };
+    });
 
-    setUser(finalUser);
     setRole(finalRole);
   };
 
+  // ✅ Session kontrolü (refresh sonrası logout olmaması için kritik)
   useEffect(() => {
-    const init = async () => {
+    const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
 
       if (data?.session?.user) {
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     };
 
-    init();
+    checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -115,8 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // ✅ LOGIN
   const login = async (email: string, password: string) => {
-    setLoading(true);
+    console.log("LOGIN CALISTI");
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -124,7 +125,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
-      setLoading(false);
       return { success: false, message: error.message };
     }
 
@@ -132,35 +132,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await loadUserProfile(data.user);
     }
 
-    setLoading(false);
     return { success: true };
   };
 
+  // ✅ LOGOUT
   const logout = async () => {
-    setLoading(true);
     await supabase.auth.signOut();
     clearAuth();
-    setLoading(false);
-  };
-
-  const updateProfile = async (updates: Partial<User>) => {
-    if (!user) return false;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: updates.fullName ?? user.fullName,
-        role: updates.role ?? user.role,
-        phone: updates.phone ?? user.phone,
-        country: updates.country ?? user.country,
-      })
-      .eq("id", user.id);
-
-    if (error) return false;
-
-    setUser({ ...user, ...updates });
-    if (updates.role) setRole(updates.role);
-    return true;
   };
 
   const value = useMemo(
@@ -172,7 +150,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       login,
       logout,
-      updateProfile,
     }),
     [user, supabaseUser, role, loading]
   );

@@ -28,7 +28,10 @@ interface AuthContextType {
   role: Role | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    message?: string;
+  }>;
   logout: () => Promise<void>;
 }
 
@@ -43,9 +46,12 @@ function normalizeRole(v: any): Role {
   return "user";
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const [supabaseUser, setSupabaseUser] =
+    useState<SupabaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,63 +88,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRole(finalRole);
   };
 
-  // ✅ Session kontrolü (refresh sonrası logout olmaması için kritik)
+  // 🔐 Session kontrolü
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
+    let mounted = true;
 
-      if (data?.session?.user) {
-        await loadUserProfile(data.session.user);
-      } else {
+    const initSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        if (data?.session?.user) {
+          await loadUserProfile(data.session.user);
+        } else {
+          clearAuth();
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
         clearAuth();
+      } finally {
+        if (mounted) setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    checkSession();
+    initSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    const { data: subscription } =
+      supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
           await loadUserProfile(session.user);
         } else {
           clearAuth();
         }
-
         setLoading(false);
-      }
-    );
+      });
 
     return () => {
-      listener?.subscription?.unsubscribe();
+      mounted = false;
+      subscription?.subscription?.unsubscribe();
     };
   }, []);
 
-  // ✅ LOGIN
+  // 🔑 LOGIN
   const login = async (email: string, password: string) => {
     console.log("LOGIN CALISTI");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-    if (error) {
-      return { success: false, message: error.message };
+      if (error) {
+        console.error("LOGIN ERROR:", error);
+        return { success: false, message: error.message };
+      }
+
+      if (data?.user) {
+        await loadUserProfile(data.user);
+        return { success: true };
+      }
+
+      return { success: false, message: "Login failed." };
+    } catch (err: any) {
+      console.error("LOGIN EXCEPTION:", err);
+      return { success: false, message: "Unexpected error." };
     }
-
-    if (data.user) {
-      await loadUserProfile(data.user);
-    }
-
-    return { success: true };
   };
 
-  // ✅ LOGOUT
+  // 🚪 LOGOUT
   const logout = async () => {
-    await supabase.auth.signOut();
-    clearAuth();
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      clearAuth();
+    }
   };
 
   const value = useMemo(
@@ -154,7 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user, supabaseUser, role, loading]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

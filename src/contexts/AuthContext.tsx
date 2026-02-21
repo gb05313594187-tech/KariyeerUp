@@ -28,10 +28,7 @@ interface AuthContextType {
   role: Role | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{
-    success: boolean;
-    message?: string;
-  }>;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
 }
 
@@ -50,16 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [supabaseUser, setSupabaseUser] =
-    useState<SupabaseUser | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const clearAuth = () => {
-    setUser(null);
-    setSupabaseUser(null);
-    setRole(null);
-  };
 
   const loadUserProfile = async (sbUser: SupabaseUser) => {
     setSupabaseUser(sbUser);
@@ -88,82 +78,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setRole(finalRole);
   };
 
-  // 🔐 Session kontrolü
   useEffect(() => {
     let mounted = true;
 
     const initSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        if (!mounted) return;
-
-        if (data?.session?.user) {
-          await loadUserProfile(data.session.user);
-        } else {
-          clearAuth();
-        }
-      } catch (err) {
-        console.error("Session check error:", err);
-        clearAuth();
-      } finally {
-        if (mounted) setLoading(false);
+      if (session?.user && mounted) {
+        await loadUserProfile(session.user);
       }
+
+      setLoading(false);
     };
 
     initSession();
 
-    const { data: subscription } =
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.user) {
-          await loadUserProfile(session.user);
-        } else {
-          clearAuth();
-        }
-        setLoading(false);
-      });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("AUTH EVENT:", event);
+
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        setUser(null);
+        setSupabaseUser(null);
+        setRole(null);
+      }
+
+      setLoading(false);
+    });
 
     return () => {
       mounted = false;
-      subscription?.subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  // 🔑 LOGIN
   const login = async (email: string, password: string) => {
-    console.log("LOGIN CALISTI");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    try {
-      const { data, error } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-      if (error) {
-        console.error("LOGIN ERROR:", error);
-        return { success: false, message: error.message };
-      }
-
-      if (data?.user) {
-        await loadUserProfile(data.user);
-        return { success: true };
-      }
-
-      return { success: false, message: "Login failed." };
-    } catch (err: any) {
-      console.error("LOGIN EXCEPTION:", err);
-      return { success: false, message: "Unexpected error." };
+    if (error) {
+      return { success: false, message: error.message };
     }
+
+    return { success: true };
   };
 
-  // 🚪 LOGOUT
   const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      clearAuth();
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setSupabaseUser(null);
+    setRole(null);
   };
 
   const value = useMemo(
@@ -180,9 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 };
 

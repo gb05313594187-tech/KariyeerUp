@@ -13,20 +13,33 @@ import {
 import { Toaster } from "sonner";
 import ReactGA from "react-ga4";
 
-// AUTH PROVIDER
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
-// LAYOUTS
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
 import UserLayout from "@/layouts/UserLayout";
 
-// SAYFALAR
+/* ================= PROTECTED ROUTE ================= */
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+/* ================= SAYFALAR ================= */
+
 import Home from "@/pages/Index";
 import Pricing from "@/pages/Pricing";
-import Boost from "@/pages/Boost"; // ✅ YENİ: Boost eklendi
+import Boost from "@/pages/Boost";
 import Coaches from "@/pages/Coaches";
 import ForCoaches from "@/pages/ForCoaches";
 import ForCompanies from "@/pages/ForCompanies";
@@ -49,7 +62,6 @@ import CoachPublicProfile from "@/pages/CoachPublicProfile";
 import CoachSelfProfile from "@/pages/CoachProfile";
 import Sitemap from "@/pages/Sitemap";
 
-// --- YENİ EKLENEN/GÜNCELLENEN SAYFALAR ---
 import SavedItemsPage from "@/pages/SavedItems";
 import MyAssessmentsPage from "@/pages/MyAssessments";
 import MyApplicationsPage from "@/pages/MyApplications";
@@ -58,57 +70,48 @@ import MyCalendarPage from "@/pages/MyCalendar";
 import MyInterviewsPage from "@/pages/MyInterviews";
 import MySessionsHubPage from "@/pages/MySessionsHub";
 
-// USER
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
 import UserSettings from "@/pages/UserSettings";
 import UserProfileEdit from "@/pages/UserProfileEdit";
 
-// CORPORATE
 import CorporateDashboard from "@/pages/CorporateDashboard";
 import CorporateProfile from "@/pages/CorporateProfile";
 import CorporateSettings from "@/pages/CorporateSettings";
 
-// COACH
 import CoachDashboard from "@/pages/CoachDashboard";
 import CoachSettings from "@/pages/CoachSettings";
 import CoachRequests from "@/pages/CoachRequests";
 
-// ADMIN
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminHireDashboard from "@/pages/AdminHireDashboard";
 
-// CHECKOUT / PAYMENT
 import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaytrCheckout from "@/pages/PaytrCheckout";
 
-// PREMIUM
 import BireyselPremium from "@/pages/BireyselPremium";
 
-// SESSION
 import SessionJoin from "@/pages/SessionJoin";
 import SessionRoom from "@/pages/SessionRoom";
 import UserSessions from "@/pages/UserSessions";
 import CoachSessions from "@/pages/CoachSessions";
 
-// AUTH EXTRA
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 
-// SOCIAL + JOB BOARD
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 import CreateJob from "@/pages/CreateJob";
 
-// INTERVIEW + MEETING
 import InterviewPage from "@/pages/Interview";
 import CorporateJobs from "@/pages/CorporateJobs";
 import MeetingRoom from "@/pages/MeetingRoom";
 
-// ANALYTICS ID
+/* ================= ANALYTICS ================= */
+
 const GA_ID = "G-R39ELRDLKQ";
 
 function AnalyticsTracker() {
@@ -132,6 +135,8 @@ function AnalyticsTracker() {
   return null;
 }
 
+/* ================= PUBLIC LAYOUT ================= */
+
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -145,132 +150,100 @@ function PublicLayout() {
   );
 }
 
+/* ================= APP ================= */
+
 export default function App() {
   return (
     <AuthProvider>
       <Router>
         <AnalyticsTracker />
         <Toaster richColors position="top-right" />
+
         <Routes>
-          {/* TAM EKRAN SAYFALAR (Navbar/Footer yok) */}
+          {/* FULLSCREEN */}
           <Route path="/meeting/:roomName" element={<MeetingRoom />} />
           <Route path="/interview/:roomName" element={<InterviewPage />} />
           <Route path="/session/:id/room" element={<SessionRoom />} />
 
           {/* ADMIN PANEL */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="hiring" element={<AdminHireDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* ANA LAYOUT (Navbar + Footer) */}
+          {/* PUBLIC */}
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Home />} />
             <Route path="home" element={<SocialHome />} />
             <Route path="jobs" element={<JobBoard />} />
             <Route path="jobs/new" element={<CreateJob />} />
             <Route path="corporate/jobs" element={<CorporateJobs />} />
-
-            {/* ✅ BOOST SAYFASI */}
             <Route path="boost" element={<Boost />} />
-
-            <Route path="sitemap.xml" element={<Sitemap />} />
-            <Route path="bireysel-premium" element={<BireyselPremium />} />
             <Route path="pricing" element={<Pricing />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
 
-            <Route path="checkout" element={<Checkout />} />
-            <Route path="payment-success" element={<PaymentSuccess />} />
-            <Route path="paytr/checkout" element={<PaytrCheckout />} />
-            <Route path="paytr-checkout" element={<PaytrCheckout />} />
-
-            <Route path="session/:id/join" element={<SessionJoin />} />
-            <Route path="dashboard/sessions" element={<UserSessions />} />
-            <Route path="coach/sessions" element={<CoachSessions />} />
-
+            {/* USER */}
             <Route
-              path="book-session"
-              element={<Navigate to="/coaches" replace />}
+              path="user/dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
             />
-            <Route path="nasil-calisir" element={<HowItWorks />} />
-            <Route path="how-it-works" element={<HowItWorks />} />
-
-            <Route path="coaches" element={<Coaches />} />
-            <Route path="coach/:slugOrId" element={<CoachPublicProfile />} />
-
-            <Route path="for-coaches" element={<ForCoaches />} />
-            <Route path="for-companies" element={<ForCompanies />} />
-            <Route path="mentor-circle" element={<MentorCircle />} />
-            <Route path="webinars" element={<Webinars />} />
             <Route
-              path="coach-selection-process"
-              element={<CoachSelection />}
+              path="user/profile"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              }
             />
-            <Route path="coach-application" element={<CoachApplication />} />
-
-            {/* USER ROUTE - DİĞERLERİ */}
-            <Route path="user/dashboard" element={<UserDashboard />} />
-            <Route path="user/profile" element={<UserProfile />} />
-            <Route path="user/profile/edit" element={<UserProfileEdit />} />
-            <Route path="user/settings" element={<UserSettings />} />
-
-            {/* Eski Rotalar (Geriye uyumluluk) */}
-            <Route path="saved" element={<SavedItemsPage />} />
-            <Route path="user/assessments" element={<MyAssessmentsPage />} />
-
-            {/* ✅ YENİ: KULLANICI DASHBOARD LAYOUT (Sol Sütunlu Sayfalar) */}
-            <Route element={<UserLayout />}>
-              <Route path="my-applications" element={<MyApplicationsPage />} />
-              <Route path="my-reports" element={<MyReportsPage />} />
-              <Route path="calendar" element={<MyCalendarPage />} />
-              <Route path="my-interviews" element={<MyInterviewsPage />} />
-              <Route path="my-sessions-hub" element={<MySessionsHubPage />} />
-            </Route>
+            <Route
+              path="user/profile/edit"
+              element={
+                <ProtectedRoute>
+                  <UserProfileEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="user/settings"
+              element={
+                <ProtectedRoute>
+                  <UserSettings />
+                </ProtectedRoute>
+              }
+            />
 
             {/* CORPORATE */}
             <Route
               path="corporate/dashboard"
-              element={<CorporateDashboard />}
-            />
-            <Route path="corporate/profile" element={<CorporateProfile />} />
-            <Route
-              path="corporate/settings"
-              element={<CorporateSettings />}
+              element={
+                <ProtectedRoute>
+                  <CorporateDashboard />
+                </ProtectedRoute>
+              }
             />
 
             {/* COACH */}
-            <Route path="coach/dashboard" element={<CoachDashboard />} />
-            <Route path="coach/profile" element={<CoachSelfProfile />} />
-            <Route path="coach/settings" element={<CoachSettings />} />
-            <Route path="coach/requests" element={<CoachRequests />} />
-
-            {/* LEGAL */}
-            <Route path="about" element={<About />} />
-            <Route path="privacy" element={<Privacy />} />
-            <Route path="returns" element={<Returns />} />
-            <Route path="distance-sales" element={<DistanceSales />} />
-            <Route path="terms" element={<Terms />} />
-            <Route path="ethics" element={<Ethics />} />
-
-            {/* AUTH */}
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-
-            {/* LEGACY REDIRECTS */}
             <Route
-              path="dashboard"
-              element={<Navigate to="/user/dashboard" replace />}
-            />
-            <Route
-              path="profile"
-              element={<Navigate to="/user/profile" replace />}
-            />
-            <Route
-              path="coach-dashboard"
-              element={<Navigate to="/coach/dashboard" replace />}
+              path="coach/dashboard"
+              element={
+                <ProtectedRoute>
+                  <CoachDashboard />
+                </ProtectedRoute>
+              }
             />
 
             {/* 404 */}

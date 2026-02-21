@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
-  const { login, role } = useAuth();
+  const { login } = useAuth(); // ❗ role ALMIYORUZ
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,6 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isLoading) return;
 
     setIsLoading(true);
@@ -42,18 +41,30 @@ export default function Login() {
 
       toast.success("Giriş başarılı!");
 
-      // ⬇️ Rol bazlı yönlendirme
-      if (role === "corporate") {
+      // ✅ ROLE'Ü RESPONSE'TAN OKU (STATE'E GÜVENME)
+      const userRole =
+        res?.role ||
+        res?.user?.role ||
+        res?.user?.user_metadata?.user_type ||
+        "user";
+
+      console.log("FINAL ROLE:", userRole);
+
+      // ✅ GÜVENLİ YÖNLENDİRME
+      if (userRole === "corporate" || userRole === "company") {
         navigate("/corporate/dashboard", { replace: true });
-      } else if (role === "coach") {
+      } else if (userRole === "coach") {
         navigate("/coach/dashboard", { replace: true });
+      } else if (userRole === "admin") {
+        navigate("/admin", { replace: true });
       } else {
         navigate("/user/dashboard", { replace: true });
       }
 
     } catch (err) {
-      console.log("LOGIN ERROR:", err);
+      console.error("LOGIN ERROR:", err);
       toast.error("Beklenmeyen hata oluştu");
+    } finally {
       setIsLoading(false);
     }
   };

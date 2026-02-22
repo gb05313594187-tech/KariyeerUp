@@ -25,7 +25,16 @@ import AdminLayout from "@/layouts/AdminLayout";
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return null;
+  // 🔥 Kritik: Loading bitmeden karar verme
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-sm text-gray-500">
+          Oturum kontrol ediliyor...
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

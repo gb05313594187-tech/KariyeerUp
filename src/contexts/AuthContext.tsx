@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       user,
       supabaseUser,
       role,
-      isAuthenticated: !!user,
+      isAuthenticated: !!supabaseUser,
       loading,
       login,
       logout,

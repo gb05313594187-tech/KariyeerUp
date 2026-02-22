@@ -41,7 +41,7 @@ export default function AdminDashboard() {
     try {
       const [metricsRes, statsRes, recentRes, appsRes, companiesRes, usersRes, aiRes, aiDetailRes] =
         await Promise.all([
-          supabase.from("admin_overview_metrics").select("*").single(),
+          supabase.from("enterprise_master_dashboard").select("*").single(),
           supabase.rpc("admin_get_dashboard_stats"),
           supabase.rpc("admin_recent_activity", { limit_count: 30 }),
           supabase.from("coach_applications").select("*").order("created_at", { ascending: false }),
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
               <KpiCard label="Premium Üye" value={m.total_premium_users} sub={`${m.total_users ? ((m.total_premium_users / m.total_users) * 100).toFixed(1) : 0}% oran`} icon={<Award className="h-5 w-5" />} color="orange" />
               <KpiCard label="Toplam Koç" value={m.total_coaches} sub={`${m.active_coaches} aktif`} icon={<UserCheck className="h-5 w-5" />} color="purple" />
               <KpiCard label="Toplam Seans" value={m.total_sessions} sub={`${m.completed_sessions} tamamlandı`} icon={<Video className="h-5 w-5" />} color="blue" />
-              <KpiCard label="Toplam Gelir" value={`₺${((m.total_successful_revenue || 0) / 100).toLocaleString("tr-TR")}`} sub={`₺${((m.monthly_payment_amount || 0) / 100).toLocaleString("tr-TR")} bu ay`} icon={<DollarSign className="h-5 w-5" />} color="green" />
+              <KpiCard label="Toplam Gelir" value={`₺${(m.total_successful_revenue || 0).toLocaleString("tr-TR")}`} sub={`₺${((m.monthly_payment_amount || 0) / 100).toLocaleString("tr-TR")} bu ay`} icon={<DollarSign className="h-5 w-5" />} color="green" />
             </div>
           </div>
 

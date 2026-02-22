@@ -41,15 +41,15 @@ export default function AdminDashboard() {
     try {
       const [metricsRes, statsRes, recentRes, appsRes, companiesRes, usersRes, aiRes, aiDetailRes] =
         await Promise.all([
-          supabase.rpc("admin_get_master_dashboard").maybeSingle(),
-          supabase.rpc("admin_get_dashboard_stats"),
-          supabase.rpc("admin_recent_activity", { limit_count: 30 }),
-          supabase.from("coach_applications").select("*").order("created_at", { ascending: false }),
-          supabase.from("company_requests").select("*").order("updated_at", { ascending: false }),
-          supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
-          supabase.from("admin_ai_insights").select("*").single(),
-          supabase.rpc("admin_get_ai_details", { limit_count: 10 }),
-        ]);
+  supabase.rpc("admin_get_master_dashboard").maybeSingle(),
+  supabase.rpc("admin_get_dashboard_stats"),
+  supabase.rpc("admin_recent_activity", { limit_count: 30 }),
+  supabase.from("coach_applications").select("*").order("created_at", { ascending: false }),
+  supabase.from("company_requests").select("*").order("updated_at", { ascending: false }),
+  supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
+  supabase.from("admin_ai_insights").select("*").single(),
+  supabase.rpc("admin_get_ai_details", { limit_count: 10 }),
+])
 
       if (metricsRes.error) console.warn("metrics:", metricsRes.error);
       if (aiRes.error) console.warn("ai metrics:", aiRes.error);

@@ -53,9 +53,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: "kariyeerup-auth-token",
-    storage:
-      typeof window !== "undefined" ? window.localStorage : undefined,
+    storage: window.localStorage,
   },
   db: { schema: "public" },
 });

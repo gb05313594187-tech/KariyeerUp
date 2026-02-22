@@ -1,4 +1,3 @@
-
 // src/contexts/AuthContext.tsx
 // @ts-nocheck
 
@@ -83,6 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let mounted = true;
 
     const initSession = async () => {
+      setLoading(true);
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -91,7 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         await loadUserProfile(session.user);
       }
 
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     };
 
     initSession();
@@ -100,6 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("AUTH EVENT:", event);
+
+      if (!mounted) return;
+
+      setLoading(true);
 
       if (session?.user) {
         await loadUserProfile(session.user);
@@ -119,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });

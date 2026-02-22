@@ -9,9 +9,9 @@ import {
   Settings,
   User,
   LogOut,
-  Shield,
   Menu,
   X,
+  TrendingUp,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -20,11 +20,21 @@ const NAV_ITEMS = [
     path: "/admin",
     icon: <BarChart3 className="h-4 w-4" />,
   },
+
+  // 🔥 EKLENDİ — Hiring aslında AdminDashboard içindeki jobs tab'ına yönlendiriyoruz
   {
     label: "Görüşme & İşe Alım",
-    path: "/admin/hiring",
+    path: "/admin?tab=jobs",
     icon: <Video className="h-4 w-4" />,
   },
+
+  // 🔥 EKLENDİ — Investor Dashboard
+  {
+    label: "Investor",
+    path: "/admin/investor",
+    icon: <TrendingUp className="h-4 w-4" />,
+  },
+
   {
     label: "Profil",
     path: "/admin/profile",
@@ -38,11 +48,14 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminNavbar() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (to: string) => {
+    if (to.includes("?")) {
+      return pathname + search === to;
+    }
     if (to === "/admin") return pathname === "/admin";
     return pathname.startsWith(to);
   };

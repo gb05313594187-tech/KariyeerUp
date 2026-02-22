@@ -41,11 +41,7 @@ export default function AdminDashboard() {
     try {
       const [metricsRes, statsRes, recentRes, appsRes, companiesRes, usersRes, aiRes, aiDetailRes] =
         await Promise.all([
-supabase
-  .from("enterprise_master_dashboard")
-  .select("*")
-  .limit(1)
-  .maybeSingle()
+          supabase.rpc("admin_get_master_dashboard").maybeSingle()
           supabase.rpc("admin_get_dashboard_stats"),
           supabase.rpc("admin_recent_activity", { limit_count: 30 }),
           supabase.from("coach_applications").select("*").order("created_at", { ascending: false }),

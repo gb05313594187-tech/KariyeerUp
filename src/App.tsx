@@ -25,7 +25,6 @@ import AdminLayout from "@/layouts/AdminLayout";
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  // 🔥 Kritik: Loading bitmeden karar verme
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -69,6 +68,7 @@ import CoachSettings from "@/pages/CoachSettings";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
+import InvestorDashboard from "@/pages/InvestorDashboard"; // 🔥 EKLENDİ
 
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
@@ -125,7 +125,8 @@ export default function App() {
         <Toaster richColors position="top-right" />
 
         <Routes>
-          {/* ADMIN */}
+
+          {/* ================= ADMIN ================= */}
           <Route
             path="/admin"
             element={
@@ -137,10 +138,14 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
+
+            {/* 🔥 YENİ INVESTOR DASHBOARD */}
+            <Route path="investor" element={<InvestorDashboard />} />
           </Route>
 
-          {/* PUBLIC + USER + CORPORATE + COACH */}
+          {/* ================= PUBLIC + USER + CORPORATE + COACH ================= */}
           <Route path="/" element={<PublicLayout />}>
+
             <Route index element={<Home />} />
             <Route path="home" element={<SocialHome />} />
             <Route path="jobs" element={<JobBoard />} />
@@ -241,6 +246,7 @@ export default function App() {
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+
         </Routes>
       </Router>
     </AuthProvider>

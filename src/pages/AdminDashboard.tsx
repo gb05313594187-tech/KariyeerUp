@@ -589,7 +589,7 @@ useEffect(() => {
 <KpiCard
   label="Ort. Puan"
   value={`⭐ ${m?.avg_rating ?? 0}`}
-  sub={`${data?.total_reviews ?? 0} değerlendirme`}
+  sub={`${m?.total_reviews ?? 0} değerlendirme`}
   icon={<Star className="h-5 w-5" />}
   color="orange"
 />          <KpiCard label="Kişilik Testi" value={m.total_personality_tests} icon={<Brain className="h-5 w-5" />} color="purple" />

@@ -588,7 +588,7 @@ useEffect(() => {
           <KpiCard label="Yer İşareti" value={m.total_bookmarks} icon={<BookOpen className="h-5 w-5" />} color="gray" />
 <KpiCard
   label="Ort. Puan"
-  value={`⭐ ${data?.avg_rating ?? 0}`}
+  value={`⭐ ${m?.avg_rating ?? 0}`}
   sub={`${data?.total_reviews ?? 0} değerlendirme`}
   icon={<Star className="h-5 w-5" />}
   color="orange"

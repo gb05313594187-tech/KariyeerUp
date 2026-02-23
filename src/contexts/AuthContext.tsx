@@ -81,23 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let mounted = true;
 
-    const initSession = async () => {
-      setLoading(true);
+    // 🟢 SİLİNDİ: initSession() buradan kalktı. Artık çift çağırma yok.
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.user && mounted) {
-        await loadUserProfile(session.user);
-      }
-
-      if (mounted) {
-        setLoading(false);
-      }
-    };
-
-    initSession();
+    // 🟢 DEĞİŞTİ: Sayfa açılır açılmaz loading true olsun ki "Giriş Yap" görünmesin.
+    setLoading(true);
 
     const {
       data: { subscription },
@@ -106,9 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!mounted) return;
 
-      setLoading(true);
-
       if (session?.user) {
+        // 🟢 DEĞİŞTİ: Profil yüklenirken loading true kalsın (spinner dönsün)
+        setLoading(true); 
         await loadUserProfile(session.user);
       } else {
         setUser(null);
@@ -116,7 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setRole(null);
       }
 
-      setLoading(false);
+      // 🟢 DEĞİŞTİ: İşlem bitince (giriş veya çıkış) loading false olsun.
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     return () => {

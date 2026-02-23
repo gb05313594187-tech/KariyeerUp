@@ -1,6 +1,6 @@
 // src/App.tsx
 // @ts-nocheck
-
+import { SessionRefresher } from "@/components/SessionRefresher";
 import { useEffect } from "react";
 import {
   BrowserRouter as Router,

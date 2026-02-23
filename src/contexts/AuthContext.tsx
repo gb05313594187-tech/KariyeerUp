@@ -81,11 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let mounted = true;
 
-    // 🟢 SİLİNDİ: initSession() buradan kalktı. Artık çift çağırma yok.
-
-    // 🟢 DEĞİŞTİ: Sayfa açılır açılmaz loading true olsun ki "Giriş Yap" görünmesin.
-    setLoading(true);
-
+    // SADECE onAuthStateChange kullan, initSession YOK
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -94,8 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!mounted) return;
 
       if (session?.user) {
-        // 🟢 DEĞİŞTİ: Profil yüklenirken loading true kalsın (spinner dönsün)
-        setLoading(true); 
         await loadUserProfile(session.user);
       } else {
         setUser(null);
@@ -103,10 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setRole(null);
       }
 
-      // 🟢 DEĞİŞTİ: İşlem bitince (giriş veya çıkış) loading false olsun.
-      if (mounted) {
-        setLoading(false);
-      }
+      setLoading(false);
     });
 
     return () => {
@@ -116,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -125,7 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return { success: false, message: error.message };
     }
 
-    return { success: true };
+    // Role'ü response'tan al
+    const userRole = data?.user?.user_metadata?.user_type || "user";
+    return { success: true, role: userRole, user: data?.user };
   };
 
   const logout = async () => {

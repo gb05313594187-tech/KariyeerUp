@@ -50,7 +50,7 @@ const supabaseFetch: typeof fetch = (input: any, init?: any) => {
    ========================================================= */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: false,
+    autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
     storage: window.localStorage,

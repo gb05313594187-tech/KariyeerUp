@@ -106,27 +106,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+const login = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-    if (error) {
-      return { success: false, message: error.message };
-    }
+  if (error) {
+    return { success: false, message: error.message };
+  }
 
-    // Role'ü response'tan al
-    const userRole = data?.user?.user_metadata?.user_type || "user";
-    return { success: true, role: userRole, user: data?.user };
-  };
+  // ✅ Profil yükleyip role'ü oku
+  if (data?.user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .maybeSingle();
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSupabaseUser(null);
-    setRole(null);
-  };
+    const userRole = normalizeRole(profile?.role);
+    
+    return { 
+      success: true, 
+      role: userRole,
+      user: data.user 
+    };
+  }
+
+  return { success: false, message: "Kullanıcı bulunamadı" };
+};
+
+const logout = async () => {
+  await supabase.auth.signOut();
+  setUser(null);
+  setSupabaseUser(null);
+  setRole(null);
+};
 
   const value = useMemo(
     () => ({

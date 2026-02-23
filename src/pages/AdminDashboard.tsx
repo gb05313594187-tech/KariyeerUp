@@ -598,9 +598,9 @@ useEffect(() => {
         <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <KpiCard label="İş İlanı" value={m.total_jobs} icon={<Briefcase className="h-5 w-5" />} color="blue" />
           <KpiCard label="Boosted İlan" value={m.boosted_jobs} icon={<Zap className="h-5 w-5" />} color="orange" />
-          <KpiCard label="Başvuru" value={m.total_job_applications} sub={`+${m.monthly_job_applications} bu ay`} icon={<FileText className="h-5 w-5" />} color="purple" />
-          <KpiCard label="Mülakat" value={m.total_interviews} sub={`${m.completed_interviews} tamamlandı`} icon={<Video className="h-5 w-5" />} color="blue" />
-          <KpiCard label="İşe Alınan" value={m.total_hired} sub={`/ ${m.total_hire_decisions} karar`} icon={<UserCheck className="h-5 w-5" />} color="green" />
+          <KpiCard label="Başvuru" value={m.total_job_applications} sub={`+${m.monthly_job_applications ?? 0} bu ay`} icon={<FileText className="h-5 w-5" />} color="purple" />
+          <KpiCard label="Mülakat" value={m.total_interviews} sub={`${m.completed_interviews ?? 0} tamamlandı`} icon={<Video className="h-5 w-5" />} color="blue" />
+          <KpiCard label="İşe Alınan" value={m.total_hired} sub={`/ ${m.total_hire_decisions ?? 0} karar`} icon={<UserCheck className="h-5 w-5" />} color="green" />
           <KpiCard label="Eşleşme" value={m.total_matches} icon={<Heart className="h-5 w-5" />} color="red" />
         </div>
       )}

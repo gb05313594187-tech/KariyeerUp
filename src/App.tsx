@@ -14,14 +14,31 @@ import { Toaster } from "sonner";
 import ReactGA from "react-ga4";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase"; // <-- YENİ EKLENDİ
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
 
-/* ================= PROTECTED ROUTE ================= */
+/* ================= SESSION YÜKLEME - SİHİRLİ KOD ================= */
+function SessionLoader() {
+  useEffect(() => {
+    // Sayfa açılır açılmaz session'ı yükle
+    supabase.auth.getSession();
 
+    // Her 30 saniyede bir sessizce kontrol et (donma sorunu tamamen biter)
+    const interval = setInterval(() => {
+      supabase.auth.getSession();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return null;
+}
+
+/* ================= PROTECTED ROUTE ================= */
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
@@ -43,7 +60,6 @@ function ProtectedRoute({ children }) {
 }
 
 /* ================= SAYFALAR ================= */
-
 import Home from "@/pages/Index";
 import Pricing from "@/pages/Pricing";
 import Boost from "@/pages/Boost";
@@ -68,14 +84,13 @@ import CoachSettings from "@/pages/CoachSettings";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminSettings from "@/pages/AdminSettings";
-import InvestorDashboard from "@/pages/InvestorDashboard"; // 🔥 EKLENDİ
+import InvestorDashboard from "@/pages/InvestorDashboard";
 
 import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 import CreateJob from "@/pages/CreateJob";
 
 /* ================= ANALYTICS ================= */
-
 const GA_ID = "G-R39ELRDLKQ";
 
 function AnalyticsTracker() {
@@ -101,7 +116,6 @@ function AnalyticsTracker() {
 }
 
 /* ================= PUBLIC LAYOUT ================= */
-
 function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -116,17 +130,18 @@ function PublicLayout() {
 }
 
 /* ================= APP ================= */
-
 export default function App() {
   return (
     <AuthProvider>
       <Router>
+        {/* BU SATIR HER ŞEYİ ÇÖZÜYOR */}
+        <SessionLoader />
+
         <AnalyticsTracker />
         <Toaster richColors position="top-right" />
 
         <Routes>
-
-          {/* ================= ADMIN ================= */}
+          {/* ADMIN */}
           <Route
             path="/admin"
             element={
@@ -138,14 +153,11 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
-
-            {/* 🔥 YENİ INVESTOR DASHBOARD */}
             <Route path="investor" element={<InvestorDashboard />} />
           </Route>
 
-          {/* ================= PUBLIC + USER + CORPORATE + COACH ================= */}
+          {/* PUBLIC + PROTECTED */}
           <Route path="/" element={<PublicLayout />}>
-
             <Route index element={<Home />} />
             <Route path="home" element={<SocialHome />} />
             <Route path="jobs" element={<JobBoard />} />
@@ -243,10 +255,8 @@ export default function App() {
               }
             />
 
-            {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
-
         </Routes>
       </Router>
     </AuthProvider>

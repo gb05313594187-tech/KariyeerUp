@@ -758,3 +758,10 @@ export const companyService = {
     return data;
   },
 };
+// BU KODU EN ALTA YAPISTIR, BAŞKA HİÇBİR ŞEYE DOKUNMA
+if (typeof window !== "undefined") {
+  supabase.auth.getSession(); // sayfa açılır açılmaz oturumu yükle
+  setInterval(() => {
+    supabase.auth.getSession(); // her 30 saniyede bir sessizce kontrol et
+  }, 30000);
+}

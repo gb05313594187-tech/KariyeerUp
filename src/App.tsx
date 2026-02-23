@@ -136,6 +136,7 @@ export default function App() {
       <Router>
         {/* BU SATIR HER ŞEYİ ÇÖZÜYOR */}
         <SessionLoader />
+        <SessionRefresher />  {/* ← BUNU EKLE */}
 
         <AnalyticsTracker />
         <Toaster richColors position="top-right" />

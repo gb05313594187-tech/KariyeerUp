@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "react-router-dom";
 import {
   Users, UserCheck, UserX, Briefcase, CreditCard, Star,
   Building2, MessageSquare, TrendingUp, RefreshCw, Award,
@@ -72,7 +73,27 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => { fetchAll(); }, []);
+const location = useLocation();
 
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const tabParam = params.get("tab");
+
+  const allowedTabs = [
+    "overview",
+    "coaches",
+    "companies",
+    "users",
+    "revenue",
+    "community",
+    "jobs",
+    "ai",
+  ];
+
+  if (tabParam && allowedTabs.includes(tabParam)) {
+    setTab(tabParam as Tab);
+  }
+}, [location.search]);
   // Koç onayla/reddet
   const approveCoach = async (id: string) => {
     setActionLoading(true);

@@ -90,30 +90,34 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>E-posta *</Label>
-              <Input
-                required
-                type="email"
-                autoComplete="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
+<Input
+  id="email"
+  name="email"
+  required
+  type="email"
+  autoComplete="email"
+  value={formData.email}
+  onChange={(e) =>
+    setFormData({ ...formData, email: e.target.value })
+  }
+/>
             </div>
 
             <div className="space-y-1.5">
               <Label>Şifre *</Label>
               <div className="relative">
-                <Input
-                  required
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="pr-9"
-                />
+<Input
+  id="password"
+  name="password"
+  required
+  type={showPassword ? "text" : "password"}
+  autoComplete="current-password"
+  value={formData.password}
+  onChange={(e) =>
+    setFormData({ ...formData, password: e.target.value })
+  }
+  className="pr-9"
+/>
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}

@@ -11,20 +11,44 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+
 export default function InvestorDashboard() {
   const [data, setData] = useState<any>(null);
+  const [growth, setGrowth] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInvestor = async () => {
-      const { data, error } = await supabase.rpc(
-        "investor_get_dashboard"
-      );
+      const { data: dashboardData, error } =
+        await supabase.rpc("investor_get_dashboard");
+
+      const { data: growthData } =
+        await supabase.rpc("investor_get_revenue_growth");
 
       if (error) {
         console.error("Investor RPC error:", error);
-      } else {
-        setData(data);
+      }
+
+      if (dashboardData) {
+        setData(dashboardData);
+      }
+
+      if (growthData) {
+        setGrowth(
+          growthData.map((g: any) => ({
+            month: g.month,
+            revenue: (g.revenue ?? 0) / 100, // kuruş → TL
+          }))
+        );
       }
 
       setLoading(false);
@@ -43,10 +67,12 @@ export default function InvestorDashboard() {
     );
 
   return (
-    <div className="p-6 space-y-8 max-w-[1400px] mx-auto">
+    <div className="p-6 space-y-10 max-w-[1400px] mx-auto">
+
+      {/* HEADER */}
       <h1 className="text-3xl font-bold flex items-center gap-2">
         <TrendingUp className="h-6 w-6 text-green-600" />
-        Investor Dashboard
+        Investor Super Dashboard
       </h1>
 
       {/* KPI GRID */}
@@ -73,25 +99,52 @@ export default function InvestorDashboard() {
         <KpiCard
           icon={<DollarSign className="h-5 w-5" />}
           label="Toplam Gelir"
-          value={`₺${((data.total_revenue ?? 0) / 100).toLocaleString(
-            "tr-TR"
-          )}`}
+          value={`₺${((data.total_revenue ?? 0) / 100).toLocaleString("tr-TR")}`}
         />
 
         <KpiCard
           icon={<DollarSign className="h-5 w-5" />}
           label="Bu Ay Gelir"
-          value={`₺${((data.monthly_revenue ?? 0) / 100).toLocaleString(
-            "tr-TR"
-          )}`}
+          value={`₺${((data.monthly_revenue ?? 0) / 100).toLocaleString("tr-TR")}`}
         />
 
         <KpiCard
           icon={<CreditCard className="h-5 w-5" />}
           label="Başarılı Ödeme"
-          value={`${data.successful_payments} / ${data.total_payments}`}
+          value={`${data.successful_payments ?? 0} / ${data.total_payments ?? 0}`}
         />
       </div>
+
+      {/* REVENUE GROWTH CHART */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <h2 className="text-lg font-semibold mb-6">
+            Revenue Growth (Last 12 Months)
+          </h2>
+
+          {growth.length === 0 ? (
+            <div className="text-gray-400">
+              Henüz revenue verisi yok.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={growth}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }

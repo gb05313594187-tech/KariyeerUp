@@ -586,8 +586,13 @@ useEffect(() => {
           <KpiCard label="Anket" value={m.total_polls} icon={<BarChart3 className="h-5 w-5" />} color="blue" />
           <KpiCard label="Etkinlik" value={m.total_events} icon={<Calendar className="h-5 w-5" />} color="orange" />
           <KpiCard label="Yer İşareti" value={m.total_bookmarks} icon={<BookOpen className="h-5 w-5" />} color="gray" />
-          <KpiCard label="Ort. Puan" value={`⭐ ${m.average_rating}`} sub={`${m.total_reviews} değerlendirme`} icon={<Star className="h-5 w-5" />} color="orange" />
-          <KpiCard label="Kişilik Testi" value={m.total_personality_tests} icon={<Brain className="h-5 w-5" />} color="purple" />
+<KpiCard
+  label="Ort. Puan"
+  value={`⭐ ${data?.avg_rating ?? 0}`}
+  sub={`${data?.total_reviews ?? 0} değerlendirme`}
+  icon={<Star className="h-5 w-5" />}
+  color="orange"
+/>          <KpiCard label="Kişilik Testi" value={m.total_personality_tests} icon={<Brain className="h-5 w-5" />} color="purple" />
           <KpiCard label="AI Özet" value={m.total_ai_summaries} icon={<Brain className="h-5 w-5" />} color="blue" />
           <KpiCard label="Email" value={m.total_emails_sent} icon={<Mail className="h-5 w-5" />} color="gray" />
         </div>

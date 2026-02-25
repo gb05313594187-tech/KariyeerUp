@@ -5,7 +5,7 @@ import App from "./App";
 import "./index.css";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { AuthProvider } from "@/contexts/AuthContextSafe";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { Toaster } from "sonner";
 

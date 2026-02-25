@@ -47,7 +47,27 @@ export default function Index() {
   const [demoNeed, setDemoNeed] = useState("Mülakat");
   const [demoStartPlan, setDemoStartPlan] = useState("Bu ay");
   const [demoNote, setDemoNote] = useState("");
+  // ÖNE ÇIKAN KOÇLAR İÇİN GEREKLİ STATE VE FETCH
+  const [featuredCoaches, setFeaturedCoaches] = useState<any[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
 
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      setLoadingFeatured(true);
+      const { data, error } = await supabase
+        .from("featured_coaches_active")
+        .select("id, full_name, title, avatar_url, rating, total_reviews, specializations, hourly_rate, currency, slug, boost_package_name")
+        .order("boost_activated_at", { ascending: false });
+
+      if (error) {
+        console.error("Öne çıkan koçlar yüklenemedi:", error);
+      } else {
+        setFeaturedCoaches(data || []);
+      }
+      setLoadingFeatured(false);
+    };
+    fetchFeatured();
+  }, []);
   const i18n: any = {
     tr: {
       personas: {
@@ -1701,22 +1721,16 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* ✅ ÖNE ÇIKAN KOÇLAR — PREMIUM TASARIM                         */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ÖNE ÇIKAN KOÇLAR — GERÇEK VERİYLE ÇALIŞIYOR */}
       <section className="relative overflow-hidden">
-        {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-        {/* Decorative orbs */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-red-600/20 to-orange-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-br from-orange-500/15 to-amber-400/10 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-red-500/10 to-transparent rounded-full blur-2xl" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-28">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-14">
             <div>
-              {/* Premium badge */}
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-red-600/20 to-orange-500/20 border border-red-500/30 backdrop-blur-sm">
                 <Crown className="h-4 w-4 text-orange-400" />
                 <span className="text-sm font-bold text-orange-300 tracking-wide">
@@ -1738,21 +1752,15 @@ export default function Index() {
                 </Button>
               </Link>
               <Link to="/coaches">
-                <Button
-                  variant="outline"
-                  className="h-12 rounded-xl border-gray-600 text-gray-300 font-semibold px-6 hover:bg-gray-800 hover:text-white hover:border-gray-500"
-                >
-                  {t.featured.all}
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                <Button variant="outline" className="h-12 rounded-xl border-gray-600 text-gray-300 font-semibold px-6 hover:bg-gray-800 hover:text-white hover:border-gray-500">
+                  {t.featured.all} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
           </div>
 
-                    {/* GERÇEK ÖNE ÇIKAN KOÇLAR - SUPABASE */}
           <div className="grid md:grid-cols-3 gap-6">
             {loadingFeatured ? (
-              // Yükleniyor animasyonu
               [...Array(3)].map((_, i) => (
                 <div key={i} className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
               ))
@@ -1763,31 +1771,19 @@ export default function Index() {
                 <p className="text-sm mt-2 opacity-75">Boost alan koçlar burada otomatik görünecek</p>
               </div>
             ) : (
-              featuredCoaches.map((coach: any) => {
-                const initials = coach.full_name
-                  .split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2);
+              featuredCoaches.map((coach) => {
+                const initials = coach.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
                 return (
-                  <div
-                    key={coach.id}
-                    className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
-                  >
+                  <div key={coach.id} className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
-
                     <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
+                      {/* ... kart içeriği aynı ... */}
                       <div className="flex items-start justify-between mb-5">
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             {coach.avatar_url ? (
-                              <img
-                                src={coach.avatar_url}
-                                alt={coach.full_name}
-                                className="w-16 h-16 rounded-2xl object-cover shadow-lg"
-                              />
+                              <img src={coach.avatar_url} alt={coach.full_name} className="w-16 h-16 rounded-2xl object-cover shadow-lg" />
                             ) : (
                               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg">
                                 <span className="text-xl font-black text-white">{initials}</span>
@@ -1801,9 +1797,7 @@ export default function Index() {
                             <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
                               {coach.full_name}
                             </h3>
-                            <p className="text-sm text-gray-400">
-                              {coach.title || "Kariyer Koçu"}
-                            </p>
+                            <p className="text-sm text-gray-400">{coach.title || "Kariyer Koçu"}</p>
                           </div>
                         </div>
                         <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
@@ -1828,11 +1822,8 @@ export default function Index() {
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-5">
-                        {(coach.specializations || []).slice(0, 3).map((tag: string) => (
-                          <span
-                            key={tag}
-                            className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium"
-                          >
+                        {(coach.specializations || []).slice(0, 3).map((tag) => (
+                          <span key={tag} className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium">
                             {tag}
                           </span>
                         ))}
@@ -1854,7 +1845,7 @@ export default function Index() {
                         </div>
                         <Link to={`/coach/${coach.slug || ""}`}>
                           <button className="flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors group/btn">
-                            <span>{t.featured.viewProfile || "Profili İncele"}</span>
+                            <span>{t.featured.viewProfile}</span>
                             <ArrowUpRight className="h-4 w-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                           </button>
                         </Link>
@@ -1865,104 +1856,7 @@ export default function Index() {
               })
             )}
           </div>
-              <div
-                key={i}
-                className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
-              >
-                {/* Card glow effect on hover */}
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
 
-                {/* Card body */}
-                <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
-                  {/* Top row: Avatar + Crown */}
-                  <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center gap-4">
-                      {/* Avatar with gradient ring */}
-                      <div className={`relative`}>
-                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${coach.gradient} flex items-center justify-center shadow-lg shadow-red-900/20`}>
-                          <span className="text-xl font-black text-white">
-                            {coach.initials}
-                          </span>
-                        </div>
-                        {/* Online indicator */}
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
-                          {coach.name}
-                        </h3>
-                        <p className="text-sm text-gray-400">
-                          {coach.title}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
-                      <Award className="h-5 w-5 text-orange-400" />
-                    </div>
-                  </div>
-
-                  {/* Rating row */}
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex">
-                        {[...Array(5)].map((_, si) => (
-                          <Star
-                            key={si}
-                            className="h-4 w-4 text-amber-400 fill-amber-400"
-                          />
-                        ))}
-                      </div>
-                      <span className="text-lg font-black text-white ml-1">
-                        {coach.rating}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      ({coach.reviews} {t.featured.reviewsSuffix})
-                    </span>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {coach.tags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Divider */}
-                  <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
-
-                  {/* Bottom: Verified + Sessions + CTA */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span className="text-xs font-semibold">
-                          {t.featured.verified}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        <span className="text-xs">{coach.sessions}</span>
-                      </div>
-                    </div>
-                    <button className="flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors group/btn">
-                      <span>{t.featured.viewProfile || "Profili İncele"}</span>
-                      <ArrowUpRight className="h-4 w-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom accent line */}
           <div className="mt-14 flex items-center gap-4">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
             <Crown className="h-5 w-5 text-orange-500/40" />
@@ -1971,6 +1865,8 @@ export default function Index() {
         </div>
       </section>
 
+
+      
       {/* 2025 BLOĞU */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">

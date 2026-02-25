@@ -1760,11 +1760,108 @@ export default function Index() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {loadingFeatured ? (
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
-              ))
+              // Yükleniyor
+              <>
+                <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
+                <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
+                <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
+              </>
             ) : featuredCoaches.length === 0 ? (
+              // Hiç yok
+              <div className="col-span-3 text-center py-20 text-gray-400">
+                <Crown className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-xl">Henüz öne çıkan koç yok</p>
+                <p className="text-sm mt-2 opacity-75">Boost alan koçlar burada otomatik görünecek</p>
+              </div>
+            ) : (
+              // Gerçek koçlar
+              featuredCoaches.map((coach) => {
+                const initials = coach.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+
+                return (
+                  <div key={coach.id} className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+                    <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
+                      {/* kart içeriği aynı, sadece buraya kadar */}
+                      <div className="flex items-start justify-between mb-5">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            {coach.avatar_url ? (
+                              <img src={coach.avatar_url} alt={coach.full_name} className="w-16 h-16 rounded-2xl object-cover shadow-lg" />
+                            ) : (
+                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg">
+                                <span className="text-xl font-black text-white">{initials}</span>
+                              </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+                              {coach.full_name}
+                            </h3>
+                            <p className="text-sm text-gray-400">{coach.title || "Kariyer Koçu"}</p>
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
+                          <Award className="h-5 w-5 text-orange-400" />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
+                            ))}
+                          </div>
+                          <span className="text-lg font-black text-white ml-1">
+                            {coach.rating?.toFixed(1) || "5.0"}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          ({coach.total_reviews || 0} {t.featured.reviewsSuffix})
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        {(coach.specializations || []).slice(0, 3).map((tag: string) => (
+                          <span key={tag} className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium">
+                            {tag}
+                          </span>
+                        ))}
+                        {coach.boost_package_name && (
+                          <span className="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 text-yellow-300 font-medium">
+                            {coach.boost_package_name}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-emerald-400">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span className="text-xs font-semibold">{t.featured.verified}</span>
+                          </div>
+                        </div>
+                        <Link to={`/coach/${coach.slug || ""}`}>
+                          <button className="flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors group/btn">
+                            <span>{t.featured.viewProfile}</span>
+                            <ArrowUpRight className="h-4 w-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
               <div className="col-span-3 text-center py-20 text-gray-400">
                 <Crown className="h-16 w-16 mx-auto mb-4 opacity-50" />
                 <p className="text-xl">Henüz öne çıkan koç yok</p>

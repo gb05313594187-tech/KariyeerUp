@@ -14,50 +14,12 @@ import { Toaster } from "sonner";
 import ReactGA from "react-ga4";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase"; // <-- YENİ EKLENDİ
+import { supabase } from "@/lib/supabase";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
-
-/* ================= SESSION YÜKLEME - SİHİRLİ KOD ================= */
-function SessionLoader() {
-  useEffect(() => {
-    // Sayfa açılır açılmaz session'ı yükle
-    supabase.auth.getSession();
-
-    // Her 30 saniyede bir sessizce kontrol et (donma sorunu tamamen biter)
-    const interval = setInterval(() => {
-      supabase.auth.getSession();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return null;
-}
-
-/* ================= PROTECTED ROUTE ================= */
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-sm text-gray-500">
-          Oturum kontrol ediliyor...
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-}
 
 /* ================= SAYFALAR ================= */
 import Home from "@/pages/Index";
@@ -67,6 +29,11 @@ import MentorCircle from "@/pages/MentorCircle";
 import Webinars from "@/pages/Webinars";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+
+// ✅ BU İKİ SAYFAYI MUTLAKA IMPORT ETMELİSİN
+// Eğer dosyaların adı farklıysa burayı düzelt
+import Coaches from "@/pages/Coaches"; 
+import CoachDetail from "@/pages/CoachDetail"; 
 
 import UserDashboard from "@/pages/UserDashboard";
 import UserProfile from "@/pages/UserProfile";
@@ -90,28 +57,55 @@ import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 import CreateJob from "@/pages/CreateJob";
 
+/* ================= SESSION YÜKLEME ================= */
+function SessionLoader() {
+  useEffect(() => {
+    supabase.auth.getSession();
+    const interval = setInterval(() => {
+      supabase.auth.getSession();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  return null;
+}
+
+/* ================= PROTECTED ROUTE ================= */
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-sm text-gray-500">Oturum kontrol ediliyor...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
 /* ================= ANALYTICS ================= */
 const GA_ID = "G-R39ELRDLKQ";
 
 function AnalyticsTracker() {
   const location = useLocation();
-
   useEffect(() => {
     const consent = localStorage.getItem("kariyeer_cookie_consent");
-
     if (consent === "accepted") {
       if (!window.__ga_initialized) {
         ReactGA.initialize(GA_ID);
         window.__ga_initialized = true;
       }
-
       ReactGA.send({
         hitType: "pageview",
         page: location.pathname + location.search,
       });
     }
   }, [location]);
-
   return null;
 }
 
@@ -134,10 +128,8 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        {/* BU SATIR HER ŞEYİ ÇÖZÜYOR */}
         <SessionLoader />
-        <SessionRefresher />  {/* ← BUNU EKLE */}
-
+        <SessionRefresher />
         <AnalyticsTracker />
         <Toaster richColors position="top-right" />
 
@@ -169,6 +161,12 @@ export default function App() {
             <Route path="webinars" element={<Webinars />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+
+            {/* ✅ İŞTE EKSİK OLAN KISIM BURASIYDI! ✅ */}
+            {/* Koçları listeleme sayfası */}
+            <Route path="coaches" element={<Coaches />} />
+            {/* Tekil Koç Detay Sayfası (Slug veya ID ile) */}
+            <Route path="coach/:slug" element={<CoachDetail />} />
 
             {/* USER */}
             <Route
@@ -256,6 +254,7 @@ export default function App() {
               }
             />
 
+            {/* Bilinmeyen sayfa -> Ana sayfaya at */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

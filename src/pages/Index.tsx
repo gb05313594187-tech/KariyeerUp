@@ -755,6 +755,7 @@ export default function Index() {
       },
       langs: { tr: "TR", en: "EN", ar: "AR", fr: "FR" },
     },
+
     fr: {
       personas: {
         user: {
@@ -1587,7 +1588,10 @@ export default function Index() {
                     <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
                       {/* Top row: Avatar + Crown */}
                       <div className="flex items-start justify-between mb-5">
-                        <div className="flex items-center gap-4">
+                        <Link 
+                          to={`/coach/${coach.slug || ""}`} 
+                          className="flex items-center gap-4 group/profile hover:opacity-80 transition-opacity"
+                        >
                           <div className="relative">
                             {coach.avatar_url ? (
                               <img
@@ -1608,14 +1612,14 @@ export default function Index() {
                             </div>
                           </div>
                           <div>
-                            <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+                            <h3 className="text-lg font-bold text-white group-hover/profile:text-orange-300 transition-colors">
                               {coach.full_name}
                             </h3>
                             <p className="text-sm text-gray-400">
                               {coach.title || "Kariyer Koçu"}
                             </p>
                           </div>
-                        </div>
+                        </Link>
                         <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
                           <Award className="h-5 w-5 text-orange-400" />
                         </div>

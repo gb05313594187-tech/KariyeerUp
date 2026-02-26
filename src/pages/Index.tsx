@@ -1,6 +1,6 @@
 // src/pages/Index.tsx
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -47,6 +47,7 @@ export default function Index() {
   const [demoNeed, setDemoNeed] = useState("Mülakat");
   const [demoStartPlan, setDemoStartPlan] = useState("Bu ay");
   const [demoNote, setDemoNote] = useState("");
+
   // ÖNE ÇIKAN KOÇLAR İÇİN GEREKLİ STATE VE FETCH
   const [featuredCoaches, setFeaturedCoaches] = useState<any[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
@@ -56,8 +57,7 @@ export default function Index() {
       setLoadingFeatured(true);
       const { data, error } = await supabase
         .from("featured_coaches_active")
-        .select("id, full_name, title, avatar_url, rating, total_reviews, specializations, hourly_rate, currency, slug, boost_package_name")
-        .order("boost_activated_at", { ascending: false });
+        .select("id, full_name, title, avatar_url, rating, total_reviews, specializations, hourly_rate, currency, slug, boost_package_name");
 
       if (error) {
         console.error("Öne çıkan koçlar yüklenemedi:", error);
@@ -68,6 +68,7 @@ export default function Index() {
     };
     fetchFeatured();
   }, []);
+
   const i18n: any = {
     tr: {
       personas: {
@@ -265,6 +266,8 @@ export default function Index() {
         reviewsSuffix: "yorum",
         viewProfile: "Profili İncele",
         bookSession: "Seans Planla",
+        noFeaturedTitle: "Henüz öne çıkan koç yok",
+        noFeaturedDesc: "Boost alan koçlar burada otomatik görünecek",
         coaches: [
           {
             title: "Kariyer & Liderlik Koçu",
@@ -293,7 +296,6 @@ export default function Index() {
       },
       langs: { tr: "TR", en: "EN", ar: "AR", fr: "FR" },
     },
-
     en: {
       personas: {
         user: {
@@ -492,6 +494,8 @@ export default function Index() {
         reviewsSuffix: "reviews",
         viewProfile: "View Profile",
         bookSession: "Book Session",
+        noFeaturedTitle: "No featured coaches yet",
+        noFeaturedDesc: "Coaches who purchase a boost will appear here automatically",
         coaches: [
           {
             title: "Career & Leadership Coach",
@@ -520,7 +524,6 @@ export default function Index() {
       },
       langs: { tr: "TR", en: "EN", ar: "AR", fr: "FR" },
     },
-
     ar: {
       personas: {
         user: {
@@ -722,6 +725,8 @@ export default function Index() {
         reviewsSuffix: "تقييم",
         viewProfile: "عرض الملف",
         bookSession: "حجز جلسة",
+        noFeaturedTitle: "لا يوجد مدربون مميّزون بعد",
+        noFeaturedDesc: "المدربون الذين يشترون Boost سيظهرون هنا تلقائيًا",
         coaches: [
           {
             title: "مدربة مسار مهني وقيادة",
@@ -750,7 +755,6 @@ export default function Index() {
       },
       langs: { tr: "TR", en: "EN", ar: "AR", fr: "FR" },
     },
-
     fr: {
       personas: {
         user: {
@@ -952,6 +956,8 @@ export default function Index() {
         reviewsSuffix: "avis",
         viewProfile: "Voir le profil",
         bookSession: "Réserver",
+        noFeaturedTitle: "Pas encore de coachs en vedette",
+        noFeaturedDesc: "Les coachs qui achètent un boost apparaîtront ici automatiquement",
         coaches: [
           {
             title: "Coach carrière & leadership",
@@ -1052,39 +1058,6 @@ export default function Index() {
 
   const currentSlides =
     heroSlides[lang as keyof typeof heroSlides] || heroSlides.tr;
-
-  const featuredCoaches = [
-    {
-      name: "Dr. Ayşe Yılmaz",
-      title: t.featured.coaches[0].title,
-      rating: "4.9",
-      reviews: "120+",
-      tags: t.featured.coaches[0].tags,
-      initials: "AY",
-      gradient: "from-red-500 to-orange-500",
-      sessions: "850+",
-    },
-    {
-      name: "Mehmet Demir",
-      title: t.featured.coaches[1].title,
-      rating: "5.0",
-      reviews: "85+",
-      tags: t.featured.coaches[1].tags,
-      initials: "MD",
-      gradient: "from-orange-500 to-amber-500",
-      sessions: "620+",
-    },
-    {
-      name: "Zeynep Kaya",
-      title: t.featured.coaches[2].title,
-      rating: "4.8",
-      reviews: "200+",
-      tags: t.featured.coaches[2].tags,
-      initials: "ZK",
-      gradient: "from-red-600 to-rose-500",
-      sessions: "1200+",
-    },
-  ];
 
   // Icon mapper for systemValue cards
   const cardIconMap: Record<string, any> = {
@@ -1228,14 +1201,11 @@ export default function Index() {
       {persona === "user" ? (
         <section className="pb-16 bg-gradient-to-b from-white via-orange-50/30 to-white">
           <div className="max-w-6xl mx-auto px-4">
-            {/* Ana container */}
             <div className="relative rounded-3xl border border-orange-200 bg-white shadow-xl overflow-hidden">
-              {/* Decorative background elements */}
               <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-orange-100/50 to-transparent rounded-full -translate-y-1/3 translate-x-1/3" />
               <div className="absolute bottom-0 left-0 w-56 h-56 bg-gradient-to-tr from-red-50/50 to-transparent rounded-full translate-y-1/3 -translate-x-1/3" />
 
               <div className="relative z-10 p-8 md:p-12">
-                {/* Badge */}
                 <div className="flex justify-center">
                   <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 border border-orange-200 text-sm font-bold text-red-600 shadow-sm">
                     <span className="relative flex h-2.5 w-2.5">
@@ -1246,7 +1216,6 @@ export default function Index() {
                   </div>
                 </div>
 
-                {/* Title */}
                 <h3 className="mt-6 text-center text-3xl md:text-4xl font-black text-gray-900 leading-tight">
                   {t.systemValue.title}
                   <br />
@@ -1255,16 +1224,13 @@ export default function Index() {
                   </span>
                 </h3>
 
-                {/* Description */}
                 <p className="mt-5 text-center text-base md:text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
                   {t.systemValue.desc}
                 </p>
 
-                {/* 3 Feature Cards */}
                 <div className="mt-10 grid md:grid-cols-3 gap-5">
                   {t.systemValue.cards.map((c: any, idx: number) => {
-                    const IconComponent =
-                      cardIconMap[c.icon] || Target;
+                    const IconComponent = cardIconMap[c.icon] || Target;
                     const gradients = [
                       "from-red-500 to-orange-500",
                       "from-emerald-500 to-teal-500",
@@ -1275,21 +1241,13 @@ export default function Index() {
                         key={c.title}
                         className="group relative rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all duration-300 hover:-translate-y-1"
                       >
-                        {/* Icon circle */}
                         <div
                           className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradients[idx]} flex items-center justify-center shadow-lg mb-4`}
                         >
                           <IconComponent className="h-6 w-6 text-white" />
                         </div>
-
-                        <h4 className="text-lg font-bold text-gray-900">
-                          {c.title}
-                        </h4>
-                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                          {c.desc}
-                        </p>
-
-                        {/* Subtle hover accent */}
+                        <h4 className="text-lg font-bold text-gray-900">{c.title}</h4>
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{c.desc}</p>
                         <div
                           className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${gradients[idx]} rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                         />
@@ -1298,14 +1256,12 @@ export default function Index() {
                   })}
                 </div>
 
-                {/* Divider */}
                 <div className="mt-10 flex items-center gap-4">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent" />
                   <Zap className="h-5 w-5 text-orange-400" />
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent" />
                 </div>
 
-                {/* Chips */}
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
                   {t.systemValue.chips.map((x: string, idx: number) => (
                     <span
@@ -1318,17 +1274,13 @@ export default function Index() {
                   ))}
                 </div>
 
-                {/* Bottom quote */}
                 <div className="mt-8 text-center">
                   <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-lg">
                     <Sparkles className="h-5 w-5 text-orange-400" />
-                    <span className="text-sm font-bold">
-                      {t.systemValue.bottom}
-                    </span>
+                    <span className="text-sm font-bold">{t.systemValue.bottom}</span>
                   </div>
                 </div>
 
-                {/* CTAs */}
                 <div className="mt-8 flex flex-wrap gap-4 justify-center">
                   <Button
                     onClick={() => navigate("/coaches")}
@@ -1365,9 +1317,7 @@ export default function Index() {
                         {s}
                       </span>
                       {idx !== arr.length - 1 ? (
-                        <span className="text-orange-300 font-black">
-                          →
-                        </span>
+                        <span className="text-orange-300 font-black">→</span>
                       ) : null}
                     </div>
                   )
@@ -1375,13 +1325,8 @@ export default function Index() {
               </div>
               <div className="mt-5 grid md:grid-cols-3 gap-3">
                 {t.coachFlow.cards.map((c: string) => (
-                  <div
-                    key={c}
-                    className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center"
-                  >
-                    <div className="text-sm font-semibold text-gray-800">
-                      {c}
-                    </div>
+                  <div key={c} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                    <div className="text-sm font-semibold text-gray-800">{c}</div>
                   </div>
                 ))}
               </div>
@@ -1401,55 +1346,32 @@ export default function Index() {
                     <Briefcase className="h-4 w-4" />
                     {t.coachGlobal.badge}
                   </div>
-                  <h3 className="mt-3 text-2xl font-black text-gray-900">
-                    {t.coachGlobal.title}
-                  </h3>
-                  <p className="mt-3 text-sm md:text-base text-gray-600 max-w-3xl leading-relaxed">
-                    {t.coachGlobal.p1}
-                  </p>
-                  <p className="mt-3 text-gray-600 max-w-3xl">
-                    {t.coachGlobal.p2}
-                  </p>
+                  <h3 className="mt-3 text-2xl font-black text-gray-900">{t.coachGlobal.title}</h3>
+                  <p className="mt-3 text-sm md:text-base text-gray-600 max-w-3xl leading-relaxed">{t.coachGlobal.p1}</p>
+                  <p className="mt-3 text-gray-600 max-w-3xl">{t.coachGlobal.p2}</p>
                   <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                     {t.coachGlobal.valueCards.map((c: any) => (
-                      <div
-                        key={c.title}
-                        className="rounded-xl border bg-gray-50 p-4"
-                      >
-                        <div className="font-semibold text-gray-900">
-                          {c.title}
-                        </div>
+                      <div key={c.title} className="rounded-xl border bg-gray-50 p-4">
+                        <div className="font-semibold text-gray-900">{c.title}</div>
                         <div className="mt-1 text-gray-600">{c.desc}</div>
                       </div>
                     ))}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {t.coachGlobal.chips.map((x: string) => (
-                      <span
-                        key={x}
-                        className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700"
-                      >
-                        {x}
-                      </span>
+                      <span key={x} className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">{x}</span>
                     ))}
                   </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    {t.coachGlobal.note}
-                  </div>
+                  <div className="mt-4 text-xs text-gray-500">{t.coachGlobal.note}</div>
                 </div>
                 <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
                   <Button
                     className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
                     onClick={() => navigate("/coach-application")}
                   >
-                    {t.coachGlobal.apply}{" "}
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    {t.coachGlobal.apply} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-12 rounded-xl border-orange-200"
-                    onClick={() => navigate("/coaches")}
-                  >
+                  <Button variant="outline" className="h-12 rounded-xl border-orange-200" onClick={() => navigate("/coaches")}>
                     {t.coachGlobal.view}
                   </Button>
                 </div>
@@ -1469,21 +1391,12 @@ export default function Index() {
                   <Sparkles className="h-4 w-4" />
                   {t.company.badge}
                 </div>
-                <h3 className="mt-3 text-2xl font-black text-gray-900">
-                  {t.company.title}
-                </h3>
-                <p className="mt-2 text-gray-600 max-w-3xl">
-                  {t.company.p1}
-                </p>
+                <h3 className="mt-3 text-2xl font-black text-gray-900">{t.company.title}</h3>
+                <p className="mt-2 text-gray-600 max-w-3xl">{t.company.p1}</p>
                 <div className="mt-5 grid md:grid-cols-3 gap-3 text-sm">
                   {t.company.cards.map((c: any) => (
-                    <div
-                      key={c.title}
-                      className="rounded-xl border bg-gray-50 p-4"
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {c.title}
-                      </div>
+                    <div key={c.title} className="rounded-xl border bg-gray-50 p-4">
+                      <div className="font-semibold text-gray-900">{c.title}</div>
                       <div className="mt-1 text-gray-600">{c.desc}</div>
                     </div>
                   ))}
@@ -1491,21 +1404,11 @@ export default function Index() {
                 <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                   <div className="flex flex-wrap gap-2">
                     {t.company.chips.map((x: string) => (
-                      <span
-                        key={x}
-                        className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700"
-                      >
-                        {x}
-                      </span>
+                      <span key={x} className="text-xs rounded-full border bg-white px-3 py-1 text-gray-700">{x}</span>
                     ))}
                   </div>
                   <Link to="/for-companies">
-                    <Button
-                      variant="outline"
-                      className="rounded-xl border-orange-200"
-                    >
-                      {t.company.solutions}
-                    </Button>
+                    <Button variant="outline" className="rounded-xl border-orange-200">{t.company.solutions}</Button>
                   </Link>
                 </div>
               </div>
@@ -1520,9 +1423,7 @@ export default function Index() {
           <div className="max-w-5xl mx-auto px-4">
             <div className="text-gray-600 leading-relaxed">
               <p className="text-sm md:text-base">{t.company.midText1}</p>
-              <p className="mt-3 text-sm md:text-base">
-                {t.company.midText2}
-              </p>
+              <p className="mt-3 text-sm md:text-base">{t.company.midText2}</p>
             </div>
           </div>
         </section>
@@ -1538,20 +1439,11 @@ export default function Index() {
                   <Building2 className="h-4 w-4" />
                   {t.company.demo.badge}
                 </div>
-                <h3 className="mt-3 text-2xl font-black text-gray-900">
-                  {t.company.demo.title}
-                </h3>
-                <p className="mt-2 text-gray-600">
-                  {t.company.demo.desc}
-                </p>
+                <h3 className="mt-3 text-2xl font-black text-gray-900">{t.company.demo.title}</h3>
+                <p className="mt-2 text-gray-600">{t.company.demo.desc}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {t.company.chips.map((x: string) => (
-                    <span
-                      key={x}
-                      className="text-xs rounded-full border bg-gray-50 px-3 py-1 text-gray-700"
-                    >
-                      {x}
-                    </span>
+                    <span key={x} className="text-xs rounded-full border bg-gray-50 px-3 py-1 text-gray-700">{x}</span>
                   ))}
                 </div>
               </div>
@@ -1559,160 +1451,58 @@ export default function Index() {
               <form onSubmit={onDemoSubmit} className="mt-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.companyName}
-                    </label>
-                    <input
-                      value={demoCompanyName}
-                      onChange={(e) =>
-                        setDemoCompanyName(e.target.value)
-                      }
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={
-                        t.company.demo.placeholders.company
-                      }
-                      required
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.companyName}</label>
+                    <input value={demoCompanyName} onChange={(e) => setDemoCompanyName(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4" placeholder={t.company.demo.placeholders.company} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.fullName}
-                    </label>
-                    <input
-                      value={demoName}
-                      onChange={(e) => setDemoName(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={t.company.demo.placeholders.name}
-                      required
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.fullName}</label>
+                    <input value={demoName} onChange={(e) => setDemoName(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4" placeholder={t.company.demo.placeholders.name} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.email}
-                    </label>
-                    <input
-                      value={demoEmail}
-                      onChange={(e) => setDemoEmail(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={
-                        t.company.demo.placeholders.email
-                      }
-                      type="email"
-                      required
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.email}</label>
+                    <input value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4" placeholder={t.company.demo.placeholders.email} type="email" required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.phone}
-                    </label>
-                    <input
-                      value={demoPhone}
-                      onChange={(e) => setDemoPhone(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                      placeholder={
-                        t.company.demo.placeholders.phone
-                      }
-                      required
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.phone}</label>
+                    <input value={demoPhone} onChange={(e) => setDemoPhone(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4" placeholder={t.company.demo.placeholders.phone} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.teamSize}
-                    </label>
-                    <select
-                      value={demoTeamSize}
-                      onChange={(e) =>
-                        setDemoTeamSize(e.target.value)
-                      }
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                    >
-                      <option value="1-10">
-                        {t.company.demo.teamOptions.a}
-                      </option>
-                      <option value="11-50">
-                        {t.company.demo.teamOptions.b}
-                      </option>
-                      <option value="51-200">
-                        {t.company.demo.teamOptions.c}
-                      </option>
-                      <option value="200+">
-                        {t.company.demo.teamOptions.d}
-                      </option>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.teamSize}</label>
+                    <select value={demoTeamSize} onChange={(e) => setDemoTeamSize(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4">
+                      <option value="1-10">{t.company.demo.teamOptions.a}</option>
+                      <option value="11-50">{t.company.demo.teamOptions.b}</option>
+                      <option value="51-200">{t.company.demo.teamOptions.c}</option>
+                      <option value="200+">{t.company.demo.teamOptions.d}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.need}
-                    </label>
-                    <select
-                      value={demoNeed}
-                      onChange={(e) => setDemoNeed(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                    >
-                      <option value="Mülakat">
-                        {t.company.demo.needOptions.interview}
-                      </option>
-                      <option value="Kariyer Planı">
-                        {t.company.demo.needOptions.career}
-                      </option>
-                      <option value="Liderlik">
-                        {t.company.demo.needOptions.leadership}
-                      </option>
-                      <option value="Performans">
-                        {t.company.demo.needOptions.performance}
-                      </option>
-                      <option value="CV / LinkedIn">
-                        {t.company.demo.needOptions.cv}
-                      </option>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.need}</label>
+                    <select value={demoNeed} onChange={(e) => setDemoNeed(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4">
+                      <option value="Mülakat">{t.company.demo.needOptions.interview}</option>
+                      <option value="Kariyer Planı">{t.company.demo.needOptions.career}</option>
+                      <option value="Liderlik">{t.company.demo.needOptions.leadership}</option>
+                      <option value="Performans">{t.company.demo.needOptions.performance}</option>
+                      <option value="CV / LinkedIn">{t.company.demo.needOptions.cv}</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.startPlan}
-                    </label>
-                    <select
-                      value={demoStartPlan}
-                      onChange={(e) =>
-                        setDemoStartPlan(e.target.value)
-                      }
-                      className="w-full h-12 rounded-xl border border-orange-200 px-4"
-                    >
-                      <option value="Bu hafta">
-                        {t.company.demo.startOptions.week}
-                      </option>
-                      <option value="Bu ay">
-                        {t.company.demo.startOptions.month}
-                      </option>
-                      <option value="Q1">
-                        {t.company.demo.startOptions.q1}
-                      </option>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.startPlan}</label>
+                    <select value={demoStartPlan} onChange={(e) => setDemoStartPlan(e.target.value)} className="w-full h-12 rounded-xl border border-orange-200 px-4">
+                      <option value="Bu hafta">{t.company.demo.startOptions.week}</option>
+                      <option value="Bu ay">{t.company.demo.startOptions.month}</option>
+                      <option value="Q1">{t.company.demo.startOptions.q1}</option>
                     </select>
-                    <div className="mt-2 text-xs text-gray-500">
-                      {t.company.demo.startHint}
-                    </div>
+                    <div className="mt-2 text-xs text-gray-500">{t.company.demo.startHint}</div>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">
-                      {t.company.demo.note}
-                    </label>
-                    <textarea
-                      value={demoNote}
-                      onChange={(e) => setDemoNote(e.target.value)}
-                      className="w-full min-h-[110px] rounded-xl border border-orange-200 px-4 py-3"
-                      placeholder={t.company.demo.notePh}
-                    />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{t.company.demo.note}</label>
+                    <textarea value={demoNote} onChange={(e) => setDemoNote(e.target.value)} className="w-full min-h-[110px] rounded-xl border border-orange-200 px-4 py-3" placeholder={t.company.demo.notePh} />
                   </div>
                 </div>
                 <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                  <div className="text-xs text-gray-500">
-                    {t.company.demo.footer}
-                  </div>
-                  <Button
-                    type="submit"
-                    className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110"
-                  >
-                    {t.company.demo.submit}{" "}
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                  <div className="text-xs text-gray-500">{t.company.demo.footer}</div>
+                  <Button type="submit" className="h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-8 hover:brightness-110">
+                    {t.company.demo.submit} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -1721,7 +1511,9 @@ export default function Index() {
         </section>
       ) : null}
 
-      {/* ÖNE ÇIKAN KOÇLAR — GERÇEK VERİYLE ÇALIŞIYOR */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ✅ ÖNE ÇIKAN KOÇLAR — GERÇEK VERİ (SUPABASE VIEW)            */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-red-600/20 to-orange-500/10 rounded-full blur-3xl" />
@@ -1729,6 +1521,7 @@ export default function Index() {
         <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-red-500/10 to-transparent rounded-full blur-2xl" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-28">
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-14">
             <div>
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-red-600/20 to-orange-500/20 border border-red-500/30 backdrop-blur-sm">
@@ -1759,42 +1552,57 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          {/* Coach Cards — TEK GRİD, GERÇEK VERİ */}
           <div className="grid md:grid-cols-3 gap-6">
             {loadingFeatured ? (
-              // Yükleniyor
               <>
                 <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
                 <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
                 <div className="bg-gray-800/50 rounded-2xl h-96 animate-pulse" />
               </>
             ) : featuredCoaches.length === 0 ? (
-              // Hiç yok
               <div className="col-span-3 text-center py-20 text-gray-400">
                 <Crown className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-xl">Henüz öne çıkan koç yok</p>
-                <p className="text-sm mt-2 opacity-75">Boost alan koçlar burada otomatik görünecek</p>
+                <p className="text-xl">{t.featured.noFeaturedTitle || "Henüz öne çıkan koç yok"}</p>
+                <p className="text-sm mt-2 opacity-75">{t.featured.noFeaturedDesc || "Boost alan koçlar burada otomatik görünecek"}</p>
               </div>
             ) : (
-              // Gerçek koçlar
-              featuredCoaches.map((coach) => {
-                const initials = coach.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+              featuredCoaches.map((coach: any) => {
+                const initials = (coach.full_name || "")
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2);
 
                 return (
-                  <div key={coach.id} className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2">
+                  <div
+                    key={coach.id}
+                    className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
+                  >
+                    {/* Card glow effect on hover */}
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+
+                    {/* Card body */}
                     <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
-                      {/* kart içeriği aynı, sadece buraya kadar */}
+                      {/* Top row: Avatar + Crown */}
                       <div className="flex items-start justify-between mb-5">
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             {coach.avatar_url ? (
-                              <img src={coach.avatar_url} alt={coach.full_name} className="w-16 h-16 rounded-2xl object-cover shadow-lg" />
+                              <img
+                                src={coach.avatar_url}
+                                alt={coach.full_name}
+                                className="w-16 h-16 rounded-2xl object-cover shadow-lg"
+                              />
                             ) : (
                               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg">
-                                <span className="text-xl font-black text-white">{initials}</span>
+                                <span className="text-xl font-black text-white">
+                                  {initials}
+                                </span>
                               </div>
                             )}
+                            {/* Online indicator */}
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
                               <div className="w-2 h-2 bg-white rounded-full" />
                             </div>
@@ -1803,7 +1611,9 @@ export default function Index() {
                             <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
                               {coach.full_name}
                             </h3>
-                            <p className="text-sm text-gray-400">{coach.title || "Kariyer Koçu"}</p>
+                            <p className="text-sm text-gray-400">
+                              {coach.title || "Kariyer Koçu"}
+                            </p>
                           </div>
                         </div>
                         <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
@@ -1811,11 +1621,15 @@ export default function Index() {
                         </div>
                       </div>
 
+                      {/* Rating row */}
                       <div className="flex items-center gap-4 mb-5">
                         <div className="flex items-center gap-1.5">
                           <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
+                            {[...Array(5)].map((_, si) => (
+                              <Star
+                                key={si}
+                                className="h-4 w-4 text-amber-400 fill-amber-400"
+                              />
                             ))}
                           </div>
                           <span className="text-lg font-black text-white ml-1">
@@ -1827,9 +1641,13 @@ export default function Index() {
                         </span>
                       </div>
 
+                      {/* Tags */}
                       <div className="flex flex-wrap gap-2 mb-5">
                         {(coach.specializations || []).slice(0, 3).map((tag: string) => (
-                          <span key={tag} className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium">
+                          <span
+                            key={tag}
+                            className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium"
+                          >
                             {tag}
                           </span>
                         ))}
@@ -1840,104 +1658,17 @@ export default function Index() {
                         )}
                       </div>
 
+                      {/* Divider */}
                       <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
 
+                      {/* Bottom: Verified + CTA */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5 text-emerald-400">
                             <CheckCircle2 className="h-4 w-4" />
-                            <span className="text-xs font-semibold">{t.featured.verified}</span>
-                          </div>
-                        </div>
-                        <Link to={`/coach/${coach.slug || ""}`}>
-                          <button className="flex items-center gap-1.5 text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors group/btn">
-                            <span>{t.featured.viewProfile}</span>
-                            <ArrowUpRight className="h-4 w-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                          </button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-              <div className="col-span-3 text-center py-20 text-gray-400">
-                <Crown className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-xl">Henüz öne çıkan koç yok</p>
-                <p className="text-sm mt-2 opacity-75">Boost alan koçlar burada otomatik görünecek</p>
-              </div>
-            ) : (
-              featuredCoaches.map((coach) => {
-                const initials = coach.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-
-                return (
-                  <div key={coach.id} className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
-                    <div className="relative rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full">
-                      {/* ... kart içeriği aynı ... */}
-                      <div className="flex items-start justify-between mb-5">
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            {coach.avatar_url ? (
-                              <img src={coach.avatar_url} alt={coach.full_name} className="w-16 h-16 rounded-2xl object-cover shadow-lg" />
-                            ) : (
-                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg">
-                                <span className="text-xl font-black text-white">{initials}</span>
-                              </div>
-                            )}
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full" />
-                            </div>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
-                              {coach.full_name}
-                            </h3>
-                            <p className="text-sm text-gray-400">{coach.title || "Kariyer Koçu"}</p>
-                          </div>
-                        </div>
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20">
-                          <Award className="h-5 w-5 text-orange-400" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 mb-5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
-                            ))}
-                          </div>
-                          <span className="text-lg font-black text-white ml-1">
-                            {coach.rating?.toFixed(1) || "5.0"}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-500">
-                          ({coach.total_reviews || 0} {t.featured.reviewsSuffix})
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-5">
-                        {(coach.specializations || []).slice(0, 3).map((tag) => (
-                          <span key={tag} className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-red-600/10 to-orange-500/10 border border-red-500/20 text-orange-300 font-medium">
-                            {tag}
-                          </span>
-                        ))}
-                        {coach.boost_package_name && (
-                          <span className="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 text-yellow-300 font-medium">
-                            {coach.boost_package_name}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-emerald-400">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span className="text-xs font-semibold">{t.featured.verified}</span>
+                            <span className="text-xs font-semibold">
+                              {t.featured.verified}
+                            </span>
                           </div>
                         </div>
                         <Link to={`/coach/${coach.slug || ""}`}>
@@ -1954,6 +1685,7 @@ export default function Index() {
             )}
           </div>
 
+          {/* Bottom accent line */}
           <div className="mt-14 flex items-center gap-4">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
             <Crown className="h-5 w-5 text-orange-500/40" />
@@ -1962,8 +1694,6 @@ export default function Index() {
         </div>
       </section>
 
-
-      
       {/* 2025 BLOĞU */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">

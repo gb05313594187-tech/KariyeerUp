@@ -1,264 +1,261 @@
-// src/App.tsx
-// @ts-nocheck
-import { SessionRefresher } from "@/components/SessionRefresher";
-import { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-  useLocation,
-} from "react-router-dom";
-import { Toaster } from "sonner";
-import ReactGA from "react-ga4";
 
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import CookieConsent from "@/components/CookieConsent";
-import AdminLayout from "@/layouts/AdminLayout";
-
-/* ================= SAYFALAR ================= */
-import Home from "@/pages/Index";
-import Pricing from "@/pages/Pricing";
-import Boost from "@/pages/Boost";
-import MentorCircle from "@/pages/MentorCircle";
-import Webinars from "@/pages/Webinars";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-
-// ✅ BU İKİ SAYFAYI MUTLAKA IMPORT ETMELİSİN
-// Eğer dosyaların adı farklıysa burayı düzelt
-import Coaches from "@/pages/Coaches"; 
-import CoachDetail from "@/pages/CoachDetail"; 
-
-import UserDashboard from "@/pages/UserDashboard";
-import UserProfile from "@/pages/UserProfile";
-import UserSettings from "@/pages/UserSettings";
-import UserProfileEdit from "@/pages/UserProfileEdit";
-
-import CorporateDashboard from "@/pages/CorporateDashboard";
-import CorporateProfile from "@/pages/CorporateProfile";
-import CorporateSettings from "@/pages/CorporateSettings";
-
-import CoachDashboard from "@/pages/CoachDashboard";
-import CoachSelfProfile from "@/pages/CoachProfile";
-import CoachSettings from "@/pages/CoachSettings";
-
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminProfile from "@/pages/AdminProfile";
-import AdminSettings from "@/pages/AdminSettings";
-import InvestorDashboard from "@/pages/InvestorDashboard";
-
-import SocialHome from "@/pages/Home";
-import JobBoard from "@/pages/JobBoard";
-import CreateJob from "@/pages/CreateJob";
-
-/* ================= SESSION YÜKLEME ================= */
-function SessionLoader() {
-  useEffect(() => {
-    supabase.auth.getSession();
-    const interval = setInterval(() => {
-      supabase.auth.getSession();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
-  return null;
-}
-
-/* ================= PROTECTED ROUTE ================= */
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-sm text-gray-500">Oturum kontrol ediliyor...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-}
-
-/* ================= ANALYTICS ================= */
-const GA_ID = "G-R39ELRDLKQ";
-
-function AnalyticsTracker() {
-  const location = useLocation();
-  useEffect(() => {
-    const consent = localStorage.getItem("kariyeer_cookie_consent");
-    if (consent === "accepted") {
-      if (!window.__ga_initialized) {
-        ReactGA.initialize(GA_ID);
-        window.__ga_initialized = true;
-      }
-      ReactGA.send({
-        hitType: "pageview",
-        page: location.pathname + location.search,
-      });
-    }
-  }, [location]);
-  return null;
-}
-
-/* ================= PUBLIC LAYOUT ================= */
-function PublicLayout() {
-  return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <Navbar />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-      <Footer />
-      <CookieConsent />
-    </div>
-  );
-}
-
-/* ================= APP ================= */
-export default function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <SessionLoader />
-        <SessionRefresher />
-        <AnalyticsTracker />
-        <Toaster richColors position="top-right" />
-
-        <Routes>
-          {/* ADMIN */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="profile" element={<AdminProfile />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="investor" element={<InvestorDashboard />} />
-          </Route>
-
-          {/* PUBLIC + PROTECTED */}
-          <Route path="/" element={<PublicLayout />}>
-            <Route index element={<Home />} />
-            <Route path="home" element={<SocialHome />} />
-            <Route path="jobs" element={<JobBoard />} />
-            <Route path="jobs/new" element={<CreateJob />} />
-            <Route path="boost" element={<Boost />} />
-            <Route path="pricing" element={<Pricing />} />
-            <Route path="mentor-circle" element={<MentorCircle />} />
-            <Route path="webinars" element={<Webinars />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-
-            {/* ✅ İŞTE EKSİK OLAN KISIM BURASIYDI! ✅ */}
-            {/* Koçları listeleme sayfası */}
-            <Route path="coaches" element={<Coaches />} />
-            {/* Tekil Koç Detay Sayfası (Slug veya ID ile) */}
-            <Route path="coach/:slug" element={<CoachDetail />} />
-
-            {/* USER */}
-            <Route
-              path="user/dashboard"
-              element={
-                <ProtectedRoute>
-                  <UserDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/profile"
-              element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/profile/edit"
-              element={
-                <ProtectedRoute>
-                  <UserProfileEdit />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/settings"
-              element={
-                <ProtectedRoute>
-                  <UserSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* CORPORATE */}
-            <Route
-              path="corporate/dashboard"
-              element={
-                <ProtectedRoute>
-                  <CorporateDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="corporate/profile"
-              element={
-                <ProtectedRoute>
-                  <CorporateProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="corporate/settings"
-              element={
-                <ProtectedRoute>
-                  <CorporateSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* COACH */}
-            <Route
-              path="coach/dashboard"
-              element={
-                <ProtectedRoute>
-                  <CoachDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="coach/profile"
-              element={
-                <ProtectedRoute>
-                  <CoachSelfProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="coach/settings"
-              element={
-                <ProtectedRoute>
-                  <CoachSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Bilinmeyen sayfa -> Ana sayfaya at */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-}
+.mgx
+public
+assets
+coach-ayse-yilmaz.jpg
+coach-ayse-yilmaz_variant_1.jpg
+coach-ayse-yilmaz_variant_10.jpg
+coach-ayse-yilmaz_variant_11.jpg
+coach-ayse-yilmaz_variant_12.jpg
+coach-ayse-yilmaz_variant_2.jpg
+coach-ayse-yilmaz_variant_3.jpg
+coach-ayse-yilmaz_variant_4.jpg
+coach-ayse-yilmaz_variant_5.jpg
+coach-ayse-yilmaz_variant_6.jpg
+coach-ayse-yilmaz_variant_7.jpg
+coach-ayse-yilmaz_variant_8.jpg
+coach-ayse-yilmaz_variant_9.jpg
+coach-mehmet-kaya.jpg
+coach-mehmet-kaya_variant_1.jpg
+coach-mehmet-kaya_variant_10.jpg
+coach-mehmet-kaya_variant_11.jpg
+coach-mehmet-kaya_variant_12.jpg
+coach-mehmet-kaya_variant_2.jpg
+coach-mehmet-kaya_variant_3.jpg
+coach-mehmet-kaya_variant_4.jpg
+coach-mehmet-kaya_variant_5.jpg
+coach-mehmet-kaya_variant_6.jpg
+coach-mehmet-kaya_variant_7.jpg
+coach-mehmet-kaya_variant_8.jpg
+coach-mehmet-kaya_variant_9.jpg
+coach-zeynep-demir.jpg
+coach-zeynep-demir_variant_1.jpg
+coach-zeynep-demir_variant_10.jpg
+coach-zeynep-demir_variant_11.jpg
+coach-zeynep-demir_variant_12.jpg
+coach-zeynep-demir_variant_2.jpg
+coach-zeynep-demir_variant_3.jpg
+coach-zeynep-demir_variant_4.jpg
+coach-zeynep-demir_variant_5.jpg
+coach-zeynep-demir_variant_6.jpg
+coach-zeynep-demir_variant_7.jpg
+coach-zeynep-demir_variant_8.jpg
+coach-zeynep-demir_variant_9.jpg
+images
+Coaching.jpg
+ICFPCCCertification.jpg
+logos
+favicon.ico
+payment-callback.html
+public:favicon-40x40.png
+robots.txt
+sitemap.xml
+ss
+src
+components
+admin
+AdminNavbar.tsx
+charts
+BarChart.tsx
+DoughnutChart.tsx
+LineChart.tsx
+PieChart.tsx
+coach
+CoachCard.tsx
+CoachList.tsx
+ui
+AIEnhancedPostCard.tsx
+CalendarIntegrationButtons.tsx
+CoachBadges.tsx
+CookieConsent.tsx
+EventForm.tsx
+EventView.tsx
+Footer.tsx
+ImageUpload.tsx
+InvoiceGenerator.tsx
+JobDetail.tsx
+JobForm.tsx
+MeetingRoom.tsx
+Navbar.tsx
+NotificationBell.tsx
+PollModal.tsx
+PollView.tsx
+PostCard.tsx
+PostComposer.tsx
+PremiumBoostModal.tsx
+PremiumPromotionToast.tsx
+ReactionBar.tsx
+SessionRefresher.tsx
+SuccessSection.tsx
+VerificationBadgeModal.tsx
+config
+adminFeatures.ts
+contexts
+AuthContext.tsx
+FollowContext.tsx
+LanguageContext.tsx
+NotificationContext.tsx
+SubscriptionContext.tsx
+data
+circleData.ts
+heroSlides.ts
+mentorCircleData.ts
+mockData.ts
+hooks
+use-mobile.tsx
+use-toast.ts
+layouts
+AdminLayout.tsx
+PublicLayout.tsx
+UserLayout.tsx
+lib
+aiAnalytics.ts
+boostPayment.ts
+calendarIntegration.ts
+emailService.ts
+excelExport.ts
+i18n.ts
+iyzico-simple.ts
+iyzico.ts
+jitsiMeet.ts
+matchingService.ts
+meeting-api.ts
+paytr.ts
+profileCompletion.ts
+storage.ts
+supabase.ts
+uploadAvatar.ts
+utils.ts
+pages
+About.tsx
+AdminDashboard.tsx
+AdminHireDashboard.tsx
+AdminPanel.tsx
+AdminProfile.tsx
+AdminSettings.tsx
+AdvancedAnalytics.tsx
+Analytics.tsx
+BireyselPremium.tsx
+BookSession.tsx
+BookingSystem.tsx
+Boost.tsx
+CerezPolitikasi.tsx
+Checkout.tsx
+CoachApplication.tsx
+CoachDashboard.tsx
+CoachProfile.tsx
+CoachPublicProfile.tsx
+CoachRequests.tsx
+CoachSelection.tsx
+CoachSelectionProcess.tsx
+CoachSessions.tsx
+CoachSettings.tsx
+Coaches.tsx
+Contact.tsx
+CorporateDashboard.tsx
+CorporateJobs.tsx
+CorporateProfile.tsx
+CorporateSettings.tsx
+CreateJob.tsx
+DanisanSozlesmesi.tsx
+Dashboard.tsx
+DebugAuth.tsx
+DistanceSales.tsx
+Ethics.tsx
+Feed.tsx
+ForCoaches.tsx
+ForCompanies.tsx
+ForgotPassword.tsx
+Home.tsx
+Howitworks.tsx
+Index.tsx
+Interview.tsx
+InvestorDashboard.tsx
+JobBoard.tsx
+KVKKAydinlatma.tsx
+KocSozlesmesi.tsx
+KullanimSozlesmesi.tsx
+Login.tsx
+MeetingRoom.tsx
+MentorCircle.tsx
+MyApplications.tsx
+MyAssessments.tsx
+MyBookings.tsx
+MyCalendar.tsx
+MyInterviews.tsx
+MyReports.tsx
+MySessions.tsx
+MySessionsHub.tsx
+NotFound.tsx
+NotificationCenter.tsx
+Partnership.tsx
+Payment.tsx
+PaymentCallback.tsx
+PaymentFailed.tsx
+PaymentPage.tsx
+PaymentSuccess.tsx
+PaymentTest.tsx
+PaytrCheckout.tsx
+PersonalityTest.tsx
+Pricing.tsx
+PricingSimple.tsx
+PricingTest.tsx
+Privacy.tsx
+Profile.tsx
+Register.tsx
+ResetPassword.tsx
+Returns.tsx
+RevenueModel.tsx
+ReviewSystem.tsx
+SavedItems.tsx
+SessionJoin.tsx
+SessionRoom.tsx
+Sitemap.tsx
+SubscriptionHistory.tsx
+Terms.tsx
+UserDashboard.tsx
+UserProfile.tsx
+UserProfileEdit.tsx
+UserSessions.tsx
+UserSettings.tsx
+VideoSession.tsx
+Webinar.tsx
+Webinars.tsx
+App.css
+App.tsx
+index.css
+main.tsx
+vite-env.d.ts
+supabase
+.env
+.env.example
+.gitignore
+.vercelignore
+Coaches
+README.md
+README_VERCEL.md
+SUPABASE_SETUP.md
+VERCEL_DEPLOYMENT_GUIDE.md
+check_auth_context.js
+check_database.sql
+check_subs_direct.js
+check_subscriptions.js
+check_user_subscriptions.sql
+components.json
+debug_badge_issue.md
+eslint.config.js
+index.html
+insert_test_badge.sql
+insert_test_badge_fixed.sql
+package.json
+pnpm-lock.yaml
+postcss.config.js
+supabase-clean.sql
+supabase-setup.sql
+tailwind.config.ts
+template_config.json
+todo.md
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts

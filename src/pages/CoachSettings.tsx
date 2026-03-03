@@ -1,6 +1,6 @@
 // src/pages/CoachSettings.tsx
 // @ts-nocheck
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
@@ -23,8 +23,12 @@ import {
   FileText,
   CheckCircle2,
   ArrowRight,
+  Camera,
+  ImagePlus,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const COACHES_TABLE = "profiles";
 
 const specializationOptions = [
   "Kariyer Geçişi",
@@ -37,17 +41,64 @@ const specializationOptions = [
   "Kurumsal Koçluk",
 ];
 
+const safeParseArray = (val: any) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === "string") {
+    if (val.trim().startsWith("[") && val.trim().endsWith("]")) {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch (e) {}
+    }
+    return val.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+// Resmi Base64'e çevirip sıkıştıran yardımcı fonksiyon
+function compressImageToBase64(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function CoachSettings() {
   const navigate = useNavigate();
 
+  // ✅ Referanslar (Dosya yükleme pencerelerini tetiklemek için)
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [coachId, setCoachId] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     avatar_url: "",
+    cover_url: "", // ✅ Banner URL eklendi
     bio: "",
     methodology: "",
     cv_url: "",
@@ -56,9 +107,7 @@ export default function CoachSettings() {
     experience_text: "",
   });
 
-  // ------------------------------------------------
-  // 1) GİRİŞ YAPAN KULLANICININ KENDİ KOÇ KAYDINI ÇEK
-  // ------------------------------------------------
+  // 1) VERİLERİ ÇEK
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -70,29 +119,22 @@ export default function CoachSettings() {
         } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          console.error("Auth error:", userError);
           navigate("/login");
           return;
         }
 
-        setEmail(user.email || "");
-
         const { data, error } = await supabase
-          .from("app_2dff6511da_coaches")
+          .from(COACHES_TABLE)
           .select("*")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .maybeSingle();
 
         if (error) {
-          console.error("CoachSettings fetch error:", error);
           toast.error("Koç profili yüklenirken bir hata oluştu.");
           return;
         }
-
         if (!data) {
-          toast.error(
-            "Bu hesapla ilişkilendirilmiş bir koç profili bulunamadı."
-          );
+          toast.error("Bu hesapla ilişkilendirilmiş bir koç profili bulunamadı.");
           return;
         }
 
@@ -101,15 +143,15 @@ export default function CoachSettings() {
         setForm({
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || data.photo_url || "",
-          bio: data.bio || "",
-          methodology: data.methodology || "",
-          cv_url: data.cv_url || "",
-          specializations: data.specializations || [],
-          education_text: (data.education_list || []).join("\n"),
-          experience_text: (data.experience_list || []).join("\n"),
+          cover_url: data.cover_url || data.cv_data?.cover_url || "", // ✅ Banner
+          bio: data.manifesto || data.summary || data.bio || "",
+          methodology: data.journey_steps || data.methodology || "",
+          cv_url: data.cv_data?.url || data.cv_url || "",
+          specializations: safeParseArray(data.superpowers || data.specializations),
+          education_text: safeParseArray(data.education || data.education_list).join("\n"),
+          experience_text: safeParseArray(data.certifications || data.experience_list).join("\n"),
         });
       } catch (err) {
-        console.error("Unexpected CoachSettings error:", err);
         toast.error("Koç ayarları yüklenirken beklenmeyen bir hata oluştu.");
       } finally {
         setLoading(false);
@@ -119,9 +161,6 @@ export default function CoachSettings() {
     loadProfile();
   }, [navigate]);
 
-  // ------------------------------------------------
-  // 2) FORM DEĞİŞİKLİKLERİ
-  // ------------------------------------------------
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -138,15 +177,69 @@ export default function CoachSettings() {
     });
   };
 
-  // ------------------------------------------------
-  // 3) KAYDET BUTONU
-  // ------------------------------------------------
-  const handleSave = async () => {
-    if (!coachId) {
-      toast.error("Koç kaydı bulunamadı. Lütfen daha sonra tekrar deneyin.");
+  // 2) GÖRSEL YÜKLEME (Avatar & Banner)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Dosya 5MB'den küçük olmalı.");
+      e.target.value = "";
       return;
     }
 
+    if (!file.type.startsWith("image/")) {
+      toast.error("Lütfen geçerli bir resim dosyası seçin.");
+      e.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      let finalUrl = "";
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        try {
+          const ext = file.name.split(".").pop() || "jpg";
+          const fileName = `${user.id}/${type}-${Date.now()}.${ext}`;
+
+          const { error: upErr } = await supabase.storage
+            .from("profiles")
+            .upload(fileName, file, { upsert: true });
+
+          if (upErr) throw upErr;
+
+          const { data: urlData } = supabase.storage
+            .from("profiles")
+            .getPublicUrl(fileName);
+
+          finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        } catch (storageErr) {
+          console.warn("Storage başarısız, Base64'e çevriliyor...", storageErr);
+          finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
+        }
+
+        // URL'yi form state'ine kaydet
+        const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
+        setForm((prev) => ({ ...prev, [uploadKey]: finalUrl }));
+        toast.success(type === "avatar" ? "Profil fotoğrafı yüklendi!" : "Banner yüklendi!");
+      }
+    } catch (error) {
+      toast.error("Görsel yüklenirken bir hata oluştu.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  // 3) KAYDET
+  const handleSave = async () => {
+    if (!coachId) {
+      toast.error("Koç kaydı bulunamadı.");
+      return;
+    }
     if (!form.full_name.trim()) {
       toast.error("İsim alanı boş bırakılamaz.");
       return;
@@ -154,52 +247,33 @@ export default function CoachSettings() {
 
     setSaving(true);
     try {
-      const education_list = form.education_text
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
-
-      const experience_list = form.experience_text
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
+      const education_list = form.education_text.split("\n").map((l) => l.trim()).filter(Boolean);
+      const experience_list = form.experience_text.split("\n").map((l) => l.trim()).filter(Boolean);
 
       const payload = {
         full_name: form.full_name.trim(),
         avatar_url: form.avatar_url.trim() || null,
-        bio: form.bio.trim(),
-        methodology: form.methodology.trim(),
+        cover_url: form.cover_url.trim() || null,
+        manifesto: form.bio.trim(),
+        journey_steps: form.methodology.trim(),
         cv_url: form.cv_url.trim() || null,
-        specializations: form.specializations,
-        education_list,
-        experience_list,
-        status: "active",
+        superpowers: form.specializations,
+        education: education_list,
+        certifications: experience_list,
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from("app_2dff6511da_coaches")
-        .update(payload)
-        .eq("id", coachId);
+      const { error } = await supabase.from(COACHES_TABLE).update(payload).eq("id", coachId);
 
-      if (error) {
-        console.error("CoachSettings update error:", error);
-        toast.error("Değişiklikler kaydedilemedi.");
-        return;
-      }
-
-      toast.success("Profilin başarıyla güncellendi.");
+      if (error) throw error;
+      toast.success("Profil başarıyla güncellendi ve kaydedildi.");
     } catch (err) {
-      console.error("CoachSettings save error:", err);
       toast.error("Kaydederken bir hata oluştu.");
     } finally {
       setSaving(false);
     }
   };
 
-  // ------------------------------------------------
-  // 4) YÜKLENİYOR EKRANI
-  // ------------------------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
@@ -208,222 +282,152 @@ export default function CoachSettings() {
     );
   }
 
-  if (!coachId) {
-    return (
-      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-700">
-        Bu hesapla eşleştirilmiş bir koç profili bulunamadı.
-      </div>
-    );
-  }
-
-  // ------------------------------------------------
-  // 5) SAYFA
-  // ------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
-      {/* HERO */}
-      <section className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-400 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center gap-8">
-          <div className="flex-1 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold tracking-wide">
-              <CheckCircle2 className="w-3 h-3 text-lime-300" />
-              <span>Koç Ayarları</span>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-gray-900">
+      {/* Gizli file input'lar */}
+      <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, "avatar")} />
+      <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, "cover")} />
+
+      {/* ==================== YENİ GÖRSEL HEADER ==================== */}
+      <div className="bg-white border-b border-slate-100 shadow-sm mb-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Banner Bölümü */}
+          <div
+            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden md:rounded-b-3xl ${
+              uploading ? "pointer-events-none opacity-70" : "cursor-pointer"
+            }`}
+            onClick={() => !uploading && coverInputRef.current?.click()}
+          >
+            {form.cover_url ? (
+              <img
+                src={form.cover_url}
+                className="w-full h-full object-cover"
+                alt="banner preview"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 opacity-90" />
+            )}
+            
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+              {uploading ? (
+                <>
+                  <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2" />
+                  <span className="font-black uppercase tracking-widest text-sm">Yükleniyor...</span>
+                </>
+              ) : (
+                <>
+                  <ImagePlus size={32} className="mb-2" />
+                  <span className="font-black uppercase tracking-widest text-sm">
+                    {form.cover_url ? "Banner Değiştir" : "Banner Ekle"}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Avatar ve İsim Bölümü */}
+          <div className="px-4 md:px-8 pb-8 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 -mt-16 relative z-10">
+            <div
+              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group relative shrink-0 ${
+                uploading ? "pointer-events-none" : "cursor-pointer"
+              }`}
+              onClick={() => !uploading && avatarInputRef.current?.click()}
+            >
+              <img
+                src={
+                  form.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    form.full_name || "Koç"
+                  )}&size=256&background=f43f5e&color=fff&bold=true`
+                }
+                className="w-full h-full object-cover bg-white"
+                alt="avatar preview"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+                <Camera size={24} className="mb-1" />
+                <span className="font-black text-[9px] uppercase tracking-widest">
+                  Değiştir
+                </span>
+              </div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-              Profesyonel Koç Profilini
-              <br />
-              <span className="text-yellow-300">Yatırımcı Seviyesinde</span>{" "}
-              Hazırla
-            </h1>
-
-            <p className="text-sm md:text-base text-orange-50 max-w-xl">
-              Bu sayfada doldurduğun bilgiler, herkese açık koç profilinde
-              görüntülenir. Fotoğrafın, uzmanlık etiketlerin, özgeçmişin ve
-              metodolojinle tam anlamıyla profesyonel bir vitrin oluştur.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-orange-50/90">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-lime-300" />
-                <span>Özgeçmiş &amp; Metodoloji</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-lime-300" />
-                <span>Eğitim &amp; Deneyim Listesi</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-lime-300" />
-                <span>Uzmanlık Etiketleri</span>
+            <div className="flex-1 pb-2 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 leading-none truncate">
+                {form.full_name || "İSMİNİZİ GİRİN"}
+              </h1>
+              <p className="text-base md:text-lg font-bold text-slate-500 mt-1 italic truncate">
+                Kariyer Koçu
+              </p>
+              <div className="flex flex-wrap gap-3 mt-3">
+                <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
+                  <CheckCircle2 size={12} /> Onaylı Koç
+                </span>
               </div>
             </div>
-          </div>
 
-          {/* Avatar Kartı */}
-          <div className="w-full md:w-80">
-            <Card className="bg-white/95 border-none shadow-xl rounded-2xl">
-              <CardContent className="pt-6 pb-5 flex flex-col items-center gap-4">
-                <div className="relative">
-                  {form.avatar_url ? (
-                    <img
-                      src={form.avatar_url}
-                      alt={form.full_name || "Koç Avatarı"}
-                      className="w-28 h-28 rounded-2xl object-cover shadow-md border border-gray-200 bg-gray-50"
-                    />
-                  ) : (
-                    <div className="w-28 h-28 rounded-2xl bg-gray-100 flex items-center justify-center border border-dashed border-gray-300">
-                      <User className="w-10 h-10 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="text-center space-y-1">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {form.full_name || "İsmini Gir"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {/* Kullanıcı talebi: unvan sabit olsun */}
-                    Kariyer Koçu
-                  </p>
-                  {email && (
-                    <p className="text-[11px] text-gray-400">{email}</p>
-                  )}
-                </div>
-
-                <div className="w-full space-y-2">
-                  <label className="text-[11px] font-medium text-gray-600">
-                    Profil Fotoğrafı URL&apos;si
-                  </label>
-                  <Input
-                    value={form.avatar_url}
-                    onChange={(e) =>
-                      handleChange("avatar_url", e.target.value)
-                    }
-                    placeholder="https://... (Unsplash, iStock vb.)"
-                    className="text-xs"
-                  />
-                  <p className="text-[10px] text-gray-400">
-                    Şimdilik sadece URL kullanıyoruz. İleride doğrudan dosya
-                    yükleme gelecektir.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Sağ Üst Kaydet Butonları */}
+            <div className="flex flex-col gap-2 mb-2 w-full md:w-auto">
+               <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold h-10 w-full md:w-48 shadow-lg transition-transform active:scale-95" onClick={handleSave} disabled={saving}>
+                 <Save className="w-4 h-4 mr-2" />
+                 {saving ? "Kaydediliyor..." : "Tümünü Kaydet"}
+               </Button>
+               <Button variant="outline" size="sm" className="font-bold h-10 w-full md:w-48 border-slate-200 text-slate-600" onClick={() => navigate("/coach/profile")}>
+                 Önizleme (Canlı Profil)
+               </Button>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* İÇERİK */}
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        {/* ÜST BAR: Kaydet + Canlı Profil */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Koç Profil Ayarları
-            </h2>
-            <p className="text-xs text-gray-500">
-              Burada yaptığın değişiklikler, herkese açık koç profilinde
-              görüntülenir.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => navigate("/coach-dashboard")}
-            >
-              Panelime Dön
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => navigate("/coaches")}
-            >
-              Koç Listesini Gör
-            </Button>
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white text-xs"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              <Save className="w-3 h-3 mr-1" />
-              {saving ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
-            </Button>
-          </div>
-        </div>
-
+      {/* ==================== İÇERİK ==================== */}
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
         {/* GENEL BİLGİLER */}
-        <Card className="bg-white border border-orange-100 shadow-sm">
+        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
-              <User className="w-4 h-4 text-orange-500" />
-              Genel Bilgiler
+            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
+              <User className="w-4 h-4 text-rose-500" />
+              Temel Bilgiler
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Ad Soyad
-                </label>
-                <Input
-                  value={form.full_name}
-                  onChange={(e) =>
-                    handleChange("full_name", e.target.value)
-                  }
-                  placeholder="Örn: Yağız Alperen"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">
-                  Unvan (sabit)
-                </label>
-                <Input
-                  value="Kariyer Koçu"
-                  disabled
-                  className="bg-gray-50 text-gray-500"
-                />
-                <p className="text-[10px] text-gray-400">
-                  Unvan, koç hesabı açtığın için sistem tarafından otomatik
-                  atanır.
-                </p>
-              </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Ad Soyad
+              </label>
+              <Input
+                value={form.full_name}
+                onChange={(e) => handleChange("full_name", e.target.value)}
+                placeholder="Örn: Yağız Alperen"
+                className="bg-slate-50 border-slate-200 h-12 rounded-xl focus:ring-rose-500"
+              />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">
-                Kısa Özgeçmiş / Hakkında Metni
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Kısa Özgeçmiş / Manifesto
               </label>
               <Textarea
                 rows={5}
                 value={form.bio}
                 onChange={(e) => handleChange("bio", e.target.value)}
-                placeholder="Kariyer eğitimin, kurumsal deneyimin ve koçluk yaklaşımın hakkında özet bir metin yaz. Bu bölüm, herkese açık profilinde ilk görülen alan olacaktır."
+                placeholder="Kariyer eğitimin, kurumsal deneyimin ve koçluk yaklaşımın hakkında özet bir metin yaz."
+                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-rose-500 resize-none"
               />
-              <p className="text-[10px] text-gray-400">
-                4–8 cümlelik net ve profesyonel bir özet önerilir.
-              </p>
             </div>
           </CardContent>
         </Card>
 
         {/* UZMANLIK ALANLARI */}
-        <Card className="bg-white border border-orange-100 shadow-sm">
+        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
+            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
               <ImageIcon className="w-4 h-4 text-orange-500" />
               Uzmanlık Etiketleri
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p className="text-xs text-gray-600">
-              Kullanıcılar koç ararken bu etiketleri filtrelemek için
-              kullanacak. Uzmanlık alanlarını mümkün olduğunca net seç.
+            <p className="text-xs text-slate-500">
+              Kullanıcılar koç ararken bu etiketleri filtrelemek için kullanacak. En az 2, en fazla 6 etiket seç.
             </p>
             <div className="flex flex-wrap gap-2">
               {specializationOptions.map((tag) => {
@@ -434,10 +438,10 @@ export default function CoachSettings() {
                     type="button"
                     variant={active ? "default" : "outline"}
                     size="sm"
-                    className={`rounded-full px-3 py-1 text-xs ${
+                    className={`rounded-xl px-4 h-9 font-bold text-xs transition-all ${
                       active
-                        ? "bg-orange-500 hover:bg-orange-600 text-white border-none"
-                        : "border-orange-200 text-gray-700 hover:bg-orange-50"
+                        ? "bg-orange-500 hover:bg-orange-600 text-white border-none shadow-md"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                     onClick={() => toggleSpecialization(tag)}
                   >
@@ -446,143 +450,84 @@ export default function CoachSettings() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-gray-400">
-              En az 2, en fazla 6 etiket seçmeni öneririz.
-            </p>
           </CardContent>
         </Card>
 
         {/* EĞİTİM & DENEYİM */}
         <div className="grid md:grid-cols-2 gap-4">
-          <Card className="bg-white border border-orange-100 shadow-sm">
+          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
-                <Award className="w-4 h-4 text-orange-500" />
-                Eğitim &amp; Sertifikalar
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
+                <Award className="w-4 h-4 text-amber-500" />
+                Eğitim & Sertifikalar
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <Textarea
                 rows={6}
                 value={form.education_text}
-                onChange={(e) =>
-                  handleChange("education_text", e.target.value)
-                }
-                placeholder={`Her satıra bir eğitim / sertifika yaz.\nÖrn:\nICF Onaylı Profesyonel Koçluk Programı (PCC Track)\nBoğaziçi Üniversitesi - Psikoloji Lisans`}
+                onChange={(e) => handleChange("education_text", e.target.value)}
+                placeholder={`Her satıra bir eğitim yaz.\nÖrn:\nICF Onaylı Profesyonel Koçluk Programı\nBoğaziçi Üniversitesi`}
+                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-amber-500"
               />
-              <p className="text-[10px] text-gray-400">
-                Kaydederken her satır, herkese açık profilinde madde madde
-                listelenir.
-              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-orange-100 shadow-sm">
+          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
-                <Briefcase className="w-4 h-4 text-orange-500" />
-                İş Deneyimi &amp; Roller
+              <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
+                <Briefcase className="w-4 h-4 text-emerald-500" />
+                İş Deneyimi & Roller
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <Textarea
                 rows={6}
                 value={form.experience_text}
-                onChange={(e) =>
-                  handleChange("experience_text", e.target.value)
-                }
-                placeholder={`Her satıra bir rol / kurum yaz.\nÖrn:\nKıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi\nKariyer ve Liderlik Koçu – Serbest`}
+                onChange={(e) => handleChange("experience_text", e.target.value)}
+                placeholder={`Her satıra bir rol yaz.\nÖrn:\nKıdemli İK İş Ortağı – Trendyol\nKariyer Koçu – Serbest`}
+                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-emerald-500"
               />
-              <p className="text-[10px] text-gray-400">
-                Bu alan ziyaretçilerin senin arka planını hızlı anlaması için
-                kullanılır.
-              </p>
             </CardContent>
           </Card>
         </div>
 
         {/* METODOLOJİ & CV */}
-        <Card className="bg-white border border-orange-100 shadow-sm">
+        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl mb-10">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-gray-900">
-              <FileText className="w-4 h-4 text-orange-500" />
-              Koçluk Metodolojisi &amp; CV
+            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
+              <FileText className="w-4 h-4 text-blue-500" />
+              Metodoloji & Linkler
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Koçluk Metodolojin
               </label>
               <Textarea
-                rows={5}
+                rows={4}
                 value={form.methodology}
-                onChange={(e) =>
-                  handleChange("methodology", e.target.value)
-                }
-                placeholder="Seanslarda kullandığın yaklaşımlar, ekoller, araçlar ve çalışma biçimini yaz. Örn: Çözüm odaklı koçluk, pozitif psikoloji, aksiyon planı odaklı çalışma, güçlü soru teknikleri vb."
+                onChange={(e) => handleChange("methodology", e.target.value)}
+                placeholder="Seanslarda kullandığın yaklaşımlar (Çözüm odaklı, pozitif psikoloji vb.)"
+                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-blue-500 resize-none"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">
-                CV / LinkedIn / Portfolyo Linki (opsiyonel)
+            <div className="space-y-2 pb-4">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                CV / LinkedIn Linki (Opsiyonel)
               </label>
               <Input
                 value={form.cv_url}
                 onChange={(e) => handleChange("cv_url", e.target.value)}
-                placeholder="https://www.linkedin.com/in/... veya PDF CV linki"
+                placeholder="https://linkedin.com/in/..."
+                className="bg-slate-50 border-slate-200 h-12 rounded-xl focus:ring-blue-500"
               />
-              <p className="text-[10px] text-gray-400">
-                Bu link herkese açık profilinde “Detaylı CV&apos;yi Gör” gibi
-                bir buton olarak gösterilebilir.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                <Badge
-                  variant="outline"
-                  className="border-green-200 text-green-700 bg-green-50 text-[10px]"
-                >
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  
-                </Badge>
-              </div>
-              <Button
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white text-xs"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="w-3 h-3 mr-1" />
-                {saving ? "Kaydediliyor..." : "Tüm Değişiklikleri Kaydet"}
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* ALT CTA */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500 mt-4 mb-10">
-          <div className="flex items-center gap-2">
-            <ArrowRight className="w-3 h-3" />
-            <span>
-              Bu sayfayı doldurduktan sonra{" "}
-              <span className="font-medium text-gray-700">
-                koç profilini yatırımcıya
-              </span>{" "}
-              bile gösterebilirsin. Tüm kritik bilgiler tek yerde.
-            </span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => navigate("/coach/" + coachId)}
-          >
-            Herkese Açık Profili Gör
-          </Button>
-        </div>
       </div>
     </div>
   );

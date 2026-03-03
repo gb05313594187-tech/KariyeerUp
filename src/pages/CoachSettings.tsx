@@ -25,6 +25,7 @@ import {
   ArrowRight,
   Camera,
   ImagePlus,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -175,7 +176,7 @@ export default function CoachSettings() {
     });
   };
 
-  // ✅ GÖRSEL YÜKLEME VE ANINDA KAYDETME (UserProfile mantığı)
+  // ✅ GÖRSEL YÜKLEME VE ANINDA KAYDETME (Orijinal mantıkla güçlendirildi)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -219,11 +220,11 @@ export default function CoachSettings() {
           finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
         }
 
-        // 1) Ekranda hemen göster (State'i güncelle)
+        // 1) Ekranda hemen göster
         const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
         setForm((prev) => ({ ...prev, [uploadKey]: finalUrl }));
         
-        // 2) Tıpkı UserProfile'daki gibi Veritabanına ANINDA yaz
+        // 2) Veritabanına ANINDA yaz
         await supabase
           .from(COACHES_TABLE)
           .update({ [uploadKey]: finalUrl, updated_at: new Date().toISOString() })
@@ -280,7 +281,7 @@ export default function CoachSettings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
+      <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600 font-sans">
         Koç ayarların yükleniyor...
       </div>
     );
@@ -312,7 +313,7 @@ export default function CoachSettings() {
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
               {uploading ? (
                 <>
-                  <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2" />
+                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
                   <span className="font-black uppercase tracking-widest text-sm">Yükleniyor...</span>
                 </>
               ) : (
@@ -344,10 +345,16 @@ export default function CoachSettings() {
                 alt="avatar preview"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
-                <Camera size={24} className="mb-1" />
-                <span className="font-black text-[9px] uppercase tracking-widest">
-                  Değiştir
-                </span>
+                {uploading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <>
+                    <Camera size={24} className="mb-1" />
+                    <span className="font-black text-[9px] uppercase tracking-widest">
+                      Değiştir
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -370,7 +377,7 @@ export default function CoachSettings() {
                  <Save className="w-4 h-4 mr-2" />
                  {saving ? "Kaydediliyor..." : "Tümünü Kaydet"}
                </Button>
-               <Button variant="outline" size="sm" className="font-bold h-10 w-full md:w-48 border-slate-200 text-slate-600" onClick={() => navigate(`/coach/${coachId}`)}>
+               <Button variant="outline" size="sm" className="font-bold h-10 w-full md:w-48 border-slate-200 text-slate-600 bg-white" onClick={() => navigate(`/coach/${coachId}`)}>
                  Önizleme (Canlı Profil)
                </Button>
             </div>
@@ -437,7 +444,7 @@ export default function CoachSettings() {
                     className={`rounded-xl px-4 h-9 font-bold text-xs transition-all ${
                       active
                         ? "bg-orange-500 hover:bg-orange-600 text-white border-none shadow-md"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50 bg-white"
                     }`}
                     onClick={() => toggleSpecialization(tag)}
                   >
@@ -521,7 +528,6 @@ export default function CoachSettings() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

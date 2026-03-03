@@ -60,7 +60,7 @@ const fallbackCoach = {
   isOnline: true,
   tags: ["Kariyer", "Liderlik", "Mülakat", "CV", "Yeni Mezun"],
   photo_url:
-    "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "[https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400](https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400)",
   bio: `
 10+ yıllık kurumsal deneyime sahip Executive ve Kariyer Koçu. 
 Unilever, Google, Trendyol gibi şirketlerde liderlik gelişimi, kariyer geçişi ve performans koçluğu alanlarında birebir ve grup çalışmaları yürüttü.
@@ -326,8 +326,8 @@ export default function CoachProfile() {
       // EKLENDİ: CSV uyumu için experience_years eklendi, eskiler korundu.
       totalSessions: coach.experience_years ?? coach.total_sessions ?? 0,
       favoritesCount: coach.favorites_count ?? 0,
-      // EKLENDİ: CSV uyumu için status === 'approved' kontrolü eklendi.
-      isOnline: coach.status === "approved" || coach.is_online ?? true,
+      // DÜZELTİLDİ: Syntax hatasını çözmek için parantez eklendi
+      isOnline: coach.status === "approved" || (coach.is_online ?? true),
       photo_url: coach.avatar_url || coach.photo_url || fallbackCoach.photo_url,
       // EKLENDİ: CSV uyumu için superpowers eklendi, eski specializations korundu.
       tags: toStringArray(coach.superpowers || coach.specializations, fallbackCoach.tags),

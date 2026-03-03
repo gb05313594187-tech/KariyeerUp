@@ -27,7 +27,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
  * ✅ SADECE BURAYI KONTROL ET
  * Supabase tablo adların farklıysa burayı değiştir.
  */
-const COACHES_TABLE = "app_2dff6511da_coaches";
+// DEĞİŞTİRİLDİ: CSV dosyandaki tablo adı profiles olduğu için güncellendi. Eski hali "app_2dff6511da_coaches" idi.
+const COACHES_TABLE = "profiles";
 const SESSION_TABLE = "app_2dff6511da_session_requests"; // örn: session_requests
 
 const mockReviews = [
@@ -76,6 +77,15 @@ const toStringArray = (value: any, fallback: string[] = []) => {
   if (!value) return fallback;
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === "string") {
+    // EKLENDİ: CSV dosyasındaki JSON formatlı dizileri bozmadan okumak için eklendi (eski mantık silinmedi)
+    if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch (e) {
+        // Parse hatası olursa aşağıdaki normal işlemlere devam eder, uygulama çökmez.
+      }
+    }
     return value
       .split(",")
       .map((s) => s.trim())
@@ -311,16 +321,24 @@ export default function CoachProfile() {
       title: coach.title || "Kariyer Koçu",
       location: coach.location || coach.city || coach.country || "Online",
       rating: coach.rating ?? 5,
-      reviewCount: coach.total_reviews ?? 0,
-      totalSessions: coach.total_sessions ?? 0,
+      // EKLENDİ: CSV uyumu için review_count eklendi, eskiler korundu.
+      reviewCount: coach.review_count ?? coach.total_reviews ?? 0,
+      // EKLENDİ: CSV uyumu için experience_years eklendi, eskiler korundu.
+      totalSessions: coach.experience_years ?? coach.total_sessions ?? 0,
       favoritesCount: coach.favorites_count ?? 0,
-      isOnline: coach.is_online ?? true,
+      // EKLENDİ: CSV uyumu için status === 'approved' kontrolü eklendi.
+      isOnline: coach.status === "approved" || coach.is_online ?? true,
       photo_url: coach.avatar_url || coach.photo_url || fallbackCoach.photo_url,
-      tags: toStringArray(coach.specializations, fallbackCoach.tags),
-      bio: coach.summary || coach.bio || fallbackCoach.bio,
-      methodology: coach.methodology || fallbackCoach.methodology,
-      education: toStringArray(coach.education_list, fallbackCoach.education),
-      experience: toStringArray(coach.experience_list, fallbackCoach.experience),
+      // EKLENDİ: CSV uyumu için superpowers eklendi, eski specializations korundu.
+      tags: toStringArray(coach.superpowers || coach.specializations, fallbackCoach.tags),
+      // EKLENDİ: CSV uyumu için manifesto ve summary eklendi.
+      bio: coach.manifesto || coach.summary || coach.bio || fallbackCoach.bio,
+      // EKLENDİ: CSV uyumu için journey_steps eklendi.
+      methodology: coach.journey_steps || coach.methodology || fallbackCoach.methodology,
+      // EKLENDİ: CSV uyumu için education eklendi.
+      education: toStringArray(coach.education || coach.education_list, fallbackCoach.education),
+      // EKLENDİ: CSV uyumu için certifications eklendi.
+      experience: toStringArray(coach.certifications || coach.experience_list, fallbackCoach.experience),
       services: coach.services || [],
       programs: coach.programs || [],
       faqs:
@@ -335,7 +353,8 @@ export default function CoachProfile() {
             a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir.",
           },
         ],
-      cv_url: coach.cv_url || fallbackCoach.cv_url || null,
+      // EKLENDİ: CSV uyumu için cv_data?.url formatı eklendi.
+      cv_url: coach.cv_data?.url || coach.cv_url || fallbackCoach.cv_url || null,
     };
   }, [coachRow]);
 
@@ -455,7 +474,7 @@ export default function CoachProfile() {
               {c.isOnline && (
                 <span className="absolute -bottom-1 -right-1 flex h-5 w-5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-white" />
+                  <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-50 border-2 border-white" />
                 </span>
               )}
             </div>

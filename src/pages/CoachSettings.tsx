@@ -16,13 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   User,
-  Save,
   ImageIcon,
   Award,
   Briefcase,
   FileText,
   CheckCircle2,
-  ArrowRight,
   Camera,
   ImagePlus,
   Loader2,
@@ -90,9 +88,9 @@ export default function CoachSettings() {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [coachId, setCoachId] = useState<string | null>(null);
+  const [isReadyForAutoSave, setIsReadyForAutoSave] = useState(false);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -106,20 +104,21 @@ export default function CoachSettings() {
     experience_text: "",
   });
 
+  // 1. VERİLERİ ÇEK VE REFRESH LOGOUT SORUNUNU ÇÖZ
   useEffect(() => {
     const loadProfile = async () => {
       try {
         setLoading(true);
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        // ✅ REFRESH ÇÖZÜMÜ: getUser() yerine getSession() kullanıyoruz
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (userError || !user) {
+        if (sessionError || !session?.user) {
           navigate("/login");
           return;
         }
+
+        const user = session.user;
 
         const { data, error } = await supabase
           .from(COACHES_TABLE)
@@ -144,11 +143,15 @@ export default function CoachSettings() {
           cover_url: data.cover_url || data.cv_data?.cover_url || "",
           bio: data.manifesto || data.summary || data.bio || "",
           methodology: data.journey_steps || data.methodology || "",
-          cv_url: data.linkedin_url || data.cv_data?.url || data.cv_url || "", // linkedin_url eklendi
+          cv_url: data.linkedin_url || data.cv_data?.url || data.cv_url || "", 
           specializations: safeParseArray(data.superpowers || data.specializations),
           education_text: safeParseArray(data.education || data.education_list).join("\n"),
           experience_text: safeParseArray(data.certifications || data.experience_list).join("\n"),
         });
+
+        // Form yüklendikten kısa bir süre sonra auto-save'i aktif et
+        setTimeout(() => setIsReadyForAutoSave(true), 1000);
+
       } catch (err) {
         toast.error("Koç ayarları yüklenirken beklenmeyen bir hata oluştu.");
       } finally {
@@ -158,6 +161,38 @@ export default function CoachSettings() {
 
     loadProfile();
   }, [navigate]);
+
+  // 2. OTOMATİK KAYDETME (AUTO-SAVE) MANTIĞI
+  useEffect(() => {
+    if (!isReadyForAutoSave || !coachId) return;
+
+    // Kullanıcı yazmayı bıraktıktan 1 saniye sonra arka planda kaydeder
+    const saveTimer = setTimeout(async () => {
+      try {
+        const education_list = form.education_text ? form.education_text.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+        const experience_list = form.experience_text ? form.experience_text.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+
+        const payload = {
+          full_name: form.full_name.trim(),
+          manifesto: form.bio.trim(),
+          journey_steps: form.methodology.trim(),
+          linkedin_url: form.cv_url.trim() || null, 
+          superpowers: form.specializations,
+          education: education_list,
+          certifications: experience_list,
+          updated_at: new Date().toISOString(),
+        };
+
+        await supabase.from(COACHES_TABLE).update(payload).eq("id", coachId);
+        // İsteğe bağlı: Başarıyla kaydedildiğine dair ufak bir bildirim (sessiz çalışması için kapattım)
+        // toast.success("Değişiklikler kaydedildi", { position: "bottom-right", duration: 1500 });
+      } catch (err) {
+        console.error("Auto-save error:", err);
+      }
+    }, 1000);
+
+    return () => clearTimeout(saveTimer);
+  }, [form, isReadyForAutoSave, coachId]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -226,53 +261,13 @@ export default function CoachSettings() {
           .update({ [uploadKey]: finalUrl, updated_at: new Date().toISOString() })
           .eq("id", user.id);
 
-        toast.success(type === "avatar" ? "Profil fotoğrafı yüklendi ve kaydedildi!" : "Banner yüklendi ve kaydedildi!");
+        toast.success(type === "avatar" ? "Profil fotoğrafı yüklendi!" : "Banner yüklendi!");
       }
     } catch (error) {
       toast.error("Görsel yüklenirken bir hata oluştu.");
     } finally {
       setUploading(false);
       e.target.value = "";
-    }
-  };
-
-  const handleSave = async () => {
-    if (!coachId) {
-      toast.error("Koç kaydı bulunamadı.");
-      return;
-    }
-    if (!form.full_name.trim()) {
-      toast.error("İsim alanı boş bırakılamaz.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const education_list = form.education_text ? form.education_text.split("\n").map((l) => l.trim()).filter(Boolean) : [];
-      const experience_list = form.experience_text ? form.experience_text.split("\n").map((l) => l.trim()).filter(Boolean) : [];
-
-      const payload = {
-        full_name: form.full_name.trim(),
-        avatar_url: form.avatar_url.trim() || null,
-        cover_url: form.cover_url.trim() || null,
-        manifesto: form.bio.trim(),
-        journey_steps: form.methodology.trim(),
-        linkedin_url: form.cv_url.trim() || null, 
-        superpowers: form.specializations,
-        education: education_list,
-        certifications: experience_list,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase.from(COACHES_TABLE).update(payload).eq("id", coachId);
-
-      if (error) throw error;
-      toast.success("Profil başarıyla güncellendi ve kaydedildi.");
-    } catch (err: any) {
-      console.error("Save Error:", err);
-      toast.error(`Kaydederken bir hata oluştu: ${err.message || ""}`);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -360,18 +355,14 @@ export default function CoachSettings() {
                 <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
                   <CheckCircle2 size={12} /> Onaylı Koç
                 </span>
+                <span className="text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
+                  <Save size={12} /> Otomatik Kaydediliyor
+                </span>
               </div>
             </div>
+            
+            {/* Butonlar İsteğin Üzerine Buradan Kaldırıldı */}
 
-            <div className="flex flex-col gap-2 mb-2 w-full md:w-auto">
-               <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold h-10 w-full md:w-48 shadow-lg transition-transform active:scale-95" onClick={handleSave} disabled={saving}>
-                 <Save className="w-4 h-4 mr-2" />
-                 {saving ? "Kaydediliyor..." : "Tümünü Kaydet"}
-               </Button>
-               <Button variant="outline" size="sm" className="font-bold h-10 w-full md:w-48 border-slate-200 text-slate-600" onClick={() => navigate(`/coach/${coachId}`)}>
-                 Önizleme (Canlı Profil)
-               </Button>
-            </div>
           </div>
         </div>
       </div>

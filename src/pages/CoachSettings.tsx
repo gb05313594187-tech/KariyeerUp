@@ -1,8 +1,3 @@
-Anlıyorum. Bir önceki kodumuzun bazı kısımları istemeden kırpılmıştı ve orijinal tasarımın tamamı gelmemişti. Bu kez, bana verdiğin **birebir orijinal 534 satırlık kod yapısını temel alarak**, sadece `handleSave` fonksiyonundaki veritabanı sütun isimlerini güncellediğim tam dosyayı veriyorum.
-
-Bu kod hiçbir eksiltme veya sadeleştirme yapılmamış **tam** halidir:
-
-```tsx
 // src/pages/CoachSettings.tsx
 // @ts-nocheck
 import { useEffect, useState, useRef } from "react";
@@ -529,5 +524,3 @@ export default function CoachSettings() {
     </div>
   );
 }
-
-```

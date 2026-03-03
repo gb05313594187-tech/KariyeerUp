@@ -1,533 +1,633 @@
-// src/pages/CoachSettings.tsx
+// src/pages/CoachProfile.tsx
 // @ts-nocheck
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
-
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  User,
-  Save,
-  ImageIcon,
+  Star,
+  Users,
+  Heart,
+  CalendarDays,
+  Clock,
+  MessageCircle,
   Award,
-  Briefcase,
-  FileText,
-  CheckCircle2,
-  ArrowRight,
-  Camera,
-  ImagePlus,
+  Globe2,
+  PlayCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
+/**
+ * ✅ SADECE BURAYI KONTROL ET
+ * Supabase tablo adların farklıysa burayı değiştir.
+ */
 const COACHES_TABLE = "profiles";
+const SESSION_TABLE = "app_2dff6511da_session_requests"; // örn: session_requests
 
-const specializationOptions = [
-  "Kariyer Geçişi",
-  "Liderlik Koçluğu",
-  "Yeni Mezun Koçluğu",
-  "Yöneticiler için Koçluk",
-  "Mülakat Hazırlığı",
-  "CV & LinkedIn",
-  "Yetenek Yönetimi",
-  "Kurumsal Koçluk",
+const mockReviews = [
+  {
+    name: "Mert Y.",
+    role: "Ürün Yöneticisi",
+    rating: 5,
+    date: "02 Aralık 2025",
+    text: "3 aydır birlikte çalışıyoruz. Kariyerimdeki tıkanıklığı aşmamda çok yardımcı oldu, yönüm netleşti.",
+  },
+  {
+    name: "Zeynep A.",
+    role: "Yeni Mezun",
+    rating: 5,
+    date: "28 Kasım 2025",
+    text: "Mülakat provaları sayesinde 2 farklı yerden teklif aldım. Çok sistematik ve destekleyici bir yaklaşımı var.",
+  },
 ];
 
-const safeParseArray = (val: any) => {
-  if (!val) return [];
-  if (Array.isArray(val)) return val.filter(Boolean);
-  if (typeof val === "string") {
-    if (val.trim().startsWith("[") && val.trim().endsWith("]")) {
+const fallbackCoach = {
+  id: null,
+  name: "Elif Kara",
+  title: "Kariyer Koçu",
+  location: "Online",
+  rating: 4.9,
+  reviewCount: 128,
+  totalSessions: 780,
+  favoritesCount: 364,
+  isOnline: true,
+  tags: ["Kariyer", "Liderlik", "Mülakat", "CV", "Yeni Mezun"],
+  photo_url:
+    "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400",
+  cover_url: null, // ✅ Banner için fallback
+  bio: `
+10+ yıllık kurumsal deneyime sahip Executive ve Kariyer Koçu. 
+Unilever, Google, Trendyol gibi şirketlerde liderlik gelişimi, kariyer geçişi ve performans koçluğu alanlarında birebir ve grup çalışmaları yürüttü.
+  `,
+  methodology: `
+Seanslarımda çözüm odaklı koçluk, pozitif psikoloji ve aksiyon planı odaklı çalışma yöntemlerini kullanıyorum.
+  `,
+  education: ["ICF Onaylı Profesyonel Koçluk Programı (PCC Track)"],
+  experience: ["Kıdemli İnsan Kaynakları İş Ortağı – Global Teknoloji Şirketi"],
+  cv_url: null,
+};
+
+const toStringArray = (value: any, fallback: string[] = []) => {
+  if (!value) return fallback;
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string") {
+    if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
       try {
-        const parsed = JSON.parse(val);
+        const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed.filter(Boolean);
       } catch (e) {}
     }
-    return val.split(",").map((s) => s.trim()).filter(Boolean);
+    return value.split(",").map((s) => s.trim()).filter(Boolean);
   }
-  return [];
+  return fallback;
 };
 
-// Resmi Base64'e çevirip sıkıştıran yardımcı fonksiyon
-function compressImageToBase64(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
+const localeByLang = (lang: string) => {
+  const l = (lang || "tr").toLowerCase();
+  if (l === "tr") return "tr-TR";
+  if (l === "en") return "en-US";
+  if (l === "fr") return "fr-FR";
+  if (l === "ar") return "ar-TN";
+  return "tr-TR";
+};
+
+const tMini = (lang: string) => {
+  const l = (lang || "tr").toLowerCase();
+  if (l === "en")
+    return {
+      loading: "Loading coach profile...",
+      chooseDate: "Pick a date",
+      chooseTime: "Pick a time",
+      bookNow: "Book now",
+      selectTimeFirst: "Please select a time first.",
+      loginRequired: "Please login to book a session.",
+      today: "Today",
+      back: "Back",
+      busy: "Busy",
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  if (l === "fr")
+    return {
+      loading: "Chargement du profil...",
+      chooseDate: "Choisir une date",
+      chooseTime: "Choisir une heure",
+      bookNow: "Réserver",
+      selectTimeFirst: "Veuillez d’abord choisir une heure.",
+      loginRequired: "Veuillez vous connecter pour réserver.",
+      today: "Aujourd’hui",
+      back: "Retour",
+      busy: "Occupé",
+    };
+  if (l === "ar")
+    return {
+      loading: "جاري تحميل الملف...",
+      chooseDate: "اختر التاريخ",
+      chooseTime: "اختر الوقت",
+      bookNow: "احجز الآن",
+      selectTimeFirst: "اختر الوقت أولاً.",
+      loginRequired: "سجّل الدخول للحجز.",
+      today: "اليوم",
+      back: "رجوع",
+      busy: "مشغول",
+    };
+  return {
+    loading: "Koç profili yükleniyor...",
+    chooseDate: "Tarih seç",
+    chooseTime: "Saat seç",
+    bookNow: "Hemen Seans Al",
+    selectTimeFirst: "Lütfen önce bir saat seç.",
+    loginRequired: "Seans almak için giriş yapmalısın.",
+    today: "Bugün",
+    back: "Geri dön",
+    busy: "Dolu",
+  };
+};
+
+const generateTimeSlots = (startHour = 10, endHour = 22, intervalMinutes = 30) => {
+  const slots: string[] = [];
+  for (let h = startHour; h < endHour; h++) {
+    for (let m = 0; m < 60; m += intervalMinutes) {
+      slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return slots;
+};
+
+const toYMD = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.toISOString().slice(0, 10);
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+function buildMonthMatrix(viewDate: Date) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const first = new Date(year, month, 1);
+  const startDow = first.getDay();
+  const mondayBased = (startDow + 6) % 7;
+  const gridStart = new Date(year, month, 1 - mondayBased);
+  const days: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    days.push(d);
+  }
+  return { days, month, year };
 }
 
-export default function CoachSettings() {
+const extractUuidFromMixed = (s: string) => {
+  const m = String(s || "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+  return m ? m[0] : "";
+};
+
+const stripTrailingUuid = (s: string) => {
+  return String(s || "").replace(/-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i, "");
+};
+
+export default function CoachProfile() {
+  const params: any = useParams();
+  const rawParam = String(params?.slugOrId || params?.slug || params?.id || "").trim();
+  const mixedUuid = useMemo(() => extractUuidFromMixed(rawParam), [rawParam]);
+  const slugForLookup = useMemo(() => stripTrailingUuid(rawParam), [rawParam]);
+
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { language } = useLanguage();
+  const TT = tMini(language || "tr");
 
-  // ✅ Referanslar (Dosya yükleme pencerelerini tetiklemek için)
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [coachRow, setCoachRow] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [coachId, setCoachId] = useState<string | null>(null);
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
-  const [form, setForm] = useState({
-    full_name: "",
-    avatar_url: "",
-    cover_url: "", // ✅ Banner URL eklendi
-    bio: "",
-    methodology: "",
-    cv_url: "",
-    specializations: [] as string[],
-    education_text: "",
-    experience_text: "",
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
 
-  // 1) VERİLERİ ÇEK
+  const [selectedDate, setSelectedDate] = useState<string>(() => toYMD(new Date()));
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [busySet, setBusySet] = useState<Set<string>>(new Set());
+
+  // VERİ ÇEKME İŞLEMİ
   useEffect(() => {
-    const loadProfile = async () => {
+    const fetchCoach = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
+        let data: any = null;
+        let error: any = null;
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          navigate("/login");
-          return;
+        if (rawParam) {
+          if (slugForLookup) {
+            const rSlug = await supabase.from(COACHES_TABLE).select("*").eq("slug", slugForLookup).single();
+            data = rSlug.data; error = rSlug.error;
+          }
+          if ((!data || error) && mixedUuid) {
+            const rUuid = await supabase.from(COACHES_TABLE).select("*").eq("id", mixedUuid).single();
+            data = rUuid.data; error = rUuid.error;
+          }
+          if ((!data || error) && rawParam) {
+            const rId = await supabase.from(COACHES_TABLE).select("*").eq("id", rawParam).single();
+            data = rId.data; error = rId.error;
+          }
+        } else {
+          // Eğer /coach/profile ise kendi verisini çeksin
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData?.user?.id) {
+            const rSelf = await supabase.from(COACHES_TABLE).select("*").eq("id", authData.user.id).single();
+            data = rSelf.data; error = rSelf.error;
+          }
         }
-
-        const { data, error } = await supabase
-          .from(COACHES_TABLE)
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
 
         if (error) {
-          toast.error("Koç profili yüklenirken bir hata oluştu.");
-          return;
+          setCoachRow(null);
+        } else {
+          setCoachRow(data);
         }
-        if (!data) {
-          toast.error("Bu hesapla ilişkilendirilmiş bir koç profili bulunamadı.");
-          return;
-        }
-
-        setCoachId(data.id);
-
-        setForm({
-          full_name: data.full_name || "",
-          avatar_url: data.avatar_url || data.photo_url || "",
-          cover_url: data.cover_url || data.cv_data?.cover_url || "", // ✅ Banner
-          bio: data.manifesto || data.summary || data.bio || "",
-          methodology: data.journey_steps || data.methodology || "",
-          cv_url: data.cv_data?.url || data.cv_url || "",
-          specializations: safeParseArray(data.superpowers || data.specializations),
-          education_text: safeParseArray(data.education || data.education_list).join("\n"),
-          experience_text: safeParseArray(data.certifications || data.experience_list).join("\n"),
-        });
-      } catch (err) {
-        toast.error("Koç ayarları yüklenirken beklenmeyen bir hata oluştu.");
+      } catch (e) {
+        setCoachRow(null);
       } finally {
         setLoading(false);
       }
     };
+    fetchCoach();
+  }, [rawParam, mixedUuid, slugForLookup]);
 
-    loadProfile();
-  }, [navigate]);
+  // MAPLEME (UI için)
+  const c = useMemo(() => {
+    const coach = coachRow;
+    if (!coach) return fallbackCoach;
 
-  const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+    return {
+      id: coach.id,
+      name: coach.full_name || fallbackCoach.name,
+      title: coach.title || "Kariyer Koçu",
+      location: coach.location || coach.city || coach.country || "Online",
+      rating: coach.rating ?? 5,
+      reviewCount: coach.review_count ?? coach.total_reviews ?? 0,
+      totalSessions: coach.experience_years ?? coach.total_sessions ?? 0,
+      favoritesCount: coach.favorites_count ?? 0,
+      isOnline: coach.status === "approved" || (coach.is_online ?? true),
+      photo_url: coach.avatar_url || coach.photo_url || fallbackCoach.photo_url,
+      cover_url: coach.cover_url || fallbackCoach.cover_url, // ✅ YENİ: Banner URL
+      tags: toStringArray(coach.superpowers || coach.specializations, fallbackCoach.tags),
+      bio: coach.manifesto || coach.summary || coach.bio || fallbackCoach.bio,
+      methodology: coach.journey_steps || coach.methodology || fallbackCoach.methodology,
+      education: toStringArray(coach.education || coach.education_list, fallbackCoach.education),
+      experience: toStringArray(coach.certifications || coach.experience_list, fallbackCoach.experience),
+      services: coach.services || [],
+      programs: coach.programs || [],
+      faqs: coach.faqs || [
+        { q: "Seanslar online mı gerçekleşiyor?", a: "Evet, tüm seanslar Zoom veya Google Meet üzerinden online olarak gerçekleşmektedir." },
+        { q: "Seans öncesi nasıl hazırlanmalıyım?", a: "Güncel durumunuzu, hedeflerinizi ve zorlandığınız alanları ana başlıklar halinde not almanız yeterlidir." },
+      ],
+      cv_url: coach.cv_data?.url || coach.cv_url || fallbackCoach.cv_url || null,
+    };
+  }, [coachRow]);
 
-  const toggleSpecialization = (tag: string) => {
-    setForm((prev) => {
-      const exists = prev.specializations.includes(tag);
-      return {
-        ...prev,
-        specializations: exists
-          ? prev.specializations.filter((t) => t !== tag)
-          : [...prev.specializations, tag],
-      };
-    });
-  };
+  useEffect(() => {
+    const run = async () => {
+      if (!c?.id) return;
+      try {
+        const { data, error } = await supabase.from(SESSION_TABLE).select("selected_date, selected_time, status").eq("coach_id", c.id);
+        if (error) return;
+        const s = new Set<string>();
+        (data || []).forEach((r: any) => {
+          const st = String(r.status || "").toLowerCase();
+          const isBusy = ["approved", "confirmed", "paid", "completed"].includes(st);
+          if (isBusy && r.selected_date && r.selected_time) {
+            s.add(`${r.selected_date}|${r.selected_time}`);
+          }
+        });
+        setBusySet(s);
+      } catch (e) {}
+    };
+    run();
+  }, [c?.id]);
 
-  // 2) GÖRSEL YÜKLEME (Avatar & Banner)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const monthInfo = useMemo(() => buildMonthMatrix(calendarMonth), [calendarMonth]);
+  const locale = useMemo(() => localeByLang(language || "tr"), [language]);
+  const monthTitle = useMemo(() => {
+    return new Date(monthInfo.year, monthInfo.month, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
+  }, [monthInfo, locale]);
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Dosya 5MB'den küçük olmalı.");
-      e.target.value = "";
+  const dow = useMemo(() => {
+    const base = new Date(2024, 0, 1);
+    const labels = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      labels.push(d.toLocaleDateString(locale, { weekday: "short" }).replace(".", ""));
+    }
+    return labels;
+  }, [locale]);
+
+  const handleBook = async () => {
+    if (!selectedSlot) {
+      toast.error(TT.selectTimeFirst);
       return;
     }
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Lütfen geçerli bir resim dosyası seçin.");
-      e.target.value = "";
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth?.user?.id;
+    if (!userId) {
+      toast.error(TT.loginRequired);
+      const qs = new URLSearchParams(searchParams);
+      if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
+      qs.set("next", `/coach/${rawParam || "profile"}`);
+      navigate(`/login?${qs.toString()}`);
       return;
     }
-
-    setUploading(true);
-
-    try {
-      let finalUrl = "";
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        try {
-          const ext = file.name.split(".").pop() || "jpg";
-          const fileName = `${user.id}/${type}-${Date.now()}.${ext}`;
-
-          const { error: upErr } = await supabase.storage
-            .from("profiles")
-            .upload(fileName, file, { upsert: true });
-
-          if (upErr) throw upErr;
-
-          const { data: urlData } = supabase.storage
-            .from("profiles")
-            .getPublicUrl(fileName);
-
-          finalUrl = urlData.publicUrl + "?t=" + Date.now();
-        } catch (storageErr) {
-          console.warn("Storage başarısız, Base64'e çevriliyor...", storageErr);
-          finalUrl = await compressImageToBase64(file, type === "avatar" ? 400 : 1200, 0.75);
-        }
-
-        // URL'yi form state'ine kaydet
-        const uploadKey = type === "avatar" ? "avatar_url" : "cover_url";
-        setForm((prev) => ({ ...prev, [uploadKey]: finalUrl }));
-        toast.success(type === "avatar" ? "Profil fotoğrafı yüklendi!" : "Banner yüklendi!");
-      }
-    } catch (error) {
-      toast.error("Görsel yüklenirken bir hata oluştu.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    const qs = new URLSearchParams(searchParams);
+    if (!qs.get("lang")) qs.set("lang", (language || "tr") as any);
+    qs.set("coachId", String(c.id || ""));
+    qs.set("date", selectedDate);
+    qs.set("time", selectedSlot);
+    navigate(`/book-session?${qs.toString()}`);
   };
 
-  // 3) KAYDET
-  const handleSave = async () => {
-    if (!coachId) {
-      toast.error("Koç kaydı bulunamadı.");
-      return;
-    }
-    if (!form.full_name.trim()) {
-      toast.error("İsim alanı boş bırakılamaz.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const education_list = form.education_text.split("\n").map((l) => l.trim()).filter(Boolean);
-      const experience_list = form.experience_text.split("\n").map((l) => l.trim()).filter(Boolean);
-
-      const payload = {
-        full_name: form.full_name.trim(),
-        avatar_url: form.avatar_url.trim() || null,
-        cover_url: form.cover_url.trim() || null,
-        manifesto: form.bio.trim(),
-        journey_steps: form.methodology.trim(),
-        cv_url: form.cv_url.trim() || null,
-        superpowers: form.specializations,
-        education: education_list,
-        certifications: experience_list,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase.from(COACHES_TABLE).update(payload).eq("id", coachId);
-
-      if (error) throw error;
-      toast.success("Profil başarıyla güncellendi ve kaydedildi.");
-    } catch (err) {
-      toast.error("Kaydederken bir hata oluştu.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
+  if (loading && !coachRow) {
     return (
       <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center text-gray-600">
-        Koç ayarların yükleniyor...
+        {TT.loading}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-gray-900">
-      {/* Gizli file input'lar */}
-      <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, "avatar")} />
-      <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, "cover")} />
+    <div className="min-h-screen bg-[#FFF8F5] text-gray-900">
+      {/* ==================== YENİ HERO ALANI ==================== */}
+      <section className="w-full bg-white border-b border-orange-100 pb-10">
+        {/* Banner (Kapak Fotoğrafı) */}
+        <div className="w-full h-48 md:h-64 relative bg-slate-200">
+          {c.cover_url ? (
+            <img src={c.cover_url} className="w-full h-full object-cover" alt="Banner" />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-red-500 to-rose-500 opacity-90" />
+          )}
+        </div>
 
-      {/* ==================== YENİ GÖRSEL HEADER ==================== */}
-      <div className="bg-white border-b border-slate-100 shadow-sm mb-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Banner Bölümü */}
-          <div
-            className={`h-48 md:h-64 bg-slate-200 relative group overflow-hidden md:rounded-b-3xl ${
-              uploading ? "pointer-events-none opacity-70" : "cursor-pointer"
-            }`}
-            onClick={() => !uploading && coverInputRef.current?.click()}
-          >
-            {form.cover_url ? (
+        {/* Profil İçeriği (Banner'ın üstüne binen kısım) */}
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-start gap-10">
+          
+          {/* Avatar (Fotoğraf) */}
+          <div className="flex flex-col items-center -mt-16 relative z-10 shrink-0">
+            <div className="relative">
               <img
-                src={form.cover_url}
-                className="w-full h-full object-cover"
-                alt="banner preview"
+                src={c.photo_url}
+                alt={c.name}
+                className="w-36 h-36 rounded-3xl object-cover shadow-xl border-[6px] border-white bg-white"
               />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-600 via-pink-500 to-orange-400 opacity-90" />
-            )}
-            
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
-              {uploading ? (
-                <>
-                  <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">Yükleniyor...</span>
-                </>
-              ) : (
-                <>
-                  <ImagePlus size={32} className="mb-2" />
-                  <span className="font-black uppercase tracking-widest text-sm">
-                    {form.cover_url ? "Banner Değiştir" : "Banner Ekle"}
-                  </span>
-                </>
+              {c.isOnline && (
+                <span className="absolute bottom-2 right-[-4px] flex h-6 w-6">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-6 w-6 bg-emerald-500 border-[3px] border-white" />
+                </span>
               )}
             </div>
+            <button className="mt-4 px-4 py-1.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">
+              {c.isOnline ? "• Şu An Uygun" : "• Şu An Meşgul"}
+            </button>
           </div>
 
-          {/* Avatar ve İsim Bölümü */}
-          <div className="px-4 md:px-8 pb-8 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 -mt-16 relative z-10">
-            <div
-              className={`w-32 h-32 md:w-44 md:h-44 rounded-3xl border-[6px] border-white shadow-xl overflow-hidden bg-slate-100 group relative shrink-0 ${
-                uploading ? "pointer-events-none" : "cursor-pointer"
-              }`}
-              onClick={() => !uploading && avatarInputRef.current?.click()}
-            >
-              <img
-                src={
-                  form.avatar_url ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    form.full_name || "Koç"
-                  )}&size=256&background=f43f5e&color=fff&bold=true`
-                }
-                className="w-full h-full object-cover bg-white"
-                alt="avatar preview"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-300">
-                <Camera size={24} className="mb-1" />
-                <span className="font-black text-[9px] uppercase tracking-widest">
-                  Değiştir
-                </span>
-              </div>
+          {/* Koç Bilgisi ve İstatistikler */}
+          <div className="flex-1 space-y-3 pt-6 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-bold text-gray-900 truncate">{c.name}</h1>
+              <Badge className="bg-red-50 text-red-700 border border-red-100 text-xs">
+                Öne Çıkan Koç
+              </Badge>
             </div>
 
-            <div className="flex-1 pb-2 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-800 leading-none truncate">
-                {form.full_name || "İSMİNİZİ GİRİN"}
-              </h1>
-              <p className="text-base md:text-lg font-bold text-slate-500 mt-1 italic truncate">
-                Kariyer Koçu
-              </p>
-              <div className="flex flex-wrap gap-3 mt-3">
-                <span className="text-rose-600 bg-rose-50 px-3 py-1 rounded-lg flex items-center gap-1.5 text-[10px] font-black uppercase">
-                  <CheckCircle2 size={12} /> Onaylı Koç
-                </span>
-              </div>
-            </div>
-
-            {/* Sağ Üst Kaydet Butonları */}
-            <div className="flex flex-col gap-2 mb-2 w-full md:w-auto">
-               <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold h-10 w-full md:w-48 shadow-lg transition-transform active:scale-95" onClick={handleSave} disabled={saving}>
-                 <Save className="w-4 h-4 mr-2" />
-                 {saving ? "Kaydediliyor..." : "Tümünü Kaydet"}
-               </Button>
-               <Button variant="outline" size="sm" className="font-bold h-10 w-full md:w-48 border-slate-200 text-slate-600" onClick={() => navigate("/coach/profile")}>
-                 Önizleme (Canlı Profil)
-               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ==================== İÇERİK ==================== */}
-      <div className="max-w-6xl mx-auto px-4 space-y-6">
-        {/* GENEL BİLGİLER */}
-        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
-              <User className="w-4 h-4 text-rose-500" />
-              Temel Bilgiler
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Ad Soyad
-              </label>
-              <Input
-                value={form.full_name}
-                onChange={(e) => handleChange("full_name", e.target.value)}
-                placeholder="Örn: Yağız Alperen"
-                className="bg-slate-50 border-slate-200 h-12 rounded-xl focus:ring-rose-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Kısa Özgeçmiş / Manifesto
-              </label>
-              <Textarea
-                rows={5}
-                value={form.bio}
-                onChange={(e) => handleChange("bio", e.target.value)}
-                placeholder="Kariyer eğitimin, kurumsal deneyimin ve koçluk yaklaşımın hakkında özet bir metin yaz."
-                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-rose-500 resize-none"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* UZMANLIK ALANLARI */}
-        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
-              <ImageIcon className="w-4 h-4 text-orange-500" />
-              Uzmanlık Etiketleri
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <p className="text-xs text-slate-500">
-              Kullanıcılar koç ararken bu etiketleri filtrelemek için kullanacak. En az 2, en fazla 6 etiket seç.
+            <p className="text-lg text-gray-700 flex items-center gap-2 truncate">
+              {c.title}
+              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
+              <Globe2 className="w-4 h-4 text-gray-500 shrink-0" />
+              <span className="text-sm text-gray-500 truncate">{c.location}</span>
             </p>
-            <div className="flex flex-wrap gap-2">
-              {specializationOptions.map((tag) => {
-                const active = form.specializations.includes(tag);
-                return (
-                  <Button
-                    key={tag}
-                    type="button"
-                    variant={active ? "default" : "outline"}
-                    size="sm"
-                    className={`rounded-xl px-4 h-9 font-bold text-xs transition-all ${
-                      active
-                        ? "bg-orange-500 hover:bg-orange-600 text-white border-none shadow-md"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                    onClick={() => toggleSpecialization(tag)}
-                  >
-                    {tag}
-                  </Button>
-                );
-              })}
+
+            <div className="flex flex-wrap gap-2 mt-2">
+              {c.tags?.map((tag: string) => (
+                <span key={tag} className="px-3 py-1 text-xs rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                  {tag}
+                </span>
+              ))}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* EĞİTİM & DENEYİM */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
-                <Award className="w-4 h-4 text-amber-500" />
-                Eğitim & Sertifikalar
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <Textarea
-                rows={6}
-                value={form.education_text}
-                onChange={(e) => handleChange("education_text", e.target.value)}
-                placeholder={`Her satıra bir eğitim yaz.\nÖrn:\nICF Onaylı Profesyonel Koçluk Programı\nBoğaziçi Üniversitesi`}
-                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-amber-500"
-              />
-            </CardContent>
-          </Card>
+            <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span className="font-semibold">{Number(c.rating || 0).toFixed(1)}</span>
+                <span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4 text-orange-500" />
+                <span className="font-semibold">{c.totalSessions || 0}</span>
+                <span className="text-gray-500">seans</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="w-4 h-4 text-red-500" />
+                <span className="font-semibold">{c.favoritesCount || 0}</span>
+                <span className="text-gray-500">favori</span>
+              </div>
+            </div>
 
-          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
-                <Briefcase className="w-4 h-4 text-emerald-500" />
-                İş Deneyimi & Roller
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <Textarea
-                rows={6}
-                value={form.experience_text}
-                onChange={(e) => handleChange("experience_text", e.target.value)}
-                placeholder={`Her satıra bir rol yaz.\nÖrn:\nKıdemli İK İş Ortağı – Trendyol\nKariyer Koçu – Serbest`}
-                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-emerald-500"
-              />
-            </CardContent>
-          </Card>
+            <div className="flex flex-wrap gap-3 mt-5">
+              <Button className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow" onClick={handleBook} disabled={!selectedSlot}>
+                {TT.bookNow}
+              </Button>
+              <Button variant="outline" className="px-6 py-3 rounded-xl border-gray-300 text-gray-800 hover:bg-gray-50">
+                <Heart className="w-4 h-4 mr-2 text-red-500" /> Favorilere Ekle
+              </Button>
+            </div>
+          </div>
+
+          {/* RIGHT: REAL CALENDAR */}
+          <div className="w-full md:w-80 pt-6">
+            <Card className="bg-[#FFF8F5] border-orange-100 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-gray-800 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-orange-500" />{TT.chooseDate}</span>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full border-orange-200 bg-white" onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() - 1); setCalendarMonth(d); }}><ChevronLeft className="w-4 h-4" /></Button>
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full border-orange-200 bg-white" onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() + 1); setCalendarMonth(d); }}><ChevronRight className="w-4 h-4" /></Button>
+                  </div>
+                </CardTitle>
+                <div className="mt-2 text-sm font-semibold text-gray-900">{monthTitle}</div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                <div className="grid grid-cols-7 gap-1">
+                  {dow.map((d) => (<div key={d} className="text-[11px] text-gray-500 font-semibold text-center">{d}</div>))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {monthInfo.days.map((d) => {
+                    const inMonth = d.getMonth() === monthInfo.month;
+                    const past = d < today;
+                    const ymd = toYMD(d);
+                    const isSelected = selectedDate === ymd;
+                    const isToday = isSameDay(d, today);
+                    return (
+                      <button
+                        key={ymd}
+                        type="button"
+                        disabled={!inMonth || past}
+                        onClick={() => { setSelectedDate(ymd); setSelectedSlot(null); }}
+                        className={["h-9 w-full rounded-xl text-[12px] font-semibold transition", inMonth ? "text-gray-800" : "text-gray-300", past ? "opacity-40 cursor-not-allowed" : "hover:bg-orange-50", isSelected ? "bg-red-600 text-white hover:bg-red-600" : "bg-white", isToday && !isSelected ? "ring-2 ring-orange-300" : "", "border border-orange-100"].join(" ")}
+                      >
+                        {d.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="pt-2">
+                  <div className="text-[12px] font-semibold text-gray-800 mb-2 flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" />{TT.chooseTime}</div>
+                  <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
+                    {generateTimeSlots(10, 22, 30).map((slot) => {
+                      const isBusy = busySet.has(`${selectedDate}|${slot}`);
+                      return (
+                        <Button
+                          key={slot}
+                          type="button"
+                          disabled={isBusy}
+                          variant={selectedSlot === slot ? "default" : "outline"}
+                          size="sm"
+                          className={`rounded-full h-8 text-[11px] ${isBusy ? "opacity-40 cursor-not-allowed bg-white border-orange-200 text-gray-500" : selectedSlot === slot ? "bg-red-600 text-white" : "border-orange-200 text-gray-700 hover:bg-orange-50 bg-white"}`}
+                          onClick={() => { if (isBusy) return; setSelectedSlot(slot); }}
+                        >
+                          {slot}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 text-[11px] text-gray-600">
+                    {selectedSlot ? (<>Seçilen: <span className="font-semibold">{selectedDate} · {selectedSlot}</span></>) : (<span className="text-gray-500">Önce gün, sonra saat seç.</span>)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+      </section>
 
-        {/* METODOLOJİ & CV */}
-        <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl mb-10">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2 text-slate-800 font-bold uppercase tracking-wider">
-              <FileText className="w-4 h-4 text-blue-500" />
-              Metodoloji & Linkler
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Koçluk Metodolojin
-              </label>
-              <Textarea
-                rows={4}
-                value={form.methodology}
-                onChange={(e) => handleChange("methodology", e.target.value)}
-                placeholder="Seanslarda kullandığın yaklaşımlar (Çözüm odaklı, pozitif psikoloji vb.)"
-                className="bg-slate-50 border-slate-200 rounded-xl focus:ring-blue-500 resize-none"
-              />
+      {/* TABS */}
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <Tabs defaultValue="about" className="space-y-6">
+          <TabsList className="bg-white border border-orange-100 rounded-full p-1">
+            <TabsTrigger value="about">Hakkında</TabsTrigger>
+            <TabsTrigger value="cv">Özgeçmiş</TabsTrigger>
+            <TabsTrigger value="programs">Program Paketleri</TabsTrigger>
+            <TabsTrigger value="reviews">Yorumlar</TabsTrigger>
+            <TabsTrigger value="content">İçerikler</TabsTrigger>
+            <TabsTrigger value="faq">SSS</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
+            <Card className="bg-white border border-orange-100 shadow-sm">
+              <CardHeader><CardTitle className="text-base font-semibold text-gray-900">Koç Hakkında</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm text-gray-800"><p className="whitespace-pre-line">{c.bio}</p></CardContent>
+            </Card>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="bg-white border border-orange-100 shadow-sm">
+                <CardHeader><CardTitle className="text-sm flex items-center gap-2 text-gray-900"><Award className="w-4 h-4 text-orange-500" />Eğitim & Sertifikalar</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-800">
+                  {(c.education || []).map((item: string) => (
+                    <div key={item} className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-orange-500" /><span>{item}</span></div>
+                  ))}
+                </CardContent>
+              </Card>
+              <Card className="bg-white border border-orange-100 shadow-sm">
+                <CardHeader><CardTitle className="text-sm flex items-center gap-2 text-gray-900"><Users className="w-4 h-4 text-red-500" />Tecrübe & Geçmiş</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-800">
+                  {(c.experience || []).map((item: string) => (
+                    <div key={item} className="flex items-start gap-2 rounded-xl bg-[#FFF8F5] px-3 py-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500" /><span>{item}</span></div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
+            <Card className="bg-white border border-orange-100 shadow-sm">
+              <CardHeader><CardTitle className="text-base font-semibold text-gray-900">Koçluk Metodolojisi</CardTitle></CardHeader>
+              <CardContent className="text-sm text-gray-800 whitespace-pre-line">{c.methodology}</CardContent>
+            </Card>
+          </TabsContent>
 
-            <div className="space-y-2 pb-4">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                CV / LinkedIn Linki (Opsiyonel)
-              </label>
-              <Input
-                value={form.cv_url}
-                onChange={(e) => handleChange("cv_url", e.target.value)}
-                placeholder="https://linkedin.com/in/..."
-                className="bg-slate-50 border-slate-200 h-12 rounded-xl focus:ring-blue-500"
-              />
+          <TabsContent value="cv">
+            <div className="space-y-4">
+              {c.cv_url ? (
+                <Card className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div><p className="text-sm font-semibold text-gray-900">Koçun Özgeçmişi (CV)</p><p className="text-xs text-gray-500 mt-1">PDF formatında detaylı eğitim ve iş deneyimlerini inceleyebilirsiniz.</p></div>
+                    <a href={c.cv_url} target="_blank" rel="noopener noreferrer"><Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm">Özgeçmişi Görüntüle / İndir</Button></a>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white border border-orange-100 shadow-sm"><CardContent className="py-4"><p className="text-sm text-gray-600">Bu koç henüz özgeçmişini eklemedi.</p></CardContent></Card>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
 
+          <TabsContent value="programs">
+            <div className="grid md:grid-cols-2 gap-4">
+              {(c.programs || []).length === 0 && (<p className="text-sm text-gray-500">Bu koç henüz program paketi eklemedi.</p>)}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm"><Star className="w-5 h-5 text-yellow-400" /><span className="font-medium text-gray-900">{Number(c.rating || 0).toFixed(1)} / 5</span><span className="text-gray-500">({c.reviewCount || 0} değerlendirme)</span></div>
+              <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 text-xs">Filtrele</Button>
+            </div>
+            <div className="space-y-3">
+              {mockReviews.map((rev, idx) => (
+                <Card key={idx} className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div><p className="text-sm font-semibold text-gray-900">{rev.name}</p><p className="text-xs text-gray-500">{rev.role}</p></div>
+                      <div className="flex items-center gap-1 text-xs"><Star className="w-4 h-4 text-yellow-400" /><span className="text-gray-900">{rev.rating}.0</span><span className="text-gray-400">· {rev.date}</span></div>
+                    </div>
+                    <p className="text-sm text-gray-800">{rev.text}</p>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500"><MessageCircle className="w-3 h-3 mr-1" />Koç Yanıtı Yaz (yakında)</Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="content">
+            <div className="grid md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="bg-white border border-orange-100 shadow-sm flex flex-col">
+                  <div className="h-32 rounded-t-xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center"><PlayCircle className="w-10 h-10 text-red-500" /></div>
+                  <CardContent className="py-3 space-y-1 text-sm"><p className="font-semibold text-gray-900">Kariyer Yönünü Bulmak İçin 3 Ana Soru</p><p className="text-xs text-gray-500">8 dk · Video · 1.2K görüntülenme</p><Button variant="ghost" size="sm" className="px-0 h-7 text-xs text-red-600">İçeriği Görüntüle</Button></CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="faq">
+            <div className="space-y-3">
+              {(c.faqs || []).map((item: any, idx: number) => (
+                <Card key={idx} className="bg-white border border-orange-100 shadow-sm">
+                  <CardContent className="py-3"><p className="text-sm font-semibold text-gray-900 mb-1">{item.q}</p><p className="text-xs text-gray-600">{item.a}</p></CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

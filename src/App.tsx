@@ -1,3 +1,8 @@
+Tamamdır. Orijinal `App.tsx` dosyanı birebir koruyarak, **hiçbir satırı silmeden veya kısaltmadan** sadece `CoachPublicProfile` yönlendirmesini, düzelttiğimiz `CoachSelfProfile` dosyasına bakacak şekilde değiştirdim. (Bu değişiklik, tıklanan koçun gerçek 900 satırlık profile gitmesini sağlayacak).
+
+İşte hiçbir eksiği olmayan, sadece yönlendirmesi düzeltilmiş tam dosya:
+
+```tsx
 // src/App.tsx
 // @ts-nocheck
 import { SessionRefresher } from "@/components/SessionRefresher";
@@ -176,7 +181,8 @@ export default function App() {
 
             {/* ✅ KOÇ LİSTESİ + PUBLIC PROFİL */}
             <Route path="coaches" element={<Coaches />} />
-            <Route path="coach/:slug" element={<CoachPublicProfile />} />
+            {/* DEĞİŞTİRİLDİ: Dışarıdan gelen /coach/:slug linkleri artık düzelttiğimiz gerçek dosyayı (CoachSelfProfile) açacak */}
+            <Route path="coach/:slug" element={<CoachSelfProfile />} />
 
             {/* USER */}
             <Route
@@ -272,3 +278,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+```

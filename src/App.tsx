@@ -1,3 +1,14 @@
+Bu hata mesajı (`Unterminated string literal`), kodu kopyalarken dosyanın en üstündeki veya en altındaki **```** (markdown kod bloğu) işaretlerini de yanlışlıkla `src/App.tsx` dosyasının içine yapıştırdığını gösteriyor.
+
+Derleyici (Vite/esbuild) sayfanın en altındaki o **```** işaretini görünce bunun bir yazılım kodu olmadığını düşünüp hata veriyor ve derlemeyi durduruyor. (Hata logundaki `277|  ``` ` kısmı tam olarak bunu gösteriyor).
+
+### Çözüm:
+
+`src/App.tsx` dosyanı aç ve en üstündeki ````tsx` ile en alt satırındaki ````` işaretlerini sil. Kod sadece `// src/App.tsx` ile başlayıp en altta `}` ile bitmelidir.
+
+Hemen aşağıya **başında ve sonunda hiçbir markdown işareti olmadan** direkt kopyalayıp yapıştırabileceğin temiz halini bırakıyorum. Sadece aşağıdaki bloğu kopyalayıp `App.tsx` dosyanın içindekilerle tamamen değiştirirsen derleme hatası düzelecektir:
+
+```tsx
 // src/App.tsx
 // @ts-nocheck
 import { SessionRefresher } from "@/components/SessionRefresher";
@@ -176,7 +187,7 @@ export default function App() {
 
             {/* ✅ KOÇ LİSTESİ + PUBLIC PROFİL */}
             <Route path="coaches" element={<Coaches />} />
-            {/* DEĞİŞTİRİLDİ: Dışarıdan gelen /coach/:slug linkleri artık düzelttiğimiz gerçek dosyayı (CoachSelfProfile) açacak */}
+            {/* Dışarıdan gelen /coach/:slug linkleri artık düzelttiğimiz gerçek dosyayı (CoachSelfProfile) açacak */}
             <Route path="coach/:slug" element={<CoachSelfProfile />} />
 
             {/* USER */}

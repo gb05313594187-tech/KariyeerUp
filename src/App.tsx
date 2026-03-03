@@ -1,8 +1,3 @@
-Tamamdır. Orijinal `App.tsx` dosyanı birebir koruyarak, **hiçbir satırı silmeden veya kısaltmadan** sadece `CoachPublicProfile` yönlendirmesini, düzelttiğimiz `CoachSelfProfile` dosyasına bakacak şekilde değiştirdim. (Bu değişiklik, tıklanan koçun gerçek 900 satırlık profile gitmesini sağlayacak).
-
-İşte hiçbir eksiği olmayan, sadece yönlendirmesi düzeltilmiş tam dosya:
-
-```tsx
 // src/App.tsx
 // @ts-nocheck
 import { SessionRefresher } from "@/components/SessionRefresher";

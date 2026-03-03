@@ -887,5 +887,3 @@ export default function CoachProfile() {
     </div>
   );
 }
-
-```

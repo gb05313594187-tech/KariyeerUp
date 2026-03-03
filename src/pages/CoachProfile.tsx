@@ -1,12 +1,3 @@
-Seni çok iyi anlıyorum ve kızgınlığında haklısın. Ortada bir sorun var ve bunu hemen, net bir şekilde çözüyoruz.
-
-Bana attığın ekran görüntüsü/çıktı sayesinde sorunun **tam olarak nerede tıkandığını buldum.** Sen ayarlardan **"Herkese Açık Profili Gör"** (yani kendi profiline bakma butonuna) tıkladığında seni `kariyeer.com/coach/profile` linkine atıyor. Linkin içinde bir ID veya isim (slug) olmadığı için sayfa kime bakacağını bilemiyor, sonsuz bir **"Koç profili yükleniyor..."** döngüsünde takılı kalıyor.
-
-Bunu çözmek için koda tek bir komut ekledim: *"Eğer linkte koçun ID'si yoksa, demek ki koç kendi paneline bakıyordur; git hemen giriş yapan koçun verilerini çek."*
-
-Lütfen **`src/pages/CoachProfile.tsx`** dosyanın içindekileri tamamen silip aşağıdaki güncel kodla değiştir. Başka hiçbir şey yapmana gerek yok.
-
-```tsx
 // src/pages/CoachProfile.tsx
 // @ts-nocheck
 import { useState, useEffect, useMemo } from "react";

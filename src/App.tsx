@@ -1,7 +1,7 @@
 // src/App.tsx
 // @ts-nocheck
 import { SessionRefresher } from "@/components/SessionRefresher";
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // ✅ useState eklendi
 import {
   BrowserRouter as Router,
   Routes,
@@ -21,6 +21,9 @@ import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
 
+// ✅ YENİ: Hazırladığımız Onboarding Modal'ı import ediyoruz
+import { OnboardingModal } from "@/components/OnboardingModal";
+
 /* ================= SESSION YÜKLEME - SİHİRLİ KOD ================= */
 function SessionLoader() {
   useEffect(() => {
@@ -36,6 +39,41 @@ function SessionLoader() {
   }, []);
 
   return null;
+}
+
+/* ================= ONBOARDING KONTROL MEKANİZMASI (YENİ) ================= */
+// Bu fonksiyon kullanıcının profili var mı yok mu diye bakar
+function OnboardingManager() {
+  const { user, isAuthenticated, loading } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const checkProfileStatus = async () => {
+      if (isAuthenticated && user && !loading) {
+        // career_profiles tablosunda bu kullanıcıya ait kayıt var mı?
+        const { data, error } = await supabase
+          .from('career_profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        // Eğer kayıt yoksa, modalı açıyoruz
+        if (!data && !error) {
+          setShowOnboarding(true);
+        }
+      }
+    };
+
+    checkProfileStatus();
+  }, [isAuthenticated, user, loading]);
+
+  return (
+    <OnboardingModal 
+      isOpen={showOnboarding} 
+      userId={user?.id} 
+      onComplete={() => setShowOnboarding(false)} 
+    />
+  );
 }
 
 /* ================= PROTECTED ROUTE ================= */
@@ -138,6 +176,9 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        {/* ✅ EKLEME: Onboarding kontrolünü Router'ın en başına koyduk */}
+        <OnboardingManager />
+        
         {/* Session yenileme */}
         <SessionLoader />
         <SessionRefresher />

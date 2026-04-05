@@ -1,7 +1,7 @@
 // src/App.tsx
 // @ts-nocheck
 import { SessionRefresher } from "@/components/SessionRefresher";
-import { useEffect, useState } from "react"; // ✅ useState eklendi
+import { useEffect, useState } from "react"; 
 import {
   BrowserRouter as Router,
   Routes,
@@ -27,53 +27,13 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 /* ================= SESSION YÜKLEME - SİHİRLİ KOD ================= */
 function SessionLoader() {
   useEffect(() => {
-    // Sayfa açılır açılmaz session'ı yükle
     supabase.auth.getSession();
-
-    // Her 30 saniyede bir sessizce kontrol et (donma sorunu tamamen biter)
     const interval = setInterval(() => {
       supabase.auth.getSession();
     }, 30000);
-
     return () => clearInterval(interval);
   }, []);
-
   return null;
-}
-
-/* ================= ONBOARDING KONTROL MEKANİZMASI (YENİ) ================= */
-// Bu fonksiyon kullanıcının profili var mı yok mu diye bakar
-function OnboardingManager() {
-  const { user, isAuthenticated, loading } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    const checkProfileStatus = async () => {
-      if (isAuthenticated && user && !loading) {
-        // career_profiles tablosunda bu kullanıcıya ait kayıt var mı?
-        const { data, error } = await supabase
-          .from('career_profiles')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        // Eğer kayıt yoksa, modalı açıyoruz
-        if (!data && !error) {
-          setShowOnboarding(true);
-        }
-      }
-    };
-
-    checkProfileStatus();
-  }, [isAuthenticated, user, loading]);
-
-  return (
-    <OnboardingModal 
-      isOpen={showOnboarding} 
-      userId={user?.id} 
-      onComplete={() => setShowOnboarding(false)} 
-    />
-  );
 }
 
 /* ================= PROTECTED ROUTE ================= */
@@ -128,7 +88,6 @@ import SocialHome from "@/pages/Home";
 import JobBoard from "@/pages/JobBoard";
 import CreateJob from "@/pages/CreateJob";
 
-// ✅ KOÇ LİSTESİ + KOÇ PUBLIC PROFİL
 import Coaches from "@/pages/Coaches";
 import CoachPublicProfile from "@/pages/CoachPublicProfile";
 
@@ -140,13 +99,11 @@ function AnalyticsTracker() {
 
   useEffect(() => {
     const consent = localStorage.getItem("kariyeer_cookie_consent");
-
     if (consent === "accepted") {
       if (!window.__ga_initialized) {
         ReactGA.initialize(GA_ID);
         window.__ga_initialized = true;
       }
-
       ReactGA.send({
         hitType: "pageview",
         page: location.pathname + location.search,
@@ -171,146 +128,198 @@ function PublicLayout() {
   );
 }
 
+/* ================= ANA İÇERİK YÖNETİCİSİ (KRİTİK GÜNCELLEME) ================= */
+// Onboarding'in tam sayfa olması için Router'ı ve Layout'u kontrol eden ara katman
+function AppContent() {
+  const { user, isAuthenticated, loading } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+
+  useEffect(() => {
+    const checkProfileStatus = async () => {
+      if (isAuthenticated && user && !loading) {
+        try {
+          const { data, error } = await supabase
+            .from('career_profiles')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (!data && !error) {
+            setShowOnboarding(true);
+          }
+        } catch (err) {
+          console.error("Profil kontrol hatası:", err);
+        }
+      }
+      setIsCheckingProfile(false);
+    };
+
+    checkProfileStatus();
+  }, [isAuthenticated, user, loading]);
+
+  // Yükleme sırasında boş ekran veya spinner göster
+  if (loading || (isAuthenticated && isCheckingProfile)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-orange-500 rounded-full"></div>
+          <div className="text-slate-400 font-bold tracking-widest text-xs uppercase">Hafıza Senkronize Ediliyor...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ EĞER ONBOARDING GEREKLİYSE: Sadece OnboardingModal'ı render et.
+  // Navbar, Footer ve Router'daki sayfalar render edilmez.
+  if (showOnboarding && user) {
+    return (
+      <OnboardingModal 
+        isOpen={true} 
+        userId={user.id} 
+        onComplete={() => setShowOnboarding(false)} 
+      />
+    );
+  }
+
+  // ✅ PROFİL TAMAMSA VEYA GİRİŞ YAPILMAMIŞSA: Normal site akışı
+  return (
+    <Router>
+      <SessionLoader />
+      <SessionRefresher />
+      <AnalyticsTracker />
+      <Toaster richColors position="top-right" />
+
+      <Routes>
+        {/* ADMIN */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="profile" element={<AdminProfile />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="investor" element={<InvestorDashboard />} />
+        </Route>
+
+        {/* PUBLIC + PROTECTED */}
+        <Route path="/" element={<PublicLayout />}>
+          <Route index element={<Home />} />
+          <Route path="home" element={<SocialHome />} />
+          <Route path="jobs" element={<JobBoard />} />
+          <Route path="jobs/new" element={<CreateJob />} />
+          <Route path="boost" element={<Boost />} />
+          <Route path="pricing" element={<Pricing />} />
+          <Route path="mentor-circle" element={<MentorCircle />} />
+          <Route path="webinars" element={<Webinars />} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+
+          <Route path="coaches" element={<Coaches />} />
+          <Route path="coach/:slug" element={<CoachSelfProfile />} />
+
+          {/* USER */}
+          <Route
+            path="user/dashboard"
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="user/profile"
+            element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="user/profile/edit"
+            element={
+              <ProtectedRoute>
+                <UserProfileEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="user/settings"
+            element={
+              <ProtectedRoute>
+                <UserSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* CORPORATE */}
+          <Route
+            path="corporate/dashboard"
+            element={
+              <ProtectedRoute>
+                <CorporateDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="corporate/profile"
+            element={
+              <ProtectedRoute>
+                <CorporateProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="corporate/settings"
+            element={
+              <ProtectedRoute>
+                <CorporateSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* COACH */}
+          <Route
+            path="coach/dashboard"
+            element={
+              <ProtectedRoute>
+                <CoachDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="coach/profile"
+            element={
+              <ProtectedRoute>
+                <CoachSelfProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="coach/settings"
+            element={
+              <ProtectedRoute>
+                <CoachSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+
 /* ================= APP ================= */
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        {/* ✅ EKLEME: Onboarding kontrolünü Router'ın en başına koyduk */}
-        <OnboardingManager />
-        
-        {/* Session yenileme */}
-        <SessionLoader />
-        <SessionRefresher />
-
-        <AnalyticsTracker />
-        <Toaster richColors position="top-right" />
-
-        <Routes>
-          {/* ADMIN */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="profile" element={<AdminProfile />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="investor" element={<InvestorDashboard />} />
-          </Route>
-
-          {/* PUBLIC + PROTECTED */}
-          <Route path="/" element={<PublicLayout />}>
-            <Route index element={<Home />} />
-            <Route path="home" element={<SocialHome />} />
-            <Route path="jobs" element={<JobBoard />} />
-            <Route path="jobs/new" element={<CreateJob />} />
-            <Route path="boost" element={<Boost />} />
-            <Route path="pricing" element={<Pricing />} />
-            <Route path="mentor-circle" element={<MentorCircle />} />
-            <Route path="webinars" element={<Webinars />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-
-            {/* ✅ KOÇ LİSTESİ + PUBLIC PROFİL */}
-            <Route path="coaches" element={<Coaches />} />
-            {/* Dışarıdan gelen /coach/:slug linkleri artık düzelttiğimiz gerçek dosyayı (CoachSelfProfile) açacak */}
-            <Route path="coach/:slug" element={<CoachSelfProfile />} />
-
-            {/* USER */}
-            <Route
-              path="user/dashboard"
-              element={
-                <ProtectedRoute>
-                  <UserDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/profile"
-              element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/profile/edit"
-              element={
-                <ProtectedRoute>
-                  <UserProfileEdit />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user/settings"
-              element={
-                <ProtectedRoute>
-                  <UserSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* CORPORATE */}
-            <Route
-              path="corporate/dashboard"
-              element={
-                <ProtectedRoute>
-                  <CorporateDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="corporate/profile"
-              element={
-                <ProtectedRoute>
-                  <CorporateProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="corporate/settings"
-              element={
-                <ProtectedRoute>
-                  <CorporateSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* COACH */}
-            <Route
-              path="coach/dashboard"
-              element={
-                <ProtectedRoute>
-                  <CoachDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="coach/profile"
-              element={
-                <ProtectedRoute>
-                  <CoachSelfProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="coach/settings"
-              element={
-                <ProtectedRoute>
-                  <CoachSettings />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* CATCH-ALL */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </Router>
+      <AppContent />
     </AuthProvider>
   );
 }

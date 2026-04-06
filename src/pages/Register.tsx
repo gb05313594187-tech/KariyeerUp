@@ -129,7 +129,7 @@ export default function Register() {
       google: "S'inscrire avec Google",
       linkedin: "S'inscrire avec LinkedIn",
       or: "ou",
-      socialError: "Une erreur s'est produite lors de la connexion.",
+      socialError: "Une error s'est produite lors de la connexion.",
       roleRequired: "Veuillez sélectionner un type de compte.",
     },
   }[language || "tr"];
@@ -140,11 +140,11 @@ export default function Register() {
     { value: "company", label: t.company, icon: "🏢", gradient: "from-emerald-500 to-teal-500", ring: "ring-emerald-400" },
   ];
 
-  // Helper function to map userType to DB role
+  // Supabase 'profiles' tablosundaki 'user_type' değerleri ile eşleştirdik
   const getRole = (type: string) => {
     if (type === "coach") return "coach";
-    if (type === "company") return "corporate";
-    return "user";
+    if (type === "company") return "company"; 
+    return "client"; // 'individual' seçilirse veritabanına 'client' olarak gider
   };
 
   const handleSocialLogin = async (provider: "google" | "linkedin_oidc") => {
@@ -159,7 +159,6 @@ export default function Register() {
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?role=${role}`,
-          // OAuth metadata can be tricky, passing as query param for auth callback to handle if needed
           queryParams: {
             access_type: 'offline',
             prompt: 'select_account',
@@ -186,7 +185,9 @@ export default function Register() {
     try {
       const role = getRole(formData.userType);
 
-      // 🚩 CRITICAL: Send metadata for trigger function to pick up
+      // Metadata gönderirken 'role' anahtarını kullanıyoruz ki 
+      // Supabase'deki Auth Trigger (raw_user_meta_data->>'role') bunu yakalayıp 
+      // 'user_type' sütununa yazabilsin.
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -201,7 +202,6 @@ export default function Register() {
       if (error) throw error;
 
       toast.success(t.success);
-      // Redirect after success
       setTimeout(() => navigate("/login"), 2000);
     } catch (err: any) {
       console.error("Register Error:", err);

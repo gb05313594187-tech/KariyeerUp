@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { notionAIService } from '../lib/notionAI';
-import { Rocket, Briefcase, Brain, Star, ChevronRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { Rocket, Briefcase, ChevronRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 interface OnboardingProps {
   isOpen: boolean;
@@ -22,29 +22,43 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, userId, onC
   const handleFinalSubmit = async () => {
     if (!formData.personality_intro) return alert("Lütfen kendinizden biraz bahsedin.");
     setLoading(true);
+
     try {
-      const { error: sbError } = await supabase
-        .from('career_profiles')
-        .upsert({
-          id: userId,
-          title: formData.title,
-          work_preference: formData.work_preference,
-          bio: formData.personality_intro,
-          updated_at: new Date().toISOString(),
-        });
+      // 🚩 KRİTİK: Eğer kullanıcı "guest" ise veritabanına yazma, sadece onComplete yap.
+      // Çünkü giriş yapmamış birinin ID'si auth.users tablosunda yoktur, DB hata verir.
+      if (userId !== "guest") {
+        const { error: sbError } = await supabase
+          .from('profiles') // 🚩 ŞEMANA GÖRE DÜZELTİLDİ: career_profiles -> profiles
+          .upsert({
+            id: userId,
+            full_name: "Yeni Aday", // Şemada full_name zorunlu olabilir
+            title: formData.title,
+            bio: formData.personality_intro,
+            updated_at: new Date().toISOString(),
+          });
 
-      if (sbError) throw sbError;
+        if (sbError) {
+          console.error("Supabase Kayıt Hatası:", sbError);
+          // Hata RLS veya Tablo yokluğu ise burada takılır
+          throw new Error("Profil güncellenirken bir sorun oluştu.");
+        }
+      }
 
-      await notionAIService.createCandidateReport(
-        "Yeni Aday", 
-        formData.personality_intro, 
-        [formData.title, formData.work_preference]
-      );
+      // Notion veya AI servisine rapor gönder (Opsiyonel)
+      try {
+        await notionAIService.createCandidateReport(
+          "Yeni Aday", 
+          formData.personality_intro, 
+          [formData.title, formData.work_preference]
+        );
+      } catch (aiErr) {
+        console.warn("AI Raporu oluşturulamadı ama devam ediliyor...", aiErr);
+      }
 
       onComplete();
-    } catch (err) {
-      console.error("Onboarding Hatası:", err);
-      alert("Bir hata oluştu ama profilin kaydedilmiş olabilir.");
+    } catch (err: any) {
+      console.error("Onboarding Genel Hata:", err);
+      alert(err.message || "Bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -61,7 +75,9 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, userId, onC
             <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-orange-500 rounded-lg flex items-center justify-center text-white shadow-lg">
               <Rocket size={18} />
             </div>
-            <span className="font-black tracking-tighter text-xl italic text-slate-900">KARIYEER<span className="text-orange-500">UP</span></span>
+            <span className="font-black tracking-tighter text-xl italic text-slate-900 uppercase">
+              KARIYEER<span className="text-orange-500">UP</span>
+            </span>
           </div>
           <div className="flex gap-1">
             {[1, 2].map((s) => (
@@ -107,6 +123,7 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, userId, onC
                     {['Ofis', 'Hibrit', 'Uzaktan'].map((m) => (
                       <button
                         key={m}
+                        type="button"
                         onClick={() => setFormData({...formData, work_preference: m.toLowerCase()})}
                         className={`group relative p-6 rounded-3xl border-2 transition-all text-left overflow-hidden ${
                           formData.work_preference === m.toLowerCase() 
@@ -135,7 +152,7 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, userId, onC
               <div className="mb-10 text-center md:text-left">
                 <span className="inline-block px-4 py-1.5 bg-orange-50 text-orange-600 rounded-full text-xs font-bold uppercase tracking-widest mb-4">Adım 02 / Karakter Analizi</span>
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-4 text-balance">
-                  Yapay Zeka seni <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500 text-italic italic">tanımak istiyor.</span>
+                  Yapay Zeka seni <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500 italic">tanımak istiyor.</span>
                 </h1>
                 <p className="text-slate-500 font-medium text-lg italic">Güçlü yanlarından ve çalışma kültüründen bahset.</p>
               </div>
@@ -169,13 +186,6 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, userId, onC
                       </div>
                     ) : 'Kariyerimi Başlat ✨'}
                   </button>
-                </div>
-
-                <div className="pt-6 border-t border-slate-100 flex items-center justify-center gap-4 text-slate-300">
-                   <div className="flex -space-x-2">
-                     {[1,2,3].map(i => <div key={i} className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white" />)}
-                   </div>
-                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 italic">500+ Aday Yapay Zeka ile Eşleşti</p>
                 </div>
               </div>
             </div>

@@ -24,7 +24,7 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "", // 🔴 1️⃣ DEĞİŞTİ: "individual" → ""
+    userType: "", 
   });
 
   const t = {
@@ -52,7 +52,7 @@ export default function Register() {
       linkedin: "LinkedIn ile Kayıt Ol",
       or: "veya",
       socialError: "Giriş sırasında bir hata oluştu.",
-      roleRequired: "Lütfen hesap türünü seçin.", // 🔴 2️⃣ EKLENDİ
+      roleRequired: "Lütfen hesap türünü seçin.",
     },
     en: {
       title: "Register",
@@ -78,7 +78,7 @@ export default function Register() {
       linkedin: "Sign up with LinkedIn",
       or: "or",
       socialError: "An error occurred during sign in.",
-      roleRequired: "Please select account type.", // 🔴 2️⃣ EKLENDİ
+      roleRequired: "Please select account type.",
     },
     ar: {
       title: "إنشاء حساب",
@@ -104,7 +104,7 @@ export default function Register() {
       linkedin: "التسجيل باستخدام LinkedIn",
       or: "أو",
       socialError: "حدث خطأ أثناء تسجيل الدخول.",
-      roleRequired: "يرجى اختيار نوع الحساب.", // 🔴 2️⃣ EKLENDİ
+      roleRequired: "يرجى اختيار نوع الحساب.",
     },
     fr: {
       title: "S'inscrire",
@@ -130,7 +130,7 @@ export default function Register() {
       linkedin: "S'inscrire avec LinkedIn",
       or: "ou",
       socialError: "Une erreur s'est produite lors de la connexion.",
-      roleRequired: "Veuillez sélectionner un type de compte.", // 🔴 2️⃣ EKLENDİ
+      roleRequired: "Veuillez sélectionner un type de compte.",
     },
   }[language || "tr"];
 
@@ -140,7 +140,13 @@ export default function Register() {
     { value: "company", label: t.company, icon: "🏢", gradient: "from-emerald-500 to-teal-500", ring: "ring-emerald-400" },
   ];
 
-  // 🔴 3️⃣ DEĞİŞTİ: Rol kontrolü + URL parametresi ile role gönderimi
+  // Helper function to map userType to DB role
+  const getRole = (type: string) => {
+    if (type === "coach") return "coach";
+    if (type === "company") return "corporate";
+    return "user";
+  };
+
   const handleSocialLogin = async (provider: "google" | "linkedin_oidc") => {
     if (!formData.userType) {
       toast.error(t.roleRequired);
@@ -148,20 +154,22 @@ export default function Register() {
     }
 
     try {
-      const role =
-        formData.userType === "coach" ? "coach"
-        : formData.userType === "company" ? "corporate"
-        : "user";
-
+      const role = getRole(formData.userType);
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/?role=${role}`,
+          redirectTo: `${window.location.origin}/auth/callback?role=${role}`,
+          // OAuth metadata can be tricky, passing as query param for auth callback to handle if needed
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          }
         },
       });
 
-      if (error) toast.error(t.socialError);
-    } catch {
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
       toast.error(t.socialError);
     }
   };
@@ -176,23 +184,27 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      const role =
-        formData.userType === "coach" ? "coach"
-        : formData.userType === "company" ? "corporate"
-        : "user";
+      const role = getRole(formData.userType);
 
+      // 🚩 CRITICAL: Send metadata for trigger function to pick up
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: { data: { full_name: formData.fullName, role } },
+        options: { 
+          data: { 
+            full_name: formData.fullName, 
+            role: role 
+          } 
+        },
       });
+
       if (error) throw error;
 
-      // 🔴 4️⃣ SİLİNDİ: profiles insert kaldırıldı (trigger hallediyor)
-
       toast.success(t.success);
-      setTimeout(() => navigate("/"), 2000);
+      // Redirect after success
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err: any) {
+      console.error("Register Error:", err);
       toast.error(t.error + ": " + (err.message || "Bilinmeyen hata"));
     } finally {
       setIsLoading(false);
@@ -201,30 +213,25 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 flex items-center justify-center p-6">
-      {/* Arka plan blob'ları */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 -left-32 w-96 h-96 bg-red-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
         <div className="absolute bottom-0 -right-32 w-96 h-96 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
       </div>
 
       <Card className="relative w-full max-w-lg shadow-2xl border-0 overflow-hidden">
-        {/* Üst renk şeridi */}
         <div className="h-1.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500" />
 
-        {/* ── HEADER ── */}
         <CardHeader className="text-center pt-8 pb-4">
           <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
             <span className="text-white text-2xl font-black">K</span>
           </div>
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
-            {t.title}
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 uppercase tracking-tighter italic">
+            KARIYEER<span className="text-orange-500">UP</span>
           </h1>
           <p className="mt-1 text-sm text-gray-500">{t.subtitle}</p>
         </CardHeader>
 
         <CardContent className="px-8 pb-8">
-
-          {/* ── HESAP TÜRÜ (ÜST KISMA TAŞINDI) ── */}
           <div className="space-y-2 mb-5">
             <Label className="text-sm font-semibold text-gray-700">
               {t.accountType} *
@@ -254,7 +261,6 @@ export default function Register() {
                       {isSelected && (
                         <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
                       )}
-
                       <div className="relative z-10 flex flex-col items-center gap-1.5">
                         <span className={`
                           w-10 h-10 rounded-xl flex items-center justify-center text-2xl
@@ -263,13 +269,12 @@ export default function Register() {
                           {item.icon}
                         </span>
                         <span className={`
-                          text-xs font-bold leading-tight text-center
+                          text-[10px] md:text-xs font-bold leading-tight text-center
                           ${isSelected ? "text-white" : "text-gray-700"}
                         `}>
                           {item.label}
                         </span>
                       </div>
-
                       {isSelected && (
                         <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-white drop-shadow z-20" />
                       )}
@@ -280,14 +285,14 @@ export default function Register() {
             </RadioGroup>
           </div>
 
-          {/* ── SOSYAL BUTONLAR ── */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <Button
               variant="outline"
-              className="h-10 text-sm font-semibold border border-gray-200 hover:border-red-300 hover:bg-red-50/50"
+              type="button"
+              className="h-10 text-sm font-semibold border border-gray-200 hover:border-red-300"
               onClick={() => handleSocialLogin("google")}
             >
-              <svg className="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -297,17 +302,17 @@ export default function Register() {
             </Button>
             <Button
               variant="outline"
-              className="h-10 text-sm font-semibold border border-gray-200 hover:border-blue-400 hover:bg-blue-50/50"
+              type="button"
+              className="h-10 text-sm font-semibold border border-gray-200 hover:border-blue-400"
               onClick={() => handleSocialLogin("linkedin_oidc")}
             >
-              <svg className="w-4 h-4 mr-2 shrink-0" fill="#0A66C2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2" fill="#0A66C2" viewBox="0 0 24 24">
                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
               </svg>
               {t.linkedin}
             </Button>
           </div>
 
-          {/* ── AYRAÇ ── */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-200" />
@@ -318,41 +323,38 @@ export default function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Ad Soyad + E-posta */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-gray-700">
-                  {t.fullName} *
+                <Label className="text-xs font-bold text-gray-700 uppercase tracking-tighter">
+                  {t.fullName}
                 </Label>
                 <Input
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="h-10 text-sm"
-                  placeholder={t.fullName}
+                  className="h-10 text-sm focus:ring-red-500 rounded-xl"
+                  placeholder="Ad Soyad"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-gray-700">
-                  {t.email} *
+                <Label className="text-xs font-bold text-gray-700 uppercase tracking-tighter">
+                  {t.email}
                 </Label>
                 <Input
                   required
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="h-10 text-sm"
+                  className="h-10 text-sm focus:ring-red-500 rounded-xl"
                   placeholder="ornek@email.com"
                 />
               </div>
             </div>
 
-            {/* Şifre + Şifre Tekrar */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-gray-700">
-                  {t.password} *
+                <Label className="text-xs font-bold text-gray-700 uppercase tracking-tighter">
+                  {t.password}
                 </Label>
                 <div className="relative">
                   <Input
@@ -360,21 +362,20 @@ export default function Register() {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="h-10 text-sm pr-9"
+                    className="h-10 text-sm pr-9 rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-gray-700">
-                  {t.confirmPassword} *
+                <Label className="text-xs font-bold text-gray-700 uppercase tracking-tighter">
+                  {t.confirmPassword}
                 </Label>
                 <div className="relative">
                   <Input
@@ -382,13 +383,12 @@ export default function Register() {
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="h-10 text-sm pr-9"
+                    className="h-10 text-sm pr-9 rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((v) => !v)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -396,16 +396,15 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ── KVKK ── */}
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 py-2">
               <input
                 type="checkbox"
                 id="kvkk"
                 checked={kvkkAccepted}
                 onChange={(e) => setKvkkAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-red-600 cursor-pointer shrink-0"
+                className="mt-1 w-4 h-4 accent-red-600 cursor-pointer shrink-0"
               />
-              <label htmlFor="kvkk" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+              <label htmlFor="kvkk" className="text-[10px] text-gray-500 leading-tight cursor-pointer">
                 <Link to="/privacy" className="font-semibold text-red-600 hover:underline">
                   KVKK Aydınlatma Metni
                 </Link>
@@ -413,20 +412,18 @@ export default function Register() {
               </label>
             </div>
 
-            {/* ── SUBMIT ── */}
             <Button
               type="submit"
               disabled={isLoading || !kvkkAccepted || !formData.userType}
-              className="w-full h-11 text-sm font-bold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg shadow-red-500/20 disabled:opacity-60"
+              className="w-full h-12 text-base font-black bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-xl shadow-red-500/20 disabled:opacity-60 rounded-2xl"
             >
               {isLoading ? t.submitting : t.submit}
             </Button>
           </form>
 
-          {/* ── ALT LİNK ── */}
-          <p className="mt-5 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-gray-500">
             {t.alreadyHaveAccount}{" "}
-            <Link to="/login" className="font-semibold text-red-600 hover:underline">
+            <Link to="/login" className="font-black text-red-600 hover:underline">
               {t.login}
             </Link>
           </p>

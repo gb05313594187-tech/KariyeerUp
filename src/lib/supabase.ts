@@ -680,7 +680,80 @@ export const sessionService = {
     }
   },
 };
+/* =========================================================
+   ✅ BOOKING & CALENDAR SERVICE (NEW)
+   ========================================================= */
+export const bookingService = {
+  // Koçun müsaitlik (working_hours) verisini profiles tablosundan çeker
+  async getCoachAvailability(coachId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("working_hours, google_sync_active, timezone")
+        .eq("id", coachId)
+        .single();
+      
+      if (error) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  },
 
+  // Koçun Google Takvim'den gelen dolu (busy) zamanlarını kontrol eder
+  // (Edge Function üzerinden Google Calendar API ile konuşur)
+  async getGoogleBusySlots(coachId: string, startDate: string, endDate: string) {
+    try {
+      const token = await getAccessToken();
+      if (!token) return [];
+      
+      const edgeUrl = `${supabaseUrl}/functions/v1/app_2dff6511da_get_google_busy_slots`;
+      const res = await fetchWithTimeout(edgeUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ coach_id: coachId, start: startDate, end: endDate }),
+      });
+      
+      if (!res.ok) return [];
+      const result = await res.json();
+      return result.busy_slots || [];
+    } catch {
+      return [];
+    }
+  },
+
+  // Yeni bir randevu isteği oluşturur
+  async createRequest(payload: {
+    coach_id: string;
+    client_id: string;
+    scheduled_at: string;
+    duration: number;
+    price: number;
+  }) {
+    try {
+      const { data, error } = await supabase
+        .from("app_2dff6511da_session_requests")
+        .insert({
+          coach_id: payload.coach_id,
+          client_id: payload.client_id,
+          scheduled_at: payload.scheduled_at,
+          duration_minutes: payload.duration,
+          amount: payload.price,
+          status: "pending_payment" // Ödeme bekliyor aşaması
+        })
+        .select("*")
+        .single();
+      
+      if (error) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+};
 /* =========================================================
    ✅ COMPANY & INTERVIEW SERVICE
    ========================================================= */

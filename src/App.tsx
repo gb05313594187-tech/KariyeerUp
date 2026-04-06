@@ -129,14 +129,16 @@ function PublicLayout() {
 }
 
 /* ================= ANA İÇERİK YÖNETİCİSİ (KRİTİK GÜNCELLEME) ================= */
-// Onboarding'in tam sayfa olması için Router'ı ve Layout'u kontrol eden ara katman
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // 🚩 showOnboarding varsayılan olarak true başlasın ki herkes görsün
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
 
   useEffect(() => {
     const checkProfileStatus = async () => {
+      // Sadece giriş yapmış kullanıcılar için profili kontrol et
       if (isAuthenticated && user && !loading) {
         try {
           const { data, error } = await supabase
@@ -145,44 +147,42 @@ function AppContent() {
             .eq('id', user.id)
             .maybeSingle();
 
-          if (!data && !error) {
-            setShowOnboarding(true);
+          // Eğer veritabanında kaydı Varsa, onboarding'i gizle
+          if (data) {
+            setShowOnboarding(false);
           }
         } catch (err) {
           console.error("Profil kontrol hatası:", err);
         }
       }
+      // Giriş yapmamışsa (misafir ise) showOnboarding true kalmaya devam eder
       setIsCheckingProfile(false);
     };
 
     checkProfileStatus();
   }, [isAuthenticated, user, loading]);
 
-  // Yükleme sırasında boş ekran veya spinner göster
-  if (loading || (isAuthenticated && isCheckingProfile)) {
+  // Auth yüklenirken bekle
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-orange-500 rounded-full"></div>
-          <div className="text-slate-400 font-bold tracking-widest text-xs uppercase">Hafıza Senkronize Ediliyor...</div>
-        </div>
+        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  // ✅ EĞER ONBOARDING GEREKLİYSE: Sadece OnboardingModal'ı render et.
-  // Navbar, Footer ve Router'daki sayfalar render edilmez.
-  if (showOnboarding && user) {
+  // ✅ EĞER ONBOARDING GÖSTERİLECEKSE (Misafirler veya profili olmayan üyeler)
+  if (showOnboarding) {
     return (
       <OnboardingModal 
         isOpen={true} 
-        userId={user.id} 
+        userId={user?.id || "guest"} // Giriş yoksa "guest" ID'si ile gönderiyoruz
         onComplete={() => setShowOnboarding(false)} 
       />
     );
   }
 
-  // ✅ PROFİL TAMAMSA VEYA GİRİŞ YAPILMAMIŞSA: Normal site akışı
+  // ✅ PROFİL TAMAMSA: Normal site akışı
   return (
     <Router>
       <SessionLoader />

@@ -1,5 +1,5 @@
 // src/pages/DistanceSales.tsx
-import { FileText, User, Building, ShoppingCart, CreditCard, RotateCcw, Scale, MapPin, Phone, Mail } from "lucide-react";
+import { FileText, User, Building, ShoppingCart, CreditCard, RotateCcw, Scale, MapPin, Phone, Mail, ShieldAlert } from "lucide-react";
 
 export default function DistanceSales() {
   return (
@@ -12,10 +12,10 @@ export default function DistanceSales() {
           </div>
           <h1 className="text-4xl font-bold mb-4">Mesafeli Satış Sözleşmesi</h1>
           <p className="text-gray-300 text-lg">
-            6502 sayılı Tüketicinin Korunması Hakkında Kanun kapsamında
+            Kariyer Mentorluğu ve Gelişim Danışmanlığı Hizmet Şartları
           </p>
-          <p className="text-gray-400 text-sm mt-4">
-            Son Güncelleme: {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          <p className="text-gray-400 text-sm mt-4 font-bold uppercase tracking-widest">
+            Kariyeer.com Bir Özel İstihdam Bürosu Değildir
           </p>
         </div>
       </section>
@@ -25,6 +25,14 @@ export default function DistanceSales() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 space-y-8">
 
+            {/* YASAL UYARI KUTUSU */}
+            <div className="bg-orange-50 border-2 border-orange-200 p-6 rounded-2xl flex gap-4">
+              <ShieldAlert className="text-orange-600 shrink-0 w-6 h-6" />
+              <div className="text-sm text-orange-900 leading-relaxed">
+                <strong>ÖNEMLİ BEYAN:</strong> İşbu sözleşme kapsamında sunulan hizmetler 4904 sayılı Kanun çerçevesinde &quot;İşe Yerleştirme&quot; veya &quot;İş Bulma&quot; faaliyeti niteliğinde değildir. Kariyeer.com, adaylar ve işverenler arasında istihdam sözleşmesi kurulmasına aracılık etmez. Alınan bedel münhasıran <strong>&quot;Eğitim ve Kariyer Mentorluğu Hizmet Bedeli&quot;</strong>dir.
+              </div>
+            </div>
+
             {/* Madde 1 - Taraflar */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -33,10 +41,10 @@ export default function DistanceSales() {
               </h2>
               
               {/* Satıcı */}
-              <div className="bg-red-50 p-4 rounded-lg mb-4 border-l-4 border-red-500">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <div className="bg-slate-50 p-6 rounded-xl mb-4 border border-slate-100">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Building className="w-4 h-4 text-red-600" />
-                  1.1 SATICI BİLGİLERİ
+                  1.1 HİZMET SAĞLAYICI (SATICI)
                 </h3>
                 <div className="text-gray-700 space-y-1 text-sm">
                   <p><strong>Unvan:</strong> Salih Gökalp Büyükçelebi (Şahıs Şirketi)</p>
@@ -46,10 +54,6 @@ export default function DistanceSales() {
                     <span>Cihangir Mahallesi, Candarlı Sokak No: 12/8, Avcılar / İstanbul 34310</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-500" />
-                    <span>0531 359 41 87</span>
-                  </p>
-                  <p className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-gray-500" />
                     <span>destek@kariyeer.com</span>
                   </p>
@@ -57,14 +61,14 @@ export default function DistanceSales() {
               </div>
 
               {/* Alıcı */}
-              <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-600" />
-                  1.2 ALICI (TÜKETİCİ) BİLGİLERİ
+                  1.2 KULLANICI (ALICI)
                 </h3>
-                <p className="text-gray-600 text-sm">
-                  Alıcı bilgileri, sipariş esnasında üyelik hesabındaki bilgiler esas alınarak 
-                  sözleşmeye dahil edilir. Alıcı, üyelik bilgilerinin doğruluğundan sorumludur.
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Platform üzerinden eğitim veya mentorluk hizmeti satın alan gerçek veya tüzel kişidir. 
+                  Alıcı, üyelik bilgilerinin doğruluğunu ve hizmetin bir <strong>&quot;istihdam vaadi&quot;</strong> içermediğini kabul eder.
                 </p>
               </div>
             </div>
@@ -75,23 +79,20 @@ export default function DistanceSales() {
                 <ShoppingCart className="w-5 h-5 text-red-600" />
                 MADDE 2 - SÖZLEŞMENİN KONUSU
               </h2>
-              <p className="text-gray-600 mb-4">
-                İşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait <strong>kariyeer.com</strong> internet 
-                sitesinden elektronik ortamda sipariş verdiği aşağıda nitelikleri ve satış fiyatı 
-                belirtilen hizmetin satışı ve ifası ile ilgili olarak 6502 sayılı Tüketicinin 
-                Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince 
-                tarafların hak ve yükümlülüklerinin belirlenmesidir.
+              <p className="text-gray-600 mb-4 leading-relaxed">
+                İşbu sözleşmenin konusu, ALICI&apos;nın Platform üzerinden satın aldığı <strong>dijital eğitim içerikleri, 
+                kariyer gelişim seansları ve mentorluk hizmetlerinin</strong> satışı ve ifasına ilişkin usul ve esasların belirlenmesidir. 
+                Sözleşme konusu hizmet, ALICI&apos;nın kariyer yetkinliklerini artırmaya yönelik danışmanlık faaliyetidir.
               </p>
               
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <h3 className="font-semibold text-orange-800 mb-2">Sunulan Hizmetler:</h3>
-                <ul className="text-orange-700 text-sm space-y-1">
-                  <li>• Birebir online kariyer koçluğu seansları</li>
-                  <li>• Grup koçluk programları</li>
-                  <li>• MentorCircle grup seansları</li>
-                  <li>• Webinar ve eğitim programları</li>
-                  <li>• Kurumsal koçluk hizmetleri</li>
-                  <li>• CV ve mülakat hazırlık danışmanlığı</li>
+              <div className="bg-orange-50 p-5 rounded-xl border border-orange-100">
+                <h3 className="font-semibold text-orange-800 mb-2 text-sm uppercase">Sözleşme Kapsamındaki Hizmetler:</h3>
+                <ul className="text-orange-800 text-sm space-y-2">
+                  <li>• Birebir Online Kariyer Mentorluğu ve Gelişim Seansları</li>
+                  <li>• Mülakat Teknikleri ve Vaka Analizi Eğitimleri</li>
+                  <li>• MentorCircle Grup Gelişim Programları</li>
+                  <li>• Özgeçmiş (CV) Optimizasyonu ve Stratejik Danışmanlık</li>
+                  <li>• Kurumsal Yetkinlik Değerlendirme ve Gelişim Paneli Erişimi</li>
                 </ul>
               </div>
             </div>
@@ -100,123 +101,54 @@ export default function DistanceSales() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-red-600" />
-                MADDE 3 - HİZMET BEDELİ VE ÖDEME
+                MADDE 3 - HİZMET BEDELİ VE FATURALANDIRMA
               </h2>
               <div className="space-y-3 text-gray-600">
                 <p>
-                  <strong>3.1</strong> Hizmet bedeli, sipariş anında platformda belirtilen fiyattır. 
-                  Tüm fiyatlara KDV dahildir.
+                  <strong>3.1</strong> Ödemeler, <strong>Eğitim ve Danışmanlık Hizmet Bedeli</strong> başlığı altında 
+                  <strong> iyzico</strong> güvenli ödeme geçidi üzerinden tahsil edilir.
                 </p>
                 <p>
-                  <strong>3.2</strong> Ödeme, <strong>iyzico</strong> güvenli ödeme altyapısı üzerinden 
-                  kredi kartı/banka kartı ile gerçekleştirilir.
-                </p>
-                <p>
-                  <strong>3.3</strong> SATICI, kampanya ve indirim düzenleme hakkını saklı tutar.
-                </p>
-                <p>
-                  <strong>3.4</strong> Taksitli işlemlerde banka tarafından uygulanan faiz oranları 
-                  ALICI'nın sorumluluğundadır.
+                  <strong>3.2</strong> Kariyeer, bir iş aracısı olmadığı için &quot;işe yerleştirme komisyonu&quot; adı altında 
+                  bir bedel tahsil etmez. Tüm bedeller teknoloji kullanımı ve eğitim hizmetine ilişkindir.
                 </p>
               </div>
             </div>
 
-            {/* Madde 4 - Hizmet İfası */}
+            {/* Madde 4 - İfa Şartları */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                MADDE 4 - HİZMETİN İFASI
+                MADDE 4 - HİZMETİN İFASI VE GARANTİLER
               </h2>
               <div className="space-y-3 text-gray-600">
-                <p>
-                  <strong>4.1</strong> Satın alınan koçluk seansları, belirlenen tarih ve saatte 
-                  online video konferans (Zoom, Google Meet vb.) aracılığıyla gerçekleştirilir.
+                <p className="text-red-700 font-bold">
+                  4.1 İSTİHDAM GARANTİSİ REDDİ: Satın alınan hizmet, ALICI&apos;ya herhangi bir işe yerleşme, 
+                  mülakattan geçme veya istihdam edilme GARANTİSİ VERMEZ.
                 </p>
                 <p>
-                  <strong>4.2</strong> Randevu saati, sipariş sonrasında ALICI tarafından koçun 
-                  müsait takviminden seçilir.
+                  <strong>4.2</strong> Seanslar, tarafların mutabık kaldığı online konferans platformları üzerinden icra edilir.
                 </p>
                 <p>
-                  <strong>4.3</strong> Satın alınan paketlerin kullanım süresi, aksi belirtilmedikçe 
-                  satın alma tarihinden itibaren <strong>6 (altı) ay</strong>dır.
-                </p>
-                <p>
-                  <strong>4.4</strong> Webinar ve grup programları, belirtilen tarih ve saatte 
-                  canlı olarak gerçekleştirilir.
-                </p>
-              </div>
-            </div>
-
-            {/* Madde 5 - Randevu Değişikliği */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                MADDE 5 - RANDEVU İPTAL VE DEĞİŞİKLİK
-              </h2>
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 space-y-3 text-gray-700">
-                <p>
-                  <strong>5.1</strong> Randevu iptali veya değişikliği, seans başlangıcından en az 
-                  <strong> 24 saat önce</strong> yapılmalıdır.
-                </p>
-                <p>
-                  <strong>5.2</strong> 24 saatten az süre kala yapılan iptallerde seans hakkı 
-                  kullanılmış sayılır.
-                </p>
-                <p>
-                  <strong>5.3</strong> Koçun mücbir sebeple seansa katılamaması durumunda, 
-                  ALICI'ya alternatif randevu sunulur veya iade yapılır.
+                  <strong>4.3</strong> Mentorluk paketlerinin geçerlilik süresi <strong>6 (altı) ay</strong>dır.
                 </p>
               </div>
             </div>
 
             {/* Madde 6 - Cayma Hakkı */}
-            <div className="border-l-4 border-green-500 pl-6 py-4 bg-green-50 rounded-r-lg">
+            <div className="border-l-4 border-emerald-500 pl-6 py-4 bg-emerald-50 rounded-r-xl">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-green-600" />
+                <RotateCcw className="w-5 h-5 text-emerald-600" />
                 MADDE 6 - CAYMA HAKKI
               </h2>
-              <div className="space-y-3 text-gray-700">
+              <div className="space-y-3 text-gray-700 text-sm">
                 <p>
-                  <strong>6.1</strong> ALICI, hizmet satın alma tarihinden itibaren <strong>14 (on dört) gün</strong> içinde 
-                  herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeden cayma 
-                  hakkına sahiptir.
+                  <strong>6.1</strong> ALICI, hizmetin ifasına başlanmamış olması kaydıyla 14 gün içinde cayma hakkına sahiptir.
                 </p>
                 <p>
-                  <strong>6.2</strong> Cayma hakkının kullanılması için bu süre içinde SATICI'ya 
-                  e-posta (<strong>destek@kariyeer.com</strong>) yoluyla bildirimde bulunulması yeterlidir.
+                  <strong>6.2</strong> Mesafeli Sözleşmeler Yönetmeliği uyarınca; <strong>elektronik ortamda anında ifa edilen hizmetler 
+                  ve tüketiciye anında teslim edilen gayrimaddi mallara (gerçekleşen seanslar, indirilen raporlar vb.)</strong> 
+                  ilişkin cayma hakkı kullanılamaz.
                 </p>
-                <p className="text-red-700 font-medium">
-                  <strong>6.3 İstisna:</strong> 14 gün içinde hizmetin ifasına başlanmış ve seans 
-                  gerçekleştirilmişse, tüketilen seanslara ilişkin cayma hakkı kullanılamaz. 
-                  Kullanılmayan seans hakları için iade yapılır.
-                </p>
-                <p>
-                  <strong>6.4</strong> Cayma bildiriminin SATICI'ya ulaşmasından itibaren <strong>14 gün</strong> içinde 
-                  ödeme iadesi yapılır.
-                </p>
-              </div>
-            </div>
-
-            {/* Madde 7 - Sorumluluklar */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                MADDE 7 - TARAFLARIN YÜKÜMLÜL�KLERİ
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-2">SATICI Yükümlülükleri</h3>
-                  <ul className="text-gray-600 text-sm space-y-1">
-                    <li>• Hizmeti zamanında ve eksiksiz sunmak</li>
-                    <li>• Gizlilik ve veri güvenliğini sağlamak</li>
-                    <li>• Profesyonel ve etik standartlarda hizmet vermek</li>
-                  </ul>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-2">ALICI Yükümlülükleri</h3>
-                  <ul className="text-gray-600 text-sm space-y-1">
-                    <li>• Doğru ve güncel bilgi vermek</li>
-                    <li>• Randevu saatlerine uymak</li>
-                    <li>• Ödeme yükümlülüklerini yerine getirmek</li>
-                  </ul>
-                </div>
               </div>
             </div>
 
@@ -225,33 +157,16 @@ export default function DistanceSales() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 MADDE 8 - UYUŞMAZLIKLARIN ÇÖZÜMÜ
               </h2>
-              <p className="text-gray-600 mb-3">
-                İşbu sözleşmeden doğan uyuşmazlıklarda, Gümrük ve Ticaret Bakanlığı tarafından 
-                ilan edilen değere kadar <strong>Tüketici Hakem Heyetleri</strong>, bu değerin üzerindeki 
-                uyuşmazlıklarda <strong>Tüketici Mahkemeleri</strong> yetkilidir.
-              </p>
-              <p className="text-gray-600">
-                <strong>Yetkili Mahkeme ve İcra Daireleri:</strong> İstanbul Mahkemeleri ve İcra Daireleri
-              </p>
-            </div>
-
-            {/* Madde 9 - Yürürlük */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                MADDE 9 - YÜRÜRLÜK
-              </h2>
-              <p className="text-gray-600">
-                İşbu sözleşme, ALICI tarafından elektronik ortamda onaylandığı tarihte yürürlüğe girer. 
-                ALICI, sipariş vermekle işbu sözleşmenin tüm koşullarını kabul etmiş sayılır.
+              <p className="text-gray-600 mb-3 text-sm">
+                Uyuşmazlıklarda Tüketici Hakem Heyetleri ve İstanbul (Çağlayan) Mahkemeleri yetkilidir.
               </p>
             </div>
 
             {/* Onay Bildirimi */}
-            <div className="bg-gray-900 text-white p-6 rounded-xl">
-              <p className="text-center">
-                ALICI, işbu Mesafeli Satış Sözleşmesi'nin tüm maddelerini okuduğunu, anladığını 
-                ve kabul ettiğini, sipariş vermeden önce gerekli bilgilendirmenin yapıldığını 
-                beyan ve taahhüt eder.
+            <div className="bg-slate-900 text-white p-8 rounded-2xl text-center shadow-xl">
+              <p className="font-medium leading-relaxed">
+                ALICI, bu sözleşmeyi onaylayarak platformun bir iş bulma kurumu olmadığını, 
+                aldığı hizmetin kişisel gelişim ve eğitim amaçlı olduğunu beyan ve kabul eder.
               </p>
             </div>
 

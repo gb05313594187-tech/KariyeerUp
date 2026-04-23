@@ -1,3 +1,5 @@
+// src/pages/Interview.tsx
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -8,7 +10,8 @@ import {
   CheckCircle2, 
   Timer, 
   AlertCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,7 +28,7 @@ export default function InterviewPage() {
     const fetchInterviewData = async () => {
       setLoading(true);
       try {
-        // Mülakatı ve bağlı olduğu iş bilgisini (job_id üzerinden) çekiyoruz
+        // Değerlendirme seansı verilerini çekiyoruz
         const { data, error } = await supabase
           .from('interviews')
           .select('*, candidates(full_name)')
@@ -39,7 +42,7 @@ export default function InterviewPage() {
           setQuestions(data.interview_questions || []);
         }
       } catch (err: any) {
-        toast.error("Mülakat verisi alınamadı: " + err.message);
+        toast.error("Seans verisi alınamadı: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -61,8 +64,7 @@ export default function InterviewPage() {
 
       if (error) throw error;
 
-      toast.success("Mülakat başarıyla tamamlandı. Rapor hazırlanıyor...");
-      // Unicorn seviyesi: Mülakat bitince kurumsal panele geri döndür
+      toast.success("Değerlendirme seansı tamamlandı. Gelişim raporu oluşturuluyor...");
       setTimeout(() => navigate('/corporate'), 2000);
     } catch (err: any) {
       toast.error("Hata: " + err.message);
@@ -73,8 +75,8 @@ export default function InterviewPage() {
     return (
       <div className="h-screen w-full bg-slate-950 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-          <p className="text-slate-400 font-medium tracking-widest uppercase text-xs">AI Odanız Hazırlanıyor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="text-slate-400 font-medium tracking-widest uppercase text-xs">Gelişim Odası Hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -85,44 +87,44 @@ export default function InterviewPage() {
       
       {/* Sol Taraf: Video Konferans Alanı */}
       <div className="flex-1 relative bg-black">
-        <MeetingRoom roomName={roomName} displayName="Aday" />
+        <MeetingRoom roomName={roomName} displayName="Katılımcı" />
         
         {/* Üst Bilgi Barı */}
         <div className="absolute top-6 left-6 z-10 flex items-center gap-3">
           <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 px-4 py-2 rounded-2xl flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-            <span className="text-white text-xs font-bold tracking-tight">CANLI AI MÜLAKAT</span>
+            <ShieldCheck className="w-4 h-4 text-orange-500" />
+            <span className="text-white text-xs font-bold tracking-tight uppercase">Gelişim & Değerlendirme Odası</span>
           </div>
           <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 px-4 py-2 rounded-2xl">
-            <span className="text-slate-300 text-xs font-medium">Aday: {interviewData?.candidates?.full_name || "Bilinmiyor"}</span>
+            <span className="text-slate-300 text-xs font-medium">Katılımcı: {interviewData?.candidates?.full_name || "Bilinmiyor"}</span>
           </div>
         </div>
       </div>
 
-      {/* Sağ Taraf: AI Co-Pilot Paneli */}
+      {/* Sağ Taraf: AI Mentor Rehberi Paneli */}
       <div className="w-full md:w-[400px] bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
         
         {/* Panel Header */}
         <div className="p-6 border-b border-slate-800 bg-slate-900/50">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <Sparkles className="h-5 w-5 text-red-500" />
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Sparkles className="h-5 w-5 text-orange-500" />
               </div>
-              <h2 className="text-white font-black text-lg tracking-tight">AI Co-Pilot</h2>
+              <h2 className="text-white font-black text-lg tracking-tight">Mentor Rehberi</h2>
             </div>
-            <span className="text-[10px] font-black text-slate-500 bg-slate-800 px-2 py-1 rounded-md uppercase">v2.0 Unicorn</span>
+            <span className="text-[10px] font-black text-slate-500 bg-slate-800 px-2 py-1 rounded-md uppercase">AI ANALİZ v2.0</span>
           </div>
 
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              <span>Mülakat İlerlemesi</span>
+              <span>Seans İlerlemesi</span>
               <span>%{progress}</span>
             </div>
             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-500 ease-out"
+                className="h-full bg-gradient-to-r from-orange-600 to-amber-500 transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -133,9 +135,9 @@ export default function InterviewPage() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {questions.length > 0 ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex items-center gap-2 text-red-500 mb-2">
+              <div className="flex items-center gap-2 text-orange-500 mb-2">
                 <Timer size={14} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Soru {currentQuestionIndex + 1} / {questions.length}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">Vaka Analizi Sorusu {currentQuestionIndex + 1} / {questions.length}</span>
               </div>
               
               <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-inner">
@@ -147,14 +149,14 @@ export default function InterviewPage() {
               <div className="mt-8 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex gap-3">
                 <AlertCircle className="text-blue-500 shrink-0" size={18} />
                 <p className="text-[11px] text-slate-400 leading-normal">
-                  <b>AI İpucu:</b> Adayın teknik derinliğini ölçmek için bu sorudan sonra "Neden bu mimariyi seçtin?" diye sorabilirsiniz.
+                  <b>AI Mentor Notu:</b> Katılımcının bu soruya verdiği cevabı, kariyer hedefleriyle ne kadar örtüştüğünü ölçmek için kullanın.
                 </p>
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <LayoutDashboard className="text-slate-700" size={48} />
-              <p className="text-slate-500 text-sm">Bu mülakat için henüz soru üretilmemiş.</p>
+              <p className="text-slate-500 text-sm">Bu seans için değerlendirme sorusu atanmamış.</p>
             </div>
           )}
         </div>
@@ -166,14 +168,14 @@ export default function InterviewPage() {
               onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
               className="w-full py-4 bg-white hover:bg-slate-100 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-white/5"
             >
-              Sonraki Soruya Geç <ChevronRight size={16} />
+              Sıradaki Konuya Geç <ChevronRight size={16} />
             </button>
           ) : (
             <button 
               onClick={handleFinishInterview}
-              className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-900/20"
+              className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-orange-900/20"
             >
-              Mülakatı Bitir <CheckCircle2 size={16} />
+              Seansı Tamamla <CheckCircle2 size={16} />
             </button>
           )}
           
@@ -181,7 +183,7 @@ export default function InterviewPage() {
             onClick={() => navigate('/corporate')}
             className="w-full py-3 bg-transparent hover:bg-slate-800 text-slate-500 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all"
           >
-            Paneli Terk Et
+            Seans Odasından Ayrıl
           </button>
         </div>
       </div>

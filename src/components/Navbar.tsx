@@ -23,7 +23,9 @@ import {
   Zap,
   Home as HomeIcon,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  Search,
+  Briefcase
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,10 +50,10 @@ export default function Navbar() {
 
   // TERİMLER: İŞKUR mevzuatına takılmamak için 'Eğitim/Gelişim' odaklı güncellendi
   const translations = {
-    tr: { webinar: "Eğitimler", boost: "Gelişim Paketi", dashboard: "Gelişim Paneli", login: "Giriş Yap", register: "Kayıt Ol", feed: "Ana Akış", profile: "Profilim", settings: "Ayarlar", logout: "Güvenli Çıkış" },
-    en: { webinar: "Webinars", boost: "Growth Boost", dashboard: "Growth Hub", login: "Login", register: "Sign Up", feed: "Feed", profile: "Profile", settings: "Settings", logout: "Logout" },
-    ar: { webinar: "ندوة عبر الويب", boost: "باقة التطوير", dashboard: "لوحة التطوير", login: "تسجيل الدخول", register: "سجل الآن", feed: "التغذية الرئيسية", profile: "ملف شخصي", settings: "إعدادات", logout: "تسجيل الخروج" },
-    fr: { webinar: "Webinaire", boost: "Boost de Croissance", dashboard: "Hub de Développement", login: "Connexion", register: "S'inscrire", feed: "Flux", profile: "Profil", settings: "Paramètres", logout: "Déconnexion" }
+    tr: { webinar: "Eğitimler", programs: "Programlar", mentors: "Mentorlar", boost: "Gelişim Paketi", dashboard: "Gelişim Paneli", login: "Giriş Yap", register: "Kayıt Ol", feed: "Ana Akış", profile: "Profilim", settings: "Ayarlar", logout: "Güvenli Çıkış" },
+    en: { webinar: "Webinars", programs: "Programs", mentors: "Mentors", boost: "Growth Boost", dashboard: "Growth Hub", login: "Login", register: "Sign Up", feed: "Feed", profile: "Profile", settings: "Settings", logout: "Logout" },
+    ar: { webinar: "ندوة عبر الويب", programs: "برامج", mentors: "الموجهين", boost: "باقة التطوير", dashboard: "لوحة التطوير", login: "تسجيل الدخول", register: "سجل الآن", feed: "التغذية الرئيسية", profile: "ملف شخصي", settings: "إعدادات", logout: "تسجيل الخروج" },
+    fr: { webinar: "Webinaire", programs: "Programmes", mentors: "Mentors", boost: "Boost de Croissance", dashboard: "Hub de Développement", login: "Connexion", register: "S'inscrire", feed: "Flux", profile: "Profil", settings: "Paramètres", logout: "Déconnexion" }
   };
   
   const t = translations[language || "tr"] || translations.tr;
@@ -62,25 +64,26 @@ export default function Navbar() {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  const roleLabel = useMemo(() => {
-    if (role === "coach") return language === "tr" ? "Mentor" : "Mentor";
-    if (role === "corporate") return language === "tr" ? "Kurumsal Üye" : "Corporate";
-    if (role === "admin") return "Yönetici";
-    return language === "tr" ? "Danışan" : "Client";
-  }, [role, language, t]);
-
+  // YASAL GÜNCELLEME: App.tsx'teki yeni path yapıları ile eşleşen dashboard yolları
   const dashboardPath = useMemo(() => {
-    if (role === "coach") return "/coach/dashboard";
-    if (role === "corporate") return "/corporate/dashboard";
+    if (role === "mentor") return "/mentor/yonetim";
+    if (role === "kurumsal") return "/kurumsal/yonetim";
     if (role === "admin") return "/admin";
-    return "/user/dashboard";
+    return "/user/gelisim-paneli";
   }, [role]);
 
   const profilePath = useMemo(() => {
-    if (role === "coach") return "/coach/profile";
-    if (role === "corporate") return "/corporate/profile";
-    return "/user/profile";
+    if (role === "mentor") return "/mentor/profil";
+    if (role === "kurumsal") return "/kurumsal/profil";
+    return "/user/profil";
   }, [role]);
+
+  const roleLabel = useMemo(() => {
+    if (role === "mentor") return language === "tr" ? "Mentor" : "Mentor";
+    if (role === "kurumsal") return language === "tr" ? "Kurumsal Üye" : "Corporate";
+    if (role === "admin") return "Yönetici";
+    return language === "tr" ? "Danışan" : "Client";
+  }, [role, language]);
 
   const displayName = me?.fullName || me?.email?.split("@")?.[0] || "Kullanıcı";
 
@@ -92,8 +95,8 @@ export default function Navbar() {
     }
   };
 
-  const mobileBtn = "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition font-medium text-slate-600";
-  const mobilePrimary = "w-full px-4 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 text-white font-bold text-left hover:brightness-110 transition shadow-md";
+  const mobileBtn = "w-full px-4 py-3 rounded-xl border text-left hover:bg-gray-50 transition font-medium text-slate-600 flex items-center gap-3";
+  const mobilePrimary = "w-full px-4 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 text-white font-bold text-left hover:brightness-110 transition shadow-md flex items-center gap-3";
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
@@ -106,23 +109,31 @@ export default function Navbar() {
         {/* Masaüstü Navigasyon */}
         <nav className="hidden md:flex items-center gap-2">
           <Link 
+            to="/mentorlar" 
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive("/mentorlar") ? "bg-orange-50 text-orange-600 border border-orange-100" : "text-slate-600 hover:bg-slate-50"}`}
+          >
+            <Search className="h-4 w-4" />
+            {t.mentors}
+          </Link>
+          
+          <Link 
+            to="/programlar" 
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive("/programlar") ? "bg-orange-50 text-orange-600 border border-orange-100" : "text-slate-600 hover:bg-slate-50"}`}
+          >
+            <Briefcase className="h-4 w-4" />
+            {t.programs}
+          </Link>
+
+          <Link 
             to="/webinars" 
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive("/webinars") ? "bg-orange-50 text-orange-600 border border-orange-100" : "text-slate-600 hover:bg-slate-50"}`}
           >
             <Video className="h-4 w-4" />
             {t.webinar}
           </Link>
-          
-          <Link 
-            to="/home" 
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive("/home") ? "bg-orange-50 text-orange-600 border border-orange-100" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <HomeIcon className="h-4 w-4" />
-            {t.feed}
-          </Link>
 
           <Link to="/boost">
-            <Button className="h-10 rounded-xl px-5 bg-gradient-to-r from-orange-600 to-amber-500 text-white font-black italic uppercase text-[10px] tracking-widest hover:shadow-xl hover:brightness-110 transition-all border-none">
+            <Button className="h-10 rounded-xl px-5 bg-gradient-to-r from-orange-600 to-amber-500 text-white font-black italic uppercase text-[10px] tracking-widest hover:shadow-xl hover:brightness-110 transition-all border-none ml-2">
               <Zap className="h-4 w-4 mr-2" />
               {t.boost}
             </Button>
@@ -180,7 +191,7 @@ export default function Navbar() {
                   <DropdownMenuSeparator className="bg-slate-50" />
                   <DropdownMenuItem className="rounded-xl cursor-pointer py-2.5 font-bold text-slate-600" onClick={() => navigate("/home")}><HomeIcon className="mr-3 h-4 w-4 text-slate-400" />{t.feed}</DropdownMenuItem>
                   <DropdownMenuItem className="rounded-xl cursor-pointer py-2.5 font-bold text-slate-600" onClick={() => navigate(profilePath)}><User className="mr-3 h-4 w-4 text-slate-400" />{t.profile}</DropdownMenuItem>
-                  <DropdownMenuItem className="rounded-xl cursor-pointer py-2.5 font-bold text-slate-600" onClick={() => navigate("/user/settings")}><Settings className="mr-3 h-4 w-4 text-slate-400" />{t.settings}</DropdownMenuItem>
+                  <DropdownMenuItem className="rounded-xl cursor-pointer py-2.5 font-bold text-slate-600" onClick={() => navigate("/user/ayarlar")}><Settings className="mr-3 h-4 w-4 text-slate-400" />{t.settings}</DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-slate-50" />
                   <DropdownMenuItem onClick={handleLogout} className="rounded-xl cursor-pointer py-2.5 text-red-600 font-black italic uppercase text-[10px] tracking-widest"><LogOut className="mr-3 h-4 w-4" />{t.logout}</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -197,10 +208,12 @@ export default function Navbar() {
       {/* Mobil Menü */}
       {mobileOpen && (
         <div className="md:hidden border-t border-slate-50 bg-white p-6 space-y-4 shadow-2xl animate-in slide-in-from-top duration-300">
-          <button onClick={() => navigate("/home")} className={mobileBtn}><HomeIcon className="inline h-4 w-4 mr-3 text-slate-400" />{t.feed}</button>
-          <button onClick={() => navigate("/webinars")} className={mobileBtn}><Video className="inline h-4 w-4 mr-3 text-slate-400" />{t.webinar}</button>
+          <button onClick={() => navigate("/home")} className={mobileBtn}><HomeIcon className="h-4 w-4 text-slate-400" />{t.feed}</button>
+          <button onClick={() => navigate("/mentorlar")} className={mobileBtn}><Search className="h-4 w-4 text-slate-400" />{t.mentors}</button>
+          <button onClick={() => navigate("/programlar")} className={mobileBtn}><Briefcase className="h-4 w-4 text-slate-400" />{t.programs}</button>
+          <button onClick={() => navigate("/webinars")} className={mobileBtn}><Video className="h-4 w-4 text-slate-400" />{t.webinar}</button>
           <Link to="/boost" className="block" onClick={() => setMobileOpen(false)}>
-            <div className={mobilePrimary}><Zap className="inline h-4 w-4 mr-3" />{t.boost}</div>
+            <div className={mobilePrimary}><Zap className="h-4 w-4 mr-1" />{t.boost}</div>
           </Link>
           <div className="pt-4 border-t border-slate-50 space-y-3">
             {!isLoggedIn ? (
@@ -210,8 +223,8 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <button onClick={() => navigate(dashboardPath)} className={mobileBtn}><LayoutDashboard className="inline h-4 w-4 mr-3 text-slate-400" />{t.dashboard}</button>
-                <button onClick={handleLogout} className={mobileBtn + " text-red-600 font-bold"}><LogOut className="inline h-4 w-4 mr-3" />{t.logout}</button>
+                <button onClick={() => navigate(dashboardPath)} className={mobileBtn}><LayoutDashboard className="h-4 w-4 text-slate-400" />{t.dashboard}</button>
+                <button onClick={handleLogout} className={mobileBtn + " text-red-600 font-bold"}><LogOut className="h-4 w-4" />{t.logout}</button>
               </>
             )}
           </div>

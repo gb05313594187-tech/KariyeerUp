@@ -9,7 +9,7 @@ export default function Terms() {
         </h1>
 
         <p className="text-sm text-gray-500 mb-8">
-          Son güncelleme: 09.12.2025
+          Son güncelleme: 23.04.2026
         </p>
 
         <div className="space-y-6 text-sm leading-relaxed text-gray-700 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-100">
@@ -17,23 +17,47 @@ export default function Terms() {
             Bu internet sitesini (&quot;Platform&quot;) kullanarak aşağıdaki koşulları
             okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan edersiniz. Platform,
             Kariyeer Teknoloji A.Ş. (&quot;Kariyeer&quot;) tarafından işletilmekte olup
-            kullanıcıların kariyer koçluğu hizmetlerine erişimini kolaylaştırmayı
-            amaçlamaktadır.
+            kullanıcıların kariyer mentorluğu ve eğitim hizmetlerine erişimini kolaylaştırmayı
+            amaçlayan bir teknoloji hizmetidir.
           </p>
 
+          {/* İŞKUR KRİTİK MADDE */}
+          <section className="bg-red-50 p-4 rounded-lg border border-red-100">
+            <h2 className="font-bold text-red-700 mb-2 uppercase">Önemli Yasal Beyan</h2>
+            <p className="text-red-900 font-medium">
+              Kariyeer, 4904 sayılı Türkiye İş Kurumu Kanunu kapsamında faaliyet gösteren bir 
+              &quot;Özel İstihdam Bürosu&quot; değildir. Platform üzerinden hiçbir şekilde işe yerleştirme, 
+              iş bulma veya personel tedarik etme faaliyeti yürütülmez. Kariyeer, yalnızca bağımsız 
+              danışmanlar ile kullanıcıları eğitim ve mentorluk amaçlı bir araya getiren bir teknoloji sağlayıcısıdır.
+            </p>
+          </section>
+
           <section>
-            <h2 className="font-semibold text-red-600 mb-2">1. Hizmetin Kapsamı</h2>
+            <h2 className="font-semibold text-red-600 mb-2">1. Hizmetin Niteliği ve Kapsamı</h2>
             <p>
-              Kariyeer, kullanıcılar ile bağımsız koçlar arasında aracılık hizmeti sağlar.
-              Platform üzerinden sunulan koçluk hizmetleri, ilgili koçların kendi
-              sorumluluğunda olup Kariyeer, koçların sunduğu hizmetlerin içeriğinden,
-              doğruluğundan veya sonuçlarından sorumlu değildir.
+              Platform üzerinden sunulan hizmetler; mülakat teknikleri, özgeçmiş iyileştirme, 
+              kariyer planlama ve yetkinlik geliştirme odaklı danışmanlık ve eğitim seanslarından ibarettir. 
+              Kariyeer, kullanıcıların bir işe girmesini, terfi almasını veya belirli bir ekonomik kazanç 
+              elde etmesini taahhüt etmez. Platform, sunulan mentorluk hizmetlerinin içeriğinden veya 
+              bağımsız danışmanların beyanlarından sorumlu tutulamaz.
             </p>
           </section>
 
           <section>
             <h2 className="font-semibold text-red-600 mb-2">
-              2. Üyelik ve Hesap Güvenliği
+              2. İstihdam Garantisi Verilmemesi
+            </h2>
+            <p>
+              Kullanıcı, Platform üzerinden aldığı danışmanlık hizmetinin bir işe alım süreci olmadığını 
+              kabul eder. Kariyeer, işverenler ile adaylar arasında bir sözleşme kurulmasına aracılık etmez. 
+              Hizmet alan kullanıcılar ile hizmet veren mentorlar arasında doğabilecek hiçbir hukuki 
+              ihtilafta Kariyeer taraf değildir.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-semibold text-red-600 mb-2">
+              3. Üyelik ve Hesap Güvenliği
             </h2>
             <p>
               Kullanıcılar platformu kullanırken doğru ve güncel bilgi vermekle yükümlüdür.
@@ -46,53 +70,33 @@ export default function Terms() {
 
           <section>
             <h2 className="font-semibold text-red-600 mb-2">
-              3. Ödeme ve İptal Koşulları
+              4. Ödeme ve Fatura Koşulları
             </h2>
             <p>
-              Platform üzerinden yapılan ödemeler, anlaşmalı ödeme kuruluşları aracılığıyla
-              güvenli altyapılar kullanılarak gerçekleştirilir. Ödeme, iade ve iptal
-              süreçleri; seçilen koçun belirlediği şartlar ve Kariyeer&apos;in ilgili
-              politikalarına tabidir. Kullanıcı, seans tarihinden önce belirtilen süreler
-              içinde iptal/iade talebinde bulunabilir.
+              Platform üzerinden gerçekleştirilen tüm ödemeler &quot;Eğitim ve Danışmanlık Hizmet Bedeli&quot; 
+              olarak tahsil edilir. İade ve iptal süreçleri; seans tarihinden önce belirtilen süreler 
+              içinde Kariyeer&apos;in güncel politikalarına göre yürütülür.
             </p>
           </section>
 
           <section>
             <h2 className="font-semibold text-red-600 mb-2">
-              4. Fikri Mülkiyet Hakları
+              5. Fikri Mülkiyet Hakları
             </h2>
             <p>
-              Platformda yer alan tüm metin, görsel, logo, marka, yazılım ve diğer içerikler
-              Kariyeer&apos;e veya lisans veren üçüncü kişilere aittir. Bu içerikler;
-              Kariyeer&apos;in yazılı izni olmaksızın kopyalanamaz, çoğaltılamaz, yayımlanamaz,
-              değiştirilemez veya ticari amaçla kullanılamaz.
+              Platformda yer alan tüm metin, görsel, logo, yazılım ve içerikler Kariyeer&apos;e aittir. 
+              Kariyeer&apos;in yazılı izni olmaksızın kopyalanamaz, ticari amaçla kullanılamaz.
             </p>
           </section>
 
           <section>
-            <h2 className="font-semibold text-red-600 mb-2">5. Yasaklı Kullanımlar</h2>
-            <p className="mb-2">
-              Kullanıcılar platformu aşağıdaki amaçlarla kullanamaz:
-            </p>
+            <h2 className="font-semibold text-red-600 mb-2">6. Yasaklı Kullanımlar</h2>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Yanıltıcı, zarar verici veya hukuka aykırı faaliyetlerde bulunmak,</li>
-              <li>Koçları veya diğer kullanıcıları taciz edici davranışlarda bulunmak,</li>
-              <li>Sistem güvenliğini ihlal etmeye yönelik girişimlerde bulunmak,</li>
-              <li>
-                Virüs, kötü amaçlı yazılım veya zararlı içerik içeren materyaller paylaşmak.
-              </li>
+              <li>Platformu işe alım veya personel bulma amacıyla kullanmak,</li>
+              <li>Hukuka aykırı veya yanıltıcı içerik paylaşmak,</li>
+              <li>Danışmanları veya kullanıcıları Platform dışı ödemeye zorlamak,</li>
+              <li>Sistem güvenliğini tehlikeye atacak girişimlerde bulunmak.</li>
             </ul>
-          </section>
-
-          <section>
-            <h2 className="font-semibold text-red-600 mb-2">6. Sorumluluk Reddi</h2>
-            <p>
-              Platform &quot;olduğu gibi&quot; sunulmaktadır. Kariyeer; teknik arızalar,
-              erişim kesintileri, üçüncü taraf hizmet sağlayıcılarından kaynaklanan
-              problemler veya kullanıcı hatalarından sorumlu değildir. Koçluk sürecinin
-              sonuçları, danışanın bireysel çabaları ve koşullarıyla bağlantılıdır ve
-              belirli bir sonuç taahhüdü verilmez.
-            </p>
           </section>
 
           <section>
@@ -100,21 +104,18 @@ export default function Terms() {
               7. Değişiklik Hakkı
             </h2>
             <p>
-              Kariyeer, kullanım koşullarını dilediği zaman tek taraflı olarak güncelleme
-              hakkını saklı tutar. Güncellenen koşullar, platformda yayımlandığı tarih
-              itibarıyla geçerli olur. Kullanıcıların güncellemeleri takip etme
-              sorumluluğu kendilerine aittir.
+              Kariyeer, kullanım koşullarını dilediği zaman güncelleme hakkını saklı tutar. 
+              Güncellenen koşullar Platformda yayımlandığı an yürürlüğe girer.
             </p>
           </section>
 
           <section>
             <h2 className="font-semibold text-red-600 mb-2">
-              8. Uygulanacak Hukuk ve Yetkili Mahkeme
+              8. Uygulanacak Hukuk ve Yetki
             </h2>
             <p>
-              Bu koşulların uygulanmasında ve yorumlanmasında Türk Hukuku geçerlidir.
-              Taraflar arasında çıkabilecek uyuşmazlıklarda İstanbul Merkez Mahkemeleri ve
-              İcra Daireleri yetkilidir.
+              Bu koşullar Türk Hukukuna tabidir. Taraflar arasındaki uyuşmazlıklarda 
+              İstanbul (Çağlayan) Mahkemeleri ve İcra Daireleri yetkilidir.
             </p>
           </section>
         </div>

@@ -8,69 +8,67 @@ export default function About() {
         <h1 className="text-3xl font-bold text-gray-900">Hakkımızda</h1>
 
         <p className="mt-4 text-gray-600 leading-relaxed">
-          Kariyeer, bireylerin ve kurumların kariyer gelişimi süreçlerinde
-          ihtiyaç duydukları koçluk ve danışmanlık hizmetlerine erişimini
-          kolaylaştırmak amacıyla oluşturulmuş bir dijital platformdur.
+          Kariyeer, bireylerin ve kurumların kişisel ve profesyonel gelişim süreçlerinde
+          ihtiyaç duydukları <strong>mentorluk, eğitim ve koçluk danışmanlığı</strong> hizmetlerine erişimini
+          kolaylaştırmak amacıyla oluşturulmuş bir teknoloji platformudur.
         </p>
 
         <p className="mt-4 text-gray-600 leading-relaxed">
-          Platform; yeni mezunlardan profesyonellere, kariyer değişikliği
-          planlayanlardan liderlik becerilerini geliştirmek isteyen bireylere
-          kadar geniş bir kullanıcı kitlesini, alanında uzman koçlarla bir
-          araya getirmeyi hedefler.
+          Platformumuz; yetkinliklerini artırmak, liderlik becerilerini geliştirmek veya 
+          kariyer yolculuklarında profesyonel bir rehberlik almak isteyen bireyleri, 
+          bağımsız danışman ve mentorlarla dijital bir ortamda buluşturur.
         </p>
 
-        {/* Ne Yapıyoruz */}
+        {/* Vizyonumuz */}
         <section className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-900">Ne Yapıyoruz?</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Vizyonumuz</h2>
           <p className="mt-3 text-gray-600 leading-relaxed">
-            Kariyeer üzerinden kullanıcılar koç profillerini inceleyebilir,
-            ihtiyaçlarına uygun koçlarla seans talebi oluşturabilir ve online
-            görüşmeler aracılığıyla kariyer hedeflerine yönelik destek alabilir.
-          </p>
-          <p className="mt-3 text-gray-600 leading-relaxed">
-            Platform, tarafları bir araya getiren bir aracıdır; koçluk
-            hizmetinin içeriği, kapsamı ve yöntemi koç ile kullanıcı arasında
-            belirlenir.
+            Temel amacımız, iş gücü piyasasındaki bireylerin eğitim ve gelişim yoluyla 
+            kendi potansiyellerini keşfetmelerine yardımcı olmaktır. Kariyeer, bir 
+            <strong> iş bulma veya işe yerleştirme kurumu değildir</strong>; bireylerin bu süreçlere 
+            hazırlanmasını sağlayan bir "gelişim durağı"dır.
           </p>
         </section>
 
-        {/* Koçlar */}
+        {/* Ne Yapıyoruz */}
         <section className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-900">Koçlar</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Neler Sunuyoruz?</h2>
           <p className="mt-3 text-gray-600 leading-relaxed">
-            Platformda yer alan koçlar başvuru sürecinden geçer. Profil
-            bilgileri, uzmanlık alanları ve deneyimlerine göre listelenir.
-            Kariyeer, koç ile kullanıcı arasındaki iletişim ve seans
-            süreçlerinin dijital olarak yürütülmesini sağlar.
+            Kullanıcılar platform üzerinden uzman danışmanların profillerini inceleyebilir, 
+            kişisel gelişim odaklı seans talepleri oluşturabilir ve online mentorluk alabilirler. 
+            Verilen hizmetler; mülakat teknikleri eğitimi, özgeçmiş hazırlama danışmanlığı ve 
+            stratejik yetkinlik geliştirme üzerine odaklıdır.
           </p>
         </section>
 
-        {/* Şirketler */}
+        {/* Kurumsal Çözümler */}
         <section className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-900">Şirketler</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Kurumsal Gelişim Danışmanlığı</h2>
           <p className="mt-3 text-gray-600 leading-relaxed">
-            Şirketler, çalışanlarının gelişimi için platform üzerinden
-            koçluk talepleri oluşturabilir, ihtiyaçlarına uygun koçlarla demo
-            veya tanışma görüşmeleri talep edebilir.
+            Şirketler, ekiplerinin performansını artırmak ve çalışan bağlılığını güçlendirmek adına 
+            danışmanlarımızdan kurumsal eğitim ve mentorluk programları talep edebilirler.
           </p>
         </section>
 
-        {/* İletişim & Yasal Not */}
-        <section className="mt-10 rounded-xl border bg-gray-50 p-6">
+        {/* ÖNEMLİ YASAL BEYAN - İŞKUR KORUMASI */}
+        <section className="mt-12 rounded-xl border-2 border-orange-100 bg-orange-50/30 p-6">
+          <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">Yasal Bilgilendirme</h2>
+          <p className="mt-3 text-sm text-gray-700 leading-relaxed">
+            Kariyeer.com, 4904 sayılı Türkiye İş Kurumu Kanunu kapsamında faaliyet gösteren bir 
+            <strong> Özel İstihdam Bürosu değildir</strong>. Platformumuz üzerinden doğrudan veya dolaylı 
+            olarak işe yerleştirme, iş bulma veya personel tedariki faaliyetleri yürütülmemektedir. 
+          </p>
+          <p className="mt-2 text-sm text-gray-700 leading-relaxed">
+            Kariyeer; yalnızca danışmanlık, eğitim ve mentorluk hizmeti sunan profesyoneller ile bu 
+            hizmetlerden yararlanmak isteyen kullanıcıları bir araya getiren bir <strong>SaaS (Yazılım Hizmeti) 
+            platformudur.</strong> Tüm ödemeler "Eğitim ve Danışmanlık Hizmet Bedeli" kapsamında değerlendirilir.
+          </p>
+        </section>
+
+        {/* İletişim */}
+        <section className="mt-10 p-6">
           <h2 className="text-lg font-semibold text-gray-900">İletişim</h2>
-          <p className="mt-2 text-gray-700">
-            Destek ve bilgilendirme talepleriniz için bizimle iletişime
-            geçebilirsiniz:
-          </p>
           <p className="mt-1 font-medium text-gray-900">support@kariyeer.com</p>
-
-          <p className="mt-4 text-xs text-gray-500 leading-relaxed">
-            Bu sayfadaki bilgiler bilgilendirme amaçlıdır. Platformda sunulan
-            hizmetler ve kullanım koşulları, ilgili sözleşmeler, gizlilik
-            politikası ve kullanım koşulları metinlerinde detaylı olarak
-            açıklanmıştır.
-          </p>
         </section>
       </div>
     </main>

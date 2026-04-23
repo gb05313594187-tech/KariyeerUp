@@ -651,7 +651,7 @@ export default function Index() {
         midText2:
           "النتيجة: تقدّم واضح لفِرق الأشخاص والثقافة، تطوير قابل للتتبّع للمديرين، وأهداف واضحة وتدفّق تدريب منتظم للموظفين. بعد طلب الديمو: خريطة احتياج → مطابقة → بايلوت → أول تقرير قياس.",
         demo: {
-          badge: "طلب ديمو للشركات",
+          badge: "طلب ديمo للشركات",
           title: "لنبدأ برنامج تدريب لفريقك",
           desc: "املأ النموذج، سنبني خطة حسب أهدافك ونشارك التقرير الأول.",
           companyName: "اسم الشركة",
@@ -1146,7 +1146,7 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* ✅ USER: SİSTEM DEĞERİ — YENİ GÖRSEL TASARIM          */}
+      {/* ✅ USER: SİSTEM DEĞERİ — YENİ GÖRSEL TASARIM           */}
       {/* ═══════════════════════════════════════════════════════ */}
       {persona === "user" ? (
         <section className="pb-16 bg-gradient-to-b from-white via-orange-50/30 to-white">
@@ -1525,7 +1525,6 @@ export default function Index() {
                   .toUpperCase()
                   .slice(0, 2);
 
-                // ✅ URL SLUG veya ID KULLANIMI + DİL PARAMETRESİ EKLENDİ
                 const profileUrl = `/coach/${coach.slug || coach.id}?lang=${lang || "tr"}&goal=${goal}&level=${level}`;
 
                 return (
@@ -1533,16 +1532,12 @@ export default function Index() {
                     key={coach.id}
                     className="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 cursor-pointer"
                   >
-                    {/* Card glow effect on hover */}
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
 
-                    {/* ✅ KARTIN TAMAMI ARTIK BİR LINK */}
                     <Link to={profileUrl} className="relative block rounded-2xl bg-gradient-to-b from-gray-800 to-gray-850 border border-gray-700/50 p-6 backdrop-blur-sm h-full hover:bg-gray-800/80 transition-colors">
-                      {/* Top row: Avatar + Crown */}
                       <div className="flex items-start justify-between mb-5">
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            {/* ✅ FOTOĞRAF YOKSA BAŞ HARFLER GÖSTERİLİYOR */}
                             {coach.avatar_url ? (
                               <img
                                 src={coach.avatar_url}
@@ -1556,7 +1551,6 @@ export default function Index() {
                                 </span>
                               </div>
                             )}
-                            {/* Online indicator */}
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-gray-800 rounded-full flex items-center justify-center">
                               <div className="w-2 h-2 bg-white rounded-full" />
                             </div>
@@ -1575,7 +1569,6 @@ export default function Index() {
                         </div>
                       </div>
 
-                      {/* Rating row */}
                       <div className="flex items-center gap-4 mb-5">
                         <div className="flex items-center gap-1.5">
                           <div className="flex">
@@ -1595,7 +1588,6 @@ export default function Index() {
                         </span>
                       </div>
 
-                      {/* Tags */}
                       <div className="flex flex-wrap gap-2 mb-5">
                         {(coach.specializations || []).slice(0, 3).map((tag: string) => (
                           <span
@@ -1612,10 +1604,8 @@ export default function Index() {
                         )}
                       </div>
 
-                      {/* Divider */}
                       <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-5" />
 
-                      {/* Bottom: Verified + CTA */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5 text-emerald-400">

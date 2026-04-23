@@ -21,10 +21,7 @@ import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AdminLayout from "@/layouts/AdminLayout";
 
-// ✅ YENİ: Hazırladığımız Onboarding Modal'ı import ediyoruz
-import { OnboardingModal } from "@/components/OnboardingModal";
-
-/* ================= SESSION YÜKLEME - SİHİRLİ KOD ================= */
+/* ================= SESSION YÜKLEME ================= */
 function SessionLoader() {
   useEffect(() => {
     supabase.auth.getSession();
@@ -128,39 +125,9 @@ function PublicLayout() {
   );
 }
 
-/* ================= ANA İÇERİK YÖNETİCİSİ (KRİTİK GÜNCELLEME) ================= */
+/* ================= ANA İÇERİK YÖNETİCİSİ ================= */
 function AppContent() {
-  const { user, isAuthenticated, loading } = useAuth();
-  
-  // 🚩 showOnboarding varsayılan olarak true başlasın ki herkes görsün
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
-
-  useEffect(() => {
-    const checkProfileStatus = async () => {
-      // Sadece giriş yapmış kullanıcılar için profili kontrol et
-      if (isAuthenticated && user && !loading) {
-        try {
-          const { data, error } = await supabase
-            .from('career_profiles')
-            .select('id')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          // Eğer veritabanında kaydı Varsa, onboarding'i gizle
-          if (data) {
-            setShowOnboarding(false);
-          }
-        } catch (err) {
-          console.error("Profil kontrol hatası:", err);
-        }
-      }
-      // Giriş yapmamışsa (misafir ise) showOnboarding true kalmaya devam eder
-      setIsCheckingProfile(false);
-    };
-
-    checkProfileStatus();
-  }, [isAuthenticated, user, loading]);
+  const { loading } = useAuth();
 
   // Auth yüklenirken bekle
   if (loading) {
@@ -171,18 +138,9 @@ function AppContent() {
     );
   }
 
-  // ✅ EĞER ONBOARDING GÖSTERİLECEKSE (Misafirler veya profili olmayan üyeler)
-  if (showOnboarding) {
-    return (
-      <OnboardingModal 
-        isOpen={true} 
-        userId={user?.id || "guest"} // Giriş yoksa "guest" ID'si ile gönderiyoruz
-        onComplete={() => setShowOnboarding(false)} 
-      />
-    );
-  }
+  // ✅ KRİTİK DÜZELTME: OnboardingModal kontrolünü tamamen kaldırdık. 
+  // Artık uygulama doğrudan Router (normal site akışı) kısmına geçecek.
 
-  // ✅ PROFİL TAMAMSA: Normal site akışı
   return (
     <Router>
       <SessionLoader />

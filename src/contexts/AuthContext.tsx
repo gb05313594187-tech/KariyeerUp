@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { supabase } from "@/lib/supabase";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
-export type Role = "user" | "coach" | "corporate" | "admin";
+// YASAL GÜNCELLEME: Roller veritabanı ile uyumlu hale getirildi
+export type Role = "danisan" | "mentor" | "kurumsal" | "admin";
 
 interface User {
   id: string;
@@ -38,22 +39,21 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: async () => false,
 });
 
-const SAFE_TIMEOUT = 3000; // 3 saniye yeterli
+const SAFE_TIMEOUT = 3000;
 
+// YASAL GÜNCELLEME: Gelen ham veriyi yeni yasal rollere çeviren fonksiyon
 function normalizeRole(v: any): Role {
-  if (!v) return "user";
+  if (!v) return "danisan";
   const s = String(v).toLowerCase().trim();
-  if (s === "company" || s === "corporate") return "corporate";
-  if (s === "coach") return "coach";
+  if (s === "company" || s === "corporate" || s === "kurumsal") return "kurumsal";
+  if (s === "coach" || s === "mentor") return "mentor";
   if (s === "admin" || s === "super_admin") return "admin";
-  return "user";
+  return "danisan";
 }
 
-// ✅ KRİTİK: Dışarıda tanımla, her render'da yeniden oluşturma
 let globalInitStarted = false;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // ✅ BAŞLANGIÇ: localStorage'dan sync oku (flash önleme)
   const getInitialState = () => {
     try {
       const raw = localStorage.getItem('sb-auth-token');
@@ -61,14 +61,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(raw);
         const session = parsed?.currentSession || parsed?.session || parsed;
         if (session?.user) {
-          console.log('✅ SYNC INIT: Session found in localStorage');
           return {
-            user: null, // Profile async yüklenecek
+            user: null,
             supabaseUser: session.user,
             role: normalizeRole(session.user?.user_metadata?.role),
             isAuthenticated: true,
-            isLoading: true, // Profile yüklenirken true
-            isInitialized: true, // ✅ Hemen initialized true
+            isLoading: true,
+            isInitialized: true,
           };
         }
       }
@@ -87,10 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [state, setState] = useState(getInitialState);
 
-  // ✅ ZORLA TIMEOUT - En kritik kısım
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('⏱️ FORCE TIMEOUT triggered');
       setState(prev => {
         if (prev.isLoading || !prev.isInitialized) {
           return { ...prev, isLoading: false, isInitialized: true };
@@ -100,24 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, SAFE_TIMEOUT);
 
     return () => clearTimeout(timer);
-  }, []); // ✅ Boş dependency - sadece mount'ta çalış
+  }, []);
 
-  // ✅ ANA AUTH EFEKTİ
   useEffect(() => {
-    // StrictMode double execution önleme
-    if (globalInitStarted) {
-      console.log('🔄 Skipping duplicate init (StrictMode)');
-      return;
-    }
+    if (globalInitStarted) return;
     globalInitStarted = true;
 
     let isActive = true;
     
     const initAuth = async () => {
       try {
-        console.log('🔍 Starting auth check...');
-        
-        // ✅ TIMEOUT WRAPPER - En kritik güvenlik
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('SESSION_TIMEOUT')), 8000)
@@ -125,45 +114,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const { data, error } = await Promise.race([sessionPromise, timeoutPromise]);
         
-        if (!isActive) {
-          console.log('⚠️ Component unmounted, ignoring result');
-          return;
-        }
+        if (!isActive) return;
 
         if (error) {
-          console.error('❌ getSession error:', error);
           setState(prev => ({ ...prev, isLoading: false, isInitialized: true }));
           return;
         }
 
         if (data.session?.user) {
-          console.log('✅ Session valid:', data.session.user.id);
           await loadUserProfile(data.session.user);
         } else {
-          console.log('❌ No active session');
           setState(prev => ({ ...prev, isLoading: false, isInitialized: true }));
         }
       } catch (e) {
-        console.error('💥 initAuth error:', e);
         if (isActive) {
           setState(prev => ({ ...prev, isLoading: false, isInitialized: true }));
         }
       }
     };
 
-    // Eğer sync init yaptıysak (localStorage'dan), profile yükle
     if (state.isAuthenticated && state.supabaseUser && !state.user) {
-      console.log('🔄 Loading profile for cached user');
       loadUserProfile(state.supabaseUser);
     } else if (!state.isAuthenticated) {
       initAuth();
     }
 
-    // ✅ LISTENER
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('📡 Auth event:', event);
-        
         if (!isActive) return;
 
         if (event === "SIGNED_OUT") {
@@ -185,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isActive = false;
       subscription.unsubscribe();
     };
-  }, []); // ✅ Boş dependency - sadece mount'ta
+  }, []);
 
   const loadUserProfile = useCallback(async (supabaseUserData: SupabaseUser) => {
     try {
@@ -199,11 +176,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       let finalRole = metaRole;
-      let fullName = meta.full_name || meta.fullName || meta.display_name || meta.displayName || "User";
+      let fullName = meta.full_name || meta.fullName || meta.display_name || meta.displayName || "Kullanıcı";
       let phone = null;
       let country = null;
 
       if (!error && profile) {
+        // SQL'de yaptığımız mentor, kurumsal, danisan verilerini burada okuyoruz
         finalRole = normalizeRole(profile.role || profile.user_type || metaRole);
         fullName = profile.display_name || fullName;
         phone = profile.phone ?? null;
@@ -226,13 +204,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isInitialized: true,
       });
     } catch (e) {
-      console.error('loadUserProfile error:', e);
-      // Hata olsa bile auth true, profilsiz devam
       setState({
         user: {
           id: supabaseUserData.id,
           email: supabaseUserData.email || "",
-          fullName: "User",
+          fullName: "Kullanıcı",
           role: normalizeRole(supabaseUserData.user_metadata?.role),
           phone: null,
           country: null,
@@ -257,7 +233,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: false, message: "Giriş başarısız oldu" };
     } catch (e) {
-      console.error("Login error:", e);
       return { success: false, message: "Bir hata oluştu" };
     }
   };
@@ -265,38 +240,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-      setState({
-        user: null,
-        supabaseUser: null,
-        role: null,
-        isAuthenticated: false,
-        isLoading: false,
-        isInitialized: true,
-      });
+      setState({ user: null, supabaseUser: null, role: null, isAuthenticated: false, isLoading: false, isInitialized: true });
     } catch (e) {
-      console.error("Logout error:", e);
-      setState({
-        user: null,
-        supabaseUser: null,
-        role: null,
-        isAuthenticated: false,
-        isLoading: false,
-        isInitialized: true,
-      });
+      setState({ user: null, supabaseUser: null, role: null, isAuthenticated: false, isLoading: false, isInitialized: true });
     }
   };
 
   const updateProfile = async (updates: Partial<User>): Promise<boolean> => {
     if (!state.user) return false;
-
     try {
       const nextRole = updates.role ? normalizeRole(updates.role) : state.user.role;
-
       await supabase.auth.updateUser({
-        data: {
-          role: nextRole,
-          display_name: updates.fullName ?? state.user.fullName,
-        },
+        data: { role: nextRole, display_name: updates.fullName ?? state.user.fullName }
       });
 
       const { error } = await supabase
@@ -309,10 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
         .eq("id", state.user.id);
 
-      if (error) {
-        console.error("profiles update error:", error);
-        return false;
-      }
+      if (error) return false;
 
       setState(prev => ({
         ...prev,
@@ -321,7 +273,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
       return true;
     } catch (e) {
-      console.error("updateProfile error:", e);
       return false;
     }
   };

@@ -1,14 +1,13 @@
 // src/pages/CorporateDashboard.tsx
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { companyService } from "@/lib/supabase";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase, companyService } from "@/lib/supabase";
 import { scheduleInterview, makeHireDecision } from "@/lib/meeting-api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import {
   Building2,
   Users,
@@ -32,27 +31,29 @@ import {
   Pause,
   Star,
   Crown,
+  ShieldCheck,
+  FileSearch
 } from "lucide-react";
 
 const COACHES_TABLE = "app_2dff6511da_coaches";
 
-type TabKey = "find_coach" | "requests" | "active_sessions" | "interviews";
+type TabKey = "find_coach" | "requests" | "active_sessions" | "assessments";
 
 export default function CorporateDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [tab, setTab] = useState<TabKey>("interviews");
+  const [tab, setTab] = useState<TabKey>("assessments");
 
   const [coaches, setCoaches] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
 
-  // Görüşmeler
+  // Değerlendirme Seansları
   const [interviews, setInterviews] = useState<any[]>([]);
   const [jobApplications, setJobApplications] = useState<any[]>([]);
 
-  // Mülakat Planlama Modal
+  // Seans Planlama Modal
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [interviewDate, setInterviewDate] = useState("");
@@ -61,7 +62,7 @@ export default function CorporateDashboard() {
   const [interviewNotes, setInterviewNotes] = useState("");
   const [interviewLoading, setInterviewLoading] = useState(false);
 
-  // İşe Alım Karar Modal
+  // Gelişim Karar Modal
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<any>(null);
   const [hireDecision, setHireDecision] = useState<"hired" | "rejected" | "on_hold">("hired");
@@ -102,7 +103,7 @@ export default function CorporateDashboard() {
     setCoaches(
       data.map((c: any) => ({
         id: c.id,
-        full_name: c.full_name || "Koç",
+        full_name: c.full_name || "Mentor",
         headline: c.title || "",
         specializations: c.specializations || [],
         languages: c.languages ? c.languages.split(",") : ["TR"],
@@ -151,7 +152,7 @@ export default function CorporateDashboard() {
     setJobApplications(enriched);
   };
 
-  // Mülakat Planla
+  // Gelişim Seansı Planla
   const handleScheduleInterview = async () => {
     if (!selectedApplication || !interviewDate || !interviewTime) {
       toast.error("Tarih ve saat seçin");
@@ -170,24 +171,24 @@ export default function CorporateDashboard() {
       });
 
       if (result.success) {
-        toast.success("Mülakat planlandı ve adaya davet gönderildi!");
+        toast.success("Değerlendirme seansı planlandı ve katılımcıya davet gönderildi!");
         setInterviewModalOpen(false);
         setInterviewDate("");
         setInterviewTime("");
         setInterviewNotes("");
         await fetchInterviews(me.id);
-        setTab("interviews");
+        setTab("assessments");
       } else {
         toast.error(result.error || "Bir hata oluştu");
       }
     } catch (e) {
-      toast.error("Mülakat planlanamadı");
+      toast.error("Seans planlanamadı");
     } finally {
       setInterviewLoading(false);
     }
   };
 
-  // İşe Alım Kararı
+  // Gelişim Kararı
   const handleHireDecision = async () => {
     if (!selectedInterview) return;
     setHireLoading(true);
@@ -203,7 +204,7 @@ export default function CorporateDashboard() {
 
       if (result.success) {
         toast.success(
-          hireDecision === "hired" ? "İşe alındı!" : hireDecision === "rejected" ? "Reddedildi" : "Beklemeye alındı"
+          hireDecision === "hired" ? "Süreç başarıyla tamamlandı!" : hireDecision === "rejected" ? "Ek gelişim planlandı" : "İnceleme sürüyor"
         );
         setHireModalOpen(false);
         await fetchInterviews(me.id);
@@ -232,42 +233,42 @@ export default function CorporateDashboard() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="h-8 w-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-2 text-sm text-gray-500">Kurumsal panel yükleniyor...</p>
+          <div className="h-8 w-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-2 text-sm text-gray-500 font-bold uppercase tracking-widest">Kurumsal panel yükleniyor...</p>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20">
       {/* HERO */}
       <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-red-600/20 to-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-600/20 to-amber-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-br from-orange-500/15 to-amber-400/10 rounded-full blur-3xl" />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-10">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-600/20 to-orange-500/20 border border-red-500/30 backdrop-blur-sm mb-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-600/20 to-amber-500/20 border border-orange-500/30 backdrop-blur-sm mb-3">
                 <Building2 className="h-4 w-4 text-orange-400" />
-                <span className="text-sm font-bold text-orange-300">Kurumsal Panel</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300 border border-white/10">
+                <span className="text-sm font-bold text-orange-300 uppercase tracking-widest">Kurumsal Yönetim</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300 border border-white/10 font-bold">
                   {profile?.brand_name || profile?.legal_name || "Şirket"}
                 </span>
               </div>
-              <h1 className="text-2xl font-black text-white">
-                İlan Yönetimi • Koçluk •{" "}
-                <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                  İşe Alım Merkezi
+              <h1 className="text-3xl font-black text-white tracking-tight">
+                Program Yönetimi • Mentorluk •{" "}
+                <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">
+                  Gelişim Merkezi
                 </span>
               </h1>
             </div>
             <Button
               onClick={() => navigate("/jobs/new")}
-              className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold px-6 hover:brightness-110 shadow-lg shadow-red-900/30"
+              className="rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 text-white font-black italic uppercase tracking-widest px-8 h-14 hover:brightness-110 shadow-xl shadow-orange-900/30"
             >
               <FilePlus2 className="h-4 w-4 mr-2" />
-              Yeni İlan Ver
+              Yeni Program Başlat
             </Button>
           </div>
         </div>
@@ -275,34 +276,34 @@ export default function CorporateDashboard() {
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-5 -mt-6 relative z-20">
+        <div className="grid gap-4 md:grid-cols-5 -mt-10 relative z-20">
           {[
-            { title: "Koç Havuzu", value: kpis.totalCoaches, icon: Users, hint: "Aktif koç", gradient: "from-red-500 to-orange-500" },
-            { title: "Açık Talepler", value: kpis.openRequests, icon: Clock, hint: "Bekleyen", gradient: "from-amber-500 to-orange-500" },
-            { title: "Onaylanan", value: kpis.approved, icon: CheckCircle2, hint: "Başladı", gradient: "from-emerald-500 to-teal-500" },
-            { title: "Görüşmeler", value: kpis.totalInterviews, icon: Video, hint: "Planlanan", gradient: "from-blue-500 to-indigo-500" },
-            { title: "Impact Score", value: `${kpis.impact}/100`, icon: Sparkles, hint: "Verimlilik", gradient: "from-yellow-500 to-amber-500" },
+            { title: "Uzman Havuzu", value: kpis.totalCoaches, icon: Users, hint: "Aktif Mentor", gradient: "from-orange-500 to-amber-500" },
+            { title: "Talepler", value: kpis.openRequests, icon: Clock, hint: "Bekleyen", gradient: "from-amber-500 to-yellow-500" },
+            { title: "Onaylanan", value: kpis.approved, icon: CheckCircle2, hint: "Süreç Başladı", gradient: "from-emerald-500 to-teal-500" },
+            { title: "Görüşmeler", value: kpis.totalInterviews, icon: Video, hint: "Gelişim Seansı", gradient: "from-blue-500 to-indigo-500" },
+            { title: "Başarı Skoru", value: `${kpis.impact}/100`, icon: Sparkles, hint: "Program Verimliliği", gradient: "from-purple-500 to-pink-500" },
           ].map((kpi, i) => (
-            <Card key={i} className="rounded-2xl border border-gray-200 bg-white shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="py-5 px-5">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shadow-md mb-3`}>
-                  <kpi.icon className="h-5 w-5 text-white" />
+            <Card key={i} className="rounded-3xl border border-gray-100 bg-white shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <CardContent className="py-6 px-5">
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shadow-lg mb-4`}>
+                  <kpi.icon className="h-6 w-6 text-white" />
                 </div>
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{kpi.title}</p>
-                <p className="text-2xl font-black text-gray-900 mt-1">{kpi.value}</p>
-                <p className="text-[11px] text-gray-400">{kpi.hint}</p>
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{kpi.title}</p>
+                <p className="text-2xl font-black text-slate-800 mt-1">{kpi.value}</p>
+                <p className="text-[10px] text-orange-500 font-bold mt-1">{kpi.hint}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-1.5 flex gap-1 overflow-x-auto">
+        <div className="bg-slate-100 rounded-2xl p-1.5 flex gap-1 overflow-x-auto">
           {[
-            { key: "interviews", label: "Görüşmelerim", icon: Video },
-            { key: "find_coach", label: "Koç Bul", icon: Search },
-            { key: "requests", label: "Taleplerim", icon: CalendarCheck2 },
-            { key: "active_sessions", label: "Seanslar", icon: ChevronRight },
+            { key: "assessments", label: "Gelişim Takibi", icon: FileSearch },
+            { key: "find_coach", label: "Mentor Bul", icon: Search },
+            { key: "requests", label: "Program Talepleri", icon: CalendarCheck2 },
+            { key: "active_sessions", label: "Canlı Seanslar", icon: Video },
           ].map((t) => {
             const Icon = t.icon;
             const active = tab === t.key;
@@ -310,10 +311,10 @@ export default function CorporateDashboard() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key as TabKey)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                   active
-                    ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-white text-orange-600 shadow-sm border border-orange-100"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -325,28 +326,28 @@ export default function CorporateDashboard() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
-            {/* GÖRÜŞMELERİM */}
-            {tab === "interviews" && (
+            {/* GELİŞİM TAKİBİ */}
+            {tab === "assessments" && (
               <div className="space-y-6">
-                {/* Bekleyen Başvurular */}
+                {/* Bekleyen Katılımcılar */}
                 {jobApplications.filter((a) => a.status !== "interview_scheduled").length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="font-black text-lg flex items-center gap-2 text-gray-900">
-                      <Mail className="h-5 w-5 text-orange-500" /> Bekleyen Başvurular
+                  <div className="space-y-4">
+                    <h3 className="font-black text-lg flex items-center gap-2 text-slate-800 italic uppercase tracking-tighter">
+                      <Mail className="h-5 w-5 text-orange-600" /> İncelenecek Katılımcılar
                     </h3>
                     {jobApplications
                       .filter((a) => a.status !== "interview_scheduled")
                       .map((app) => (
-                        <Card key={app.id} className="p-4 rounded-2xl shadow-sm border border-gray-200 hover:border-orange-200 transition-all">
+                        <Card key={app.id} className="p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-orange-200 transition-all bg-white group">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-orange-100 rounded-xl flex items-center justify-center border border-orange-200">
-                                <Users className="h-6 w-6 text-red-600" />
+                              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:bg-orange-50 transition-colors">
+                                <Users className="h-7 w-7 text-slate-400 group-hover:text-orange-600" />
                               </div>
                               <div>
-                                <p className="font-bold text-gray-900">{app.candidate?.full_name}</p>
-                                <p className="text-sm text-gray-600">
-                                  {app.position} • {app.candidate?.email}
+                                <p className="font-black text-slate-800 text-lg">{app.candidate?.full_name}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wide">
+                                  Program: {app.position}
                                 </p>
                               </div>
                             </div>
@@ -355,10 +356,10 @@ export default function CorporateDashboard() {
                                 setSelectedApplication(app);
                                 setInterviewModalOpen(true);
                               }}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-xl hover:brightness-110"
+                              className="bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest h-12 px-6 hover:bg-orange-600 transition-all"
                             >
                               <Video className="h-4 w-4 mr-2" />
-                              Mülakat Planla
+                              Seans Planla
                             </Button>
                           </div>
                         </Card>
@@ -367,369 +368,225 @@ export default function CorporateDashboard() {
                 )}
 
                 {/* Planlanan Görüşmeler */}
-                {interviews.length > 0 ? (
-                  <div className="space-y-4">
-                    <h3 className="font-black text-lg flex items-center gap-2 text-gray-900">
-                      <Calendar className="h-5 w-5 text-orange-500" /> Planlanan Görüşmeler
-                    </h3>
-                    {interviews.map((iv) => {
+                <div className="space-y-4">
+                  <h3 className="font-black text-lg flex items-center gap-2 text-slate-800 italic uppercase tracking-tighter">
+                    <Calendar className="h-5 w-5 text-orange-600" /> Aktif Gelişim Seansları
+                  </h3>
+                  {interviews.length > 0 ? (
+                    interviews.map((iv) => {
                       const scheduled = iv.scheduled_at ? new Date(iv.scheduled_at) : null;
                       const isUpcoming = scheduled && scheduled.getTime() > Date.now();
                       return (
-                        <Card key={iv.id} className="p-5 rounded-2xl shadow-sm border border-gray-200 hover:border-orange-200 transition-all">
-                          <div className="flex justify-between items-start mb-4">
+                        <Card key={iv.id} className="p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all bg-white">
+                          <div className="flex justify-between items-start mb-6">
                             <div>
-                              <p className="font-bold text-gray-900">{iv.candidate_name || iv.profiles?.full_name}</p>
-                              <p className="text-sm text-gray-600">{iv.jobs?.position || iv.jobs?.custom_title}</p>
+                              <p className="font-black text-xl text-slate-800">{iv.candidate_name || iv.profiles?.full_name}</p>
+                              <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mt-1">{iv.jobs?.position || "Genel Değerlendirme"}</p>
                               {scheduled && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {scheduled.toLocaleDateString("tr-TR", {
-                                    weekday: "long",
-                                    day: "numeric",
-                                    month: "long",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
+                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold mt-2 uppercase">
+                                  <Clock size={14} />
+                                  {scheduled.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })}
+                                  <span className="text-slate-200">|</span>
+                                  {scheduled.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                                </div>
                               )}
                             </div>
-                            <Badge
-                              className={`border ${
-                                isUpcoming
-                                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                                  : "bg-gray-50 text-gray-600 border-gray-200"
-                              }`}
-                            >
-                              {isUpcoming ? "Yakında" : "Geçmiş"}
+                            <Badge className={`px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest ${isUpcoming ? "bg-orange-50 text-orange-600" : "bg-slate-100 text-slate-400"}`}>
+                              {isUpcoming ? "YAKLAŞAN" : "ARŞİV"}
                             </Badge>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-3 mt-4">
                             {isUpcoming && (
                               <Button
                                 onClick={() => navigate(`/meeting/${iv.jitsi_room || iv.id}`)}
-                                size="sm"
-                                className="flex-1 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-xl hover:brightness-110"
+                                className="flex-1 bg-orange-600 text-white rounded-2xl h-14 font-black uppercase italic tracking-widest shadow-lg shadow-orange-100 hover:bg-orange-700"
                               >
-                                <Video className="h-4 w-4 mr-2" /> Görüşmeye Gir
+                                <Video className="h-5 w-5 mr-2" /> Seans Odasına Gir
                               </Button>
                             )}
                             {!iv.hire_decision && (
                               <Button
-                                onClick={() => {
-                                  setSelectedInterview(iv);
-                                  setHireModalOpen(true);
-                                }}
+                                onClick={() => { setSelectedInterview(iv); setHireModalOpen(true); }}
                                 variant="outline"
-                                size="sm"
-                                className="flex-1 rounded-xl border-orange-200 hover:bg-orange-50"
+                                className="flex-1 h-14 rounded-2xl border-2 border-slate-100 font-black uppercase text-xs tracking-widest hover:bg-slate-50"
                               >
-                                <UserCheck className="h-4 w-4 mr-2" /> Karar Ver
+                                <CheckCircle2 className="h-5 w-5 mr-2 text-emerald-500" /> Değerlendir
                               </Button>
                             )}
                           </div>
                         </Card>
                       );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-3xl">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-                      <Video className="h-10 w-10 text-red-400" />
+                    })
+                  ) : (
+                    <div className="text-center py-20 border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
+                      <div className="w-20 h-20 rounded-3xl bg-white shadow-sm flex items-center justify-center mx-auto mb-4">
+                        <Video className="h-10 w-10 text-slate-200" />
+                      </div>
+                      <p className="font-black text-slate-400 uppercase tracking-widest text-sm">Aktif seans kaydı yok</p>
+                      <p className="text-xs text-slate-400 mt-2">Program yayınlayın ve katılımcılarla gelişim seansları planlayın.</p>
                     </div>
-                    <p className="font-bold text-gray-600">Henüz görüşme planlanmadı</p>
-                    <p className="text-sm text-gray-400 mt-1">İlan verin, başvurular gelince mülakat planlayın.</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
             {/* KOÇ BUL */}
             {tab === "find_coach" && (
-              <div className="space-y-4">
-                {coaches.length === 0 ? (
-                  <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-3xl">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-                      <Search className="h-10 w-10 text-red-400" />
-                    </div>
-                    <p className="font-bold text-gray-600">Henüz koç bulunmuyor</p>
-                    <Button className="mt-4 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white" onClick={() => navigate("/coaches")}>
-                      Koçları İncele
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {coaches.map((c) => (
-                      <Card key={c.id} className="p-5 rounded-2xl shadow-sm border border-gray-200 hover:border-orange-200 hover:shadow-lg transition-all">
-                        <div className="flex items-center gap-4">
-                          {c.avatar_url ? (
-                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-orange-200">
-                              <img src={c.avatar_url} alt="" className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-orange-100 rounded-xl flex items-center justify-center border border-orange-200">
-                              <User className="h-6 w-6 text-red-600" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <p className="font-bold text-gray-900">{c.full_name}</p>
-                            <p className="text-sm text-gray-600">{c.headline}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Star className="h-3 w-3 text-yellow-500" />
-                              <span className="text-xs font-semibold">{c.rating.toFixed(1)}</span>
-                              <span className="text-xs text-gray-400">•</span>
-                              <span className="text-xs text-gray-600">
-                                {c.price_try > 0 ? `${c.price_try} TL/saat` : "Fiyat belirtilmemiş"}
-                              </span>
-                            </div>
-                          </div>
-                          {c.verified && <BadgeCheck className="h-5 w-5 text-blue-500" />}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TALEPLERİM */}
-            {tab === "requests" && (
-              <div className="space-y-4">
-                {requests.length === 0 ? (
-                  <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-3xl">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-                      <CalendarCheck2 className="h-10 w-10 text-red-400" />
-                    </div>
-                    <p className="font-bold text-gray-600">Henüz koçluk talebi yok</p>
-                    <p className="text-sm text-gray-400 mt-1">Koç bulup talep gönderdiğinizde burada listelenecek.</p>
-                  </div>
-                ) : (
-                  requests.map((r) => (
-                    <Card key={r.id} className="p-4 rounded-2xl shadow-sm border border-gray-200 hover:border-orange-200 transition-all">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-gray-900">{r.coach_name || "Koç"}</p>
-                          <p className="text-sm text-gray-600">{r.goal || "—"} • {r.level || "—"}</p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(r.created_at).toLocaleDateString("tr-TR")}
-                          </p>
-                        </div>
-                        <Badge
-                          className={`border ${
-                            r.status === "approved"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : r.status === "rejected"
-                              ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}
-                        >
-                          {r.status === "approved" ? "Onaylandı" : r.status === "rejected" ? "Reddedildi" : "Beklemede"}
-                        </Badge>
+              <div className="grid gap-6 md:grid-cols-2">
+                {coaches.map((c) => (
+                  <Card key={c.id} className="p-6 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-500 bg-white group">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-orange-50 shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                        <img src={c.avatar_url || `https://ui-avatars.com/api/?name=${c.full_name}&background=random`} alt="" className="w-full h-full object-cover" />
                       </div>
-                    </Card>
-                  ))
-                )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-slate-800 truncate">{c.full_name}</p>
+                          {c.verified && <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase truncate mt-1 tracking-tighter">{c.headline}</p>
+                        <div className="flex items-center gap-3 mt-3">
+                          <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg border border-yellow-100">
+                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                             <span className="text-[10px] font-black text-yellow-700">{c.rating.toFixed(1)}</span>
+                          </div>
+                          <span className="text-[10px] font-black text-slate-600 uppercase bg-slate-50 px-2 py-0.5 rounded-lg">
+                            {c.price_try > 0 ? `${c.price_try} TL / SEANS` : "ÜCRETSİZ"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             )}
-
-            {/* AKTİF SEANSLAR */}
-            {tab === "active_sessions" && (
-              <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-3xl">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-10 w-10 text-red-400" />
-                </div>
-                <p className="font-bold text-gray-600">Aktif Seanslar</p>
-                <p className="text-sm text-gray-400 mt-1">Koçluk seansları başladığında burada takip edebilirsiniz.</p>
-              </div>
+            
+            {/* TALEPLER VE AKTİF SEANSLAR PLACEHOLDERLAR */}
+            {(tab === "requests" || tab === "active_sessions") && (
+               <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
+                  <Pause className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                  <p className="font-black text-slate-400 uppercase tracking-widest text-sm italic">Süreçler Hazırlanıyor</p>
+               </div>
             )}
           </div>
 
-          {/* Sağ Menü */}
-          <div className="space-y-4">
-            <Card className="rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-200">
-              <CardHeader>
-                <CardTitle className="text-base font-black">Hızlı Erişim</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  onClick={() => navigate("/corporate/jobs")}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl border-orange-200 hover:bg-orange-50"
-                >
-                  <Briefcase className="h-4 w-4 mr-2 text-orange-500" /> İlanlarım
+          {/* SAĞ PANEL */}
+          <div className="space-y-6">
+            <Card className="rounded-[2.5rem] bg-white border border-slate-100 shadow-xl overflow-hidden">
+              <div className="p-6 bg-slate-50 border-b border-slate-100">
+                <h3 className="font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+                  <Sparkles size={18} className="text-orange-600" /> Hızlı Erişim
+                </h3>
+              </div>
+              <CardContent className="p-6 space-y-3">
+                <Button onClick={() => navigate("/corporate/jobs")} variant="ghost" className="w-full justify-start rounded-2xl h-14 font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 group">
+                  <Briefcase className="h-5 w-5 mr-3 text-slate-300 group-hover:text-orange-500" /> Programlarım
                 </Button>
-                <Button
-                  onClick={() => setTab("interviews")}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl border-orange-200 hover:bg-orange-50"
-                >
-                  <Video className="h-4 w-4 mr-2 text-orange-500" /> Görüşmelerim
+                <Button onClick={() => setTab("assessments")} variant="ghost" className="w-full justify-start rounded-2xl h-14 font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 group">
+                  <FileSearch className="h-5 w-5 mr-3 text-slate-300 group-hover:text-orange-500" /> Gelişim Takibi
                 </Button>
-                <Button
-                  onClick={() => navigate("/coaches")}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl border-orange-200 hover:bg-orange-50"
-                >
-                  <Users className="h-4 w-4 mr-2 text-orange-500" /> Koçları İncele
+                <Button onClick={() => navigate("/coaches")} variant="ghost" className="w-full justify-start rounded-2xl h-14 font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 group">
+                  <Users className="h-5 w-5 mr-3 text-slate-300 group-hover:text-orange-500" /> Mentor Havuzu
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Premium CTA */}
-            <div className="rounded-2xl overflow-hidden">
-              <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-red-600/20 to-transparent rounded-full blur-2xl" />
-                <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
-                    <Crown className="h-5 w-5 text-white" />
-                  </div>
-                  <p className="font-black text-white">Kurumsal Premium</p>
-                  <p className="text-xs text-gray-400 mt-1">Sınırsız ilan, öncelikli eşleşme ve detaylı raporlar.</p>
-                  <Button className="mt-3 w-full rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white text-sm font-semibold hover:brightness-110">
-                    Planları Gör
-                  </Button>
+            <div className="rounded-[2.5rem] overflow-hidden shadow-2xl relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-orange-900 group-hover:scale-105 transition-transform duration-700" />
+              <div className="relative z-10 p-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center mb-6 shadow-xl">
+                  <Crown className="h-7 w-7 text-white" />
                 </div>
+                <h3 className="text-2xl font-black text-white italic tracking-tighter">CORPORATE<br/>PLUS</h3>
+                <p className="text-xs text-slate-400 mt-3 font-bold uppercase tracking-widest leading-relaxed">Sınırsız program, AI destekli vaka analizi ve özel gelişim raporları.</p>
+                <Button className="mt-8 w-full h-14 rounded-2xl bg-white text-slate-900 font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-xl shadow-black/20">
+                  Yükselt
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* FOOTER YASAL BANNER */}
+      <div className="max-w-6xl mx-auto px-4 mt-6">
+        <div className="bg-slate-200/50 p-6 rounded-3xl text-center border border-slate-200">
+           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+             KARİYEER.COM BİR ÖZEL İSTİHDAM BÜROSU DEĞİLDİR. BU PANEL KURUMSAL GELİŞİM VE MENTORLUK PROGRAMLARININ TAKİBİ İÇİN TASARLANMIŞTIR.
+             SİSTEM ÜZERİNDE YAPILAN DEĞERLENDİRMELER KATILIMCI GELİŞİM RAPORU NİTELİĞİNDEDİR.
+           </p>
+        </div>
+      </div>
+
       {/* Mülakat Planlama Modal */}
       {interviewModalOpen && selectedApplication && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full rounded-3xl border border-gray-200 shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white">
+            <CardHeader className="bg-slate-900 p-8 flex flex-row items-center justify-between text-white">
               <div>
-                <CardTitle className="font-black">Mülakat Planla</CardTitle>
-                <p className="text-sm text-gray-500 mt-1">Jitsi + Resend ile otomatik davet</p>
+                <CardTitle className="font-black text-2xl italic tracking-tighter uppercase">Seans Planla</CardTitle>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Katılımcı Değerlendirmesi</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setInterviewModalOpen(false)}>
-                <X className="h-5 w-5" />
-              </Button>
+              <button onClick={() => setInterviewModalOpen(false)} className="text-white/30 hover:text-white transition-colors"><X size={24} /></button>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 p-4 rounded-xl border border-orange-200">
-                <p className="font-bold text-gray-900">{selectedApplication.candidate?.full_name}</p>
-                <p className="text-sm text-gray-600">{selectedApplication.position}</p>
+            <CardContent className="p-8 space-y-5">
+              <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
+                <p className="font-black text-slate-800">{selectedApplication.candidate?.full_name}</p>
+                <p className="text-[10px] font-bold text-orange-600 uppercase mt-1">Program: {selectedApplication.position}</p>
               </div>
-              <input
-                type="date"
-                className="w-full p-3 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-              />
-              <input
-                type="time"
-                className="w-full p-3 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                value={interviewTime}
-                onChange={(e) => setInterviewTime(e.target.value)}
-              />
-              <select
-                className="w-full p-3 border border-orange-200 rounded-xl"
-                value={interviewDuration}
-                onChange={(e) => setInterviewDuration(Number(e.target.value))}
-              >
-                <option value={30}>30 dakika</option>
-                <option value={45}>45 dakika</option>
-                <option value={60}>60 dakika</option>
-              </select>
-              <textarea
-                className="w-full p-3 border border-orange-200 rounded-xl min-h-[80px]"
-                placeholder="Not (opsiyonel)"
-                value={interviewNotes}
-                onChange={(e) => setInterviewNotes(e.target.value)}
-              />
-              <Button
-                onClick={handleScheduleInterview}
-                disabled={interviewLoading}
-                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-semibold hover:brightness-110"
-              >
-                {interviewLoading ? "Planlanıyor..." : "Mülakatı Planla & Davet Gönder"}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tarih</label>
+                    <input type="date" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold focus:border-orange-500 outline-none" value={interviewDate} onChange={(e) => setInterviewDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Saat</label>
+                    <input type="time" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold focus:border-orange-500 outline-none" value={interviewTime} onChange={(e) => setInterviewTime(e.target.value)} />
+                  </div>
+                </div>
+                <textarea className="w-full p-4 border-2 border-slate-100 rounded-2xl min-h-[100px] font-medium outline-none focus:border-orange-500" placeholder="Seans notları (Gelişim odaklı)..." value={interviewNotes} onChange={(e) => setInterviewNotes(e.target.value)} />
+              </div>
+              <Button onClick={handleScheduleInterview} disabled={interviewLoading} className="w-full h-16 rounded-2xl bg-orange-600 text-white font-black uppercase italic tracking-widest shadow-xl hover:bg-orange-700 active:scale-95 transition-all">
+                {interviewLoading ? "Hazırlanıyor..." : "Seansı Kaydet & Davet Et"}
               </Button>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* İşe Alım Karar Modal */}
+      {/* Gelişim Karar Modal */}
       {hireModalOpen && selectedInterview && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full rounded-3xl border border-gray-200 shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="font-black">İşe Alım Kararı</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setHireModalOpen(false)}>
-                <X className="h-5 w-5" />
-              </Button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden">
+            <CardHeader className="p-8 border-b border-slate-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="font-black text-2xl tracking-tighter uppercase italic">Gelişim Kararı</CardTitle>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Katılımcı Sonuç Raporu</p>
+              </div>
+              <button onClick={() => setHireModalOpen(false)} className="text-slate-200 hover:text-slate-400 transition-colors"><X size={24} /></button>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                <p className="font-bold text-gray-900">{selectedInterview.candidate_name}</p>
+            <CardContent className="p-8 space-y-6">
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
+                <p className="font-black text-slate-800 text-xl">{selectedInterview.candidate_name}</p>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setHireDecision("hired")}
-                  className={`p-4 rounded-xl border text-center transition-all ${
-                    hireDecision === "hired"
-                      ? "bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-500 shadow-md"
-                      : "border-gray-200 hover:border-emerald-300"
-                  }`}
-                >
-                  <UserCheck className="h-6 w-6 mx-auto text-emerald-600" />
-                  <p className="text-xs font-semibold mt-1">İşe Al</p>
+                <button onClick={() => setHireDecision("hired")} className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${hireDecision === "hired" ? "bg-emerald-50 border-emerald-500" : "border-slate-100"}`}>
+                  <UserCheck className="h-6 w-6 text-emerald-600" />
+                  <p className="text-[9px] font-black uppercase">Tamamladı</p>
                 </button>
-                <button
-                  onClick={() => setHireDecision("on_hold")}
-                  className={`p-4 rounded-xl border text-center transition-all ${
-                    hireDecision === "on_hold"
-                      ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-500 shadow-md"
-                      : "border-gray-200 hover:border-amber-300"
-                  }`}
-                >
-                  <Pause className="h-6 w-6 mx-auto text-amber-600" />
-                  <p className="text-xs font-semibold mt-1">Beklet</p>
+                <button onClick={() => setHireDecision("on_hold")} className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${hireDecision === "on_hold" ? "bg-amber-50 border-amber-500" : "border-slate-100"}`}>
+                  <Pause className="h-6 w-6 text-amber-600" />
+                  <p className="text-[9px] font-black uppercase">İnceleniyor</p>
                 </button>
-                <button
-                  onClick={() => setHireDecision("rejected")}
-                  className={`p-4 rounded-xl border text-center transition-all ${
-                    hireDecision === "rejected"
-                      ? "bg-gradient-to-br from-red-50 to-rose-50 border-red-500 shadow-md"
-                      : "border-gray-200 hover:border-red-300"
-                  }`}
-                >
-                  <UserX className="h-6 w-6 mx-auto text-red-600" />
-                  <p className="text-xs font-semibold mt-1">Reddet</p>
+                <button onClick={() => setHireDecision("rejected")} className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${hireDecision === "rejected" ? "bg-red-50 border-red-500" : "border-slate-100"}`}>
+                  <UserX className="h-6 w-6 text-red-600" />
+                  <p className="text-[9px] font-black uppercase">Eksik Var</p>
                 </button>
               </div>
-              {hireDecision === "hired" && (
-                <>
-                  <input
-                    type="number"
-                    placeholder="Maaş teklifi (TL)"
-                    className="w-full p-3 border border-orange-200 rounded-xl"
-                    value={hireSalary}
-                    onChange={(e) => setHireSalary(e.target.value)}
-                  />
-                  <input
-                    type="date"
-                    className="w-full p-3 border border-orange-200 rounded-xl"
-                    value={hireStartDate}
-                    onChange={(e) => setHireStartDate(e.target.value)}
-                  />
-                </>
-              )}
-              <textarea
-                className="w-full p-3 border border-orange-200 rounded-xl min-h-[80px]"
-                placeholder="Not (opsiyonel)"
-                value={hireNotes}
-                onChange={(e) => setHireNotes(e.target.value)}
-              />
-              <Button
-                onClick={handleHireDecision}
-                disabled={hireLoading}
-                className="w-full rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:brightness-110"
-              >
-                {hireLoading ? "Kaydediliyor..." : "Kararı Kaydet & Adaya Bildir"}
+              <textarea className="w-full p-4 border-2 border-slate-100 rounded-2xl min-h-[100px] outline-none focus:border-orange-500" placeholder="Mentor değerlendirme özeti..." value={hireNotes} onChange={(e) => setHireNotes(e.target.value)} />
+              <Button onClick={handleHireDecision} disabled={hireLoading} className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black italic uppercase tracking-widest hover:bg-orange-600 transition-all shadow-xl">
+                {hireLoading ? "Kaydediliyor..." : "Kararı Onayla & Katılımcıya Bildir"}
               </Button>
             </CardContent>
           </Card>

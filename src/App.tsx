@@ -35,13 +35,14 @@ function SessionLoader() {
 
 /* ================= PROTECTED ROUTE ================= */
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth(); // AuthContext'ten gelen yeni prop ismini kullandım
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-sm text-gray-500">
-          Oturum kontrol ediliyor...
+        <div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full mr-3"></div>
+        <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+          Gelişim Verileri Kontrol Ediliyor...
         </div>
       </div>
     );
@@ -86,7 +87,7 @@ import JobBoard from "@/pages/JobBoard";
 import CreateJob from "@/pages/CreateJob";
 
 import Coaches from "@/pages/Coaches";
-import CoachPublicProfile from "@/pages/CoachPublicProfile";
+// Mentor detay sayfası için isimlendirme güncellendi
 
 /* ================= ANALYTICS ================= */
 const GA_ID = "G-R39ELRDLKQ";
@@ -127,19 +128,15 @@ function PublicLayout() {
 
 /* ================= ANA İÇERİK YÖNETİCİSİ ================= */
 function AppContent() {
-  const { loading } = useAuth();
+  const { isLoading } = useAuth();
 
-  // Auth yüklenirken bekle
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full shadow-xl shadow-orange-100"></div>
       </div>
     );
   }
-
-  // ✅ KRİTİK DÜZELTME: OnboardingModal kontrolünü tamamen kaldırdık. 
-  // Artık uygulama doğrudan Router (normal site akışı) kısmına geçecek.
 
   return (
     <Router>
@@ -164,12 +161,15 @@ function AppContent() {
           <Route path="investor" element={<InvestorDashboard />} />
         </Route>
 
-        {/* PUBLIC + PROTECTED */}
+        {/* PUBLIC + PROTECTED (YASAL URL GÜNCELLEMELERİ YAPILDI) */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Home />} />
           <Route path="home" element={<SocialHome />} />
-          <Route path="jobs" element={<JobBoard />} />
-          <Route path="jobs/new" element={<CreateJob />} />
+          
+          {/* YASAL GÜNCELLEME: 'jobs' yerine 'programlar' */}
+          <Route path="programlar" element={<JobBoard />} />
+          <Route path="programlar/yeni" element={<CreateJob />} />
+          
           <Route path="boost" element={<Boost />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="mentor-circle" element={<MentorCircle />} />
@@ -177,12 +177,13 @@ function AppContent() {
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
 
-          <Route path="coaches" element={<Coaches />} />
-          <Route path="coach/:slug" element={<CoachSelfProfile />} />
+          {/* YASAL GÜNCELLEME: 'coaches' yerine 'mentorlar' */}
+          <Route path="mentorlar" element={<Coaches />} />
+          <Route path="mentor/:slug" element={<CoachSelfProfile />} />
 
-          {/* USER */}
+          {/* DANIŞAN (USER) PANELİ */}
           <Route
-            path="user/dashboard"
+            path="user/gelisim-paneli"
             element={
               <ProtectedRoute>
                 <UserDashboard />
@@ -190,7 +191,7 @@ function AppContent() {
             }
           />
           <Route
-            path="user/profile"
+            path="user/profil"
             element={
               <ProtectedRoute>
                 <UserProfile />
@@ -198,7 +199,7 @@ function AppContent() {
             }
           />
           <Route
-            path="user/profile/edit"
+            path="user/profil/duzenle"
             element={
               <ProtectedRoute>
                 <UserProfileEdit />
@@ -206,7 +207,7 @@ function AppContent() {
             }
           />
           <Route
-            path="user/settings"
+            path="user/ayarlar"
             element={
               <ProtectedRoute>
                 <UserSettings />
@@ -214,9 +215,9 @@ function AppContent() {
             }
           />
 
-          {/* CORPORATE */}
+          {/* KURUMSAL (CORPORATE) PANELİ */}
           <Route
-            path="corporate/dashboard"
+            path="kurumsal/yonetim"
             element={
               <ProtectedRoute>
                 <CorporateDashboard />
@@ -224,7 +225,7 @@ function AppContent() {
             }
           />
           <Route
-            path="corporate/profile"
+            path="kurumsal/profil"
             element={
               <ProtectedRoute>
                 <CorporateProfile />
@@ -232,7 +233,7 @@ function AppContent() {
             }
           />
           <Route
-            path="corporate/settings"
+            path="kurumsal/ayarlar"
             element={
               <ProtectedRoute>
                 <CorporateSettings />
@@ -240,9 +241,9 @@ function AppContent() {
             }
           />
 
-          {/* COACH */}
+          {/* MENTOR (COACH) PANELİ */}
           <Route
-            path="coach/dashboard"
+            path="mentor/yonetim"
             element={
               <ProtectedRoute>
                 <CoachDashboard />
@@ -250,7 +251,7 @@ function AppContent() {
             }
           />
           <Route
-            path="coach/profile"
+            path="mentor/profil"
             element={
               <ProtectedRoute>
                 <CoachSelfProfile />
@@ -258,7 +259,7 @@ function AppContent() {
             }
           />
           <Route
-            path="coach/settings"
+            path="mentor/ayarlar"
             element={
               <ProtectedRoute>
                 <CoachSettings />
@@ -266,6 +267,9 @@ function AppContent() {
             }
           />
 
+          {/* Geriye dönük uyumluluk veya hatalı linkleri ana sayfaya çek */}
+          <Route path="jobs" element={<Navigate to="/programlar" replace />} />
+          <Route path="coaches" element={<Navigate to="/mentorlar" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
